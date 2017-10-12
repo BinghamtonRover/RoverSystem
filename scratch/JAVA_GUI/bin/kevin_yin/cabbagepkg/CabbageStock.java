@@ -8,6 +8,9 @@ public class CabbageStock {
     private List<Customer> observers = new ArrayList<Customer>();
     private boolean inStock;
 
+    public CabbageStock(boolean status){
+        inStock = status;
+    }
     //check stocks status
     public boolean checkStock(){
         return inStock;
@@ -19,16 +22,16 @@ public class CabbageStock {
     }
 
     //adds a new customer who want to be notified to observers 
-    public void newCustomer(Customer cust){
+    public void addObserver(Customer cust){
         observers.add(cust);
     }
 
-    public void removeCustomer(String name){
+    public void removeObserver(String name){
         observers.remove(name);
     }
 
     //notifies all the customers who are waiting for cabbages to be restocked
-    public void sendNotifications(){
+    public void notifyObservers(){
         for(Observer cust: observers){
             cust.update();
         }
