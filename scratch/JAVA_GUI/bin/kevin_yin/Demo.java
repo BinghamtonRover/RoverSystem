@@ -8,7 +8,7 @@ public class Demo {
         boolean stock_status;
         Scanner sc = new Scanner(System.in);
         CabbageStock stock = new CabbageStock(false);
-        stock.addObserver(new Customer("Kevin")); //adds a customer who wants to be notified, aka Observant.
+        stock.addObserver(new Customer("Kevin")); //adds a customer who wants to be notified, aka Observer.
         stock.addObserver(new Customer("Maria"));
         stock.addObserver(new Customer("Angel"));
         stock.removeObserver("Zach"); //removes zach from the notification list
