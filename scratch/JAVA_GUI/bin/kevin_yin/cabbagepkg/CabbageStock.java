@@ -1,41 +1,22 @@
 package cabbagepkg;
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Observable;
 
-public class CabbageStock {
+public class CabbageStock extends Observable{
 
-    private List<Customer> observers = new ArrayList<Customer>();
     private boolean inStock;
 
     public CabbageStock(boolean status){
         inStock = status;
     }
-    //check stocks status
-    public boolean checkStock(){
-        return inStock;
-    }
 
     //set stock status
     public void setStock(boolean status){
         inStock = status;
+        setChanged(); //can call hasChanged() method to see whether this observable has changed
+        if(status) notifyObservers(); //notifies customers if the stock of cabbages have been replenished
     }
 
-    //adds a new customer who want to be notified to observers 
-    public void addObserver(Customer cust){
-        observers.add(cust);
-    }
-
-    public void removeObserver(String name){
-        observers.remove(name);
-    }
-
-    //notifies all the customers who are waiting for cabbages to be restocked
-    public void notifyObservers(){
-        for(Observer cust: observers){
-            cust.update();
-        }
-    }
 }
 
 

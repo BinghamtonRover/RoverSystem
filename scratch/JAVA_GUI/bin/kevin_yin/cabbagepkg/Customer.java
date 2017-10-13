@@ -1,6 +1,12 @@
 package cabbagepkg;
 
-public class Customer extends Observer {
+import java.util.Observer;
+import java.util.Observable;
+
+public class Customer implements Observer {
+
+    private Observable stockUpdate;
+    private String customer_name;
 
     public Customer(String name){
         customer_name = name;
@@ -16,7 +22,8 @@ public class Customer extends Observer {
 
     //Notifies the customer when cabbages have been restocked
     @Override
-    public void update(){
-        System.out.println(customer_name + "! The cabbages have been restocked!");
+    public void update(Observable observable, Object arg){
+        stockUpdate = (CabbageStock) observable;
+        System.out.println(customer_name+ "! Cabbages have been restocked!");
     }
 }
