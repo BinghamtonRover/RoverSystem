@@ -1,5 +1,7 @@
 import java.util.Scanner;
 import cabbagepkg.*;
+import java.io.File;
+
 
 public class Demo {
 
@@ -7,10 +9,10 @@ public class Demo {
 
         boolean stock_status;
         Scanner sc = new Scanner(System.in);
-        CabbageStock stock = new CabbageStock(false);
+        CabbageStock stock = new CabbageStock();
         stock.addObserver(new Customer("Kevin"));
         while(true){
-            stock_status = (sc.nextInt() > 0) ? true : false; //check if stock is greater than 0
+            stock_status = (sc.nextInt() > 0); //check if stock is greater than 0
             stock.setStock(stock_status);  //set stock status
         }
     }
