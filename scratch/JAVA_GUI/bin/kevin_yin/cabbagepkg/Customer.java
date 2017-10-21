@@ -25,7 +25,6 @@ public class Customer implements Observer {
     @Override
     public void update(Observable observable, Object arg){
         stockUpdate = (CabbageStock) observable;
-        System.out.println(new File("readme.md").lastModified());
         System.out.println(customer_name+ "! Cabbages have been restocked!");
     }
 }

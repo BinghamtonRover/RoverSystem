@@ -5,4 +5,4 @@
 - None lol :)
 
 ### How it works
-- The program will continuously ask you for a input (a number) and will check if the number is greater than zero. If true, then it will notify the customers; Otherwise, it will not notify the customers. You can exit the program by doing `CRTL C`.
+- The program will continuously check if the readme.md file (this file) has been modified. If true, then it will notify the customers; Otherwise, it will not notify the customers. You can exit the program by doing `CRTL C`.
