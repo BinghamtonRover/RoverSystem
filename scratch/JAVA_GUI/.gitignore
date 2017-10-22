@@ -1,3 +1,4 @@
 # Ignore compiled java files
 *.class
 *.jar
+out/
