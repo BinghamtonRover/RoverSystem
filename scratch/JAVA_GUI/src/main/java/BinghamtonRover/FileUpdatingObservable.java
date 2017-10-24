@@ -1,13 +1,17 @@
 package BinghamtonRover;
 
+import org.apache.commons.lang3.Validate;
+
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Observable;
+import java.util.Observer;
 
 public class FileUpdatingObservable extends Observable
 {
     private long cnFileLastUpdatedTime = 0;
     private File coFileToMonitor = null;
-    private FileCheckerThread cnCheckerThread = null;
 
     public FileUpdatingObservable(String asFileToWatch)
     {
@@ -22,8 +26,13 @@ public class FileUpdatingObservable extends Observable
 
     public FileUpdatingObservable(String asFileToWatch, ArrayList<InformationObserver> aaoObservers)
     {
-        cnFileLastUpdatedTime = 0;
+        // Ensure all parameters are not null
+        Validate.notNull(asFileToWatch, "FileUpdatingObservable: String cannot be null");
+        Validate.notNull(aaoObservers, "FileUpdatingObservable: ArrayList cannot be null");
+
+        // Cannot throw a NullPointerException since arg will never be null
         coFileToMonitor = new File(asFileToWatch);
+        cnFileLastUpdatedTime = 0;
 
         if (! coFileToMonitor.exists())
         {
@@ -42,13 +51,15 @@ public class FileUpdatingObservable extends Observable
 
     public void startFileMonitoringThread()
     {
-        cnCheckerThread = new FileCheckerThread(this, coFileToMonitor);
-        cnCheckerThread.start();
+        FileCheckerThread lnCheckerThread = new FileCheckerThread(this, coFileToMonitor);
+        lnCheckerThread.start();
     }
 
     @Override
     public synchronized void addObserver(Observer aoObserver)
     {
+        // Avoid a NPE by ensuring we are not adding a null Observer
+        Validate.notNull(aoObserver, "addObserver: Observer is null");
         super.addObserver(aoObserver);
     }
 

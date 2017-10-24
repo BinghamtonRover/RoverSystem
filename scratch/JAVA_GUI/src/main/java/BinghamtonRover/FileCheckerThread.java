@@ -1,5 +1,7 @@
 package BinghamtonRover;
 
+import org.apache.commons.lang3.Validate;
+
 import java.io.File;
 
 public class FileCheckerThread extends Thread
@@ -10,6 +12,10 @@ public class FileCheckerThread extends Thread
 
     public FileCheckerThread(FileUpdatingObservable aoObservable, File aoFileToMonitor)
     {
+        // If any args are null, get out of the method
+        Validate.notNull(aoObservable,"FileCheckerThread: Observable is null");
+        Validate.notNull(aoFileToMonitor, "FileCheckerThread: File is null");
+
         // If the status file does not exist, kill the Thread
         if (! aoFileToMonitor.exists())
         {
