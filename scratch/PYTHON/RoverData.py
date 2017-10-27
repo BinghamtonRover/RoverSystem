@@ -3,9 +3,15 @@ import logging
 import logging.handlers
 import time
 
-class Test:
+class RoverData:
     def __init__(self, name):
         self.name = name
+        self.temperature = 46.6
+        self.latitude = 5046.31972
+        self.latitudeDirection = "N"
+        self.longitude = 16.3365
+        self.longitudeDirection = "E"
+        self.pressure = 3.6
         
     def toJSON(self):
         #Returns a string in JSON format
@@ -22,10 +28,9 @@ class Test:
         #This is me adding to the logger
         #I update an element (name) to check if it
         #correctly creates updated files
-        for i in range(5000):
-            if(i % 11 == 1):
-                self.name += str(i)
+        for i in range(50000):
+            if(i % 50 == 0):
+                self.temperature += 98
             else:
-                self.name += 'a'
-            self.age = i
+                self.temperature -= 2
             logger.info(self.toJSON())
