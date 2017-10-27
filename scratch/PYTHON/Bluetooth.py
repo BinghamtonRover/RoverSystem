@@ -31,4 +31,4 @@ except OSError:
 socket.send("Hello World")
 
 #Close connection to device
-sock.close()
+socket.close()
