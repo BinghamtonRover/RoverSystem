@@ -43,12 +43,4 @@ public class InformationObserver implements Observer
         return String.format("%1$tH:%1$tM:%1$tS", anMilliSeconds);
 
     }
-
-    public static void main(String[] args)
-    {
-        Validate.notBlank("TEST");
-        ArrayList<Integer> t = new ArrayList<>();
-
-        IntStream.range(0, t.size()).mapToObj(i -> t).forEach(System.out::println);
-    }
 }
