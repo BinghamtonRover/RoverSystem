@@ -1,7 +1,11 @@
 package BinghamtonRover;
 
+import org.apache.commons.lang3.Validate;
+
+import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.stream.IntStream;
 
 /**
  * This class will be the super() for all gauges/gears on the GUI. From there,
@@ -38,5 +42,13 @@ public class InformationObserver implements Observer
     {
         return String.format("%1$tH:%1$tM:%1$tS", anMilliSeconds);
 
+    }
+
+    public static void main(String[] args)
+    {
+        Validate.notBlank("TEST");
+        ArrayList<Integer> t = new ArrayList<>();
+
+        IntStream.range(0, t.size()).mapToObj(i -> t).forEach(System.out::println);
     }
 }
