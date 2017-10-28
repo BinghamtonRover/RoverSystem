@@ -20,4 +20,18 @@ import java.util.Iterator;
 
 public class DistanceMonitor extends InformationObserver{
 
+    public DistanceMonitor(){
+        super();
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        super.update(o, arg);
+
+        FileUpdatingObservable observer = (FileUpdatingObservable)o;
+        System.out.println(
+                "Total distance travelled is: " +
+                (double) getJson( observer.getCoFileToMonitor(), "totalDistanceTraveled" )
+        );
+    }
 }

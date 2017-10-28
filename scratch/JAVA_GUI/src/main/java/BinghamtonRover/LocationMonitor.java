@@ -17,5 +17,21 @@ import java.util.Iterator;
  * The location Monitor will read the longitude and latitude from the Json file.
  */
 
-public class LocationMonitor {
+public class LocationMonitor extends InformationObserver{
+
+    public LocationMonitor(){
+        super();
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        super.update(o, arg);
+
+        FileUpdatingObservable obserbvable = (FileUpdatingObservable)o;
+        System.out.println(
+                "The current location is: " +
+                (double) getJson( obserbvable.getCoFileToMonitor(), "latitude" ) + "," +
+                (double) getJson( obserbvable.getCoFileToMonitor(), "longitude")
+        );
+    }
 }
