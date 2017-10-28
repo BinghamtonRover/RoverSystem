@@ -29,7 +29,7 @@ class RoverData:
         #I update an element (name) to check if it
         #correctly creates updated files
         for i in range(50000):
-            if(i % 50 == 0):
+            if i % 50 == 0:
                 self.temperature += 98
             else:
                 self.temperature -= 2
