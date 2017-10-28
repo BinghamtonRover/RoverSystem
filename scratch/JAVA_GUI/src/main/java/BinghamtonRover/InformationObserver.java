@@ -1,7 +1,11 @@
 package BinghamtonRover;
 
+import org.apache.commons.lang3.Validate;
+
+import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.stream.IntStream;
 
 /**
  * This class will be the super() for all gauges/gears on the GUI. From there,
