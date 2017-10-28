@@ -15,7 +15,8 @@ import java.util.Iterator;
 
 /**
  * The Temperature Monitor should monitor the temperature around the rover.
- * The temperature will probably be measured in Kelvin.
+ * The temperature will probably be measured in Kelvin. The New json file shows that
+ * the temperature will probably be in Fahrenheit.
  */
 
 public class TemperatureMonitor extends InformationObserver{

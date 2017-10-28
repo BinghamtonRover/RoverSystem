@@ -2,7 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="38580b9e-b54e-464f-b9a4-4c4c8f67d21c" name="Default" comment="Added">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/LocationMonitor.java" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/PressureMonitor.java" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/MagnetometerMonitor.java" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DirectionMonitor.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/AccelerometerMonitor.java" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/AccelerometerMonitor.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/BatteryMonitor.java" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/BatteryMonitor.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DistanceMonitor.java" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DistanceMonitor.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/GyroscopeMonitor.java" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/GyroscopeMonitor.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/TemperatureMonitor.java" afterPath="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/TemperatureMonitor.java" />
     </list>
     <ignored path="$PROJECT_DIR$/scratch/JAVA_GUI/target/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -17,8 +25,28 @@
       <file leaf-file-name="FileUpdatingObservable.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/FileUpdatingObservable.java">
           <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="48">
+              <caret line="8" column="26" lean-forward="true" selection-start-line="2" selection-start-column="0" selection-end-line="8" selection-end-column="26" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="python_output.log.json" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/files/python_output.log.json">
+          <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="0">
-              <caret line="75" column="22" lean-forward="false" selection-start-line="75" selection-start-column="22" selection-end-line="75" selection-end-column="22" />
+              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="PressureMonitor.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/PressureMonitor.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="144">
+              <caret line="12" column="3" lean-forward="false" selection-start-line="12" selection-start-column="3" selection-end-line="12" selection-end-column="3" />
               <folding />
             </state>
           </provider>
@@ -29,42 +57,16 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="0">
               <caret line="0" column="8" lean-forward="false" selection-start-line="0" selection-start-column="8" selection-end-line="0" selection-end-column="8" />
-              <folding>
-                <marker date="1509171017691" expanded="true" signature="189:453" ph="/**...*/" />
-                <marker date="1509171017691" expanded="false" signature="672:687" ph=" { " />
-                <marker date="1509171017691" expanded="false" signature="712:718" ph=" }" />
-                <marker date="1509171017691" expanded="true" signature="724:983" ph="/**...*/" />
-                <marker date="1509171017691" expanded="true" signature="1051:1202" ph="{...}" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="GyroscopeMonitor.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/GyroscopeMonitor.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="264">
-              <caret line="21" column="0" lean-forward="false" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/.gitignore">
+      <file leaf-file-name="LocationMonitor.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/LocationMonitor.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="96">
-              <caret line="4" column="6" lean-forward="true" selection-start-line="4" selection-start-column="6" selection-end-line="4" selection-end-column="6" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="TemperatureMonitor.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/TemperatureMonitor.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="168">
-              <caret line="17" column="44" lean-forward="false" selection-start-line="17" selection-start-column="44" selection-end-line="17" selection-end-column="44" />
+            <state relative-caret-position="144">
+              <caret line="16" column="71" lean-forward="false" selection-start-line="16" selection-start-column="71" selection-end-line="16" selection-end-column="71" />
               <folding />
             </state>
           </provider>
@@ -73,8 +75,8 @@
       <file leaf-file-name="DistanceMonitor.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DistanceMonitor.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="264">
-              <caret line="21" column="69" lean-forward="false" selection-start-line="21" selection-start-column="69" selection-end-line="21" selection-end-column="69" />
+            <state relative-caret-position="168">
+              <caret line="17" column="64" lean-forward="false" selection-start-line="17" selection-start-column="64" selection-end-line="17" selection-end-column="64" />
               <folding />
             </state>
           </provider>
@@ -83,18 +85,18 @@
       <file leaf-file-name="BatteryMonitor.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/BatteryMonitor.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="19" column="56" lean-forward="false" selection-start-line="19" selection-start-column="56" selection-end-line="19" selection-end-column="56" />
+            <state relative-caret-position="144">
+              <caret line="16" column="42" lean-forward="false" selection-start-line="16" selection-start-column="42" selection-end-line="16" selection-end-column="42" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MagnetometerMonitor.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/MagnetometerMonitor.java">
+      <file leaf-file-name="DirectionMonitor.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DirectionMonitor.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="19" column="60" lean-forward="false" selection-start-line="19" selection-start-column="60" selection-end-line="19" selection-end-column="60" />
+            <state relative-caret-position="192">
+              <caret line="18" column="32" lean-forward="false" selection-start-line="18" selection-start-column="32" selection-end-line="18" selection-end-column="32" />
               <folding />
             </state>
           </provider>
@@ -103,8 +105,8 @@
       <file leaf-file-name="AccelerometerMonitor.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/AccelerometerMonitor.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="144">
-              <caret line="16" column="104" lean-forward="false" selection-start-line="16" selection-start-column="104" selection-end-line="16" selection-end-column="104" />
+            <state relative-caret-position="96">
+              <caret line="14" column="0" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="17" selection-end-column="3" />
               <folding />
             </state>
           </provider>
@@ -166,13 +168,16 @@
         <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/FileUpdatingObservable.java" />
         <option value="$PROJECT_DIR$/scratch/JAVA_GUI/pom.xml" />
         <option value="$PROJECT_DIR$/scratch/JAVA_GUI/SensorData.json" />
-        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/TemperatureMonitor.java" />
-        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DistanceMonitor.java" />
-        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/AccelerometerMonitor.java" />
-        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/MagnetometerMonitor.java" />
-        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/BatteryMonitor.java" />
-        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/GyroscopeMonitor.java" />
         <option value="$PROJECT_DIR$/scratch/JAVA_GUI/.gitignore" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/AccelerometerMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/GyroscopeMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/TemperatureMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/BatteryMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/LocationMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/MagnetometerMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DirectionMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DistanceMonitor.java" />
+        <option value="$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/PressureMonitor.java" />
       </list>
     </option>
   </component>
@@ -249,6 +254,25 @@
               <item name="src" type="462c0819:PsiDirectoryNode" />
               <item name="main" type="462c0819:PsiDirectoryNode" />
               <item name="files" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="BinghamtonRover" type="b2602c69:ProjectViewProjectNode" />
+              <item name="BinghamtonRover" type="462c0819:PsiDirectoryNode" />
+              <item name="scratch" type="462c0819:PsiDirectoryNode" />
+              <item name="JAVA_GUI" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="BinghamtonRover" type="b2602c69:ProjectViewProjectNode" />
+              <item name="BinghamtonRover" type="462c0819:PsiDirectoryNode" />
+              <item name="scratch" type="462c0819:PsiDirectoryNode" />
+              <item name="JAVA_GUI" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+              <item name="BinghamtonRover" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -389,7 +413,7 @@
       <option name="presentableId" value="Default" />
       <updated>1509068924961</updated>
       <workItem from="1509068935102" duration="9437000" />
-      <workItem from="1509150301041" duration="1014000" />
+      <workItem from="1509150301041" duration="2379000" />
     </task>
     <task id="LOCAL-00001" summary="Added some empty classes to start us off. Added some comments about what I think the class would monitor. Added dependency for json simple in pom.xml.">
       <created>1509141184532</created>
@@ -402,7 +426,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="10451000" />
+    <option name="totallyTimeSpent" value="11816000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-9" y="-9" width="1938" height="1048" extended-state="6" />
@@ -463,13 +487,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="8" lean-forward="false" selection-start-line="0" selection-start-column="8" selection-end-line="0" selection-end-column="8" />
-          <folding>
-            <marker date="1509171017691" expanded="true" signature="189:453" ph="/**...*/" />
-            <marker date="1509171017691" expanded="false" signature="672:687" ph=" { " />
-            <marker date="1509171017691" expanded="false" signature="712:718" ph=" }" />
-            <marker date="1509171017691" expanded="true" signature="724:983" ph="/**...*/" />
-            <marker date="1509171017691" expanded="true" signature="1051:1202" ph="{...}" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -505,7 +523,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/MagnetometerMonitor.java">
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DirectionMonitor.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="456">
           <caret line="19" column="60" lean-forward="false" selection-start-line="19" selection-start-column="60" selection-end-line="19" selection-end-column="60" />
@@ -547,28 +565,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-864">
           <caret line="0" column="8" lean-forward="false" selection-start-line="0" selection-start-column="8" selection-end-line="0" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/FileUpdatingObservable.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="75" column="22" lean-forward="false" selection-start-line="75" selection-start-column="22" selection-end-line="75" selection-end-column="22" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/InformationObserver.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="8" lean-forward="false" selection-start-line="0" selection-start-column="8" selection-end-line="0" selection-end-column="8" />
-          <folding>
-            <marker date="1509171017691" expanded="true" signature="189:453" ph="/**...*/" />
-            <marker date="1509171017691" expanded="false" signature="672:687" ph=" { " />
-            <marker date="1509171017691" expanded="false" signature="712:718" ph=" }" />
-            <marker date="1509171017691" expanded="true" signature="724:983" ph="/**...*/" />
-            <marker date="1509171017691" expanded="true" signature="1051:1202" ph="{...}" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -581,54 +578,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/SensorData.json" />
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/TemperatureMonitor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="168">
-          <caret line="17" column="44" lean-forward="false" selection-start-line="17" selection-start-column="44" selection-end-line="17" selection-end-column="44" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/BatteryMonitor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="19" column="56" lean-forward="false" selection-start-line="19" selection-start-column="56" selection-end-line="19" selection-end-column="56" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/MagnetometerMonitor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="19" column="60" lean-forward="false" selection-start-line="19" selection-start-column="60" selection-end-line="19" selection-end-column="60" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/AccelerometerMonitor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="144">
-          <caret line="16" column="104" lean-forward="false" selection-start-line="16" selection-start-column="104" selection-end-line="16" selection-end-column="104" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DistanceMonitor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="264">
-          <caret line="21" column="69" lean-forward="false" selection-start-line="21" selection-start-column="69" selection-end-line="21" selection-end-column="69" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/GyroscopeMonitor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="264">
-          <caret line="21" column="0" lean-forward="false" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="168">
@@ -637,10 +586,98 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/AccelerometerMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="96">
+          <caret line="14" column="0" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="17" selection-end-column="3" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="96">
           <caret line="4" column="6" lean-forward="true" selection-start-line="4" selection-start-column="6" selection-end-line="4" selection-end-column="6" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/GyroscopeMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="168">
+          <caret line="17" column="3" lean-forward="false" selection-start-line="17" selection-start-column="3" selection-end-line="17" selection-end-column="3" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/TemperatureMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="192">
+          <caret line="18" column="38" lean-forward="false" selection-start-line="18" selection-start-column="38" selection-end-line="18" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/BatteryMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="144">
+          <caret line="16" column="42" lean-forward="false" selection-start-line="16" selection-start-column="42" selection-end-line="16" selection-end-column="42" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/InformationObserver.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="8" lean-forward="false" selection-start-line="0" selection-start-column="8" selection-end-line="0" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/LocationMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="144">
+          <caret line="16" column="71" lean-forward="false" selection-start-line="16" selection-start-column="71" selection-end-line="16" selection-end-column="71" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DirectionMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="192">
+          <caret line="18" column="32" lean-forward="false" selection-start-line="18" selection-start-column="32" selection-end-line="18" selection-end-column="32" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/DistanceMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="168">
+          <caret line="17" column="64" lean-forward="false" selection-start-line="17" selection-start-column="64" selection-end-line="17" selection-end-column="64" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/PressureMonitor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="144">
+          <caret line="12" column="3" lean-forward="false" selection-start-line="12" selection-start-column="3" selection-end-line="12" selection-end-column="3" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/java/BinghamtonRover/FileUpdatingObservable.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="48">
+          <caret line="8" column="26" lean-forward="true" selection-start-line="2" selection-start-column="0" selection-end-line="8" selection-end-column="26" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scratch/JAVA_GUI/src/main/files/python_output.log.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>

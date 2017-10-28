@@ -1,5 +1,6 @@
 package BinghamtonRover;
 
+
 import java.util.Observable;
 
 import org.json.simple.JSONObject;
@@ -13,9 +14,8 @@ import java.io.IOException;
 import java.util.Iterator;
 
 /**
- * The MagnetometerMonitor watches the direction that the rover is facing, it is like a compass.
- * The value is probably in degrees from 0 to 360 with 0 and 360 pointing to North
+ * The location Monitor will read the longitude and latitude from the Json file.
  */
 
-public class MagnetometerMonitor extends InformationObserver{
+public class LocationMonitor {
 }

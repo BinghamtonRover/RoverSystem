@@ -14,7 +14,7 @@ import java.util.Iterator;
 
 /**
  * THe BatteryMonitor watches the percentage battery remain on the rover.
- * the battery will probably be a fraction.
+ * the battery status will be a two digits number likely between 0-100.
  */
 
 public class BatteryMonitor extends InformationObserver {
