@@ -1,8 +1,6 @@
 package BinghamtonRover;
 
 import org.apache.commons.lang3.Validate;
-
-
 import java.util.Observable;
 
 /**

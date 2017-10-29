@@ -1,6 +1,6 @@
 package BinghamtonRover;
 
-import javax.sound.sampled.Line;
+
 import java.util.Observable;
 
 public class CameraStatusMonitor extends InformationObserver{

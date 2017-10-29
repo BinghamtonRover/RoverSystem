@@ -1,8 +1,5 @@
 package BinghamtonRover;
 
-import org.omg.CORBA.Current;
-
-import java.io.File;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Observable;
