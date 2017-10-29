@@ -28,10 +28,10 @@ public class DistanceMonitor extends InformationObserver{
     public void update(Observable o, Object arg) {
         super.update(o, arg);
 
-        FileUpdatingObservable observer = (FileUpdatingObservable)o;
+        FileUpdatingObservable observable = (FileUpdatingObservable)o;
         System.out.println(
                 "Total distance travelled is: " +
-                (double) getJson( observer.getCoFileToMonitor(), "totalDistanceTraveled" )
+                (double) getJson( observable.getCoFileToMonitor(), "totalDistanceTraveled" )
         );
     }
 }

@@ -27,11 +27,11 @@ public class DirectionMonitor extends InformationObserver{
     public void update(Observable o, Object arg) {
         super.update(o, arg);
 
-        FileUpdatingObservable observer = (FileUpdatingObservable)o;
+        FileUpdatingObservable observerable = (FileUpdatingObservable)o;
         System.out.println(
                 "The target is at " +
-                (String) getJson( observer.getCoFileToMonitor(), "latitudeDirection" ) +
-                (String) getJson( observer.getCoFileToMonitor(), "longitudeDirection") +
+                (String) getJson( observerable.getCoFileToMonitor(), "latitudeDirection" ) +
+                (String) getJson( observerable.getCoFileToMonitor(), "longitudeDirection") +
                 " Direction"
         );
     }

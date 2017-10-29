@@ -27,11 +27,11 @@ public class LocationMonitor extends InformationObserver{
     public void update(Observable o, Object arg) {
         super.update(o, arg);
 
-        FileUpdatingObservable obserbvable = (FileUpdatingObservable)o;
+        FileUpdatingObservable observable = (FileUpdatingObservable)o;
         System.out.println(
                 "The current location is: " +
-                (double) getJson( obserbvable.getCoFileToMonitor(), "latitude" ) + "," +
-                (double) getJson( obserbvable.getCoFileToMonitor(), "longitude")
+                (double) getJson( observable.getCoFileToMonitor(), "latitude" ) + "," +
+                (double) getJson( observable.getCoFileToMonitor(), "longitude")
         );
     }
 }

@@ -27,10 +27,10 @@ public class BatteryMonitor extends InformationObserver {
     public void update(Observable o, Object arg) {
         super.update(o, arg);
 
-        FileUpdatingObservable observer = (FileUpdatingObservable)o;
+        FileUpdatingObservable observable = (FileUpdatingObservable)o;
         System.out.println(
                 "The current Battery percentage is: " +
-                (double) getJson( observer.getCoFileToMonitor(), "batteryLevel" )
+                (long) getJson( observable.getCoFileToMonitor(), "batteryLevel" ) + "%"
         );
     }
 }

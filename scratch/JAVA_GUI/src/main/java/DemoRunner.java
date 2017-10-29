@@ -13,15 +13,19 @@ public class DemoRunner
 
         ArrayList<InformationObserver> laoObservers = new ArrayList<>();
 
-        for (int i = 0; i < 3; i++)
-        {
-            laoObservers.add(new InformationObserver());
-        }
+        //Commented out for testing
+//        for (int i = 0; i < 3; i++)
+//        {
+//            laoObservers.add(new InformationObserver());
+//        }
         laoObservers.add(new PressureMonitor());
         laoObservers.add(new LocationMonitor());
         laoObservers.add(new DistanceMonitor());
         laoObservers.add(new BatteryMonitor());
-        laoObservers.add (new DirectionMonitor());
+        laoObservers.add(new DirectionMonitor());
+        laoObservers.add(new TimeMonitor());
+        laoObservers.add(new TemperatureMonitor());
+        laoObservers.add(new CameraStatusMonitor());
 
         FileUpdatingObservable lfuo = new FileUpdatingObservable(lsFile, laoObservers);
 
