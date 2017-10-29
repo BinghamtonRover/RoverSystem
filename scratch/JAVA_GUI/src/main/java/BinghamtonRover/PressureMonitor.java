@@ -19,7 +19,6 @@ import java.io.IOException;
 
 public class PressureMonitor extends InformationObserver{
 
-
     public PressureMonitor(){
         super();
     }

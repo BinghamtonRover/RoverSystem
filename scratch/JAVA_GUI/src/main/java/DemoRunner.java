@@ -20,6 +20,8 @@ public class DemoRunner
         laoObservers.add(new PressureMonitor());
         laoObservers.add(new LocationMonitor());
         laoObservers.add(new DistanceMonitor());
+        laoObservers.add(new BatteryMonitor());
+        laoObservers.add (new DirectionMonitor());
 
         FileUpdatingObservable lfuo = new FileUpdatingObservable(lsFile, laoObservers);
 

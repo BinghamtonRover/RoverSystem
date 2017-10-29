@@ -14,8 +14,23 @@ import java.util.Iterator;
 
 /**
  * THe BatteryMonitor watches the percentage battery remain on the rover.
- * the battery status will be a two digits number likely between 0-100.
+ * the battery status will be a number between 0-100.
  */
 
 public class BatteryMonitor extends InformationObserver {
+
+    public BatteryMonitor(){
+        super();
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        super.update(o, arg);
+
+        FileUpdatingObservable observer = (FileUpdatingObservable)o;
+        System.out.println(
+                "The current Battery percentage is: " +
+                (double) getJson( observer.getCoFileToMonitor(), "batteryLevel" )
+        );
+    }
 }
