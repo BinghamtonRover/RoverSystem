@@ -9,14 +9,16 @@ import java.util.Observable;
  * the Json file provided the total distance the rover travelled
  */
 
-public class DistanceMonitor extends InformationObserver{
+public class DistanceMonitor extends InformationObserver
+{
 
     public DistanceMonitor(){
         super();
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg)
+    {
         super.update(o, arg);
 
         FileUpdatingObservable observable = (FileUpdatingObservable)o;

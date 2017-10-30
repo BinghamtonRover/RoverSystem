@@ -8,14 +8,16 @@ import java.util.Observable;
  * The New json file shows that the temperature will probably be in Fahrenheit.
  */
 
-public class TemperatureMonitor extends InformationObserver{
+public class TemperatureMonitor extends InformationObserver
+{
 
     public TemperatureMonitor(){
         super();
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg)
+    {
         super.update(o, arg);
 
         FileUpdatingObservable observable = (FileUpdatingObservable)o;

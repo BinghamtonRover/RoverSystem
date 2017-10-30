@@ -3,14 +3,16 @@ package BinghamtonRover;
 
 import java.util.Observable;
 
-public class CameraStatusMonitor extends InformationObserver{
+public class CameraStatusMonitor extends InformationObserver
+{
 
     public CameraStatusMonitor(){
         super();
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg)
+    {
         super.update(o, arg);
 
         FileUpdatingObservable observable = (FileUpdatingObservable)o;

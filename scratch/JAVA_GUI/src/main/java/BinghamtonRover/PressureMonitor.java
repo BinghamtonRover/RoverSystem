@@ -7,14 +7,16 @@ import java.util.Observable;
  * Pressure monitor monitors the air pressure.
  */
 
-public class PressureMonitor extends InformationObserver{
+public class PressureMonitor extends InformationObserver
+{
 
     public PressureMonitor(){
         super();
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg)
+    {
         super.update(o, arg);
 
         FileUpdatingObservable observable = (FileUpdatingObservable)o;

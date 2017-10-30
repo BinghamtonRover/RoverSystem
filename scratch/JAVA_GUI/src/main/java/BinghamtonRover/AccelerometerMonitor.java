@@ -12,5 +12,7 @@ import java.util.Observable;
  * The Accelerometer will monitor the acceleration in the three axis (X,Y,Z) that the rover experiences.
  */
 
-public class AccelerometerMonitor extends InformationObserver{
+public class AccelerometerMonitor extends InformationObserver
+{
+
 }

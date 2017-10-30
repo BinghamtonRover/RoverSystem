@@ -12,5 +12,7 @@ import java.util.Observable;
  * in degrees/radian per seconds.
  */
 
-public class GyroscopeMonitor extends InformationObserver{
+public class GyroscopeMonitor extends InformationObserver
+{
+
 }

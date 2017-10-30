@@ -8,14 +8,16 @@ import java.util.Observable;
  * the battery status will be a number between 0-100.
  */
 
-public class BatteryMonitor extends InformationObserver {
+public class BatteryMonitor extends InformationObserver
+{
 
     public BatteryMonitor(){
         super();
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg)
+    {
         super.update(o, arg);
 
         FileUpdatingObservable observable = (FileUpdatingObservable)o;

@@ -11,18 +11,21 @@ import java.util.Calendar;
  * comparing it with the current time on the machine.
  */
 
-public class TimeMonitor extends InformationObserver{
+public class TimeMonitor extends InformationObserver
+{
 
     private SimpleDateFormat dateFormat;
     private Calendar cal;
 
-    public TimeMonitor(){
+    public TimeMonitor()
+    {
         super();
         dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg)
+    {
         super.update(o, arg);
 
         FileUpdatingObservable observable = (FileUpdatingObservable)o;
@@ -33,10 +36,12 @@ public class TimeMonitor extends InformationObserver{
 
 
         //Parse the String obtained from json to a Date
-        try {
+        try
+        {
             FileDate = dateFormat.parse(jsonDate);
         }
-        catch (ParseException e){
+        catch (ParseException e)
+        {
             e.printStackTrace();
         }
 
@@ -50,7 +55,8 @@ public class TimeMonitor extends InformationObserver{
 
         long timeDiff = CurrentDate.getTime() - FileDate.getTime();
 
-        System.out.println(
+        System.out.println
+        (
                 "The time of the file update is: " +
                 convertSecondsToHMmSs(FileDate.getTime()) + "\n" + "The current time is: " +
                 convertSecondsToHMmSs(CurrentDate.getTime()) + "\n" + "The time delay is: " +
