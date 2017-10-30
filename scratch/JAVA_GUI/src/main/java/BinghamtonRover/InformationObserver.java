@@ -51,39 +51,49 @@ public class InformationObserver implements Observer
 
     }
 
-    protected Object getJson(File JSON, String key){
+    protected Object getJson(File aoJSONFile, String asKey){
 
         /**
-         * Here we check if the JSON file passed exists or not,
+         * Here we check if the aoJSONFile file passed exists or not,
          * but it seems like that the try and catch clause will
          * catch the IOexception thrown by reading non existing file
          */
-//        if(!JSON.exists()){
-//            System.out.println("The File " + JSON.getAbsolutePath() + " does not exist");
+//        if(!aoJSONFile.exists()){
+//            System.out.println("The File " + aoJSONFile.getAbsolutePath() + " does not exist");
 //            System.exit(1);
 //        }
 
-        JSONParser parser = new JSONParser();
-        Object value = "NA";
-        try {
+        JSONParser loParser = new JSONParser();
 
-            JSONObject json = (JSONObject) parser.parse(new FileReader(JSON));
+        //instantiate as null to be checked by the method caller
+        Object loValue = null;
+        try
+        {
 
-            //If the json don't have the specified key, value = NA
-            if(json.containsKey(key)){
-                value = json.get(key);
+            //Parse the Json File to a Json Object
+            JSONObject aoJSONObj = (JSONObject) loParser.parse(new FileReader(aoJSONFile));
+
+            //If the aoJSONObj don't have the specified Key, loValue = NA
+            if(aoJSONObj.containsKey(asKey))
+            {
+                loValue = aoJSONObj.get(asKey);
             }
-            else {
-                System.out.println("Error, cannot find a key");
+            else
+            {
+                System.out.println("ERROR! cannot find Key: " + asKey + ".");
             }
 
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             e.printStackTrace();
-        } catch (ParseException e) {
+        }
+        catch (ParseException e)
+        {
             e.printStackTrace();
         }
 
-        return value;
+        return loValue;
     }
 
 }

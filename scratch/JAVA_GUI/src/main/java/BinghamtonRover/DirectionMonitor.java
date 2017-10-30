@@ -10,20 +10,24 @@ import java.util.Observable;
 public class DirectionMonitor extends InformationObserver
 {
 
-    public DirectionMonitor(){
+    public DirectionMonitor()
+    {
         super();
     }
 
     @Override
     public void update(Observable o, Object arg)
     {
+        //Call super method to acknowledge user that this Observer has been updated
         super.update(o, arg);
 
-        FileUpdatingObservable observerable = (FileUpdatingObservable)o;
-        System.out.println(
+        //Print out the information that this observer is monitoring
+        FileUpdatingObservable loObservable = (FileUpdatingObservable)o;
+        System.out.println
+        (
                 "The target is at " +
-                (String) getJson( observerable.getCoFileToMonitor(), "latitudeDirection" ) +
-                (String) getJson( observerable.getCoFileToMonitor(), "longitudeDirection") +
+                getJson( loObservable.getCoFileToMonitor(), "latitudeDirection" ) +
+                getJson( loObservable.getCoFileToMonitor(), "longitudeDirection") +
                 " Direction"
         );
     }

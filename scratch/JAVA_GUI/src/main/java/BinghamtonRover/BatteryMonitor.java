@@ -11,19 +11,23 @@ import java.util.Observable;
 public class BatteryMonitor extends InformationObserver
 {
 
-    public BatteryMonitor(){
+    public BatteryMonitor()
+    {
         super();
     }
 
     @Override
     public void update(Observable o, Object arg)
     {
+        //Call super method to acknowledge user that this Observer has been updated
         super.update(o, arg);
 
-        FileUpdatingObservable observable = (FileUpdatingObservable)o;
-        System.out.println(
+        //Print out the information that this observer is monitoring
+        FileUpdatingObservable loObservable = (FileUpdatingObservable)o;
+        System.out.println
+        (
                 "The current Battery percentage is: " +
-                (long) getJson( observable.getCoFileToMonitor(), "batteryLevel" ) + "%"
+                getJson( loObservable.getCoFileToMonitor(), "batteryLevel" ) + "%"
         );
     }
 }

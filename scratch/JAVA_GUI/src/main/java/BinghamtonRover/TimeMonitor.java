@@ -14,31 +14,38 @@ import java.util.Calendar;
 public class TimeMonitor extends InformationObserver
 {
 
-    private SimpleDateFormat dateFormat;
-    private Calendar cal;
+    private SimpleDateFormat coDateFormat;
+
+    /**
+     * Only use static method getInstance() to gets a calendar using the default time zone and locale
+     * Therefore no instance assignment or instantiation.
+     */
+    private Calendar lcCalendar;
 
     public TimeMonitor()
     {
         super();
-        dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        //The pattern of SDF must match to that of the currentTime value inside the JSON file
+        coDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     }
 
     @Override
     public void update(Observable o, Object arg)
     {
+        //Call super method to acknowledge user that this Observer has been updated
         super.update(o, arg);
 
-        FileUpdatingObservable observable = (FileUpdatingObservable)o;
-        String jsonDate = (String) getJson( observable.getCoFileToMonitor(), "currentTime" );
+        FileUpdatingObservable loObservable = (FileUpdatingObservable)o;
+        String lsJsonDate = (String) getJson( loObservable.getCoFileToMonitor(), "currentTime" );
 
-        Date FileDate = null;
-        Date CurrentDate = cal.getInstance().getTime();
+        Date loFileDate = null;
+        Date loCurrentDate = lcCalendar.getInstance().getTime();
 
 
         //Parse the String obtained from json to a Date
         try
         {
-            FileDate = dateFormat.parse(jsonDate);
+            loFileDate = coDateFormat.parse(lsJsonDate);
         }
         catch (ParseException e)
         {
@@ -46,24 +53,21 @@ public class TimeMonitor extends InformationObserver
         }
 
         //We don't want the FileDate to be null
-        assert FileDate != null;
+        assert loFileDate != null;
 
         /**
          * I used the current time to compare with the time written on the json
          * maybe we can just use the file last update time.
          */
+        long lnTimeDiff = loCurrentDate.getTime() - loFileDate.getTime();
 
-        long timeDiff = CurrentDate.getTime() - FileDate.getTime();
-
+        //Print out the information that this observer is monitoring
         System.out.println
         (
                 "The time of the file update is: " +
-                convertSecondsToHMmSs(FileDate.getTime()) + "\n" + "The current time is: " +
-                convertSecondsToHMmSs(CurrentDate.getTime()) + "\n" + "The time delay is: " +
-                timeDiff + " ms"
+                convertSecondsToHMmSs(loFileDate.getTime()) + "\n" + "The current time is: " +
+                convertSecondsToHMmSs(loCurrentDate.getTime()) + "\n" + "The time delay is: " +
+                lnTimeDiff + " ms"
         );
-
-
-
     }
 }

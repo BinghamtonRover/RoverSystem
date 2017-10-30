@@ -11,20 +11,25 @@ import java.util.Observable;
 public class LocationMonitor extends InformationObserver
 {
 
-    public LocationMonitor(){
+    public LocationMonitor()
+    {
         super();
     }
 
     @Override
     public void update(Observable o, Object arg)
     {
+        //Call super method to acknowledge user that this Observer has been updated
         super.update(o, arg);
 
-        FileUpdatingObservable observable = (FileUpdatingObservable)o;
-        System.out.println(
+        FileUpdatingObservable loObservable = (FileUpdatingObservable)o;
+
+        //Print out the information that this observer is monitoring
+        System.out.println
+        (
                 "The current location is: " +
-                (double) getJson( observable.getCoFileToMonitor(), "latitude" ) + "," +
-                (double) getJson( observable.getCoFileToMonitor(), "longitude")
+                (double) getJson( loObservable.getCoFileToMonitor(), "latitude" ) + "," +
+                (double) getJson( loObservable.getCoFileToMonitor(), "longitude")
         );
     }
 }

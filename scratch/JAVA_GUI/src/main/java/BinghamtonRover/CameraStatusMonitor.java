@@ -6,19 +6,23 @@ import java.util.Observable;
 public class CameraStatusMonitor extends InformationObserver
 {
 
-    public CameraStatusMonitor(){
+    public CameraStatusMonitor()
+    {
         super();
     }
 
     @Override
     public void update(Observable o, Object arg)
     {
+        //Call super method to acknowledge user that this Observer has been updated
         super.update(o, arg);
 
-        FileUpdatingObservable observable = (FileUpdatingObservable)o;
-        System.out.println(
+        //Print out the information that this observer is monitoring
+        FileUpdatingObservable loObservable = (FileUpdatingObservable)o;
+        System.out.println
+        (
                 "The Camera is: " +
-                (String) getJson( observable.getCoFileToMonitor(), "cameraStatus" )
+                getJson( loObservable.getCoFileToMonitor(), "cameraStatus" )
         );
     }
 }
