@@ -6,12 +6,11 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="JAVA_GUI" />
-        <module name="JAVA_GUI_NEW2" />
+        <module name="Halpern" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="JAVA_GUI" target="1.8" />
+      <module name="Halpern" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

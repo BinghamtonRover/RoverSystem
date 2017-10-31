@@ -1,7 +1,14 @@
 package BinghamtonRover;
 
 import org.apache.commons.lang3.Validate;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
@@ -43,4 +50,50 @@ public class InformationObserver implements Observer
         return String.format("%1$tH:%1$tM:%1$tS", anMilliSeconds);
 
     }
+
+    protected Object getJson(File aoJSONFile, String asKey){
+
+        /**
+         * Here we check if the aoJSONFile file passed exists or not,
+         * but it seems like that the try and catch clause will
+         * catch the IOexception thrown by reading non existing file
+         */
+//        if(!aoJSONFile.exists()){
+//            System.out.println("The File " + aoJSONFile.getAbsolutePath() + " does not exist");
+//            System.exit(1);
+//        }
+
+        JSONParser loParser = new JSONParser();
+
+        //instantiate as null to be checked by the method caller
+        Object loValue = null;
+        try
+        {
+
+            //Parse the Json File to a Json Object
+            JSONObject aoJSONObj = (JSONObject) loParser.parse(new FileReader(aoJSONFile));
+
+            //If the aoJSONObj don't have the specified Key, loValue = NA
+            if(aoJSONObj.containsKey(asKey))
+            {
+                loValue = aoJSONObj.get(asKey);
+            }
+            else
+            {
+                System.out.println("ERROR! cannot find Key: " + asKey + ".");
+            }
+
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        catch (ParseException e)
+        {
+            e.printStackTrace();
+        }
+
+        return loValue;
+    }
+
 }
