@@ -76,7 +76,10 @@ public class FileUpdatingObservable extends Observable
         notifyObservers(cnFileLastUpdatedTime);
     }
 
-    public File getCoFileToMonitor(){
+    public File getCoFileToMonitor()
+    {
+        Validate.notNull(coFileToMonitor, "File to monitor is null");
+
         if (! coFileToMonitor.exists())
         {
             System.out.println("File " + coFileToMonitor.getAbsolutePath() + " does not exist");

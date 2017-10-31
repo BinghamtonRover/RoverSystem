@@ -1,15 +1,13 @@
 package BinghamtonRover;
 
-import org.apache.commons.lang3.Validate;
 import java.util.Observable;
 
-/**
+/*
  * Pressure monitor monitors the air pressure.
  */
 
 public class PressureMonitor extends InformationObserver
 {
-
     public PressureMonitor()
     {
         super();
@@ -18,15 +16,10 @@ public class PressureMonitor extends InformationObserver
     @Override
     public void update(Observable o, Object arg)
     {
-        //Call super method to acknowledge user that this Observer has been updated
-        super.update(o, arg);
+        FileUpdatingObservable loObservable = (FileUpdatingObservable) o;
 
-        //Print out the information that this observer is monitoring
-        FileUpdatingObservable loObservable = (FileUpdatingObservable)o;
-        System.out.println
-        (
-                "The Air pressure is: " +
-                (double) getJson( loObservable.getCoFileToMonitor(), "pressure" ) + " atm"
-        );
+        double lfPressure = (double) getJson(loObservable.getCoFileToMonitor(), "pressure");
+
+        System.out.println("The air pressure is: " + lfPressure + "stp");
     }
 }

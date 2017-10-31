@@ -36,8 +36,8 @@ public class InformationObserver implements Observer
     @Override
     public void update(Observable o, Object arg)
     {
-        System.out.println("InformationObserver [" + cnIDNumber + "] has been updated at " +
-                convertSecondsToHMmSs((long)arg));
+        //System.out.println("InformationObserver [" + cnIDNumber + "] has been updated at " +
+        //        convertSecondsToHMmSs((long)arg));
     }
 
     // Adapted from https://stackoverflow.com/questions/9027317/how-to-convert-milliseconds-to-hhmmss-format
