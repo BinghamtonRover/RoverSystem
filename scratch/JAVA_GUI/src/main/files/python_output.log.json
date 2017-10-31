@@ -5,9 +5,9 @@
   "latitude": 5046.31972,
   "latitudeDirection": "N",
   "longitude": 16.3365,
-  "longitudeDirection": "E",
+  "longitudeDirection": "W",
   "name": "Mars Rover 3.15",
   "pressure": 3.6,
   "temperature": 78.6,
-  "totalDistanceTraveled": 305.1
+  "totalDistanceTraveled": 305.3
 }
