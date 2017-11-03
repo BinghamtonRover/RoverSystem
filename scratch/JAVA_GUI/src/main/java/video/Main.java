@@ -12,7 +12,9 @@ public class Main extends Application {
     public void start(Stage primaryStage){
         try {
             //locate the fxml file
-            Parent root = FXMLLoader.load(getClass().getResource("VideoFX.fxml"));
+            System.out.println(System.getProperty("user.dir"));
+            System.out.println(getClass().getResource("test.txt"));
+            Parent root = FXMLLoader.load(getClass().getResource("scratch/java_gui/src/main/java/video/VideoFX.fxml"));
             //set the title of the GUI
             primaryStage.setTitle("Video");
             //creates the GUI with height 800 and widtg 800
