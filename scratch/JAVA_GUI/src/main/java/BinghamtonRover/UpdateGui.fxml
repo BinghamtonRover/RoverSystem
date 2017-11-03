@@ -8,12 +8,12 @@
    <children>
       <TextField id="battery_status" layoutX="300.0" layoutY="14.0" />
       <TextField id="camera_status" layoutX="300.0" layoutY="46.0" />
-      <TextField id="distance_status" layoutX="300.0" layoutY="113.0" />
+  	  <TextField id="distance_status" layoutX="300.0" layoutY="113.0" />
+      <TextField id="direction_status" layoutX="300.0" layoutY="80.0" /> 
       <TextField id="location_status" layoutX="300.0" layoutY="147.0" />
       <TextField id="pressure_status" layoutX="300.0" layoutY="181.0" />
       <TextField id="temperature_status" layoutX="300.0" layoutY="215.0" />
       <TextField id="time_status" layoutX="300.0" layoutY="254.0" />
-      <TextField id="direction_status" layoutX="300.0" layoutY="80.0" />
       <Label id="battery_text" layoutX="208.0" layoutY="19.0" text="Battery" />
       <Label id="camera_text" layoutX="206.0" layoutY="51.0" text="Camera" />
       <Label id="direction_text" layoutX="203.0" layoutY="85.0" text="Direction" />
