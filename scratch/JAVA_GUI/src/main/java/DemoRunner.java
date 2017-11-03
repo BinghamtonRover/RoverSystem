@@ -1,12 +1,16 @@
 import BinghamtonRover.*;
+import javafx.application.Application;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.io.File;
 
-public class DemoRunner
+import static javafx.application.Application.launch;
+
+public class DemoRunner extends Application
 {
-    public static void main(String[] args)
+    public void start(String[] args)
     {
         String lsFile = (args.length > 0) ? args[0] : "./src/main/files/python_output.log.json";
 
@@ -23,5 +27,14 @@ public class DemoRunner
 
         FileUpdatingObservable lfuo = new FileUpdatingObservable(lsFile, laoObservers);
         lfuo.startFileMonitoringThread();
+    }
+    public static void main(String[] args)
+    {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+
     }
 }
