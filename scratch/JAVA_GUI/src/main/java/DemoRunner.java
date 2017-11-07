@@ -6,7 +6,8 @@ import javafx.stage.Stage;
 
 public class DemoRunner extends Application
 {
-    public void start(Stage primaryStage){
+    @Override
+    public void start(Stage primaryStage)throws Exception{
         /*
         String lsFile = (args.length > 0) ? args[0] : "./src/main/files/python_output.log.json";
 
@@ -24,19 +25,12 @@ public class DemoRunner extends Application
         lfuo.startFileMonitoringThread();
         */
         //having trouble getting GUI to show
-        try {
-            System.out.println(System.getProperty("user.dir"));
 
-            //loads fxml file
-            Parent root = FMXLLoader.load(getClass().getResource("UpdateGui.fxml"));
-            primaryStage.setTitle("GUI");
-            primaryStage.setScene(new Scene(root, 800, 800));
-            primaryStage.show();
+        Parent root = FMXLLoader.load(getClass().getResource("UpdateGui.fxml"));
+        primaryStage.setTitle("GUI");
+        primaryStage.setScene(new Scene(root, 800, 800));
+        primaryStage.show();
 
-        } catch(Exception e) {
-            System.out.println("You broke");
-            e.printStackTrace();
-        }
     }
     public static void main(String[] args)
     {
