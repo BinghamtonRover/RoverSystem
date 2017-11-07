@@ -1,4 +1,4 @@
-package Video.img.sample;
+package BinghamtonRover.Video;
 
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
@@ -13,8 +13,8 @@ import java.awt.image.DataBufferByte;
  * Provide general purpose methods for handling OpenCV-JavaFX data conversion.
  * Moreover, expose some "low level" methods for matching few JavaFX behavior.
  *
- * @author <a href="mailto:luigi.derussis@polito.it">Luigi De Russis</a>
- * @author <a href="http://max-z.de">Maximilian Zuleger</a>
+ * @author Luigi De Russis
+ * @author Maximilian Zuleger
  * @version 1.0 (2016-09-17)
  * @since 1.0
  *
@@ -24,8 +24,7 @@ public final class Utils
     /**
      * Convert a Mat object (OpenCV) in the corresponding Image for JavaFX
      *
-     * @param frame
-     *            the {@link Mat} representing the current frame
+     * @param frame the {@link Mat} representing the current frame
      * @return the {@link Image} to show
      */
     public static Image mat2Image(Mat frame)
