@@ -1,7 +1,10 @@
 package BinghamtonRover;
 
+import javafx.application.Platform;
+import javafx.fxml.FXML;
 import jdk.nashorn.internal.runtime.ParserException;
 
+import java.awt.*;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Observable;
@@ -31,9 +34,11 @@ public class TimeMonitor extends InformationObserver
         coDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     }
 
+    @FXML
+    private TextField time_status;
+
     @Override
-    public void update(Observable o, Object arg)
-    {
+    public void update(Observable o, Object arg) {
         FileUpdatingObservable loObservable = (FileUpdatingObservable) o;
 
         String lsJsonDate = (String) getJson(loObservable.getCoFileToMonitor(), "currentTime");
@@ -43,12 +48,9 @@ public class TimeMonitor extends InformationObserver
 
 
         //Parse the String obtained from json to a Date
-        try
-        {
+        try {
             loFileDate = coDateFormat.parse(lsJsonDate);
-        }
-        catch (ParseException e)
-        {
+        } catch (ParseException e) {
             e.printStackTrace();
             System.exit(1);
         }
@@ -65,5 +67,13 @@ public class TimeMonitor extends InformationObserver
         System.out.println("Time of file update is: " + lsFileDate);
         System.out.println("Current time is: " + lsCurrentDate);
         System.out.println("Time delay is: " + lnTimeDiff);
+        //Update time monitor on GUI
+        Platform.runLater(new Runnable()
+        {
+            @Override public void run()
+            {
+                time_status.setText(lsCurrentDate);
+            }
+        });
     }
 }

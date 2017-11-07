@@ -1,5 +1,9 @@
 package BinghamtonRover;
 
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+
+import java.awt.*;
 import java.util.Observable;
 
 /*
@@ -13,6 +17,9 @@ public class DirectionMonitor extends InformationObserver
         super();
     }
 
+    @FXML
+    private TextField direction_status;
+
     @Override
     public void update(Observable o, Object arg)
     {
@@ -22,5 +29,12 @@ public class DirectionMonitor extends InformationObserver
         String lsLongitude = (String) getJson(loObservable.getCoFileToMonitor(), "longitudeDirection");
 
         System.out.println("The target is at " + lsLatitude + lsLongitude + " Direction");
+        //update direction monitor on gui
+        Platform.runLater(new Runnable()
+        {
+            @Override public void run() {
+                direction_status.setText(lsLatitude + lsLongitude);
+            }
+        });
     }
 }

@@ -1,5 +1,9 @@
 package BinghamtonRover;
 
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+
+import java.awt.*;
 import java.util.Observable;
 
 
@@ -16,6 +20,9 @@ public class BatteryMonitor extends InformationObserver
         super();
     }
 
+    @FXML
+    private TextField battery_status;
+
     @Override
     public void update(Observable o, Object arg)
     {
@@ -24,5 +31,8 @@ public class BatteryMonitor extends InformationObserver
         String lbBattery = (String) getJson(loObservable.getCoFileToMonitor(), "batteryLevel");
 
         System.out.println("The current Battery percentage is: lbBattery" + lbBattery + "%");
+
+        //Update battery status on gui
+        Platform.runLater((Runnable) () -> battery_status.setText(lbBattery));
     }
 }

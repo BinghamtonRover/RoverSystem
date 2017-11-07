@@ -1,5 +1,9 @@
 package BinghamtonRover;
 
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.scene.control.TextField;
+
 import java.util.Observable;
 
 /*
@@ -13,6 +17,9 @@ public class DistanceMonitor extends InformationObserver
         super();
     }
 
+    @FXML
+    private TextField distance_status;
+
     @Override
     public void update(Observable o, Object arg)
     {
@@ -21,5 +28,13 @@ public class DistanceMonitor extends InformationObserver
         double lfDistance = (double) getJson(loObservable.getCoFileToMonitor(), "totalDistanceTraveled");
 
         System.out.println("Total distance traveled is: " + lfDistance);
+        //Update distance monitor on gui
+        Platform.runLater(new Runnable()
+        {
+            @Override public void run()
+            {
+                distance_status.setText(String.valueOf(lfDistance));
+            }
+        });
     }
 }

@@ -28,7 +28,7 @@ public class DemoRunner extends Application
             System.out.println(System.getProperty("user.dir"));
 
             //loads fxml file
-            Parent root = FMXLLoader.load(getClass().getResource("/scratch/JAVA_GUI/src/main/java/BinghamtonRover/UpdateGui.fxml"));
+            Parent root = FMXLLoader.load(getClass().getResource("UpdateGui.fxml"));
             primaryStage.setTitle("GUI");
             primaryStage.setScene(new Scene(root, 800, 800));
             primaryStage.show();

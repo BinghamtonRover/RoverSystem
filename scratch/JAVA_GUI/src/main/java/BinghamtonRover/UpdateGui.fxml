@@ -21,6 +21,6 @@
       <Label id="location_text" layoutX="205.0" layoutY="152.0" text="Location" />
       <Label id="pressure_text" layoutX="204.0" layoutY="186.0" text="Pressure" />
       <Label id="temperature_text" layoutX="206.0" layoutY="220.0" text="Temperature" />
-      <Label id="temp_text" layoutX="206.0" layoutY="259.0" text="Time" />
+      <Label id="time_text" layoutX="206.0" layoutY="259.0" text="Time" />
    </children>
 </AnchorPane>
