@@ -4,7 +4,7 @@ This file is a script that makes the rover automatically connect to the base sta
 from wap import _nmcli
 
 
-def isInRange(network_name, fields, *arguments):
+def is_in_range(network_name, fields, *arguments):
     """
     This looks at the list of all of the possible wifi connections for the device
 
@@ -56,7 +56,7 @@ def connect(network_name, network_password, device_name):
         # Check if it is in range and connect  if it is
         # Otherwise it will give an exception
         if current_connection != network_name and device_name == current_device:
-            if isInRange(network_name, ["SSID"], "device", "wifi", "list"):
+            if is_in_range(network_name, ["SSID"], "device", "wifi", "list"):
                 _nmcli([], "dev", "wifi", "con", network_name, "password", network_password)
 
             else:
