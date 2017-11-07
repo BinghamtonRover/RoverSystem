@@ -1,6 +1,9 @@
 import argparse
 import signal
 import socket
+import atexit
+
+import wap
 
 from multiprocessing.pool import ThreadPool
 from threading import Thread, Condition
@@ -17,10 +20,8 @@ def update_data(file):
         with data_lock:
             with open(file, 'rb') as f:
                 data = f.read()
-                # our length in binary, as a binary string
-                data_length = bin(len(data))[2:].encode("utf-8")
-                # pad to be 32 bits / pyBin chars
-                data_length = b"0" * (32 - len(data_length)) + data_length
+                # our length encoded
+                data_length = len(data).to_bytes(4, "big")
                 data = (data_length, data)
             if file_data != data:
                 file_data = data
@@ -39,12 +40,16 @@ def sendfile(client_socket):
             # we default to joining an empty tuple in case
             # a threading error causes this thread to wake
             # up before data has been changed
-            to_send = b"".join(file_data)
-            client_socket.send(b"".join(file_data or tuple()))
+            client_socket.sendall(b"".join(file_data or tuple()))
 
 
 
 def main(port, num_clients, file):
+    # Start the network.
+    wap.start("BUROVERDEMO", "buroverdemo")
+    # Stop the network when we stop.
+    atexit.register(lambda: wap.stop())
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((socket.gethostname(), port))
     sock.listen(num_clients)
