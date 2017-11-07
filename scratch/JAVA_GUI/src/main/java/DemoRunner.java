@@ -26,7 +26,7 @@ public class DemoRunner extends Application
         */
         //having trouble getting GUI to show
 
-        Parent root = FMXLLoader.load(getClass().getResource("UpdateGui.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("UpdateGui.fxml"));
         primaryStage.setTitle("GUI");
         primaryStage.setScene(new Scene(root, 800, 800));
         primaryStage.show();
