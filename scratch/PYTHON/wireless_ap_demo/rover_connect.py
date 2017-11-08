@@ -1,7 +1,7 @@
 """
 This file is a script that makes the rover automatically connect to the base station over wifi
 """
-from wap import _nmcli
+from wap import _nmcli, _get_wireless_device
 
 
 def is_in_range(network_name, fields, *arguments):
@@ -35,16 +35,18 @@ def delete():
     _nmcli([], "c", "delete", "BUROVERDEMO")
 
 
-def connect(network_name, network_password, device_name):
+def connect(network_name, network_password):
     """
     This connects the device to the base station through a wifi connection
 
     Arguments:
         network_name - The name of the base station wifi connection to connect to
         network_password - The password to the wifi of the base station. Necessary to connect to the base station
-        device_name - The name of the device we want to connect to the base station. This variable was created in case
-            there are multiple wifi-capable devices on the rover
     """
+
+    # Get the name of the default wireless device.
+    device_name = _get_wireless_device()
+
     # Get  info on if the device is connected to a network and if so, the type and name of the connection
     connection_str = _nmcli(["DEVICE", "STATE", "CONNECTION"], "device", "status")
 
