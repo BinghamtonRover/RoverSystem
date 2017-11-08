@@ -8,11 +8,10 @@ def is_in_range(network_name, fields, *arguments):
     """
     This looks at the list of all of the possible wifi connections for the device
 
-    Arguments-
+    Arguments:
         network_name - The name of the network of the base station we want to connect to
         fields - A list of names of nmcli fields to collect in the response. In this case only "SSID" is passed in
         arguments - A varargs list of arguments to pass to wap._nmcli.
-
 
     Returns True if network_name is on the list and False if network_name is not on the list.
     """
@@ -27,13 +26,24 @@ def is_in_range(network_name, fields, *arguments):
     return False
 
 
+def delete():
+    """
+    This deletes the BUROVERDEMO wifi connection to the base station once we are done with it. This will prevent the network name
+        from getting numbers added to the end of it
+    """
+    #Deletes the network
+    _nmcli([], "c", "delete", "BUROVERDEMO")
+
+
 def connect(network_name, network_password, device_name):
     """
     This connects the device to the base station through a wifi connection
 
-    Arguments-
+    Arguments:
         network_name - The name of the base station wifi connection to connect to
         network_password - The password to the wifi of the base station. Necessary to connect to the base station
+        device_name - The name of the device we want to connect to the base station. This variable was created in case
+            there are multiple wifi-capable devices on the rover
     """
     # Get  info on if the device is connected to a network and if so, the type and name of the connection
     connection_str = _nmcli(["DEVICE", "STATE", "CONNECTION"], "device", "status")
