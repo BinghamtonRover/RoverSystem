@@ -9,8 +9,15 @@ import socket
 import sys
 import tempfile
 
+import rover_connect
+import time
+
 # The base station will always have this IP when using NetworkManager to create the hotspot.
 BASE_STATION_IP = "10.42.0.1"
+
+# Network information
+NETWORK_SSID = "BUROVERDEMO"
+NETWORK_PASS = "buroverdemo"
 
 
 def receive_file(sock):
@@ -48,10 +55,18 @@ def receive_file(sock):
 
 
 def main(port):
+    # Connect to network
+    rover_connect.connect(NETWORK_SSID, NETWORK_PASS)
+
+    # Sleep for a bit, just in case
+    time.sleep(2)
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((BASE_STATION_IP, port))
 
     temporary_file_name = receive_file(sock)
+
+    sock.close()
 
     print(temporary_file_name)
 
