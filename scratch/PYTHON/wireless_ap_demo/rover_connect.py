@@ -61,7 +61,7 @@ def connect(network_name, network_password, device_name):
 
             else:
                 raise Exception("Base station is out of range")
-        # Added this if in case the rover recognizes multiple devices but only one of them really has to connect
+        # Added this if the rover recognizes multiple devices but only one of them really has to connect
         elif device_name == current_device:
             print("Already connected to the network :)")
         print()
