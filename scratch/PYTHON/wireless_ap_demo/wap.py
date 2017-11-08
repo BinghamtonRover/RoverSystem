@@ -49,18 +49,7 @@ def _nmcli(fields, *arguments):
     return result.stdout.decode("UTF-8")
 
 
-def start(ssid, password):
-    """Starts the wireless access point given a specified SSID and password.
-    The default wireless interface will be used.
-
-    If the default wireless interface is currently connected to a network,
-    the nmcli uuid of that network will be saved to previous_network_uuid
-    and the network will be disconnected.
-
-    :param ssid: The SSID string of the access point.
-    :param password: The password of the access point.
-    """
-
+def _get_wireless_device():
     # Get a list of all networking devices (network interfaces).
     devices_str = _nmcli(["GENERAL.DEVICE", "GENERAL.TYPE"], "device", "show")
 
@@ -80,6 +69,23 @@ def start(ssid, password):
     
     if not chosen_device:
         raise RuntimeError("No wireless device found.")
+
+    return chosen_device
+
+
+def start(ssid, password):
+    """Starts the wireless access point given a specified SSID and password.
+    The default wireless interface will be used.
+
+    If the default wireless interface is currently connected to a network,
+    the nmcli uuid of that network will be saved to previous_network_uuid
+    and the network will be disconnected.
+
+    :param ssid: The SSID string of the access point.
+    :param password: The password of the access point.
+    """
+
+    chosen_device = _get_wireless_device()
     
     # List existing connections.
     active_connections_str = _nmcli(
@@ -115,3 +121,4 @@ def stop():
         _nmcli([], "connection", "up", previous_network_uuid)
         # Clear the previous network uuid.
         previous_network_uuid = ""
+
