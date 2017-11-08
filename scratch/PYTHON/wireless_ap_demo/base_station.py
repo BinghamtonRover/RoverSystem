@@ -1,8 +1,7 @@
 import argparse
-import signal
-import socket
-import atexit
-
+import signal 
+import socket 
+import atexit 
 import wap
 
 from multiprocessing.pool import ThreadPool
@@ -51,7 +50,7 @@ def main(port, num_clients, file):
     atexit.register(lambda: wap.stop())
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind((socket.gethostname(), port))
+    sock.bind(("", port))
     sock.listen(num_clients)
     pool = ThreadPool(num_clients)
     t = Thread(target=update_data, args=(file,), daemon=True)
