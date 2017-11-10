@@ -36,7 +36,7 @@ public class Client {
 
     }
 
-    private static void displayFeed(Socket clientSocket){
+    private static synchronized void displayFeed(Socket clientSocket){
         CanvasFrame canvas = new CanvasFrame("Client Webcam feed");
         try {
             while (clientSocket.isConnected()) {
@@ -48,10 +48,13 @@ public class Client {
                 canvas.showImage(imgToFrame.convert(img));
             }
         }
+        catch(NullPointerException e){
+            e.getStackTrace();
+        }
         catch(IOException e) {
             e.getStackTrace();
-            System.out.println("Lost connection to server. The server probably disconnected. Exiting now.");
-            System.exit(0);
+            System.out.println("Lost connection to server. Exiting now.");
+            System.exit(-1);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

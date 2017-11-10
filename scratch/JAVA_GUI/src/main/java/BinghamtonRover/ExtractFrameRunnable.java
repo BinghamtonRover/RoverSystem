@@ -3,6 +3,7 @@ package BinghamtonRover;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketException;
 
 public class ExtractFrameRunnable implements Runnable{
     private InputStream in;
@@ -21,11 +22,17 @@ public class ExtractFrameRunnable implements Runnable{
         int x;
         while(true){
             try{
-                x = in.read();
+                if(in.available() != 0){
+                    x = in.read();
+                }
+                else x = -1;
                 if(x==-1){
                     break;
                 }
                 file.write(x);
+            }
+            catch(SocketException e){
+                e.printStackTrace();
             }
             catch(IOException e){
                 e.printStackTrace();
@@ -33,7 +40,6 @@ public class ExtractFrameRunnable implements Runnable{
         }
         try {
             file.close();
-            in.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

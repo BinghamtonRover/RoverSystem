@@ -1,9 +1,9 @@
 package BinghamtonRover;
 import org.bytedeco.javacv.*;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketAddress;
 
 public class WebCamServer {
     private static final int port = 5000;
@@ -59,9 +59,8 @@ public class WebCamServer {
         try(ServerSocket srvSocket = new ServerSocket(port)){
             Thread feedThread = new Thread(new VideoFeedWorkerRunnable(feed));
             feedThread.start();
-            SocketAddress endpoint = srvSocket.getLocalSocketAddress();
             System.out.println("Server's port: " + port);
-            System.out.println("Server's host: " + endpoint);
+            System.out.println("Server's host: " + Inet4Address.getLocalHost().getHostAddress());
             //look to accept a client and then send feed to that client
             //in a while loop so multiple clients can potentially connect.
             //also, a client disconnecting does not crash the server and his socket continues to work

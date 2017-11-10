@@ -19,7 +19,7 @@ public class ClientWorkerRunnable implements Runnable{
     private OpenCVFrameGrabber feed;
     private Socket clientSocket;
 
-   ClientWorkerRunnable(OpenCVFrameGrabber f, Socket c){
+    ClientWorkerRunnable(OpenCVFrameGrabber f, Socket c){
         feed = f;
         clientSocket = c;
     }
