@@ -8,6 +8,7 @@ is enabled. However, this script will restore a wireless connection upon
 closing the access point if such a connection was in use prior to starting
 the access point.
 """
+from contextlib import contextmanager
 import subprocess
 
 
@@ -122,3 +123,10 @@ def stop():
         # Clear the previous network uuid.
         previous_network_uuid = ""
 
+
+@contextmanager
+def access_point_manager(ssid, password):
+    """Convenience context manager to start and stop the network."""
+    start(ssid, password)
+    yield
+    stop()
