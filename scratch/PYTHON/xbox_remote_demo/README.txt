@@ -54,6 +54,7 @@ be updated. This display should be visual.
 ===================
 
 Make sure you don't commit your .idea/ folder! As long as you never add it to Git, you will be fine.
+Also, make sure you are on the xbox_remote_demo branch, and not on master!
 
 Make sure you make a lot of comments! There should be a docstring for each file and function! There should be a comment
 for every operation you do. This doesn't have to be for every line... if three lines do the same basic thing you may
