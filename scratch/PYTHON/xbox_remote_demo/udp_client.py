@@ -1,9 +1,17 @@
+'''
+This is the UDP client
+It will continuously send UDP packets containing the information from ControllerState to the server.
+The computer running the client is the computer connected to the Xbox controller.
+'''
+
 import socket
 import time
 import sys
 
+# Checks if all of the arguments were entered on the command line
 args = sys.argv[1:]
 if len(args) < 2:
+    # Prints this message if the IP Address and/or the port were not given
     print("[!] Usage: python udp_client.py <IP Address> <port>")
     exit(1)
 
@@ -30,6 +38,7 @@ cn_count = 0
 while True:
     clientSock.sendto(cs_message.encode("utf-8"), (cs_UDP_IP_ADDRESS, cn_UDP_PORT_NO))
     cn_count = cn_count + 1
+    # Prints this every time the message successfully sends (debugging purposes)
     if(cn_count == 1):
         print("Message sent " + str(cn_count) + " time :)")
     else:
