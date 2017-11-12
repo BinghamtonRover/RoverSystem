@@ -25,12 +25,12 @@ class ControllerState:
         self.cn_start = 0
 
         # Left joystick x and y axes. Normalized between -1 and 1 as a float. 0 is neutral.
-        self.cn_left_stick_x = 0.0
-        self.cn_left_stick_y = 0.0
+        self.cf_left_stick_x = 0.0
+        self.cf_left_stick_y = 0.0
 
         # Right joystick x and y axes. Normalized between -1 and 1 as a float. 0 is neutral.
-        self.cn_right_stick_x = 0.0
-        self.cn_right_stick_y = 0.0
+        self.cf_right_stick_x = 0.0
+        self.cf_right_stick_y = 0.0
 
         # Left and right trigger, whatever those are. 0 is off and 1 is on.
         self.cn_left_trigger = 0
