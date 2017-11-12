@@ -2,10 +2,17 @@ import socket
 import time
 import sys
 
-# IP Address for server recieved as input
-cs_UDP_IP_ADDRESS = input("Enter IP Address of the server: ")  # 149.125.78.78
+args = sys.argv[1:]
+if len(args) < 2:
+    print("[!] Usage: python udp_client.py <IP Address> <port>")
+    exit(1)
+
+# IP Address for server received as input
+cs_UDP_IP_ADDRESS = args[0]
 # Port for the server entered on the command line as well
-cn_UDP_PORT_NO = int(input("Enter the port number for the server: "))  # 1300
+cn_UDP_PORT_NO = int(args[1])
+
+# Arbitrary message to send to server
 cs_message = "Hello, Server"
 
 # Tries to create a socket and prints a message if it fails
