@@ -7,17 +7,18 @@ The demo is broken into four parts, as follows.
 
 The demo uses the xbox-remote-demo branch. The code will go in scratch/PYTHON/xbox_remote_demo.
 
+The demo requires the installation of the 'inputs' and 'pyglet' packages from pip.
+
 ==[ 1. Reading Controller State ]==
 
 One computer in the demo will be connected to an Xbox controller. This can be done with a wire or with bluetooth, as
 long as the controller is connected to the OS.
 
 This part consists of a Python file which exposes a single function. This function will take one parameter, which is
-a callback that takes a single parameter of type ControllerState (found in controller_state.py). This single
-function should loop infinitely, keeping a record of the current Xbox state (in a ControllerState object). It should
-listen for updates from the controller, update its record, then pass said record to the callback. The python module
-'inputs' should be used for this (installed with 'pip install inputs' or 'pip3 install inputs'). Note that the inputs
-module does not normalize controller values; this will have to be done within this function. See
+a ControllerState (found in controller_state.py). This function should loop infinitely, listening for updates from the
+controller. Upon an update, the ControllerState parameter should be updated. The python module 'inputs' should be used
+for this (installed with 'pip install inputs' or 'pip3 install inputs'). Note that the inputs module does not normalize
+controller values; this will have to be done within this function. See
 https://github.com/ZeldaZach/BinghamtonRover2017/blob/HaxagonusD-patch-1/Button%20Mappings.py for how to read and
 interpret the controller button presses.
 
