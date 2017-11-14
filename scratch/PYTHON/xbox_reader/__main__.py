@@ -8,6 +8,7 @@ from . import (
     update_json,
 )
 from ..wireless_ap_demo.wap import access_point_manager, stop
+import argparse
 
 
 def start_server(port):
@@ -38,3 +39,15 @@ def main(network_ssid, network_passwd, port, json_file):
 
 if __name__ == '__main__':
     pass # command line parsing using argparse
+    #Creates a parser to look at what's passed in to the CL
+    parser = argparse.ArgumentParser()
+    #Add argument that will be passed in
+    #Help is an extra message to guide users and explain variables
+    parser.add_argument("ssid", help="Network SSID")
+    parser.add_argument("password", help="Network password")
+    #Parse the argument as an int so that we can pass directly to main()
+    parser.add_argument("port", help="Port to connect to", type=int)
+    parser.add_argument("path", help="File path to pipe")
+    #Read in arguments
+    args = parser.parse_args()
+    main(args.ssid, args.password, args.port, args.path)
