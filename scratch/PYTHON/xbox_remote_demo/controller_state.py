@@ -40,4 +40,4 @@ class ControllerState:
         self.cn_dpad_up = 0
         self.cn_dpad_down = 0
         self.cn_dpad_left = 0
-        self.cn_dpad_down = 0
+        self.cn_dpad_right = 0
