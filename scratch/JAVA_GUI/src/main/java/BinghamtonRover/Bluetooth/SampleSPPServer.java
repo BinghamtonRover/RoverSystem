@@ -19,11 +19,12 @@ import javax.microedition.io.*;
  * A thread that opens an SPP connection, awaits client requests, accepts
  * incoming messages, and sends a response.
  */
-public class SampleSPPServer extends Application implements Runnable
+public class SampleSPPServer implements Runnable
 {
     //Reference of the component of the GUI
 
     //GUI Component not yet implemented
+    //Not sure if we want to use this class as the controller
 //    @FXML private Button coSendMessageButton;
 //    @FXML private TextArea coMessageBoard;
 //    @FXML private TextField coMessageInput;
@@ -131,19 +132,19 @@ public class SampleSPPServer extends Application implements Runnable
         //start the Server
         SampleSPPServer sampleSPPServer = new SampleSPPServer();
         sampleSPPServer.run();
-
-        //Launch the GUI
-        launch(args);
+//
+//        //Launch the GUI
+//        launch(args);
     }
 
-    // Start method for the JavaFX GUI
-    @Override
-    public void start(Stage aoPrimaryStage) throws Exception
-    {
-        Parent loRoot = FXMLLoader.load(getClass().getResource("/fxml/BluetoothGUI.fxml"));
-        aoPrimaryStage.setTitle("BluetoothGUI");
-        aoPrimaryStage.setScene(new Scene(loRoot));
-        aoPrimaryStage.show();
-    }
+    //not sure where to place the GUI controller
+//    @Override
+//    public void start(Stage aoPrimaryStage) throws Exception
+//    {
+//        Parent loRoot = FXMLLoader.load(getClass().getResource("/fxml/BluetoothGUI.fxml"));
+//        aoPrimaryStage.setTitle("BluetoothGUI");
+//        aoPrimaryStage.setScene(new Scene(loRoot));
+//        aoPrimaryStage.show();
+//    }
 
 }
