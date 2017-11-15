@@ -30,11 +30,9 @@ controller_state.py. The state sent across the wire will be updated by part 1 ab
 
 Packet format:
     - For each button in ControllerState:
-        - A single unsigned byte denoting the button (from 0 to 18 in the order the buttons are listed in
-          controller_state.py).
-        - Four bytes denoting the button state. For buttons with only on and off states, this will be an unsigned
-          integer (either 0 or 1). For buttons with continuous states, this will be a signed 32-bit IEEE floating point
-          number between -1 and 1.
+        - Four bytes denoting the state of the button. For buttons with only on and off states, this will be an unsigned
+          integer (either 0 or 1). For buttons with continuous states, this will be a signed 32-bit integer with the
+          range given by the inputs library.
 
 Packet length (in bytes): 19 * 5 = 95 bytes.
 
