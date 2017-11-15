@@ -16,6 +16,9 @@ GN_WINDOW_HEIGHT = 720
 # Hardcoded difference between radius of background and foreground joystick parts.
 GF_JOYSTICK_RADIUS_DIFF = 23.9495
 
+# Highest value of joystick axis.
+GN_JOYSTICK_RANGE = 32000
+
 # Prefix and suffix for the image import path.
 # This will reduce string clutter when the images are loaded.
 GS_IMAGE_NAME_PREFIX = "display_resources/final/"
@@ -290,8 +293,8 @@ class Display:
         self.co_controls.dpad.update(ao_state.cn_dpad_up == 1, ao_state.cn_dpad_down == 1, ao_state.cn_dpad_left == 1, ao_state.cn_dpad_right == 1)
 
         # TODO: Magic numbers! These numbers will change eventually! Find the right ones!
-        self.co_controls.ljs.update(ao_state.cn_left_stick_x / 100.0, ao_state.cn_left_stick_y / 100.0)
-        self.co_controls.rjs.update(ao_state.cn_right_stick_x / 100.0, ao_state.cn_right_stick_y / 100.0)
+        self.co_controls.ljs.update(ao_state.cn_left_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_left_stick_y / GN_JOYSTICK_RANGE)
+        self.co_controls.rjs.update(ao_state.cn_right_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_right_stick_y / GN_JOYSTICK_RANGE)
 
 
 def start(ao_cs: ControllerState):
