@@ -10,7 +10,7 @@ button_mappings = {
     "BTN_SELECT": "BACK",
     "BTN_START": "START",
     "ABS_X": "X-LEFT-STICK",
-    "ABS_Y": "y-left-STICK",
+    "ABS_Y": "Y-LEFT-STICK",
     "ABS_RX": "X-RIGHT-STICK",
     "ABS_RY": "Y-RIGHT-STICK",
     "ABS_Z": "LEFT TRIGGER",
