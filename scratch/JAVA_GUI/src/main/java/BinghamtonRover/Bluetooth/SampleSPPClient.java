@@ -5,7 +5,13 @@ import org.apache.commons.lang3.Validate;
 import javax.bluetooth.*;
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import java.util.Vector;
 
 /**
@@ -193,10 +199,6 @@ public class SampleSPPClient implements DiscoveryListener {
         {
             connectionURL=servRecord[0].getConnectionURL(0,false);
         }
-//        synchronized(lock)
-//        {
-//            lock.notify();
-//        }
     }
 
     public LocalDevice getCoLocalDevice() {

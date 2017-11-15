@@ -1,19 +1,19 @@
 package BinghamtonRover.Bluetooth;
 
-import javafx.application.Application;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
-import javafx.stage.Stage;
 
-import java.io.*;
-import javax.bluetooth.*;
-import javax.microedition.io.*;
+import javax.bluetooth.LocalDevice;
+import javax.bluetooth.UUID;
+import javax.microedition.io.Connector;
+import javax.microedition.io.StreamConnection;
+import javax.microedition.io.StreamConnectionNotifier;
+
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 
 /**
  * A thread that opens an SPP connection, awaits client requests, accepts
@@ -103,7 +103,6 @@ public class SampleSPPServer implements Runnable
         }
     }
 
-    @FXML
     private void updateStatus(String asMessage)
     {
         System.out.println(asMessage);
