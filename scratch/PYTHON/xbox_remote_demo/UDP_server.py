@@ -52,13 +52,13 @@ def packets_to_server():
         cs.cn_back = int.from_bytes(buffer[7:8], "big")
         cs.cn_start = int.from_bytes(buffer[8:9], "big")
 
-        # Left joystick x and y axes. Normalized between -1 and 1 as a float. 0 is neutral.
+        # Left joystick x and y axes. Signed 4-byte integers.
         cs.cf_left_stick_x = int.from_bytes(buffer[9:13], "big")
         cs.cf_left_stick_y = int.from_bytes(buffer[13:17], "big")
 
-         # Right joystick x and y axes. Normalized between -1 and 1 as a float. 0 is neutral.
+         # Right joystick x and y axes. Signed 4-byte integers.
         cs.cf_right_stick_x = int.from_bytes(buffer[17:21], "big")
-        cs.cf_right_stick_y = int.from_bytes(buffer[21:24], "big")
+        cs.cf_right_stick_y = int.from_bytes(buffer[21:25], "big")
 
           # Left and right trigger, whatever those are. 0 is off and 1 is on.
         cs.cn_left_trigger = int.from_bytes(buffer[25:26], "big")
