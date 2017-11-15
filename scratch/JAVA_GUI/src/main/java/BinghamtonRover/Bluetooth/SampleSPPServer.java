@@ -1,5 +1,16 @@
 package BinghamtonRover.Bluetooth;
 
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+
 import java.io.*;
 import javax.bluetooth.*;
 import javax.microedition.io.*;
@@ -8,10 +19,17 @@ import javax.microedition.io.*;
  * A thread that opens an SPP connection, awaits client requests, accepts
  * incoming messages, and sends a response.
  */
-public class SampleSPPServer implements Runnable
+public class SampleSPPServer extends Application implements Runnable
 {
+    //Reference of the component of the GUI
+
+    //GUI Component not yet implemented
+//    @FXML private Button coSendMessageButton;
+//    @FXML private TextArea coMessageBoard;
+//    @FXML private TextField coMessageInput;
 
     private static final String gsSERVICE_NAME_SSP = "The SSP Server";
+
 
     public void run()
     {
@@ -20,6 +38,8 @@ public class SampleSPPServer implements Runnable
             StreamConnection connection;
             DataOutputStream outputStream = null;
             DataInputStream inputStream = null;
+            //Make this bufferReader final so it can be used in lambda
+            final BufferedReader loBufReader = new BufferedReader(new InputStreamReader(System.in));
 
             try
             {
@@ -40,26 +60,30 @@ public class SampleSPPServer implements Runnable
                 connection = service.acceptAndOpen();
                 updateStatus("[SERVER] SPP session created");
 
+                //Opening IOStream and system input reader
                 inputStream = connection.openDataInputStream();
                 outputStream = connection.openDataOutputStream();
                 while(true) {
 
+                    String lsMessage, lsReceivedMessage = null;
+//
                     // Read a message
                     //a buffer byte array used to temporarily hold the input, 1 kb should be enough for short text input
                     final byte[] buffer = new byte[1024];
                     //get the numbers of bytes of the input and then save the input to buffer
                     final int readBytes = inputStream.read(buffer);
                     //build a string of the receiving message from the buffer
-                    final String receivedMessage = new String(buffer, 0, readBytes);
+                    lsReceivedMessage= new String(buffer, 0, readBytes);
                     //Print the received message
-                    updateStatus("[SERVER] Message received: " + receivedMessage);
+                    updateStatus("[SERVER] Message received: " + lsReceivedMessage);
 
                     // Send a message
-                    final String message = "\nJSR-82 SERVER says hello!";
+                    lsMessage = loBufReader.readLine();
                     updateStatus("[SERVER] Sending message....");
                     //Send out the message to the other end of the connection
-                    outputStream.write(message.getBytes());
+                    outputStream.write(lsMessage.getBytes());
                     outputStream.flush();
+
                 }
             }
 
@@ -67,6 +91,7 @@ public class SampleSPPServer implements Runnable
             {
                 outputStream.close();
                 inputStream.close();
+                loBufReader.close();
                 updateStatus("[SERVER] SPP session closed");
             }
         }
@@ -77,17 +102,18 @@ public class SampleSPPServer implements Runnable
         }
     }
 
+    @FXML
     private void updateStatus(String asMessage)
     {
         System.out.println(asMessage);
+//        coMessageBoard.appendText(asMessage);
     }
-
 
     /**
      * Here is a thread class that will be created every time a connection is made
      * This thread is expected to handle the communication between the client and server
      *
-     * when the server received a connection service, it will establish a connection and
+     * when the server received a connection request, it will establish a connection and
      * instantiate a SeverClientConnection thread that listens to the message the client
      * sent and respond with, for now, a response string
      * Not yet implemented
@@ -100,16 +126,24 @@ public class SampleSPPServer implements Runnable
 
     public static void main(String[] args) throws IOException {
 
-        //display local device address and name
-        /**
-         * Will be displayed in the sampleSSPServer class
-         */
-//        LocalDevice localDevice = LocalDevice.getLocalDevice();
-//        System.out.println("My BlueTooth Device Address: "+localDevice.getBluetoothAddress());
-//        System.out.println("My BlueTooth Device Name: "+localDevice.getFriendlyName());
 
+
+        //start the Server
         SampleSPPServer sampleSPPServer = new SampleSPPServer();
         sampleSPPServer.run();
 
+        //Launch the GUI
+        launch(args);
     }
+
+    // Start method for the JavaFX GUI
+    @Override
+    public void start(Stage aoPrimaryStage) throws Exception
+    {
+        Parent loRoot = FXMLLoader.load(getClass().getResource("/fxml/BluetoothGUI.fxml"));
+        aoPrimaryStage.setTitle("BluetoothGUI");
+        aoPrimaryStage.setScene(new Scene(loRoot));
+        aoPrimaryStage.show();
+    }
+
 }

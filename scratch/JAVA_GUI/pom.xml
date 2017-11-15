@@ -48,6 +48,16 @@
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
         </dependency>
+
+        <!-- this import don't work-->
+        <!--&lt;!&ndash; https://mvnrepository.com/artifact/net.sf.bluecove/bluecove &ndash;&gt;-->
+        <!--<dependency>-->
+            <!--<groupId>net.sf.bluecove</groupId>-->
+            <!--<artifactId>bluecove</artifactId>-->
+            <!--<version>2.1.0</version>-->
+        <!--</dependency>-->
+
+
     </dependencies>
 
 </project>
