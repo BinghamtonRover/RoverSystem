@@ -16,6 +16,12 @@ public class ExtractFrameRunnable implements Runnable{
         }
     }
 
+    /**
+     * This method is still in the works. It is meant to be called by a client.
+     * The thread will be in charge of extracting byte arrays sent over by a server,
+     * and then reassembling those btyes to a frame. We probably should just have this run method also
+     * do the work of displaying the frames once assembled.
+     */
     @Override
     public void run(){
         //create a jpg sentFrame that will receive the frame data sent by the server.

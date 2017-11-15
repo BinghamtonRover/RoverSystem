@@ -11,6 +11,11 @@ public class VideoFeedWorkerRunnable implements Runnable {
         this.feed = feed;
     }
 
+    /**
+     * This thread calls the startVideoFeed() method from WebCamServer.
+     * We will probably want to take the method body and just place it in here,
+     * and eliminate the method from the WebCamServer.
+     */
     @Override
     public void run() {
         WebCamServer.startVideoFeed(feed);

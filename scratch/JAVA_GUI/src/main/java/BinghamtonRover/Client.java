@@ -13,11 +13,20 @@ public class Client {
     private String host;
     private int port;
 
+    /**
+     * Client value constructor
+     * @param h the host
+     * @param p the port number
+     */
     private Client(String h, int p){
         host = h;
         port = p;
     }
 
+    /**
+     * This method is meant to connect a client to the Server.
+     * @return clientSocket the socket corresponding to the Client's connection to the Server
+     */
     private Socket connectClient(){
         Socket clientSocket = null;
         try {
@@ -36,6 +45,13 @@ public class Client {
 
     }
 
+    /**
+     * This method displays a canvasFrame for the client, and tries to display each frame
+     * sent by the server in real time. We are still working out how to serialize the
+     * frames for successful transfer. The original idea of converting a frame to an image sort of worked,
+     * but the byte array option will probably prove more efficient and better for playing with the frame data later on if needed.
+     * @param clientSocket The socket corresponding to the client's connection with the Server
+     */
     private static synchronized void displayFeed(Socket clientSocket){
         CanvasFrame canvas = new CanvasFrame("Client Webcam feed");
         try {
@@ -60,6 +76,12 @@ public class Client {
         }
     }
 
+    /**
+     * This method simply scans for the server's host and port number, and then
+     * the client creates a socket to try and establish a connect with the server.
+     * This needs to be changed from TCP to UDP protocol, so that it's connectionless.
+     * @param args command line arguments that are included when the program is run at the command line
+     */
     public static void main(String[] args) {
         Scanner reader = new Scanner(System.in);
         System.out.println("Enter the server's host address: ");
