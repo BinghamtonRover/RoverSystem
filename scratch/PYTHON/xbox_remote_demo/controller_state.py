@@ -1,7 +1,3 @@
-"""
-This file contains the definition of ControllerState, an object which contains the current state of an Xbox controller:
-"""
-
 
 class ControllerState:
     """
@@ -32,7 +28,7 @@ class ControllerState:
         self.cn_right_stick_x = 0
         self.cn_right_stick_y = 0
 
-        # Left and right trigger, whatever those are. 0 is off and 1 is on.
+        #  Positive in from 0 to 255
         self.cn_left_trigger = 0
         self.cn_right_trigger = 0
 
