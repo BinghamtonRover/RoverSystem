@@ -80,7 +80,7 @@ gn_count = 0
 
 # Infinite loop that sends a message every 3 seconds to the server with the given IP Address and port number
 while True:
-    time.sleep(2)
+    time.sleep(.033)
     go_clientSock.sendto(go_buffer, (gs_UDP_IP_ADDRESS, gn_UDP_PORT_NO))
     gn_count = gn_count + 1
     # Prints this every time the message successfully sends (debugging purposes)
