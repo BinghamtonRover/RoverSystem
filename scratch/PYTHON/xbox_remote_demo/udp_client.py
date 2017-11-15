@@ -8,6 +8,7 @@ import socket
 import time
 import sys
 import threading
+from luz_xbox import listen_for_events
 from controller_state import ControllerState
 
 # Checks if all of the arguments were entered on the command line
@@ -26,9 +27,8 @@ go_controller = ControllerState()
 
 
 # Call Luz's function in another thread so that can do 2 things at once
-# If Luz's function was named run_a()
-# go_thread_the_needle = threading.Thread(group=None, target run_a, args=(go_controller,), daemon=True)
-# go_thread_the_needle.start()
+go_thread_the_needle = threading.Thread(group=None, target=listen_for_events, args=(go_controller,), daemon=True)
+go_thread_the_needle.start()
 
 
 # Create bytearray to send to server with buttons in the same order as in controller_state
@@ -84,7 +84,7 @@ while True:
     go_clientSock.sendto(go_buffer, (gs_UDP_IP_ADDRESS, gn_UDP_PORT_NO))
     gn_count = gn_count + 1
     # Prints this every time the message successfully sends (debugging purposes)
-    if(gn_count == 1):
-        print("Message sent " + str(gn_count) + " time :)")
-    else:
-        print("Message sent " + str(gn_count) + " times :)")
+    # if(gn_count == 1):
+    #    print("Message sent " + str(gn_count) + " time :)")
+    # else:
+    #    print("Message sent " + str(gn_count) + " times :)")
