@@ -1,1 +1,22 @@
-null
+{
+    "pressed": [],
+    "released": [
+        "Y-RIGHT-STICK",
+        "X-LEFT-STICK",
+        "y-left-STICK",
+        "RIGHT TRIGGER",
+        "LEFT TRIGGER",
+        "X-DPAD",
+        "X-RIGHT-STICK",
+        "LEFT BUMBER",
+        "Y-DPAD",
+        "XBOX",
+        "START",
+        "BACK",
+        "RIGHT BUMPER",
+        "Y",
+        "X",
+        "B",
+        "A"
+    ]
+}
