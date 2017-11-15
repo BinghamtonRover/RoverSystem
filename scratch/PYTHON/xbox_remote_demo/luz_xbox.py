@@ -34,7 +34,7 @@ while True:
             "ABS_HAT0Y": controller.cn_dpad_up if event.state == -1 else controller.cn_dpad_down
         }
 
-        #we have to do 2 if statements be cause there are two dictionaries because of the way the dpad is set up in the
+        #we have to do 2 if statements because there are two dictionaries because of the way the dpad is set up in the
         #ControllerState class
         if event.code in button_mappings:
             button_mappings[event.code] = event.state
