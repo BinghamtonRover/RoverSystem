@@ -97,6 +97,7 @@ class Button:
 
         self.co_sprite.draw()
 
+
 class Dpad:
     """
     Represents a Dpad of an Xbox controller.
@@ -240,7 +241,7 @@ class Display:
         self.co_controls.co_x = Button("x_pressed", "x_unpressed")
         self.co_controls.co_y = Button("y_pressed", "y_unpressed")
 
-        self.co_controls.co_rb = Button("lb_pressed", "lb_unpressed")
+        self.co_controls.co_lb = Button("lb_pressed", "lb_unpressed")
         self.co_controls.co_rb = Button("rb_pressed", "rb_unpressed")
         self.co_controls.co_lt = Button("lt_pressed", "lt_unpressed")
         self.co_controls.co_rt = Button("rt_pressed", "rt_unpressed")
@@ -274,27 +275,27 @@ class Display:
         """
 
         # These buttons are 0 if off, 1 if on.
-        self.co_controls.a.update(ao_state.cn_a == 1)
-        self.co_controls.b.update(ao_state.cn_b == 1)
-        self.co_controls.x.update(ao_state.cn_x == 1)
-        self.co_controls.y.update(ao_state.cn_y == 1)
+        self.co_controls.co_a.update(ao_state.cn_a == 1)
+        self.co_controls.co_b.update(ao_state.cn_b == 1)
+        self.co_controls.co_x.update(ao_state.cn_x == 1)
+        self.co_controls.co_y.update(ao_state.cn_y == 1)
 
-        self.co_controls.lb.update(ao_state.cn_left_bumper == 1)
-        self.co_controls.rb.update(ao_state.cn_right_bumper == 1)
+        self.co_controls.co_lb.update(ao_state.cn_left_bumper == 1)
+        self.co_controls.co_rb.update(ao_state.cn_right_bumper == 1)
 
         # The triggers may be continuous, but we treat 255 as on.
-        self.co_controls.lt.update(ao_state.cn_left_trigger == 255)
-        self.co_controls.rt.update(ao_state.cn_right_trigger == 255)
+        self.co_controls.co_lt.update(ao_state.cn_left_trigger == 255)
+        self.co_controls.co_rt.update(ao_state.cn_right_trigger == 255)
 
-        self.co_controls.menu.update(ao_state.cn_back == 1)
-        self.co_controls.view.update(ao_state.cn_middle == 1)
-        self.co_controls.xbox.update(ao_state.cn_start == 1)
+        self.co_controls.co_menu.update(ao_state.cn_back == 1)
+        self.co_controls.co_view.update(ao_state.cn_middle == 1)
+        self.co_controls.co_xbox.update(ao_state.cn_start == 1)
 
-        self.co_controls.dpad.update(ao_state.cn_dpad_up == 1, ao_state.cn_dpad_down == 1, ao_state.cn_dpad_left == 1, ao_state.cn_dpad_right == 1)
+        self.co_controls.co_dpad.update(ao_state.cn_dpad_up == 1, ao_state.cn_dpad_down == 1, ao_state.cn_dpad_left == 1, ao_state.cn_dpad_right == 1)
 
         # TODO: Magic numbers! These numbers will change eventually! Find the right ones!
-        self.co_controls.ljs.update(ao_state.cn_left_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_left_stick_y / GN_JOYSTICK_RANGE)
-        self.co_controls.rjs.update(ao_state.cn_right_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_right_stick_y / GN_JOYSTICK_RANGE)
+        self.co_controls.co_ljs.update(ao_state.cn_left_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_left_stick_y / GN_JOYSTICK_RANGE)
+        self.co_controls.co_rjs.update(ao_state.cn_right_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_right_stick_y / GN_JOYSTICK_RANGE)
 
 
 def start(ao_cs: ControllerState):
@@ -332,9 +333,9 @@ if __name__ == "__main__":
                 t = 0
 
             t += 1
-            time.sleep(0.03)
-            cs.cn_left_stick_x = 100 * math.sin(t/10.0)
-            cs.cn_left_stick_y = 100 * math.cos(t/10.0)
+            time.sleep(0.001)
+            cs.cn_left_stick_x = 32000 * math.sin(t/10.0)
+            cs.cn_left_stick_y = 32000 * math.cos(t/10.0)
 
     t = threading.Thread(target=mess_around, args=(cs,), daemon=True)
     t.start()
