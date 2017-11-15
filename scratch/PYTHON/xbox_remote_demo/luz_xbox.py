@@ -27,7 +27,8 @@ while True:
     #events is a single event from the xbox controller
     for event in events:
 
-
+        #the following dictionary is in the for loop because it uses event.state as a conditional
+        #not sure if it makes it any less time efficient 
         dpad_mappings = { # this is the dpad mappings according to the controller state
             "ABS_HAT0X": controller.cn_dpad_left if event.state == -1 else controller.cn_dpad_right,
             "ABS_HAT0Y": controller.cn_dpad_up if event.state == -1 else controller.cn_dpad_down
