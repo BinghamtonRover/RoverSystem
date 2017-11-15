@@ -2,12 +2,11 @@ package BinghamtonRover.Bluetooth;
 
 import org.apache.commons.lang3.Validate;
 
-import java.io.*;
-import java.util.Vector;
-
 import javax.bluetooth.*;
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
+import java.io.*;
+import java.util.Vector;
 
 /**
  * A thread that acts as a client
@@ -243,17 +242,10 @@ public class SampleSPPClient implements DiscoveryListener {
         }
 
 
-
     }
 
 
-
-
-
-
-
     public static void main(String[] args) throws IOException {
-
 
 
         SampleSPPClient client = new SampleSPPClient("1101");
@@ -296,16 +288,16 @@ class clientServerConnection extends Thread
 
                 try
                 {
-
                     // Send the server a request to open a connection
                     connection = (StreamConnection) Connector.open(connectionURL);
                     coClient.updateStatus("[CLIENT] SPP session created");
-                    BufferedReader loBufReader = new BufferedReader(new InputStreamReader(System.in));
 
-                    //Continue to loop until user decide to exit
                     //opening data IO stream
                     loInputStream = connection.openDataInputStream();
                     loOutputStream = connection.openDataOutputStream();
+                    BufferedReader loBufReader = new BufferedReader(new InputStreamReader(System.in));
+
+                    //Continue to loop until user decide to exit
                     while(true)
                     {
                         // Send a message to the server
