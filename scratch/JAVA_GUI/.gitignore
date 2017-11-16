@@ -1,3 +1,6 @@
 # Ignore compiled java files
-*.class
 *.jar
+out/
+target/
+.idea/
+*.iml
