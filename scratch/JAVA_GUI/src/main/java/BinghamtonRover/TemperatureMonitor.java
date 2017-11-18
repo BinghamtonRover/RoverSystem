@@ -1,5 +1,10 @@
 package BinghamtonRover;
 
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.scene.control.TextField;
+
+import javax.xml.soap.Text;
 import java.util.Observable;
 
 /*
@@ -14,6 +19,9 @@ public class TemperatureMonitor extends InformationObserver
         super();
     }
 
+    @FXML
+    private TextField temperature_status;
+
     @Override
     public void update(Observable o, Object arg)
     {
@@ -22,5 +30,13 @@ public class TemperatureMonitor extends InformationObserver
         double lfTemperature = (double) getJson(loObservable.getCoFileToMonitor(), "temperature");
 
         System.out.println("The current temperature is: " + lfTemperature + "°F");
+        //Update temperature monitor on GUI
+        Platform.runLater(new Runnable()
+        {
+            @Override public void run()
+            {
+                temperature_status.setText(String.valueOf(lfTemperature));
+            }
+        });
     }
 }

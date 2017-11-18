@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="BinghamtonRover.PressureMonitor">
+   <children>
+      <TextField id="battery_status" layoutX="300.0" layoutY="14.0" />
+      <TextField id="camera_status" layoutX="300.0" layoutY="46.0" />
+  	  <TextField id="distance_status" layoutX="300.0" layoutY="113.0" />
+      <TextField id="direction_status" layoutX="300.0" layoutY="80.0" /> 
+      <TextField id="location_status" layoutX="300.0" layoutY="147.0" />
+      <TextField id="pressure_status" layoutX="300.0" layoutY="181.0" />
+      <TextField id="temperature_status" layoutX="300.0" layoutY="215.0" />
+      <TextField id="time_status" layoutX="300.0" layoutY="254.0" />
+      <Label id="battery_text" layoutX="208.0" layoutY="19.0" text="Battery" />
+      <Label id="camera_text" layoutX="206.0" layoutY="51.0" text="Camera" />
+      <Label id="direction_text" layoutX="203.0" layoutY="85.0" text="Direction" />
+      <Label id="distance_text" layoutX="204.0" layoutY="118.0" text="Distance" />
+      <Label id="location_text" layoutX="205.0" layoutY="152.0" text="Location" />
+      <Label id="pressure_text" layoutX="204.0" layoutY="186.0" text="Pressure" />
+      <Label id="temperature_text" layoutX="206.0" layoutY="220.0" text="Temperature" />
+      <Label id="time_text" layoutX="206.0" layoutY="259.0" text="Time" />
+   </children>
+</AnchorPane>

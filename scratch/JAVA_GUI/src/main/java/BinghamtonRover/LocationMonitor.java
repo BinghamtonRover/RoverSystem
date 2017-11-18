@@ -1,5 +1,9 @@
 package BinghamtonRover;
 
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+
+import java.awt.*;
 import java.util.Observable;
 
 /*
@@ -13,6 +17,9 @@ public class LocationMonitor extends InformationObserver
         super();
     }
 
+    @FXML
+    private TextField location_status;
+
     @Override
     public void update(Observable o, Object arg)
     {
@@ -22,5 +29,13 @@ public class LocationMonitor extends InformationObserver
         double lfLongitude = (double) getJson(loObservable.getCoFileToMonitor(), "longitude");
 
         System.out.println("The current location is: " + lfLatitude + ", " + lfLongitude);
+        //Update Location Monitor on GUI
+        Platform.runLater(new Runnable()
+        {
+            @Override public void run()
+            {
+                location_status.setText(String.valueOf(lfLatitude) + String.valueOf(lfLongitude));
+            }
+        });
     }
 }
