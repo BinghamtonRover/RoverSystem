@@ -8,7 +8,7 @@ public class DemoRunner
 {
     public static void main(String[] args)
     {
-        String lsFile = (args.length > 0) ? args[0] : "./src/main/files/python_output.log.json";
+        String lsFile = (args.length > 0) ? args[0] : "scratch/JAVA_GUI/src/main/files/python_output.log.json";
 
         ArrayList<InformationObserver> laoObservers = new ArrayList<>();
 
