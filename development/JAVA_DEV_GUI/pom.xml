@@ -32,6 +32,12 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <includes>
+                        <include>**/*</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*.md</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

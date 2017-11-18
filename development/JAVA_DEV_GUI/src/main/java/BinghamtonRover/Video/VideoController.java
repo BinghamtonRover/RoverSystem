@@ -10,6 +10,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -27,9 +28,6 @@ public class VideoController
 
     private VideoCapture coVideoCapture = new VideoCapture();
     private boolean cbCameraActive = false;
-
-    private File coDefaultImgFile = new File(getClass().getResource("weedimage.png").toString());
-
 
     @FXML
     protected void startCamera(ActionEvent aoActionEvent)
@@ -107,6 +105,7 @@ public class VideoController
 
     private void stopAcquisition()
     {
+
         //If the coTimer is not gone and still running
         if (coTimer != null && ! coTimer.isShutdown())
         {
@@ -117,15 +116,11 @@ public class VideoController
                 coTimer.awaitTermination(33, TimeUnit.MILLISECONDS);
 
                 //If the frame coVideoCapture is stopped, then set the image to a default image
-                if (coDefaultImgFile.exists())
-                {
-                    Image loDefaultImage = new Image(coDefaultImgFile.toURI().toString());
-                    updateImageView(coCameraView, loDefaultImage);
-                }
-                else
-                {
-                    System.out.println("Default image does not exist");
-                }
+
+                String s = VideoController.class.getResource("./weedimage.png").toString();
+                Image loDefaultImage = new Image(s);
+                updateImageView(coCameraView, loDefaultImage);
+
             }
             catch (InterruptedException e)
             {
@@ -137,6 +132,7 @@ public class VideoController
         {
             //Release the camera
             coVideoCapture.release();
+            System.out.println("RELEASE!");
         }
     }
 
@@ -150,5 +146,6 @@ public class VideoController
     protected void setClosed()
     {
         stopAcquisition();
+        // DO NOT CALL, CAUSES KNOWN ISSUE WITH OPENCV3.2
     }
 }
