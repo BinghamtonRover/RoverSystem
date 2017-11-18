@@ -131,8 +131,8 @@ public class VideoController
         if (coVideoCapture.isOpened())
         {
             //Release the camera
-            coVideoCapture.release();
-            System.out.println("RELEASE!");
+            //coVideoCapture.release();
+            //System.out.println("RELEASE!");
         }
     }
 
