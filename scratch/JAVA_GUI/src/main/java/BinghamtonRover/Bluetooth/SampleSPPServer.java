@@ -1,6 +1,7 @@
 package BinghamtonRover.Bluetooth;
 
 import javafx.fxml.FXML;
+import org.apache.commons.lang3.Validate;
 
 import javax.bluetooth.BluetoothStateException;
 import javax.bluetooth.LocalDevice;
@@ -78,7 +79,7 @@ public class SampleSPPServer implements Runnable {
     class ServerClientConnection extends Thread {
 
         private StreamConnection coConnection;
-        private LocalDevice coDevice;
+        private String csClientName = "Being X";
 
         public ServerClientConnection(StreamConnection aoConnection)
         {
@@ -102,26 +103,37 @@ public class SampleSPPServer implements Runnable {
                 updateStatus("Session started at: " + loTimestamp);
 
 
-
                 long lnSessionInactiveTime = System.currentTimeMillis() - loTimestamp.getTime();
+
+                //Get the name of the client that is connected
+                //Upon the establishment of connection the client is
+                //expected to send their name as String via dataInput
+                csClientName = readFromClient(outputStream, inputStream);
+
                 while(lnSessionInactiveTime < 10000)
                 {
-                    String lsMessage =  "Server Says Hello";
-                    String lsReceivedMessage;
-//
-                    // Read a message
-                    //a buffer byte array used to temporarily hold the input, 1 kb should be enough for short text input
-                    //get the numbers of bytes of the input and then save the input to buffer
-                    //build a string of the receiving message from the buffer
-                    //then print the received message
-                    final byte[] buffer = new byte[1024];
-                    final int readBytes = inputStream.read(buffer);
-                    lsReceivedMessage = new String(buffer, 0, readBytes);
-                    if(!lsReceivedMessage.isEmpty())
-                    {
-                        updateStatus("[SERVER] Message received: " + lsReceivedMessage);
-                        loTimestamp = new Timestamp(System.currentTimeMillis());
-                    }
+                    String lsMessage =  "Server Says: Hello " + csClientName;
+                    String lsReceivedMessage = readFromClient(outputStream, inputStream);
+                    updateStatus("[SERVER] Received message: " + lsReceivedMessage);
+//              --------------------------------------------------------------------------------------------------------
+                /** Replace with the above */
+//              --------------------------------------------------------------------------------------------------------
+//                    // Read a message
+//                    //a buffer byte array used to temporarily hold the input, 1 kb should be enough for short text input
+//                    //get the numbers of bytes of the input and then save the input to buffer
+//                    //build a string of the receiving message from the buffer
+//                    //then print the received message
+//                    final byte[] buffer = new byte[1024];
+//                    final int readBytes = inputStream.read(buffer);
+//                    lsReceivedMessage = new String(buffer, 0, readBytes);
+//                    if(!lsReceivedMessage.isEmpty())
+//                    {
+//                        updateStatus("[SERVER] Message received: " + lsReceivedMessage);
+//                        loTimestamp = new Timestamp(System.currentTimeMillis());
+//                    }
+//              --------------------------------------------------------------------------------------------------------
+//              --------------------------------------------------------------------------------------------------------
+
                     // Send a message
                     //Send out the message to the other end of the connection
                     updateStatus("[SERVER] Sending message....");
@@ -131,7 +143,7 @@ public class SampleSPPServer implements Runnable {
                     //Recalculate the session inactive time
                     lnSessionInactiveTime = System.currentTimeMillis() - loTimestamp.getTime();
                 }
-                updateStatus("[SERVER] Session ended with " + coDevice.getFriendlyName());
+                updateStatus("[SERVER] Session ended with " + csClientName);
                 outputStream.close();
                 inputStream.close();
 
@@ -141,6 +153,34 @@ public class SampleSPPServer implements Runnable {
                 e.printStackTrace();
             }
 
+        }
+
+        private String readFromClient (DataOutputStream aoDOS, DataInputStream aoDIS)
+        {
+            Validate.notNull(aoDOS, "DataOutputStream is null");
+            Validate.notNull(aoDIS, "DataInputStream is null");
+
+            try {
+                // Reading a message
+                // Create a buffer byte array used to temporarily hold the input, 1 kb should be enough for short input.
+                // get the numbers of bytes of the input and then save the input to buffer
+                // build a string of the receiving message from the buffer
+                // then return the received message
+                final byte[] buffer = new byte[1024];
+                final int readBytes = aoDIS.read(buffer);
+                String lsReceivedMessage = new String(buffer, 0, readBytes);
+                if (!lsReceivedMessage.isEmpty())
+                {
+                    return lsReceivedMessage;
+                }
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+            System.out.println("Nothing was received from " + csClientName);
+            return null;
         }
 
     }
