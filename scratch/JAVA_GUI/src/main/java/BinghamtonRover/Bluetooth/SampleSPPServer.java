@@ -110,34 +110,37 @@ public class SampleSPPServer implements Runnable {
                 //expected to send their name as String via dataInput
                 csClientName = readFromClient(outputStream, inputStream);
 
+                //this should always evaluate to true but the IDE won't treat this as an infinite loop
                 while(lnSessionInactiveTime < 10000)
                 {
                     String lsMessage =  "Server Says: Hello " + csClientName;
                     String lsReceivedMessage = readFromClient(outputStream, inputStream);
 
-                    //Session expires after 10 seconds
-                    if(lnSessionInactiveTime > 10000)
-                    {
-                        updateStatus("[SERVER] The session with " + csClientName + " has expired");
-                        outputStream.write("Your session has expired, good bye.".getBytes());
-                        outputStream.flush();
-                        break;
-                    }
-                    else
-                    {
-                        loTimestamp = new Timestamp(System.currentTimeMillis());
-                    }
-                    updateStatus("[SERVER] Received message: " + lsReceivedMessage);
+                    //Session time not really needed
+//                    //Session expires after 10 seconds
+//                    if(lnSessionInactiveTime > 10000)
+//                    {
+//                        updateStatus("[SERVER] The session with " + csClientName + " has expired");
+//                        outputStream.write("Your session has expired, good bye.".getBytes());
+//                        outputStream.flush();
+//                        break;
+//                    }
+//                    else
+//                    {
+//                        loTimestamp = new Timestamp(System.currentTimeMillis());
+//                    }
+
+                    updateStatus("[SERVER] Received message from " + csClientName +": " + lsReceivedMessage);
 
                     // Send a message
                     //Send out the message to the other end of the connection
-                    updateStatus("[SERVER] Sending message....");
+                    updateStatus("[SERVER] Sending message to " + csClientName + "...");
                     outputStream.write(lsMessage.getBytes());
                     outputStream.flush();
 
-                    //Recalculate the session inactive time
-                    lnSessionInactiveTime = System.currentTimeMillis() - loTimestamp.getTime();
-                    System.out.println("Session inactive time: " + lnSessionInactiveTime);
+//                    //session time not really needed
+//                    lnSessionInactiveTime = System.currentTimeMillis() - loTimestamp.getTime();
+//                    System.out.println("Session inactive time: " + lnSessionInactiveTime);
                 }
 
                 outputStream.close();
