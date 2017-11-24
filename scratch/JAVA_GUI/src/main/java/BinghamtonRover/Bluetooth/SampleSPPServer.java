@@ -39,11 +39,19 @@ public class SampleSPPServer implements Runnable {
                 updateStatus("[SERVER] Device Name: " + local.getFriendlyName());
                 updateStatus("[SERVER] Listening for Client...");
 
-                // Open a connection and wait for client requests
-                // spawn a thread for each client connection in order to listen to multiple client simultaneously
                 final StreamConnectionNotifier service = (StreamConnectionNotifier) Connector.open("btspp://localhost:" + uuid + ";name=" + gsSERVICE_NAME_SSP);
-                StreamConnection loConnection = service.acceptAndOpen();
-                updateStatus("[SERVER] SPP session created");
+
+                while(true)
+                {
+                    // Open a connection and wait for client requests
+                    // spawn a thread for each client connection in order to listen to multiple client simultaneously
+                    StreamConnection loConnection = service.acceptAndOpen();
+
+                    //Create a new thread to handle each session
+                    updateStatus("[SERVER] SPP session created");
+                    ServerClientConnection loSCC = new ServerClientConnection(loConnection);
+                    loSCC.run();
+                }
             }
             catch (BluetoothStateException e)
             {
@@ -72,10 +80,9 @@ public class SampleSPPServer implements Runnable {
         private StreamConnection coConnection;
         private LocalDevice coDevice;
 
-        public ServerClientConnection(StreamConnection aoConnection, LocalDevice aoDevice)
+        public ServerClientConnection(StreamConnection aoConnection)
         {
             coConnection = aoConnection;
-            coDevice = aoDevice;
         }
 
         public void run()
