@@ -114,25 +114,20 @@ public class SampleSPPServer implements Runnable {
                 {
                     String lsMessage =  "Server Says: Hello " + csClientName;
                     String lsReceivedMessage = readFromClient(outputStream, inputStream);
+
+                    //Session expires after 10 seconds
+                    if(lnSessionInactiveTime > 10000)
+                    {
+                        updateStatus("[SERVER] The session with " + csClientName + " has expired");
+                        outputStream.write("Your session has expired, good bye.".getBytes());
+                        outputStream.flush();
+                        break;
+                    }
+                    else
+                    {
+                        loTimestamp = new Timestamp(System.currentTimeMillis());
+                    }
                     updateStatus("[SERVER] Received message: " + lsReceivedMessage);
-//              --------------------------------------------------------------------------------------------------------
-                /** Replace with the above */
-//              --------------------------------------------------------------------------------------------------------
-//                    // Read a message
-//                    //a buffer byte array used to temporarily hold the input, 1 kb should be enough for short text input
-//                    //get the numbers of bytes of the input and then save the input to buffer
-//                    //build a string of the receiving message from the buffer
-//                    //then print the received message
-//                    final byte[] buffer = new byte[1024];
-//                    final int readBytes = inputStream.read(buffer);
-//                    lsReceivedMessage = new String(buffer, 0, readBytes);
-//                    if(!lsReceivedMessage.isEmpty())
-//                    {
-//                        updateStatus("[SERVER] Message received: " + lsReceivedMessage);
-//                        loTimestamp = new Timestamp(System.currentTimeMillis());
-//                    }
-//              --------------------------------------------------------------------------------------------------------
-//              --------------------------------------------------------------------------------------------------------
 
                     // Send a message
                     //Send out the message to the other end of the connection
@@ -142,8 +137,9 @@ public class SampleSPPServer implements Runnable {
 
                     //Recalculate the session inactive time
                     lnSessionInactiveTime = System.currentTimeMillis() - loTimestamp.getTime();
+                    System.out.println("Session inactive time: " + lnSessionInactiveTime);
                 }
-                updateStatus("[SERVER] Session ended with " + csClientName);
+
                 outputStream.close();
                 inputStream.close();
 

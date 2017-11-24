@@ -299,6 +299,10 @@ class clientServerConnection extends Thread
                     loOutputStream = connection.openDataOutputStream();
                     BufferedReader loBufReader = new BufferedReader(new InputStreamReader(System.in));
 
+                    //Send the name of this local device before exchanging messages
+                    loOutputStream.write(coDevice.getFriendlyName().getBytes());
+                    loOutputStream.flush();
+
                     //Continue to loop until user decide to exit
                     while(true)
                     {
