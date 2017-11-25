@@ -6,25 +6,31 @@ import javafx.scene.Group;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.apache.commons.lang3.Validate;
 
 import java.io.IOException;
+import java.net.URL;
 
-public class BluetoothGUI extends Application implements Runnable{
+public class BluetoothGUI extends Application {
 
-    //Might need to put this main method into its own thread
+    private FXMLLoader coLoader;
 
-    @Override
-    public void run() {
-        launch();
+    public static void main (String args[])
+    {
+        launch(args);
     }
 
+
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage)
+    {
+        URL loFXMLurl = getClass().getResource("/Bluetooth/BluetoothGUI.fxml");
+        System.out.println(loFXMLurl.getPath());
         try
         {
-            FXMLLoader loader = new FXMLLoader();
-            Parent root = loader.load(getClass().getResource("/Bluetooth/BluetoothGUI.fxml"));
-                    primaryStage.setTitle("Bluetooth Connection");
+            coLoader = new FXMLLoader(loFXMLurl);
+            Parent root = (Parent) coLoader.load(loFXMLurl);
+            primaryStage.setTitle("Bluetooth Connection");
             primaryStage.setScene(new Scene(root));
             primaryStage.show();
         }
@@ -32,11 +38,14 @@ public class BluetoothGUI extends Application implements Runnable{
         {
             e.printStackTrace();
         }
+
+        SampleSPPServer sampleSPPServer = new SampleSPPServer();
+        sampleSPPServer.run();
     }
 
-    public static void main (String args[]){
-        BluetoothGUI GUI = new BluetoothGUI();
-
-        GUI.run();
-    }
+//    public static void main (String args[]){
+//        BluetoothGUI GUI = new BluetoothGUI();
+//
+//        GUI.run();
+//    }
 }

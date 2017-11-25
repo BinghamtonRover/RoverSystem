@@ -1,6 +1,11 @@
 package BinghamtonRover.Bluetooth;
 
+import javafx.application.Application;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 import org.apache.commons.lang3.Validate;
 
 import javax.bluetooth.BluetoothStateException;
@@ -26,7 +31,25 @@ import java.time.Instant;
  */
 public class SampleSPPServer implements Runnable {
 
+    static FXMLLoader coLoader = new FXMLLoader();
+
+
     private static final String gsSERVICE_NAME_SSP = "The SSP Server";
+
+    //This reference to the GUIController will be called when we update the system message
+//    private BluetoothGUIController coGUIController;
+//
+//    public SampleSPPServer(BluetoothGUIController aoController)
+//    {
+//        Validate.notNull(aoController,"SPPServer Constructor receieved null controller");
+//        coGUIController = aoController;
+//    }
+//
+//    public SampleSPPServer()
+//    {
+//        coGUIController = new BluetoothGUIController();
+//    }
+
 
     public void run() {
             try {
@@ -64,16 +87,16 @@ public class SampleSPPServer implements Runnable {
 
     private void updateStatus(String asMessage) {
         System.out.println(asMessage);
-//        coMessageBoard.appendText(asMessage);
+//        Validate.notNull(coGUIController,"updateStatus trying to access null Controller");
+//        coGUIController.updateText(asMessage);
     }
 
     /**
      * Here is a thread class that will be created every time a connection is made
-     * This thread is expected to handle the communication between the client and server
-     * <p>
+     * This thread is expected to handle the communication between the client and server.
      * when the server received a connection request, it will establish a connection and
      * instantiate a SeverClientConnection thread that listens to the message the client
-     * sent and respond with, for now, a response string
+     * sent and respond with a response string
      * Not yet implemented
      */
     class ServerClientConnection extends Thread {
@@ -116,20 +139,6 @@ public class SampleSPPServer implements Runnable {
                     String lsMessage =  "Server Says: Hello " + csClientName;
                     String lsReceivedMessage = readFromClient(outputStream, inputStream);
 
-                    //Session time not really needed
-//                    //Session expires after 10 seconds
-//                    if(lnSessionInactiveTime > 10000)
-//                    {
-//                        updateStatus("[SERVER] The session with " + csClientName + " has expired");
-//                        outputStream.write("Your session has expired, good bye.".getBytes());
-//                        outputStream.flush();
-//                        break;
-//                    }
-//                    else
-//                    {
-//                        loTimestamp = new Timestamp(System.currentTimeMillis());
-//                    }
-
                     updateStatus("[SERVER] Received message from " + csClientName +": " + lsReceivedMessage);
 
                     // Send a message
@@ -138,9 +147,6 @@ public class SampleSPPServer implements Runnable {
                     outputStream.write(lsMessage.getBytes());
                     outputStream.flush();
 
-//                    //session time not really needed
-//                    lnSessionInactiveTime = System.currentTimeMillis() - loTimestamp.getTime();
-//                    System.out.println("Session inactive time: " + lnSessionInactiveTime);
                 }
 
                 outputStream.close();
@@ -187,8 +193,7 @@ public class SampleSPPServer implements Runnable {
 
     public static void main(String[] args) throws IOException {
 
-        SampleSPPServer sampleSPPServer = new SampleSPPServer();
-        sampleSPPServer.run();
 
+//       SampleSPPServer sampleSPPServer = new SampleSPPServer(null);
     }
 }
