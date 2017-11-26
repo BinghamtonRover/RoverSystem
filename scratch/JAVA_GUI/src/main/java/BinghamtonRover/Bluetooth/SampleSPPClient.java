@@ -169,7 +169,7 @@ public class SampleSPPClient implements DiscoveryListener {
         }
         else{
             //print bluetooth device addresses and names in the format [ No. address (name) ]
-            System.out.println("Bluetooth Devices: ");
+            System.out.println("BinghamtonRover.Bluetooth Devices: ");
             for (int i = 0; i <deviceCount; i++) {
                 RemoteDevice remoteDevice=(RemoteDevice)vecDevices.elementAt(i);
                 try

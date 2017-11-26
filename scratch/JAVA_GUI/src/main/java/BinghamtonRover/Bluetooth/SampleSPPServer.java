@@ -1,11 +1,5 @@
 package BinghamtonRover.Bluetooth;
 
-import javafx.application.Application;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
 import org.apache.commons.lang3.Validate;
 
 import javax.bluetooth.BluetoothStateException;
@@ -15,14 +9,12 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.StreamConnectionNotifier;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 import java.sql.Timestamp;
-import java.time.Instant;
+import java.util.concurrent.ExecutorService;
 
 
 /**
@@ -31,25 +23,16 @@ import java.time.Instant;
  */
 public class SampleSPPServer implements Runnable {
 
-    static FXMLLoader coLoader = new FXMLLoader();
-
-
+    private BluetoothGUIController coController;
     private static final String gsSERVICE_NAME_SSP = "The SSP Server";
+    private ExecutorService coConnectionBuilder;
+    private boolean cbServerOpen = true;
 
-    //This reference to the GUIController will be called when we update the system message
-//    private BluetoothGUIController coGUIController;
-//
-//    public SampleSPPServer(BluetoothGUIController aoController)
-//    {
-//        Validate.notNull(aoController,"SPPServer Constructor receieved null controller");
-//        coGUIController = aoController;
-//    }
-//
-//    public SampleSPPServer()
-//    {
-//        coGUIController = new BluetoothGUIController();
-//    }
-
+    public SampleSPPServer(BluetoothGUIController aoController)
+    {
+        coController = aoController;
+        OpenServer();
+    }
 
     public void run() {
             try {
@@ -72,7 +55,7 @@ public class SampleSPPServer implements Runnable {
                     StreamConnection loConnection = service.acceptAndOpen();
 
                     //Create a new thread to handle each session
-                    updateStatus("[SERVER] SPP session created");
+
                     ServerClientConnection loSCC = new ServerClientConnection(loConnection);
                     loSCC.run();
                 }
@@ -87,8 +70,8 @@ public class SampleSPPServer implements Runnable {
 
     private void updateStatus(String asMessage) {
         System.out.println(asMessage);
-//        Validate.notNull(coGUIController,"updateStatus trying to access null Controller");
-//        coGUIController.updateText(asMessage);
+        Validate.notNull(coController,"updateStatus trying to access null Controller");
+        coController.updateText(asMessage);
     }
 
     /**
@@ -96,8 +79,7 @@ public class SampleSPPServer implements Runnable {
      * This thread is expected to handle the communication between the client and server.
      * when the server received a connection request, it will establish a connection and
      * instantiate a SeverClientConnection thread that listens to the message the client
-     * sent and respond with a response string
-     * Not yet implemented
+     * sent and respond with a response string.
      */
     class ServerClientConnection extends Thread {
 
@@ -121,20 +103,17 @@ public class SampleSPPServer implements Runnable {
                 outputStream = coConnection.openDataOutputStream();
                 inputStream = coConnection.openDataInputStream();
 
-                //Instantiate a timestamp to keep time of connection session time.
-                Timestamp loTimestamp = new Timestamp(System.currentTimeMillis());
-                updateStatus("Session started at: " + loTimestamp);
-
-
-                long lnSessionInactiveTime = System.currentTimeMillis() - loTimestamp.getTime();
 
                 //Get the name of the client that is connected
                 //Upon the establishment of connection the client is
                 //expected to send their name as String via dataInput
                 csClientName = readFromClient(outputStream, inputStream);
 
+                updateStatus("[SERVER] SPP session created with " + csClientName);
+                updateStatus("[SERVER] Session started at: " + System.currentTimeMillis());
+
                 //this should always evaluate to true but the IDE won't treat this as an infinite loop
-                while(lnSessionInactiveTime < 10000)
+                while(cbServerOpen)
                 {
                     String lsMessage =  "Server Says: Hello " + csClientName;
                     String lsReceivedMessage = readFromClient(outputStream, inputStream);
@@ -151,7 +130,7 @@ public class SampleSPPServer implements Runnable {
 
                 outputStream.close();
                 inputStream.close();
-
+                coConnection.close();
             }
             catch(IOException e)
             {
@@ -190,10 +169,21 @@ public class SampleSPPServer implements Runnable {
 
     }
 
-
-    public static void main(String[] args) throws IOException {
-
-
-//       SampleSPPServer sampleSPPServer = new SampleSPPServer(null);
+    public void CloseServer()
+    {
+        cbServerOpen = false;
+        updateStatus("[SERVER] Is Closed");
     }
+
+    public void OpenServer()
+    {
+        cbServerOpen = true;
+        updateStatus("[SERVER] Is Opened");
+    }
+
+    //Uncomment if only need to test the server
+//    public static void main(String[] args) throws IOException {
+//
+//       SampleSPPServer sampleSPPServer = new SampleSPPServer(null);
+//    }
 }
