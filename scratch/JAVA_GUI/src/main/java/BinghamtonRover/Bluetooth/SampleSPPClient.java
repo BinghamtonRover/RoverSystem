@@ -32,10 +32,10 @@ public class SampleSPPClient implements DiscoveryListener {
     private DiscoveryAgent coAgent;
     private int cnClientID;
 
-    public SampleSPPClient(String uuid) {
+    public SampleSPPClient() {
         gnClientNumber++;
         this.cnClientID = gnClientNumber; //Assign an id to this instance of client
-        this.uuid = new UUID(uuid, false);
+        this.uuid = new UUID("1101", false);
 
         //use temp variables to hold localDevice and Agent
         LocalDevice loLocalDevice = null;
@@ -51,6 +51,10 @@ public class SampleSPPClient implements DiscoveryListener {
             e.printStackTrace();
         }
         //Assign the local temp object to the actual class object
+
+        Validate.notNull(loLocalDevice, "LocalDevice is null");
+        Validate.notNull(loAgent, "Agent is null");
+
         this.coLocalDevice = loLocalDevice;
         this.coAgent = loAgent;
         this.csLocalDeviceName = coLocalDevice.getFriendlyName();
@@ -72,7 +76,7 @@ public class SampleSPPClient implements DiscoveryListener {
      * Every device found will triggers function call device Discovered
      * and the device will be passed to the method deviceDiscovered
      */
-    public void startDeviceInquiry() {
+    private void startDeviceInquiry() {
         updateStatus("[CLIENT" + cnClientID + " " + csLocalDeviceName + "] starting device inquiry");
         try {
             coAgent.startInquiry(DiscoveryAgent.GIAC, this);
@@ -92,7 +96,7 @@ public class SampleSPPClient implements DiscoveryListener {
         //if this method is called we are expecting to found some devices and print them on the console
         //Prompt the user to select a device to search for service
         //use a bufferReader for input
-    public String startServiceInquiry()
+    private String startServiceInquiry()
     {
         //Prompt the user to choose a device to search service on
         System.out.print("Choose Device index: ");
@@ -250,7 +254,7 @@ public class SampleSPPClient implements DiscoveryListener {
     public static void main(String[] args) throws IOException {
 
 
-        SampleSPPClient client = new SampleSPPClient("1101");
+        SampleSPPClient client = new SampleSPPClient();
         client.startDeviceInquiry();
         String serviceURL = client.startServiceInquiry();
 
@@ -271,7 +275,7 @@ class clientServerConnection extends Thread
         private String connectionURL;
         private LocalDevice coDevice;
 
-        //Not sure why it throws IO exception here
+
         public clientServerConnection(SampleSPPClient aoClient, String asConnectionURL) throws IOException
         {
             this.coClient = aoClient;
@@ -283,7 +287,7 @@ class clientServerConnection extends Thread
         {
             try
             {
-                StreamConnection connection = null;
+                StreamConnection loConnection = null;
                 DataOutputStream loOutputStream = null;
                 DataInputStream loInputStream = null;
 
@@ -291,12 +295,12 @@ class clientServerConnection extends Thread
                 try
                 {
                     // Send the server a request to open a connection
-                    connection = (StreamConnection) Connector.open(connectionURL);
+                    loConnection = (StreamConnection) Connector.open(connectionURL);
                     coClient.updateStatus("[CLIENT] SPP session created");
 
                     //opening data IO stream
-                    loInputStream = connection.openDataInputStream();
-                    loOutputStream = connection.openDataOutputStream();
+                    loInputStream = loConnection.openDataInputStream();
+                    loOutputStream = loConnection.openDataOutputStream();
                     BufferedReader loBufReader = new BufferedReader(new InputStreamReader(System.in));
 
                     //Send the name of this local device before exchanging messages
@@ -315,27 +319,54 @@ class clientServerConnection extends Thread
                         loOutputStream.flush();
 
 
-                        // Read a message
-
-                        final byte[] buffer = new byte[1024];
-                        final int readBytes = loInputStream.read(buffer);
-                        final String receivedMessage = new String(buffer, 0, readBytes);
-                        coClient.updateStatus("[CLIENT " + coDevice.getFriendlyName() + "] received a Message: " + receivedMessage);
+                        String lsReceivedMessage = readFromServer(loOutputStream, loInputStream);
+                        coClient.updateStatus("[CLIENT " + coDevice.getFriendlyName() + "] received a Message: " + lsReceivedMessage);
                     }
                 }
                 finally
                 {
                     loOutputStream.close();
                     loInputStream.close();
-                    connection.close();
+                    loConnection.close();
                     coClient.updateStatus("[CLIENT " + coDevice.getFriendlyName() + "] SPP session closed");
                 }
             }
-                catch (final IOException ioe)
-                {
-                    ioe.printStackTrace();
-                }
+            catch (IOException ioe)
+            {
+                ioe.printStackTrace();
+            }
         }
+
+        private String readFromServer (DataOutputStream aoDOS, DataInputStream aoDIS)
+        {
+            Validate.notNull(aoDOS, "DataOutputStream is null");
+            Validate.notNull(aoDIS, "DataInputStream is null");
+
+            try {
+                // Reading a message
+                // Create a buffer byte array used to temporarily hold the input, 1 kb should be enough for short input.
+                // get the numbers of bytes of the input and then save the input to buffer
+                // build a string of the receiving message from the buffer
+                // then return the received message
+                final byte[] buffer = new byte[1024];
+                final int readBytes = aoDIS.read(buffer);
+                String lsReceivedMessage = new String(buffer, 0, readBytes);
+                if (!lsReceivedMessage.isEmpty())
+                {
+                    return lsReceivedMessage;
+                }
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+            System.out.println("Nothing was received from the Server");
+            return null;
+        }
+
+
+
     }
 
 

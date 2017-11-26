@@ -5,23 +5,20 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 
-public class BluetoothGUIController {
+public class BluetoothClientGUIController {
 
     private boolean cbServerStarted = false;
-    private SampleSPPServer coServer;
-    private ExecutorService coServerRunner;
+    private SampleSPPClient coClient;
+    private ExecutorService coClientRunner;
 
 
     @FXML
     private TextArea coMessageBoard;
     @FXML
-    private Button coStartServerBtn;
+    private Button coStartQueryBtn;
 
     @FXML
     public void updateText(String asTextToAppend){
@@ -33,21 +30,27 @@ public class BluetoothGUIController {
     {
         //If the Server has not start, run the server
         if (!cbServerStarted) {
-            coServer = new SampleSPPServer(this);
-            coServerRunner = Executors.newSingleThreadExecutor();
-            coServerRunner.execute(coServer);
+            coClient = new SampleSPPClient();
+
+
+            /**
+             * Need to create a runnable which executes the device inquiry process
+             * of the SampleSPPClient
+             */
+//            coClientRunner = Executors.newSingleThreadExecutor();
+//            coClientRunner.execute();
 
             //Set ServerStarted flag and button text.
-            this.coStartServerBtn.setText("Stop Server");
+            this.coStartQueryBtn.setText("Stop Query");
             ServerStarted();
         }
         else if(cbServerStarted)
         {
-            this.coServerRunner.shutdown();
-            System.out.println("Shutting down the server");
+            this.coClientRunner.shutdown();
+            System.out.println("Shutting down the client");
 
             //Set ServerStarted flag and button text.
-            this.coStartServerBtn.setText("Start Server");
+            this.coStartQueryBtn.setText("Start Query");
             ServerClosed();
         }
 
@@ -56,7 +59,7 @@ public class BluetoothGUIController {
 
     public void ApplicationCLosed()
     {
-        this.coServerRunner.shutdown();
+        this.coClientRunner.shutdown();
     }
 
     private void ServerStarted()

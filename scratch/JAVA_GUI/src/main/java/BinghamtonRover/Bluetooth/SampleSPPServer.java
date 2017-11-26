@@ -13,7 +13,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import java.sql.Timestamp;
 import java.util.concurrent.ExecutorService;
 
 
@@ -23,12 +22,11 @@ import java.util.concurrent.ExecutorService;
  */
 public class SampleSPPServer implements Runnable {
 
-    private BluetoothGUIController coController;
+    private BluetoothServerGUIController coController;
     private static final String gsSERVICE_NAME_SSP = "The SSP Server";
-    private ExecutorService coConnectionBuilder;
     private boolean cbServerOpen = true;
 
-    public SampleSPPServer(BluetoothGUIController aoController)
+    public SampleSPPServer(BluetoothServerGUIController aoController)
     {
         coController = aoController;
         OpenServer();

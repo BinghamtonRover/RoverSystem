@@ -7,7 +7,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.Validate;
 
-public class BluetoothGUI extends Application {
+public class BluetoothServerGUI extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
