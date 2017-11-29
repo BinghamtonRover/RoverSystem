@@ -1,5 +1,7 @@
 package BinghamtonRover.Monitors;
 
+import BinghamtonRover.GuiMain.GuiController;
+
 import java.util.Observable;
 
 /*
@@ -8,9 +10,18 @@ import java.util.Observable;
 
 public class PressureMonitor extends InformationObserver
 {
+    private GuiController coController;
+
     public PressureMonitor()
     {
         super();
+    }
+
+    public PressureMonitor(GuiController loController)
+    {
+        super();
+
+        coController=loController;
     }
 
     @Override
@@ -20,6 +31,6 @@ public class PressureMonitor extends InformationObserver
 
         double lfPressure = (double) getJson(loObservable.getCoFileToMonitor(), "pressure");
 
-        System.out.println("The air pressure is: " + lfPressure + "stp");
+        if (coController != null) coController.updatePressure("The air pressure is: " + lfPressure + "stp" );
     }
 }

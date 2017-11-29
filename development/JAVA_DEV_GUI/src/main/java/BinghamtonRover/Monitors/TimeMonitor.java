@@ -1,5 +1,7 @@
 package BinghamtonRover.Monitors;
 
+import BinghamtonRover.GuiMain.GuiController;
+
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Observable;
@@ -15,6 +17,7 @@ public class TimeMonitor extends InformationObserver
 {
 
     private SimpleDateFormat coDateFormat;
+    private GuiController coController;
 
     /**
      * Only use static method getInstance() to gets a calendar using the default time zone and locale
@@ -27,6 +30,14 @@ public class TimeMonitor extends InformationObserver
 
         //The pattern of SDF must match to that of the currentTime value inside the JSON file
         coDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    }
+
+    public TimeMonitor(GuiController loController)
+    {
+        super();
+
+        coDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        coController=loController;
     }
 
     @Override
@@ -63,5 +74,7 @@ public class TimeMonitor extends InformationObserver
         System.out.println("Time of file update is: " + lsFileDate);
         System.out.println("Current time is: " + lsCurrentDate);
         System.out.println("Time delay is: " + lnTimeDiff);
+
+        if (coController != null) coController.updateTime("Current time is: " + lsCurrentDate );
     }
 }
