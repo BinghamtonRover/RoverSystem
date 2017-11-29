@@ -13,7 +13,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -53,9 +55,12 @@ public class SampleSPPServer implements Runnable {
                     StreamConnection loConnection = service.acceptAndOpen();
 
                     //Create a new thread to handle each session
-
                     ServerClientConnection loSCC = new ServerClientConnection(loConnection);
-                    loSCC.run();
+//                    loSCC.run();
+
+                    //Or use Executor to execute the thread
+                    ExecutorService loConnectionBuilder = Executors.newCachedThreadPool();
+                    loConnectionBuilder.execute(loSCC);
                 }
             }
             catch (BluetoothStateException e)

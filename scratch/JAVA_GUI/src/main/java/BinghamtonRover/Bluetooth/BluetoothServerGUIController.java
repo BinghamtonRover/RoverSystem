@@ -52,7 +52,7 @@ public class BluetoothServerGUIController {
 
     }
 
-    public void ApplicationCLosed()
+    public void ApplicationClosed()
     {
         this.coServerRunner.shutdown();
     }
