@@ -56,9 +56,8 @@ public class SampleSPPServer implements Runnable {
 
                     //Create a new thread to handle each session
                     ServerClientConnection loSCC = new ServerClientConnection(loConnection);
-//                    loSCC.run();
 
-                    //Or use Executor to execute the thread
+                    //Use Executor to execute the thread
                     ExecutorService loConnectionBuilder = Executors.newCachedThreadPool();
                     loConnectionBuilder.execute(loSCC);
                 }
@@ -78,7 +77,7 @@ public class SampleSPPServer implements Runnable {
     }
 
     /**
-     * Here is a thread class that will be created every time a connection is made
+     * This is a thread class that will be created every time a connection is made
      * This thread is expected to handle the communication between the client and server.
      * when the server received a connection request, it will establish a connection and
      * instantiate a SeverClientConnection thread that listens to the message the client
@@ -184,9 +183,5 @@ public class SampleSPPServer implements Runnable {
         updateStatus("[SERVER] Is Opened");
     }
 
-    //Uncomment if only need to test the server
-//    public static void main(String[] args) throws IOException {
-//
-//       SampleSPPServer sampleSPPServer = new SampleSPPServer(null);
-//    }
+
 }

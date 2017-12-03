@@ -35,7 +35,7 @@ public class SampleSPPClient implements DiscoveryListener {
     public SampleSPPClient() {
         gnClientNumber++;
         this.cnClientID = gnClientNumber; //Assign an id to this instance of client
-        this.uuid = new UUID("1101", false);
+        this.uuid = new UUID("1110", false);
 
         //use temp variables to hold localDevice and Agent
         LocalDevice loLocalDevice = null;
@@ -60,17 +60,6 @@ public class SampleSPPClient implements DiscoveryListener {
         this.csLocalDeviceName = coLocalDevice.getFriendlyName();
     }
 
-    //Commented out because this class is no longer a thread
-//    public void run()
-//    {
-//        startDeviceInquiry();
-//
-//
-//        startServiceInquiry();
-//
-//        startConnection();
-//
-//    }
 
     /**start to search for BT devices in the vicinity
      * Every device found will triggers function call device Discovered
