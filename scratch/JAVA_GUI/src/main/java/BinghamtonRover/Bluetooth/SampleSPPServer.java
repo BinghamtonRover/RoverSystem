@@ -26,18 +26,19 @@ public class SampleSPPServer implements Runnable {
 
     private BluetoothServerGUIController coController;
     private static final String gsSERVICE_NAME_SSP = "The SSP Server";
-    private boolean cbServerOpen = true;
+    private boolean cbServerOpen = false;
 
     public SampleSPPServer(BluetoothServerGUIController aoController)
     {
         coController = aoController;
-        OpenServer();
     }
 
     public void run() {
+        OpenServer();
+
             try {
                 //Generate a new UUID and get the local device information
-                final UUID uuid = new UUID("1101", false);
+                final UUID uuid = new UUID("1110", false);
                 final LocalDevice local = LocalDevice.getLocalDevice();
 
                 //use the updateStatus method to print to console for now
@@ -48,7 +49,7 @@ public class SampleSPPServer implements Runnable {
 
                 final StreamConnectionNotifier service = (StreamConnectionNotifier) Connector.open("btspp://localhost:" + uuid + ";name=" + gsSERVICE_NAME_SSP);
 
-                while(true)
+                while(cbServerOpen)
                 {
                     // Open a connection and wait for client requests
                     // spawn a thread for each client connection in order to listen to multiple client simultaneously
@@ -174,7 +175,7 @@ public class SampleSPPServer implements Runnable {
     public void CloseServer()
     {
         cbServerOpen = false;
-        updateStatus("[SERVER] Is Closed");
+        updateStatus("[SERVER] Is trying to Close");
     }
 
     public void OpenServer()

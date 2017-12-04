@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 public class BluetoothServerGUIController {
 
     private boolean cbServerStarted = false;
-    private SampleSPPServer coServer;
+    private SampleSPPServer coServer = new SampleSPPServer(this);
     private ExecutorService coServerRunner;
 
 
@@ -31,7 +31,7 @@ public class BluetoothServerGUIController {
     {
         //If the Server has not start, run the server
         if (!cbServerStarted) {
-            coServer = new SampleSPPServer(this);
+
             coServerRunner = Executors.newSingleThreadExecutor();
             coServerRunner.execute(coServer);
 
@@ -41,6 +41,7 @@ public class BluetoothServerGUIController {
         }
         else if(cbServerStarted)
         {
+            this.coServer.CloseServer();
             this.coServerRunner.shutdown();
             System.out.println("Shutting down the server");
 
