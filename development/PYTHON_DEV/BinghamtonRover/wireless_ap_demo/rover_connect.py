@@ -1,7 +1,7 @@
 """
 This file is a script that makes the rover automatically connect to the base station over wifi
 """
-from wap import _nmcli, _get_wireless_device
+from .wap import _nmcli, _get_wireless_device
 
 
 def is_in_range(network_name, fields, *arguments):

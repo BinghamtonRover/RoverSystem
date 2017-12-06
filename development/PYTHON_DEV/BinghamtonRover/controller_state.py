@@ -1,5 +1,4 @@
-
-class ControllerState:
+class ControllerState(object):
     """
     ControllerState represents the state of an entire Xbox controller at a given moment in time.
     """

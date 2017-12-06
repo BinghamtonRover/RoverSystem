@@ -6,7 +6,7 @@ import pyglet
 import time
 import threading
 import math
-from controller_state import ControllerState
+from ..controller_state import ControllerState
 
 
 # Hardcoded window width and height.
@@ -50,7 +50,7 @@ def create_sprite(ao_image):
     return lo_sprite
 
 
-class Button:
+class Button(object):
     """
     Button represents a single Xbox controller button that has two states: on and off.
     These buttons have one sprite with two images: one for the on state and one for off.
@@ -98,7 +98,7 @@ class Button:
         self.co_sprite.draw()
 
 
-class Dpad:
+class Dpad(object):
     """
     Represents a Dpad of an Xbox controller.
     """
@@ -152,7 +152,7 @@ class Dpad:
         self.co_sprite.draw()
 
 
-class Joystick:
+class Joystick(object):
     """
     Represents a joystick on an Xbox controller. It has two sprites: the center and the background.
     """
@@ -217,14 +217,32 @@ class Joystick:
         self.co_foreground_sprite.draw()
 
 
-class Controls:
+class Controls(object):
     """
     A dummy class to hold all the controls of a Display.
     """
-    pass
+    def __init__(self):
+        self.co_a = Button("a_pressed", "a_unpressed")
+        self.co_b = Button("b_pressed", "b_unpressed")
+        self.co_x = Button("x_pressed", "x_unpressed")
+        self.co_y = Button("y_pressed", "y_unpressed")
+
+        self.co_lb = Button("lb_pressed", "lb_unpressed")
+        self.co_rb = Button("rb_pressed", "rb_unpressed")
+        self.co_lt = Button("lt_pressed", "lt_unpressed")
+        self.co_rt = Button("rt_pressed", "rt_unpressed")
+
+        self.co_menu = Button("menu_pressed", "menu_unpressed")
+        self.co_view = Button("view_pressed", "view_unpressed")
+        self.co_xbox = Button("xbox_pressed", "xbox_unpressed")
+
+        self.co_dpad = Dpad("dpad_unpressed", "dpad_pressed_up", "dpad_pressed_down", "dpad_pressed_left", "dpad_pressed_right")
+        self.co_ljs = Joystick("js_left_background", "js_left_pressed", "js_left_unpressed")
+        self.co_rjs = Joystick("js_right_background", "js_right_pressed", "js_right_unpressed")
 
 
-class Display:
+
+class Display(object):
     """
     Represents a display of a remote Xbox controller. Only one of these should be initialized.
     """
@@ -236,23 +254,6 @@ class Display:
 
         # A Controls containing all Buttons, Joysticks, and Dpads to be displayed.
         self.co_controls = Controls()
-        self.co_controls.co_a = Button("a_pressed", "a_unpressed")
-        self.co_controls.co_b = Button("b_pressed", "b_unpressed")
-        self.co_controls.co_x = Button("x_pressed", "x_unpressed")
-        self.co_controls.co_y = Button("y_pressed", "y_unpressed")
-
-        self.co_controls.co_lb = Button("lb_pressed", "lb_unpressed")
-        self.co_controls.co_rb = Button("rb_pressed", "rb_unpressed")
-        self.co_controls.co_lt = Button("lt_pressed", "lt_unpressed")
-        self.co_controls.co_rt = Button("rt_pressed", "rt_unpressed")
-
-        self.co_controls.co_menu = Button("menu_pressed", "menu_unpressed")
-        self.co_controls.co_view = Button("view_pressed", "view_unpressed")
-        self.co_controls.co_xbox = Button("xbox_pressed", "xbox_unpressed")
-
-        self.co_controls.co_dpad = Dpad("dpad_unpressed", "dpad_pressed_up", "dpad_pressed_down", "dpad_pressed_left", "dpad_pressed_right")
-        self.co_controls.co_ljs = Joystick("js_left_background", "js_left_pressed", "js_left_unpressed")
-        self.co_controls.co_rjs = Joystick("js_right_background", "js_right_pressed", "js_right_unpressed")
 
         # The pyglet window on which the Display is rendered.
         self.co_window = pyglet.window.Window(width=GN_WINDOW_WIDTH, height=GN_WINDOW_HEIGHT)
@@ -315,29 +316,31 @@ def start(ao_cs: ControllerState):
     pyglet.app.run()
 
 
+def mess_around(cs):
+    time.sleep(2)
+    cs.cn_a = 1
+    time.sleep(1)
+    cs.cn_dpad_left = 1
+    time.sleep(1)
+    cs.cn_dpad_left = 0
+    cs.cn_dpad_right = 1
+
+    t = 0
+    while True:
+        if t == 2 * 10 * math.pi:
+            t = 0
+
+        t += 1
+        time.sleep(0.001)
+        cs.cn_left_stick_x = 32000 * math.sin(t/10.0)
+        cs.cn_left_stick_y = 32000 * math.cos(t/10.0)
+
+
 if __name__ == "__main__":
     cs = ControllerState()
-
-    def mess_around(cs):
-        time.sleep(2)
-        cs.cn_a = 1
-        time.sleep(1)
-        cs.cn_dpad_left = 1
-        time.sleep(1)
-        cs.cn_dpad_left = 0
-        cs.cn_dpad_right = 1
-
-        t = 0
-        while True:
-            if t == 2 * 10 * math.pi:
-                t = 0
-
-            t += 1
-            time.sleep(0.001)
-            cs.cn_left_stick_x = 32000 * math.sin(t/10.0)
-            cs.cn_left_stick_y = 32000 * math.cos(t/10.0)
 
     t = threading.Thread(target=mess_around, args=(cs,), daemon=True)
     t.start()
 
     start(cs)
+    t.join()

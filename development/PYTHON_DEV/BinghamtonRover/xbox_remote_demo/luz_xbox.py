@@ -1,5 +1,4 @@
 from inputs import get_gamepad
-from controller_state import *
 
 """
 This function takes a ControllerState object as parameter and listens to events to update the status of which buttons
@@ -28,18 +27,18 @@ def listen_for_events(controller):
 
     while True:
         events = get_gamepad()
-        #events is a single event from the xbox controller
+        # events is a single event from the xbox controller
         for event in events:
 
-            #the following dictionary is in the for loop because it uses event.state as a conditional
-            #not sure if it makes it any less time efficient
+            # the following dictionary is in the for loop because it uses event.state as a conditional
+            # not sure if it makes it any less time efficient
             dpad_mappings = { # this is the dpad mappings according to the controller state
                 "ABS_HAT0X": controller.cn_dpad_left if event.state == -1 else controller.cn_dpad_right,
                 "ABS_HAT0Y": controller.cn_dpad_up if event.state == -1 else controller.cn_dpad_down
             }
 
-            #we have to do 2 if statements because there are two dictionaries because of the way the dpad is set up in the
-            #ControllerState class
+            # we have to do 2 if statements because there are two dictionaries because of the way the dpad is set up in the
+            # ControllerState class
             if event.code in button_mappings:
                 button_mappings[event.code] = event.state
                 print(button_mappings[event.code])
