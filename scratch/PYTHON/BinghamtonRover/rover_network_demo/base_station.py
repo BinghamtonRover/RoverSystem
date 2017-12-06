@@ -32,7 +32,7 @@ def cs_TCP_Server()
     TCP_Server.connect((TCP_IP,TCP_PORT))
     listen_for_events(go_cs)
 
-go_thread = threading.Thread(target=cs_TCP_Server daemon=True)
+go_thread = threading.Thread(target=cs_TCP_Server, daemon=True)
 go_thread.start()
 
 controller_display.start(go_cs)
