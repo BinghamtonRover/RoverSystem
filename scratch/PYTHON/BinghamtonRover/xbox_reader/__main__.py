@@ -6,11 +6,9 @@ from math import atan2
 from os import mkfifo
 from threading import Thread
 
-from inputs import get_gamepad
-
 from . import send_socket
 from ..wireless_ap_demo.wap import access_point_manager, stop
-from development.PYTHON_DEV.BinghamtonRover.button_mappings import button_names
+from . import button_mappings
 
 import argparse
 
@@ -40,7 +38,7 @@ def _pipe_instructions(server_queuer, fifo_queuer):
 
 
 def _create_instructions():
-    create_container = {key: 0 for key in button_names.values()
+    create_container = {key: 0 for key in button_mappings.values()
                         if not (key.endswith('TRIGGER') or key.endswith('STICK'))}
     create_container['LEFT TRIGGER'] = {
         "continuous": 0,

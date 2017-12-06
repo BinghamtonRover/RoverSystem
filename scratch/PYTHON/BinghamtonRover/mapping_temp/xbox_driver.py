@@ -7,11 +7,12 @@ This code doesn't work for the dpad, the triggers, and the joy sticks.
 Those features will come soon ;)
 """
 
-from inputs import get_gamepad
-import json
 
-from ..controller_state import ControllerState
-from ..button_mappings import button_names
+
+
+from inputs import get_gamepad
+from controller_state import *
+import json
 
 controller = ControllerState()
 # controller is an instance
@@ -35,14 +36,33 @@ button_mappings = {
     "BTN_TR": controller.cn_right_bumper
 
 }
-
-# list of currently pressed buttons
+button_names = {
+    #button names into readable names
+    "BTN_SOUTH": "A",
+    "BTN_EAST": "B",
+    "BTN_NORTH": "X",
+    "BTN_WEST": "Y",
+    "BTN_MODE": "XBOX",
+    "BTN_SELECT": "BACK",
+    "BTN_START": "START",
+    "ABS_X": "X-LEFT-STICK",
+    "ABS_Y": "y-left-STICK",
+    "ABS_RX": "X-RIGHT-STICK",
+    "ABS_RY": "Y-RIGHT-STICK",
+    "ABS_Z": "LEFT TRIGGER",
+    "ABS_RZ": "RIGHT TRIGGER",
+    "ABS_HAT0X": "X-DPAD",
+    "ABS_HAT0Y": "Y-DPAD",
+    "BTN_TR": "RIGHT BUMPER",
+    "BTN_TL": "LEFT BUMBER"
+}
+#list of currently pressed buttons
 pressed_list = []
-# list of buttons that are released
+#list of buttons that are released
 released_list = list(button_names.values())
 
 
-def write_to_json():  # function that writes to the json file of the name specified in the function
+def write_to_json(): #function that writes to the json file of the name specified in the function
     json_object = {
         "pressed": pressed_list,
         "released": released_list,
@@ -74,9 +94,8 @@ while True:
                     for button in range(len(released_list)):
                         if released_list[button] == button_names[event.code]:
                             del released_list[button]
-                except:
-                    # these exceptions are in place because for some reason I get index out of range error
-                    # I'll how i can fix tis later but this'll have to do for now
+                except: # these exceptions are in place because for some reason I get index out of range error
+                        # I'll how i can fix tis later but this'll have to do for now
                     pass
 
             if button_mappings[event.code] == 0: # vice versa
@@ -88,7 +107,9 @@ while True:
                 except:
                     pass
 
-            write_to_json()  # calling write to json
-        elif event.code in dpad_mappings:  # this is where is stopped because I'm pressed for time
+            write_to_json() # calling write to json
+
+
+        elif event.code in dpad_mappings: # this is where is stopped because I'm pressed for time
             dpad_mappings[event.code] = 1
 

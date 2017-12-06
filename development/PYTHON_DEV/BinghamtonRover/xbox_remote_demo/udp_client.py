@@ -8,8 +8,8 @@ import socket
 import time
 import sys
 import threading
-from luz_xbox import listen_for_events
-from controller_state import ControllerState
+from .luz_xbox import listen_for_events
+from ..controller_state import ControllerState
 
 # Checks if all of the arguments were entered on the command line
 args = sys.argv[1:]

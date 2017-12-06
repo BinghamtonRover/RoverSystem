@@ -1,13 +1,13 @@
 import argparse
-import signal
-import socket
-import atexit
+import signal 
+import socket 
+import atexit 
+import wap
 
 from multiprocessing.pool import ThreadPool
 from threading import Thread, Condition
 from time import sleep
 
-from . import wap
 
 file_data = tuple()
 data_lock = Condition()

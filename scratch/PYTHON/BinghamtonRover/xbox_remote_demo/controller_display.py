@@ -6,7 +6,7 @@ import pyglet
 import time
 import threading
 import math
-from ..controller_state import ControllerState
+from controller_state import ControllerState
 
 
 # Hardcoded window width and height.
@@ -18,6 +18,9 @@ GF_JOYSTICK_RADIUS_DIFF = 23.9495
 
 # Highest value of joystick axis.
 GN_JOYSTICK_RANGE = 32000
+
+# Threshold of joystick pressedness.
+GN_JOYSTICK_THRESHOLD = 10000
 
 # Prefix and suffix for the image import path.
 # This will reduce string clutter when the images are loaded.
@@ -50,7 +53,7 @@ def create_sprite(ao_image):
     return lo_sprite
 
 
-class Button(object):
+class Button:
     """
     Button represents a single Xbox controller button that has two states: on and off.
     These buttons have one sprite with two images: one for the on state and one for off.
@@ -98,7 +101,7 @@ class Button(object):
         self.co_sprite.draw()
 
 
-class Dpad(object):
+class Dpad:
     """
     Represents a Dpad of an Xbox controller.
     """
@@ -152,7 +155,7 @@ class Dpad(object):
         self.co_sprite.draw()
 
 
-class Joystick(object):
+class Joystick:
     """
     Represents a joystick on an Xbox controller. It has two sprites: the center and the background.
     """
@@ -217,32 +220,52 @@ class Joystick(object):
         self.co_foreground_sprite.draw()
 
 
-class Controls(object):
+class Trigger:
+    def __init__(self, as_on_name, as_off_name):
+        """
+        Initializes the Trigger by loading its images and creating its sprite.
+
+        :param as_on_name: The name of the on image.
+        :param as_off_name: The name of the off image.
+        """
+
+        # Load and store the two Button images.
+        self.co_on_image = load_image(as_on_name)
+        self.co_off_image = load_image(as_off_name)
+
+        # Load and store the Sprite.
+        self.co_on_sprite = create_sprite(self.co_on_image)
+        self.co_off_sprite = create_sprite(self.co_off_image)
+
+        # Set our initial state.
+        self.cb_value = 0
+
+    def update(self, ab_value):
+        """
+        Updates the button pressed state, which changes the Sprite's image if there is a change.
+
+        :param ab_pressed: A boolean indicating whether the button should be pressed or not.
+        """
+
+        self.co_on_sprite.opacity = ab_value
+
+    def draw(self):
+        """
+        Draws the button.
+        """
+
+        self.co_off_sprite.draw()
+        self.co_on_sprite.draw()
+
+
+class Controls:
     """
     A dummy class to hold all the controls of a Display.
     """
-    def __init__(self):
-        self.co_a = Button("a_pressed", "a_unpressed")
-        self.co_b = Button("b_pressed", "b_unpressed")
-        self.co_x = Button("x_pressed", "x_unpressed")
-        self.co_y = Button("y_pressed", "y_unpressed")
-
-        self.co_lb = Button("lb_pressed", "lb_unpressed")
-        self.co_rb = Button("rb_pressed", "rb_unpressed")
-        self.co_lt = Button("lt_pressed", "lt_unpressed")
-        self.co_rt = Button("rt_pressed", "rt_unpressed")
-
-        self.co_menu = Button("menu_pressed", "menu_unpressed")
-        self.co_view = Button("view_pressed", "view_unpressed")
-        self.co_xbox = Button("xbox_pressed", "xbox_unpressed")
-
-        self.co_dpad = Dpad("dpad_unpressed", "dpad_pressed_up", "dpad_pressed_down", "dpad_pressed_left", "dpad_pressed_right")
-        self.co_ljs = Joystick("js_left_background", "js_left_pressed", "js_left_unpressed")
-        self.co_rjs = Joystick("js_right_background", "js_right_pressed", "js_right_unpressed")
+    pass
 
 
-
-class Display(object):
+class Display:
     """
     Represents a display of a remote Xbox controller. Only one of these should be initialized.
     """
@@ -254,6 +277,23 @@ class Display(object):
 
         # A Controls containing all Buttons, Joysticks, and Dpads to be displayed.
         self.co_controls = Controls()
+        self.co_controls.co_a = Button("a_pressed", "a_unpressed")
+        self.co_controls.co_b = Button("b_pressed", "b_unpressed")
+        self.co_controls.co_x = Button("x_pressed", "x_unpressed")
+        self.co_controls.co_y = Button("y_pressed", "y_unpressed")
+
+        self.co_controls.co_lb = Button("lb_pressed", "lb_unpressed")
+        self.co_controls.co_rb = Button("rb_pressed", "rb_unpressed")
+        self.co_controls.co_lt = Trigger("lt_pressed", "lt_unpressed")
+        self.co_controls.co_rt = Trigger("rt_pressed", "rt_unpressed")
+
+        self.co_controls.co_menu = Button("menu_pressed", "menu_unpressed")
+        self.co_controls.co_view = Button("view_pressed", "view_unpressed")
+        self.co_controls.co_xbox = Button("xbox_pressed", "xbox_unpressed")
+
+        self.co_controls.co_dpad = Dpad("dpad_unpressed", "dpad_pressed_up", "dpad_pressed_down", "dpad_pressed_left", "dpad_pressed_right")
+        self.co_controls.co_ljs = Joystick("js_left_background", "js_left_pressed", "js_left_unpressed")
+        self.co_controls.co_rjs = Joystick("js_right_background", "js_right_pressed", "js_right_unpressed")
 
         # The pyglet window on which the Display is rendered.
         self.co_window = pyglet.window.Window(width=GN_WINDOW_WIDTH, height=GN_WINDOW_HEIGHT)
@@ -284,9 +324,9 @@ class Display(object):
         self.co_controls.co_lb.update(ao_state.cn_left_bumper == 1)
         self.co_controls.co_rb.update(ao_state.cn_right_bumper == 1)
 
-        # The triggers may be continuous, but we treat 255 as on.
-        self.co_controls.co_lt.update(ao_state.cn_left_trigger == 255)
-        self.co_controls.co_rt.update(ao_state.cn_right_trigger == 255)
+        # The triggers may be continuous.
+        self.co_controls.co_lt.update(ao_state.cn_left_trigger)
+        self.co_controls.co_rt.update(ao_state.cn_right_trigger)
 
         self.co_controls.co_menu.update(ao_state.cn_back == 1)
         self.co_controls.co_view.update(ao_state.cn_middle == 1)
@@ -294,9 +334,16 @@ class Display(object):
 
         self.co_controls.co_dpad.update(ao_state.cn_dpad_up == 1, ao_state.cn_dpad_down == 1, ao_state.cn_dpad_left == 1, ao_state.cn_dpad_right == 1)
 
+        # Take the threshold into account.
+        lo_left_stick_x = ao_state.cn_left_stick_x if abs(ao_state.cn_left_stick_x) > GN_JOYSTICK_THRESHOLD else 0
+        lo_left_stick_y = ao_state.cn_left_stick_y if abs(ao_state.cn_left_stick_y) > GN_JOYSTICK_THRESHOLD else 0
+
+        lo_right_stick_x = ao_state.cn_right_stick_x if abs(ao_state.cn_right_stick_x) > GN_JOYSTICK_THRESHOLD else 0
+        lo_right_stick_y = ao_state.cn_right_stick_y if abs(ao_state.cn_right_stick_y) > GN_JOYSTICK_THRESHOLD else 0
+
         # TODO: Magic numbers! These numbers will change eventually! Find the right ones!
-        self.co_controls.co_ljs.update(ao_state.cn_left_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_left_stick_y / GN_JOYSTICK_RANGE)
-        self.co_controls.co_rjs.update(ao_state.cn_right_stick_x / GN_JOYSTICK_RANGE, ao_state.cn_right_stick_y / GN_JOYSTICK_RANGE)
+        self.co_controls.co_ljs.update(lo_left_stick_x / GN_JOYSTICK_RANGE, -lo_left_stick_y / GN_JOYSTICK_RANGE)
+        self.co_controls.co_rjs.update(lo_right_stick_x / GN_JOYSTICK_RANGE, -lo_right_stick_y / GN_JOYSTICK_RANGE)
 
 
 def start(ao_cs: ControllerState):
@@ -316,31 +363,32 @@ def start(ao_cs: ControllerState):
     pyglet.app.run()
 
 
-def mess_around(cs):
-    time.sleep(2)
-    cs.cn_a = 1
-    time.sleep(1)
-    cs.cn_dpad_left = 1
-    time.sleep(1)
-    cs.cn_dpad_left = 0
-    cs.cn_dpad_right = 1
-
-    t = 0
-    while True:
-        if t == 2 * 10 * math.pi:
-            t = 0
-
-        t += 1
-        time.sleep(0.001)
-        cs.cn_left_stick_x = 32000 * math.sin(t/10.0)
-        cs.cn_left_stick_y = 32000 * math.cos(t/10.0)
-
-
 if __name__ == "__main__":
     cs = ControllerState()
+
+    def mess_around(cs):
+        time.sleep(2)
+        cs.cn_a = 1
+        time.sleep(1)
+        cs.cn_dpad_left = 1
+        time.sleep(1)
+        cs.cn_dpad_left = 0
+        cs.cn_dpad_right = 1
+
+        t = 0
+        while True:
+            if t == 2 * 10 * math.pi:
+                t = 0
+
+            t += 1
+            time.sleep(0.001)
+            cs.cn_left_stick_x = 32000 * math.sin(t/10.0)
+            cs.cn_left_stick_y = 32000 * math.cos(t/10.0)
+
+            cs.cn_right_stick_x = 32000 * math.sin(-t / 10.0)
+            cs.cn_right_stick_y = 32000 * math.cos(-t / 10.0)
 
     t = threading.Thread(target=mess_around, args=(cs,), daemon=True)
     t.start()
 
     start(cs)
-    t.join()
