@@ -14,7 +14,7 @@ The Program run like this: <br>
 * When the start Server Button is pressed, the SampleSSPServer starts and waits for client to request connection
 * Run the SampleSSPClient, the client will first search for near by devices, 
     then print a list of detected devices and prompt the user to select a device
-* After the device is selected, the client will search for service on that selected device
+* After the device is selected, the bluetooth clie1nt will search for service on that selected device
 * Once the service search is complete, if the client discovered a service, it will form a connection
     between the server and client.
 * The Server will initiate a new thread which handles the communication between itself and the client.
