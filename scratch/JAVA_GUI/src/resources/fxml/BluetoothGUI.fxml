@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="BinghamtonRover.Bluetooth.BluetoothServerGUIController">
+   <children>
+      <TextArea fx:id="coMessageBoard" layoutX="100.0" layoutY="44.0" prefHeight="244.0" prefWidth="400.0" />
+      <Button fx:id="coStartServerBtn" layoutX="252.0" layoutY="333.0" mnemonicParsing="false" onAction="#StartServer" text="Start Server" />
+   </children>
+</AnchorPane>
