@@ -1,5 +1,7 @@
 package BinghamtonRover.Monitors;
 
+import BinghamtonRover.GuiMain.GuiController;
+
 import java.util.Observable;
 
 /*
@@ -9,9 +11,18 @@ import java.util.Observable;
 
 public class TemperatureMonitor extends InformationObserver
 {
+    private GuiController coController;
+
     public TemperatureMonitor()
     {
         super();
+    }
+
+    public TemperatureMonitor(GuiController loController)
+    {
+        super();
+
+        coController=loController;
     }
 
     @Override
@@ -21,6 +32,6 @@ public class TemperatureMonitor extends InformationObserver
 
         double lfTemperature = (double) getJson(loObservable.getCoFileToMonitor(), "temperature");
 
-        System.out.println("The current temperature is: " + lfTemperature + "°F");
+        if (coController != null) coController.updateTemperature("The current temperature is: " + lfTemperature + "°F" );
     }
 }

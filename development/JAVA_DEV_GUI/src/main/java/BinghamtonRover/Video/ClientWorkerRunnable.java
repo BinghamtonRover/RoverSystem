@@ -8,7 +8,6 @@ import org.bytedeco.javacv.OpenCVFrameGrabber;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.bytedeco.javacpp.opencv_imgcodecs.cvSaveImage;
@@ -30,27 +29,26 @@ public class ClientWorkerRunnable implements Runnable{
      */
     @Override
     public void run() {
-        AtomicReference<ObjectOutputStream> out = new AtomicReference<>();
         opencv_core.IplImage img;
         try {
-            out.set(new ObjectOutputStream(clientSocket.getOutputStream()));
             Frame frame;
+            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
             while((frame = feed.grab()) != null) {
-                //OpenCVFrameConverter frameToImg = new OpenCVFrameConverter.ToIplImage();
-                //img = (opencv_core.IplImage) frameToImg.convert(frame);
-                //cvSaveImage("frame.jpg", img);
-                //FileInputStream fis=new FileInputStream("frame.jpg");
-//                AtomicInteger x = new AtomicInteger();
-//                while(true){
-//                    x.set(fis.read());
-//                    if(x.get() ==-1)break;
-//                    out.get().write(x.get());
-//                }
-                out.get().writeObject(frame);
+                OpenCVFrameConverter frameToImg = new OpenCVFrameConverter.ToIplImage();
+                img = (opencv_core.IplImage) frameToImg.convert(frame);
+                cvSaveImage("frame.jpg", img);
+                File file = new File("frame.jpg");
+
+                try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+                    dos.writeLong(file.length());
+                    int val;
+                    while ((val = is.read()) != -1) dos.write(val);
+                    dos.flush();
+                }
             }
-            out.get().close();
         }
         catch(SocketException e){
+            e.printStackTrace();
             System.out.println("Client disconnected.");
         }
         catch (IOException e) {

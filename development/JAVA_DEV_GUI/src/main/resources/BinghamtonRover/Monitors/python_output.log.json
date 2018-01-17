@@ -1,13 +1,13 @@
 {
   "batteryLevel": 83,
-  "currentTime": "2017-10-31 11:33:16",
-  "cameraStatus": "offline",
-  "latitude": 5046.31972,
+  "currentTime": "2017-11-31 12:36:16",
+  "cameraStatus": "online",
+  "latitude": 506.31972,
   "latitudeDirection": "N",
   "longitude": 16.3365,
   "longitudeDirection": "W",
   "name": "Mars Rover 3.15",
-  "pressure": 3.6,
+  "pressure": 6.6,
   "temperature": 78.6,
-  "totalDistanceTraveled": 305.3
+  "totalDistanceTraveled": 305.1
 }

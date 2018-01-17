@@ -1,14 +1,13 @@
 package BinghamtonRover;
 
+import BinghamtonRover.GuiMain.GuiController;
 import BinghamtonRover.Monitors.*;
-import BinghamtonRover.Video.VideoController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
-import org.opencv.videoio.VideoCapture;
 
 import java.util.ArrayList;
 
@@ -34,23 +33,30 @@ public class DemoRunner extends Application
     {
         ArrayList<InformationObserver> laoObservers = new ArrayList<>();
 
-        laoObservers.add(new PressureMonitor());
-        laoObservers.add(new LocationMonitor());
         laoObservers.add(new DistanceMonitor());
         laoObservers.add(new BatteryMonitor());
         laoObservers.add(new DirectionMonitor());
-        laoObservers.add(new TimeMonitor());
-        laoObservers.add(new TemperatureMonitor());
-        laoObservers.add(new CameraStatusMonitor());
+
+        System.out.println(GuiController.class.getResource("."));
+
+        FXMLLoader loLoader = new FXMLLoader(GuiController.class.getResource("./guiScene.fxml"));
+
+        GuiController loController = new GuiController();
+
+        loLoader.setController(loController);
+
+        laoObservers.add(new PressureMonitor(loController));
+        laoObservers.add(new TimeMonitor(loController));
+        laoObservers.add(new CameraStatusMonitor(loController));
+        laoObservers.add(new LocationMonitor(loController));
+        laoObservers.add(new TemperatureMonitor(loController));
 
         FileUpdatingObservable lfuo = new FileUpdatingObservable(gsFile, laoObservers);
         lfuo.startFileMonitoringThread();
 
-        System.out.println(VideoController.class.getResource("."));
-
-        Parent loRoot = FXMLLoader.load(VideoController.class.getResource("./CameraFeed.fxml"));
+        Parent loRoot = (Parent)loLoader.load();
         aoPrimaryStage.setTitle("CameraFeed");
-        aoPrimaryStage.setScene(new Scene(loRoot, 500, 500));
+        aoPrimaryStage.setScene(new Scene(loRoot, 700, 400));
         aoPrimaryStage.show();
 
         //System.exit(0);

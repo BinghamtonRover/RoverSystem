@@ -1,53 +1,42 @@
 package BinghamtonRover.Video;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.SocketException;
+import java.io.*;
+import java.net.Socket;
 
 public class ExtractFrameRunnable implements Runnable{
-    private InputStream in;
-    FileOutputStream file;
-
-    ExtractFrameRunnable(InputStream i, FileOutputStream f){
-        if(i != null && f != null){
-            in = i;
-            file = f;
-        }
-    }
-
-    /**
+   /**
      * This method is still in the works. It is meant to be called by a client.
      * The thread will be in charge of extracting byte arrays sent over by a server,
      * and then reassembling those btyes to a frame. We probably should just have this run method also
      * do the work of displaying the frames once assembled.
      */
+
+    private Socket clientSocket;
+
+    public ExtractFrameRunnable(Socket cSock){
+        clientSocket = cSock;
+    }
+
     @Override
-    public void run(){
+    public void run() {
         //create a jpg sentFrame that will receive the frame data sent by the server.
-        int x;
-        while(true){
-            try{
-                if(in.available() != 0){
-                    x = in.read();
-                }
-                else x = -1;
-                if(x==-1){
-                    break;
-                }
-                file.write(x);
+
+        File file = new File("sentFrame.jpg");
+        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file));
+             DataInputStream dis = new DataInputStream(new DataInputStream(clientSocket.getInputStream()))
+        ) {
+            long arrlen = dis.readLong();
+            for (int i = 0; i < arrlen; i++) {
+                os.write(dis.read());
             }
-            catch(SocketException e){
-                e.printStackTrace();
-            }
-            catch(IOException e){
-                e.printStackTrace();
-            }
-        }
-        try {
-            file.close();
-        } catch (IOException e) {
+            os.flush();
+            os.close();
+        } catch (EOFException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.getStackTrace();
+            System.out.println("Lost connection to server. Exiting now.");
+            System.exit(-1);
         }
     }
 }

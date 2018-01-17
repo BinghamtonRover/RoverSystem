@@ -5,25 +5,21 @@ import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class WebCamServer
-{
+public class WebCamServer {
     private static final int gn_port = 5000;
 
     /**
      * This method creates the video feed obhject and returns it. It does not start it.
      * @return OpenCVFramGrabber the object which will act as a feed for the video
      */
-    private static OpenCVFrameGrabber createVideoFeed()
-    {
+    private static OpenCVFrameGrabber createVideoFeed(){
         OpenCVFrameGrabber feed = null;
-        try
-        {
+        try {
             //try to grab the main device for the feed, usually the webcam for a laptop for example
             feed = OpenCVFrameGrabber.createDefault(0);
         }
         //if there is no default device then we let the user know.
-        catch(FrameGrabber.Exception e)
-        {
+        catch(FrameGrabber.Exception e){
             e.printStackTrace();
             System.out.println("Couldn't create feed");
             System.exit(0);
@@ -35,10 +31,8 @@ public class WebCamServer
      * This method starts the video feed and displays it Frame by Frame using a CanvasFrame
      * @param feed object which embodies the default device, eg webcam.
      */
-    static void startVideoFeed(FrameGrabber feed)
-    {
-        try
-        {
+    static void startVideoFeed(FrameGrabber feed) {
+        try{
             //start the camera feed
             feed.start();
             Frame frame;
@@ -101,16 +95,16 @@ public class WebCamServer
             //in a while loop so multiple clients can potentially connect.
             //also, a client disconnecting does not crash the server and his socket continues to work
             while(true){
-                try {
-                    Socket clientSocket = acceptClient(srvSocket);
-                    System.out.println("Accepted a client!");
-                    //start a worker thread to service the client, then look for more clients
-                    Thread clientThread = new Thread(new ClientWorkerRunnable(feed, clientSocket));
-                    clientThread.start();
-                }
-                catch(Exception e){
-                    System.exit(-1);
-                }
+                    try {
+                        Socket clientSocket = acceptClient(srvSocket);
+                        System.out.println("Accepted a client!");
+                        //start a worker thread to service the client, then look for more clients
+                        Thread clientThread = new Thread(new ClientWorkerRunnable(feed, clientSocket));
+                        clientThread.start();
+                    }
+                    catch(Exception e){
+                        System.exit(-1);
+                    }
             }
         }
         catch(IOException e){

@@ -21,8 +21,8 @@ public class BatteryMonitor extends InformationObserver
     {
         FileUpdatingObservable loObservable = (FileUpdatingObservable) o;
 
-        String lbBattery = (String) getJson(loObservable.getCoFileToMonitor(), "batteryLevel");
+        //String lbBattery = (String) getJson(loObservable.getCoFileToMonitor(), "batteryLevel");
 
-        System.out.println("The current Battery percentage is: lbBattery" + lbBattery + "%");
+        //System.out.println("The current Battery percentage is: lbBattery" + lbBattery + "%");
     }
 }
