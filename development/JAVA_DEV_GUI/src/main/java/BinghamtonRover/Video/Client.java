@@ -5,6 +5,7 @@ import org.bytedeco.javacv.*;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Scanner;
 
 import static org.bytedeco.javacpp.opencv_imgcodecs.cvLoadImage;
@@ -52,27 +53,43 @@ public class Client {
      * but the byte array option will probably prove more efficient and better for playing with the frame data later on if needed.
      * @param clientSocket The socket corresponding to the client's connection with the Server
      */
-    private static synchronized void displayFeed(Socket clientSocket){
+    private static void displayFeed(Socket clientSocket){
         CanvasFrame canvas = new CanvasFrame("Client Webcam feed");
         try {
+            DataInputStream dis = new DataInputStream(new DataInputStream(clientSocket.getInputStream()));
             while (clientSocket.isConnected()) {
-                Thread extractThread = new Thread(new ExtractFrameRunnable(clientSocket.getInputStream(), new FileOutputStream("sentFrame.jpg")));
-                extractThread.start();
-                extractThread.join();
+                File file = new File("sentFrame.jpg");
+                try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))){
+                    if(dis.available() <= 0) continue;
+                    long arrlen = dis.readLong();
+                    for (int i = 0; i < arrlen; i++) {
+                        os.write(dis.read());
+                    }
+                    os.flush();
+                    os.close();
+                } catch (EOFException e) {
+                    e.printStackTrace();
+                } catch(SocketException e){
+                    e.printStackTrace();
+                    System.out.println("Lost connection to server. Exiting now.");
+                    System.exit(-1);
+                }catch (IOException e) {
+                    e.printStackTrace();
+                    System.out.println("Lost connection to server. Exiting now.");
+                    System.exit(-1);
+                }
                 opencv_core.IplImage img = cvLoadImage("sentFrame.jpg");
                 OpenCVFrameConverter imgToFrame = new OpenCVFrameConverter.ToIplImage();
                 canvas.showImage(imgToFrame.convert(img));
-            }
+           }
+        }
+        catch(IOException e){
+            e.printStackTrace();
+            System.out.println("Lost connection to server. Exiting now.");
+            System.exit(-1);
         }
         catch(NullPointerException e){
             e.getStackTrace();
-        }
-        catch(IOException e) {
-            e.getStackTrace();
-            System.out.println("Lost connection to server. Exiting now.");
-            System.exit(-1);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 
