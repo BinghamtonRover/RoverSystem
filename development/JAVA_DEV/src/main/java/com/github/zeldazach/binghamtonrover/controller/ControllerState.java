@@ -49,49 +49,49 @@ public class ControllerState extends Observable {
     public void update(String name, float value) {
         switch (name) {
             case "X":
-                buttonX = float_to_bool(value);
+                buttonX = floatToBool(value);
                 break;
             case "Y":
-                buttonY = float_to_bool(value);
+                buttonY = floatToBool(value);
                 break;
             case "A":
-                buttonA = float_to_bool(value);
+                buttonA = floatToBool(value);
                 break;
             case "B":
-                buttonB = float_to_bool(value);
+                buttonB = floatToBool(value);
                 break;
             case "Select":
-                buttonSelect = float_to_bool(value);
+                buttonSelect = floatToBool(value);
                 break;
             case "Mode":
-                buttonMode = float_to_bool(value);
+                buttonMode = floatToBool(value);
                 break;
             case "Start":
-                buttonStart = float_to_bool(value);
+                buttonStart = floatToBool(value);
                 break;
             case "Left Thumb":
-                buttonLBumper = float_to_bool(value);
+                buttonLBumper = floatToBool(value);
                 break;
             case "Right Thumb":
-                buttonRBumper = float_to_bool(value);
+                buttonRBumper = floatToBool(value);
                 break;
             case "Left Thumb 3":
-                buttonLThumb = float_to_bool(value);
+                buttonLThumb = floatToBool(value);
                 break;
             case "Right Thumb 3":
-                buttonRThumb = float_to_bool(value);
+                buttonRThumb = floatToBool(value);
                 break;
             case "x":
-                lStickX = clamp_stick_value(value);
+                lStickX = clampStickValue(value);
                 break;
             case "y":
-                lStickY = clamp_stick_value(value);
+                lStickY = clampStickValue(value);
                 break;
             case "rx":
-                rStickX = clamp_stick_value(value);
+                rStickX = clampStickValue(value);
                 break;
             case "ry":
-                rStickY = clamp_stick_value(value);
+                rStickY = clampStickValue(value);
                 break;
             case "z":
                 lTrigger = value;
@@ -110,7 +110,7 @@ public class ControllerState extends Observable {
         notifyObservers();
     }
 
-    private boolean float_to_bool(float value) {
+    private boolean floatToBool(float value) {
         if (Math.abs(value - 0.0f) < EQUALITY_MARGIN) {
             return false;
         }
@@ -118,7 +118,7 @@ public class ControllerState extends Observable {
         return true;
     }
 
-    private float clamp_stick_value(float value) {
+    private float clampStickValue(float value) {
         if (Math.abs(value) < STICK_THRESHOLD) {
             return 0;
         }
