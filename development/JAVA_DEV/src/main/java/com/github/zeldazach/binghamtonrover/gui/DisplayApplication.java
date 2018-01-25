@@ -91,7 +91,8 @@ public class DisplayApplication extends Application {
 
                 GraphicsContext loCtx = xboxCanvas.getGraphicsContext2D();
 
-                loCtx.clearRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
+                loCtx.setFill(Color.BLACK);
+                loCtx.fillRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
 
                 if (loState.buttonA)    drawImage(xboxCanvas, "a_pressed");
                 else                    drawImage(xboxCanvas, "a_unpressed");
