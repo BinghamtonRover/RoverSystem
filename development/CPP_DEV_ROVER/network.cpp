@@ -4,7 +4,7 @@
 
 #include "network.h"
 
-void NetworkHandler::NetworkHandler(std::string address, int port) {
+NetworkHandler::NetworkHandler(std::string address, int port) {
     socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (socket_fd < 0) {
         // TODO: Handle failure
@@ -20,7 +20,7 @@ void NetworkHandler::NetworkHandler(std::string address, int port) {
     }
 }
 
-void NetworkHandler::~NetworkHandler() {
+NetworkHandler::~NetworkHandler() {
 
 }
 
