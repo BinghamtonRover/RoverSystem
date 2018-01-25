@@ -93,7 +93,6 @@ public class ControllerHandler implements Runnable {
             Event event = new Event();
 
             while (queue.getNextEvent(event)) {
-                System.out.println("PRESS " + event.getComponent().getName());
                 state.update(event.getComponent().getName(), event.getValue());
             }
 //
