@@ -1,4 +1,4 @@
-=== [ Version 2 ] ===
+=== [ Version 3 ] ===
 
 This file describes the specification of the rover packet protocol, of version listed above.
 
@@ -53,7 +53,20 @@ The body of the packet must follow immediately after the packet header.
 = Packet Types =
 ================
 
-> Type 0 is reserved.
+> Type 0: Ping Packet
+
+The ping packet is sent from either side to make sure that the right IP/port is being used. It can also
+be used to check whether the program is responding. If either side receives a ping packet, they must
+respond with the direction field set to PONG.
+
+| (Field Name)      | (Field Type)      | (Field Size, in Bytes)    |
+---------------------------------------------------------------------
+| Direction         | unsigned byte     | 1                         |
+
+* Direction:    Specifies whether the ping is a request or a response (a PING or a PONG, respectively).
+                It must be one of the following values:
+                    - 0 (PING): A request for a response.
+                    - 1 (PONG): A response to a request.
 
 > Type 1: Control Packet
 
