@@ -91,7 +91,8 @@ public class Manager {
 
     public Packet constructPacket(PacketHeader packetHeader, byte[] packetData) {
         try {
-            return packetsByType.get(packetHeader.getType()).getConstructor(PacketHeader.class, byte[].class)
+            return packetsByType.get(packetHeader.getType())
+                    .getConstructor(PacketHeader.class, byte[].class)
                     .newInstance(packetHeader, packetData);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
