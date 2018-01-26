@@ -1,4 +1,4 @@
-=== [ Version 1 ] ===
+=== [ Version 2 ] ===
 
 This file describes the specification of the rover packet protocol, of version listed above.
 
@@ -69,6 +69,7 @@ to rover at some fixed or variable rate. All fields must be specified in each pa
                         - 1 (FORWARD): The rover is moving forward.
                         - 2 (LEFT): The rover is turning left.
                         - 3 (RIGHT): The rover is turning right.
+                        - 4 (BACKWARD): The rover is moving backward.
                     The state must remain for the duration of the command. For instance, if the rover
                     is to move forward while a controller button is held, then the FORWARD value must
                     be specified in every control packet sent while the button is held. When the button
