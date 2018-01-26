@@ -1,5 +1,6 @@
 package com.github.zeldazach.binghamtonrover.networking;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +90,20 @@ public class Manager {
     }
 
     public Packet constructPacket(PacketHeader packetHeader, byte[] packetData) {
-        return new ((packetsByType.get(packetHeader.getType()))(packetHeader, packetData));
+        try {
+            return packetsByType.get(packetHeader.getType()).getConstructor(PacketHeader.class, byte[].class)
+                    .newInstance(packetHeader, packetData);
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     PacketHandler getHandler(byte type) { return getHandler(type & 0xFF); }
