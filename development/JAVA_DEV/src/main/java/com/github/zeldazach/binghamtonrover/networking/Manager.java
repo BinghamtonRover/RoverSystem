@@ -34,8 +34,8 @@ public class Manager {
     private char receiveTimestamp = 0;
     final char version = 1;
     private Map<Integer, PacketHandler> handlers = new HashMap<Integer, PacketHandler>();
-    private Map<Integer, Class<Packet>> packetsByType = new HashMap<Integer, Class<Packet>>() {{
-        put(1, ControlPacket);
+    private Map<Integer, Class<? extends Packet>> packetsByType = new HashMap<Integer, Class<? extends Packet>>() {{
+        put(1, ControlPacket.class);
     }};
 
     public Manager() throws SocketException, UnknownHostException {
