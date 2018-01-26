@@ -2,6 +2,7 @@ package com.github.zeldazach.binghamtonrover.networking;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,11 +31,13 @@ class PacketHeader {
 
     public byte[] getHeaderBuffer() {
         byte[] buff = new byte[5];
-        buff[0] = (byte)((version >> 8) & 0xFF);
-        buff[1] = (byte)(version & 0xFFFF);
-        buff[2] = type;
-        buff[3] = (byte)((timestamp >> 8) & 0xFF);
-        buff[4] = (byte)(timestamp & 0xFFFF);
+
+        // Wrap the byte array to make serializing easy.
+        ByteBuffer loWrapper = ByteBuffer.wrap(buff);
+        loWrapper.putShort((short) version);
+        loWrapper.put(type);
+        loWrapper.putShort((short) timestamp);
+
         return buff;
     }
 }

@@ -2,6 +2,7 @@ package com.github.zeldazach.binghamtonrover.networking;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.nio.ByteBuffer;
 
 public abstract class ServerThread extends Thread {
     protected Manager serverManager;
@@ -34,9 +35,15 @@ class ServerReceiver extends ServerThread {
             }
 
             data = datagramPacket.getData();
-            version = this.getVersionFromData(data);
-            timestamp = this.getTimestampFromData(data);
+
+            // Wrap it to make access easier.
+            ByteBuffer loWrapper = ByteBuffer.wrap(data);
+            version = loWrapper.getShort();
+            loWrapper.get(); // Ignore the type byte.
+            timestamp = loWrapper.getShort();
+
             expectedTimstamp = serverManager.getLastReceiveTimestamp();
+
             if (version != this.serverManager.version) {
                 this.outputVersionMismatch(version);
             } else if (timestamp < expectedTimstamp) {
