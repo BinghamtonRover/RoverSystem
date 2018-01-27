@@ -75,17 +75,6 @@ class ServerReceiver extends ServerThread {
         serverManager.incrementReceiveTimestamp();
         serverManager.getHandler(type).handle(datagramPacket);
     }
-    private int getVersionFromData(byte[] data) {
-        return (int)(
-                (((char)data[0]) << 8) | (data[1] & 0xFF)
-        );
-    }
-
-    private int getTimestampFromData(byte[] data) {
-        return (int)(
-                (((char)data[3]) << 8) | (data[4] & 0xFF)
-        );
-    }
 }
 
 class ServerSender extends ServerThread {
