@@ -7,14 +7,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 class PacketHeader {
-    private final char version; // equivalent to unsigned short
-    private final byte type;
-    private final char timestamp; // equivalent to unsigned short
+    public static final int SIZE = 5; // The current size of a packet header.
+
+    private char version; // equivalent to unsigned short
+    private byte type;
+    private char timestamp; // equivalent to unsigned short
 
     PacketHeader(char version, byte type, char timestamp) {
         this.version = version;
         this.type = type;
         this.timestamp = timestamp;
+    }
+
+    public PacketHeader() {
+
     }
 
     public int getVersion() {
@@ -29,32 +35,63 @@ class PacketHeader {
         return timestamp;
     }
 
-    public byte[] getHeaderBuffer() {
-        byte[] buff = new byte[5];
+    public void writeToBuffer(ByteBuffer buff) {
+        buff.putShort((short) version);
+        buff.put(type);
+        buff.putShort((short) timestamp);
+    }
 
-        // Wrap the byte array to make serializing easy.
-        ByteBuffer loWrapper = ByteBuffer.wrap(buff);
-        loWrapper.putShort((short) version);
-        loWrapper.put(type);
-        loWrapper.putShort((short) timestamp);
-
-        return buff;
+    public void readFromBuffer(ByteBuffer buff) {
+        version = buff.getChar();
+        type = buff.get();
+        timestamp = buff.getChar();
     }
 }
 
+/**
+ * It is important that subclasses of Packet set up their
+ * type and size if they are going to be sent over the network!
+ * They should call Packet's constructor in their constructors.
+ * This is temporary, until I have time to design a better
+ * system.
+ */
 public abstract class Packet {
-    private final PacketHeader packetHeader;
-    private final byte[] packetData;
     private final static int MAX_SIZE = 6; // max size known for a packet
 
-    public Packet(char version, byte type, char timestamp, byte[] packetData) {
-        this(new PacketHeader(version, type, timestamp), packetData);
+    private byte type;
+    private int size;
+
+    /**
+     * Sets the type of the packet and its length.
+     * Since Packet is abstract, this will be implemented by its children.
+     * @param type The packet type.
+     * @param size The packet size.
+     */
+    public Packet(byte type, int size) {
+        this.type = type;
+        this.size = size;
     }
 
-    public Packet(PacketHeader packetHeader, byte[] packetData) {
-        this.packetHeader = packetHeader;
-        this.packetData = packetData;
+    public Packet() {
+
     }
+
+    public byte getType() {
+        return type;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    /**
+     * This is called when the packet must be written to the network.
+     * Children must implement this. Assume that the buffer has
+     * enough space to hold the entire packet.
+     * @param buff The buffer in which the packet must be written.
+     */
+    public abstract void writeToBuffer(ByteBuffer buff);
+    public abstract void readFromBuffer(ByteBuffer buff);
 
     public static DatagramPacket makeReceivingPacket() {
         return makeReceivingPacket(MAX_SIZE);
@@ -62,47 +99,5 @@ public abstract class Packet {
 
     public static DatagramPacket makeReceivingPacket(int readAmt) {
         return new DatagramPacket(new byte[MAX_SIZE], readAmt);
-    }
-
-    public DatagramPacket toDatagramPacket(InetAddress addr, int port) {
-        byte[] headerBuffer = packetHeader.getHeaderBuffer();
-        byte[] fullPacket = new byte[headerBuffer.length + packetData.length];
-        System.arraycopy(headerBuffer, 0, fullPacket, 0, headerBuffer.length);
-        System.arraycopy(packetData, 0, fullPacket, headerBuffer.length, fullPacket.length);
-        return new DatagramPacket(fullPacket, fullPacket.length, addr, port);
-    }
-}
-
-class ControlPacket extends Packet {
-    public ControlPacket(char version, char timestamp, byte[] packetData) {
-        super(version, (byte) 1, timestamp, packetData);
-    }
-}
-
-class StopPacket extends ControlPacket {
-    private static byte[] data = {0};
-    public StopPacket(char version, char timestamp) {
-        super(version, timestamp, data);
-    }
-}
-
-class ForwardPacket extends ControlPacket {
-    private static byte[] data = {1};
-    public ForwardPacket(char version, char timestamp) {
-        super(version, timestamp, data);
-    }
-}
-
-class LeftPacket extends ControlPacket {
-    private static byte[] data = {2};
-    public LeftPacket(char version, char timestamp) {
-        super(version, timestamp, data);
-    }
-}
-
-class RightPacket extends ControlPacket {
-    private static byte[] data = {3};
-    public RightPacket(char version, char timestamp) {
-        super(version, timestamp, data);
     }
 }

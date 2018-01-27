@@ -1,7 +1,9 @@
 package com.github.zeldazach.binghamtonrover.networking;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,21 +24,20 @@ class AlreadyClosed extends ManagerException {
 }
 
 public class Manager {
+    public static final int CURRENT_VERSION = 3; // The current supported version.
     private InetAddress address;
     private int port;
-    int clockInterval;
+    private int resendCount;
     DatagramSocket socket;
-    private Packet latestPacket;
-    private ServerSender sender;
     private ServerReceiver receiver;
     private boolean started = false;
     private boolean closed = false;
     private char sendTimestamp = 0;
     private char receiveTimestamp = 0;
-    final char version = 1;
+
     private Map<Integer, PacketHandler> handlers = new HashMap<Integer, PacketHandler>();
     private Map<Integer, Class<? extends Packet>> packetsByType = new HashMap<Integer, Class<? extends Packet>>() {{
-        put(1, ControlPacket.class);
+        put(1, PacketControl.class);
     }};
 
     public Manager() throws SocketException, UnknownHostException {
@@ -47,23 +48,21 @@ public class Manager {
      * Construct a Manager for sending and receiving packets
      * @param addr the address to bind to
      * @param port the port to bind on
-     * @param clockInterval time in milliseconds between each packet read and send
+     * @param resendCount how many times each packet should be sent
      * @throws SocketException when the socket can't be bound
      * @throws UnknownHostException when the address is invalid
      */
-    public Manager(String addr, int port, int clockInterval) throws SocketException, UnknownHostException {
+    public Manager(String addr, int port, int resendCount) throws SocketException, UnknownHostException {
         this.address = Inet4Address.getByName(addr);
         this.port = port;
-        this.clockInterval = clockInterval;
+        this.resendCount = resendCount;
         this.socket = new DatagramSocket(this.port, this.address);
-        this.sender = new ServerSender(this);
         this.receiver = new ServerReceiver(this);
     }
 
     public void startServer() throws AlreadyStarted, SocketException {
         if (started) throw new AlreadyStarted();
         if (!socket.isBound()) socket.bind(new InetSocketAddress(address, port));
-        sender.start();
         receiver.start();
         started = true;
         closed = false;
@@ -71,9 +70,8 @@ public class Manager {
 
     public void closeServer() throws AlreadyClosed, InterruptedException {
         if (closed) throw new AlreadyClosed();
-        sender.join();
-        receiver.join();
         socket.close();
+        receiver.join();
         started = false;
         closed = true;
     }
@@ -84,16 +82,29 @@ public class Manager {
 
     public PacketHandler getHandler(int type) { return handlers.get(type); }
 
-    public Packet constructPacket(int type, byte[] packetData) {
-        PacketHeader header = new PacketHeader(version, (byte) type, getLastSendTimestamp());
-        return constructPacket(header, packetData);
+    /**
+     * This is called whenever a datagram packet is received.
+     * @param dp The packet that was just received.
+     */
+    protected void handlePacket(DatagramPacket dp) {
+        ByteBuffer buff = ByteBuffer.wrap(dp.getData());
+
+        PacketHeader header = new PacketHeader();
+        header.readFromBuffer(buff);
+
+        Packet packet = instantiatePacket(header);
+        packet.readFromBuffer(buff);
+
+        // Now we need to get the handler for the packet type.
+        getHandler(header.getType()).handle(packet);
     }
 
-    public Packet constructPacket(PacketHeader packetHeader, byte[] packetData) {
+    public Packet instantiatePacket(PacketHeader packetHeader) {
+        // We assume the class has a default constructor.
         try {
             return packetsByType.get(packetHeader.getType())
-                    .getConstructor(PacketHeader.class, byte[].class)
-                    .newInstance(packetHeader, packetData);
+                    .getConstructor()
+                    .newInstance();
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
@@ -107,8 +118,6 @@ public class Manager {
         return null;
     }
 
-    PacketHandler getHandler(byte type) { return getHandler(type & 0xFF); }
-
     public DatagramSocket getSocket() {
         return socket;
     }
@@ -121,27 +130,49 @@ public class Manager {
         return port;
     }
 
-    public synchronized void sendPacket(Packet p) {
-        this.latestPacket = p;
+    public synchronized void sendPacket(Packet p, InetAddress roverAddress, int roverPort) throws IOException {
+        // We fill the packet header here, since the user of this API shouldn't have to touch it.
+        ByteBuffer buff = packetToBuffer(p);
+
+        DatagramPacket dp = new DatagramPacket(buff.array(), buff.limit(), roverAddress, roverPort);
+        for (int i = 0; i < resendCount; i++) {
+            socket.send(dp);
+        }
     }
 
-    synchronized Packet getLatestPacket() { return latestPacket; }
+    /**
+     * Creates a buffer with the contents of the given packet, and readies it for sending.
+     * This will flip the buffer so that it is ready to be read.
+     * @param p The packet to serialize.
+     * @return The buffer to write to the line, ready-to-go!
+     */
+    private ByteBuffer packetToBuffer(Packet p) {
+        ByteBuffer buff = ByteBuffer.allocate(PacketHeader.SIZE + p.getSize());
+
+        PacketHeader header = new PacketHeader((char) CURRENT_VERSION, p.getType(), sendTimestamp);
+        sendTimestamp++;
+
+        header.writeToBuffer(buff);
+        p.writeToBuffer(buff);
+
+        buff.flip();
+
+        return buff;
+    }
 
     synchronized void incrementReceiveTimestamp() { receiveTimestamp++; }
 
-    synchronized void incrementSendTimestamp() { sendTimestamp++; }
-
-    private synchronized char getLastSendTimestamp() { return sendTimestamp; }
-
     synchronized int getLastReceiveTimestamp() { return receiveTimestamp; }
 
-    public static void main(String[] args) {
-        try {
-            Manager my_manager = new Manager();
-            my_manager.startServer();
-            my_manager.closeServer();
-        } catch (SocketException | UnknownHostException | AlreadyStarted | AlreadyClosed | InterruptedException e) {
-            e.printStackTrace();
-        }
+
+    private void outputVersionMismatch(int version) {
+        int correctVersion = Manager.CURRENT_VERSION;
+        System.out.println(
+                "Packet Received with incorrect version. Expected " + correctVersion + " but got " + version);
+    }
+
+    private void outputTimestampMismatch(int actual, int expected) {
+        System.out.println(
+                "Packet Received with outdated timestamp. Expected at least" + expected + " but got " + actual);
     }
 }
