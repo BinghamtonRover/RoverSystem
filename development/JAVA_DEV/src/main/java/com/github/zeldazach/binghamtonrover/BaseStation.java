@@ -10,16 +10,27 @@ import java.net.UnknownHostException;
 
 public class BaseStation {
 
+    public static String baseStationBindAddress;
+    public static int baseStationBindPort;
+
+    public static String roverAddress;
+    public static int roverPort;
+
     /**
      * The entry point for the base station control program.
      * @param args Command-line arguments.
      */
     public static void main(String[] args) {
+        baseStationBindAddress = args[1];
+        baseStationBindPort = Integer.parseInt(args[2]);
+        roverAddress = args[3];
+        roverPort = Integer.parseInt(args[4]);
+
         ControllerHandler.init();
 
         Manager networkManager = null;
         try {
-            networkManager = new Manager(args[1], Integer.parseInt(args[2]), 5);
+            networkManager = new Manager(baseStationBindAddress, baseStationBindPort, 5);
         } catch (SocketException e) {
             System.err.println("Failed to open network UDP socket: " + e.getMessage());
             System.exit(1);
