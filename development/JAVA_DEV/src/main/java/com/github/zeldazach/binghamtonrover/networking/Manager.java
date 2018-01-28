@@ -7,23 +7,23 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-class ManagerException extends Exception {
-    public ManagerException(String message) {
-        super(message);
-    }
-}
-class AlreadyStarted extends ManagerException {
-    public AlreadyStarted() {
-        super("Manager already started");
-    }
-}
-class AlreadyClosed extends ManagerException {
-    public AlreadyClosed() {
-        super("Manager already closed");
-    }
-}
-
 public class Manager {
+    public static class ManagerException extends Exception {
+        public ManagerException(String message) {
+            super(message);
+        }
+    }
+    public static class AlreadyStarted extends ManagerException {
+        public AlreadyStarted() {
+            super("Manager already started");
+        }
+    }
+    public static class AlreadyClosed extends ManagerException {
+        public AlreadyClosed() {
+            super("Manager already closed");
+        }
+    }
+
     public static final int CURRENT_VERSION = 3; // The current supported version.
     private InetAddress address;
     private int port;
@@ -39,10 +39,6 @@ public class Manager {
     private Map<Integer, Class<? extends Packet>> packetsByType = new HashMap<Integer, Class<? extends Packet>>() {{
         put(1, PacketControl.class);
     }};
-
-    public Manager() throws SocketException, UnknownHostException {
-        this("0.0.0.0", 8080, 5);
-    }
 
     /**
      * Construct a Manager for sending and receiving packets
