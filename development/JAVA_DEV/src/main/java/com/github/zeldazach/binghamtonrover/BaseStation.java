@@ -2,7 +2,6 @@ package com.github.zeldazach.binghamtonrover;
 
 import com.github.zeldazach.binghamtonrover.controller.ControllerHandler;
 import com.github.zeldazach.binghamtonrover.gui.DisplayApplication;
-import com.github.zeldazach.binghamtonrover.networking.AlreadyStarted;
 import com.github.zeldazach.binghamtonrover.networking.Manager;
 import javafx.application.Application;
 
