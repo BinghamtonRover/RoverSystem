@@ -1,8 +1,11 @@
 package com.github.zeldazach.binghamtonrover;
 
 import com.github.zeldazach.binghamtonrover.controller.ControllerHandler;
+import com.github.zeldazach.binghamtonrover.controller.ControllerState;
 import com.github.zeldazach.binghamtonrover.gui.DisplayApplication;
 import com.github.zeldazach.binghamtonrover.networking.Manager;
+import com.github.zeldazach.binghamtonrover.networking.PacketControl;
+import com.github.zeldazach.binghamtonrover.networking.ControllerUpdater;
 import javafx.application.Application;
 
 import java.net.SocketException;
@@ -47,6 +50,19 @@ public class BaseStation {
         } catch (SocketException e) {
             e.printStackTrace();
             System.exit(1);
+        }
+
+        //  Create a ControllerState and a ControllerUpdater object to send updates of the DPAD buttons to the rover
+        try {
+            //BaseStation base = new BaseStation();
+            ControllerState controllerChanging = new ControllerState();
+            ControllerUpdater sendDpad = new ControllerUpdater(networkManager);
+            controllerChanging.addObserver(sendDpad);
+
+        }
+        catch (Exception e){
+            System.out.println("Failed to observe things: " + e.getMessage());
+
         }
 
         Application.launch(DisplayApplication.class);
