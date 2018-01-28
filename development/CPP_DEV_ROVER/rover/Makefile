@@ -4,7 +4,7 @@ HEADERS = network.h
 all: rover
 
 rover: $(SOURCES) $(HEADERS)
-	g++ -Wall -o rover $(SOURCES)
+	g++ -std=c++11 -Wall -o rover $(SOURCES)
 
 .PHONY: clean
 clean:
