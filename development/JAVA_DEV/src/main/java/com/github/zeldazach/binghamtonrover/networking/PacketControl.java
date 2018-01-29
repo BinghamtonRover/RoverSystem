@@ -2,8 +2,10 @@ package com.github.zeldazach.binghamtonrover.networking;
 
 import java.nio.ByteBuffer;
 
-public class PacketControl extends Packet {
-    public static enum MovementDirection {
+public class PacketControl extends Packet
+{
+    public enum MovementDirection
+    {
         STOP,
         FORWARD,
         LEFT,
@@ -11,21 +13,23 @@ public class PacketControl extends Packet {
         BACKWARD
     }
 
-    public MovementDirection direction;
+    private MovementDirection direction;
 
-    public PacketControl(MovementDirection direction) {
+    PacketControl(MovementDirection _direction)
+    {
         super((byte) 1, 1);
-
-        this.direction = direction;
+        direction = _direction;
     }
 
     @Override
-    public void writeToBuffer(ByteBuffer buff) {
+    public void writeToBuffer(ByteBuffer buff)
+    {
         buff.put((byte) direction.ordinal());
     }
 
     @Override
-    public void readFromBuffer(ByteBuffer buff) {
+    public void readFromBuffer(ByteBuffer buff)
+    {
         direction = MovementDirection.values()[buff.get()];
     }
 }

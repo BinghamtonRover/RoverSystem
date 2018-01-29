@@ -9,7 +9,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.effect.BlendMode;
 import javafx.scene.image.Image;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -21,24 +20,27 @@ import javafx.stage.Stage;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DisplayApplication extends Application {
+public class DisplayApplication extends Application
+{
 
-    public static final String WINDOW_TITLE = "Binghamton Rover Base Station";
+    private static final String WINDOW_TITLE = "Binghamton Rover Base Station";
 
     /**
      * These need to be anything with a 16:9 ratio.
      */
-    public static final int XBOX_VIEW_WIDTH = 800, XBOX_VIEW_HEIGHT = 450;
+    private static final int XBOX_VIEW_WIDTH = 800, XBOX_VIEW_HEIGHT = 450;
 
-    public static final int CAMERA_VIEW_WIDTH = 400, CAMERA_VIEW_HEIGHT = 400;
+    private static final int CAMERA_VIEW_WIDTH = 400, CAMERA_VIEW_HEIGHT = 400;
 
     /**
      * Yes, this is hardcoded. It's used in the calculation of the offset of the joystick "pressed" image.
+     * TODO: Does this need to be hardcoded in the future?
      */
     private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
     @Override
-    public void start(Stage primary) throws Exception {
+    public void start(Stage primary) throws Exception
+    {
         primary.setTitle(WINDOW_TITLE);
 
         VBox root = buildRoot();
@@ -53,7 +55,8 @@ public class DisplayApplication extends Application {
      * Builds the GUI, returning the root container.
      * @return The root container of the GUI.
      */
-    private VBox buildRoot() {
+    private VBox buildRoot()
+    {
         VBox root = new VBox();
 
         root.setAlignment(Pos.CENTER);
@@ -73,7 +76,8 @@ public class DisplayApplication extends Application {
      * Builds the camera feed view. This is a placeholder; for now it simply creates a rectangle.
      * @return The camera feed view.
      */
-    private StackPane buildCameraView() {
+    private StackPane buildCameraView()
+    {
         StackPane cameraView = new StackPane();
         cameraView.setAlignment(Pos.CENTER);
 
@@ -87,105 +91,101 @@ public class DisplayApplication extends Application {
         return cameraView;
     }
 
-    private Canvas buildXboxView() {
+    private Canvas buildXboxView()
+    {
         Canvas xboxCanvas = new Canvas(XBOX_VIEW_WIDTH, XBOX_VIEW_HEIGHT);
 
         xboxCanvas.getGraphicsContext2D().setFill(Color.BLUE);
         xboxCanvas.getGraphicsContext2D().fillRect(0, 0, XBOX_VIEW_WIDTH, XBOX_VIEW_HEIGHT);
 
-        AnimationTimer loCanvasTimer = new AnimationTimer() {
+        AnimationTimer animationTimer = new AnimationTimer()
+        {
             @Override
-            public void handle(long now) {
-                ControllerState loState = ControllerHandler.getInstance().getState();
-
-                GraphicsContext loCtx = xboxCanvas.getGraphicsContext2D();
-
-                loCtx.setFill(Color.BLACK);
-                loCtx.fillRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
-
-                drawImage(xboxCanvas, loState.buttonA ? "a_pressed" : "a_unpressed");
-
-                if (loState.buttonB)    drawImage(xboxCanvas, "b_pressed");
-                else                    drawImage(xboxCanvas, "b_unpressed");
-
-                if (loState.buttonX)    drawImage(xboxCanvas, "x_pressed");
-                else                    drawImage(xboxCanvas, "x_unpressed");
-
-                if (loState.buttonY)    drawImage(xboxCanvas, "y_pressed");
-                else                    drawImage(xboxCanvas, "y_unpressed");
-
-                if (loState.buttonSelect)   drawImage(xboxCanvas, "view_pressed");
-                else                        drawImage(xboxCanvas, "view_unpressed");
-
-                if (loState.buttonMode)     drawImage(xboxCanvas, "xbox_pressed");
-                else                        drawImage(xboxCanvas, "xbox_unpressed");
-
-                if (loState.buttonStart)    drawImage(xboxCanvas, "menu_pressed");
-                else                        drawImage(xboxCanvas, "menu_unpressed");
-
-                if (loState.buttonLBumper)  drawImage(xboxCanvas, "lb_pressed");
-                else                        drawImage(xboxCanvas, "lb_unpressed");
-
-                if (loState.buttonRBumper)  drawImage(xboxCanvas, "rb_pressed");
-                else                        drawImage(xboxCanvas, "rb_unpressed");
-
+            public void handle(long now)
+            {
                 double joystickOffset = JOYSTICK_OFFSET_RATIO * XBOX_VIEW_WIDTH;
+                ControllerState controllerState = ControllerHandler.getInstance().getControllerState();
+                GraphicsContext graphicsContext = xboxCanvas.getGraphicsContext2D();
+
+                graphicsContext.setFill(Color.BLACK);
+                graphicsContext.fillRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
+
+                drawImage(xboxCanvas, (controllerState.buttonA) ? "a_pressed" : "a_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonB) ? "b_pressed" : "b_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonX) ? "x_pressed" : "x_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonY) ? "y_pressed" : "y_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonSelect) ? "view_pressed" : "view_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonMode) ? "xbox_pressed" : "xbox_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonStart) ? "menu_pressed" : "menu_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonLBumper) ? "lb_pressed" : "lb_unpressed");
+                drawImage(xboxCanvas, (controllerState.buttonRBumper) ? "rb_pressed" : "rb_unpressed");
 
                 drawImage(xboxCanvas, "js_left_background");
-                if (loState.lStickX != 0.0 || loState.lStickY != 0.0) {
-                    drawImage(xboxCanvas, "js_left_pressed", Math.floor(loState.lStickX * joystickOffset),
-                            Math.floor(loState.lStickY * joystickOffset));
-                } else {
+                if (controllerState.lStickX != 0.0 || controllerState.lStickY != 0.0)
+                {
+                    drawImage(xboxCanvas, "js_left_pressed", Math.floor(controllerState.lStickX * joystickOffset),
+                            Math.floor(controllerState.lStickY * joystickOffset));
+                }
+                else
+                {
                     drawImage(xboxCanvas, "js_left_unpressed");
                 }
 
                 drawImage(xboxCanvas, "js_right_background");
-                if (loState.rStickX != 0.0 || loState.rStickY != 0.0) {
-                    drawImage(xboxCanvas, "js_right_pressed", Math.floor(loState.rStickX * joystickOffset),
-                            Math.floor(loState.rStickY * joystickOffset));
-                } else {
+                if (controllerState.rStickX != 0.0 || controllerState.rStickY != 0.0)
+                {
+                    drawImage(xboxCanvas, "js_right_pressed", Math.floor(controllerState.rStickX * joystickOffset),
+                            Math.floor(controllerState.rStickY * joystickOffset));
+                }
+                else
+                {
                     drawImage(xboxCanvas, "js_right_unpressed");
                 }
 
                 drawImage(xboxCanvas, "dpad_unpressed");
-                if (loState.dpad == 0.25)   drawImage(xboxCanvas, "dpad_pressed_up");
-                if (loState.dpad == 0.50)   drawImage(xboxCanvas, "dpad_pressed_right");
-                if (loState.dpad == 0.75)   drawImage(xboxCanvas, "dpad_pressed_down");
-                if (loState.dpad == 1.00)   drawImage(xboxCanvas, "dpad_pressed_left");
+                if (controllerState.dpad == 0.25) drawImage(xboxCanvas, "dpad_pressed_up");
+                if (controllerState.dpad == 0.50) drawImage(xboxCanvas, "dpad_pressed_right");
+                if (controllerState.dpad == 0.75) drawImage(xboxCanvas, "dpad_pressed_down");
+                if (controllerState.dpad == 1.00) drawImage(xboxCanvas, "dpad_pressed_left");
 
                 drawImage(xboxCanvas, "lt_unpressed");
-                loCtx.setGlobalAlpha((loState.lTrigger + 1.0) / 2.0);
+                graphicsContext.setGlobalAlpha((controllerState.lTrigger + 1.0) / 2.0);
                 drawImage(xboxCanvas, "lt_pressed");
-                loCtx.setGlobalAlpha(1.0);
+                graphicsContext.setGlobalAlpha(1.0);
 
                 drawImage(xboxCanvas, "rt_unpressed");
-                loCtx.setGlobalAlpha((loState.rTrigger + 1.0) / 2.0);
+                graphicsContext.setGlobalAlpha((controllerState.rTrigger + 1.0) / 2.0);
                 drawImage(xboxCanvas, "rt_pressed");
-                loCtx.setGlobalAlpha(1.0);
+                graphicsContext.setGlobalAlpha(1.0);
             }
         };
 
-        loCanvasTimer.start();
+        animationTimer.start();
 
         return xboxCanvas;
     }
 
     private Map<String, Image> controllerImageMap = new HashMap<>();
 
-    private void drawImage(Canvas aoCanvas, String asImageName) {
-        drawImage(aoCanvas, asImageName, 0, 0);
+    private void drawImage(Canvas canvas, String imageName)
+    {
+        drawImage(canvas, imageName, 0, 0);
     }
 
-    private void drawImage(Canvas aoCanvas, String asImageName, double x, double y) {
-        Image loImage;
+    private void drawImage(Canvas canvas, String imageName, double x, double y)
+    {
+        Image image;
 
-        if (!controllerImageMap.containsKey(asImageName)) {
-            loImage = new Image("xbox/" + asImageName + ".png");
-            controllerImageMap.put(asImageName, loImage);
-        } else {
-            loImage = controllerImageMap.get(asImageName);
+        if (!controllerImageMap.containsKey(imageName))
+        {
+            image = new Image("xbox/" + imageName + ".png");
+            controllerImageMap.put(imageName, image);
+        }
+        else
+        {
+            image = controllerImageMap.get(imageName);
         }
 
-        aoCanvas.getGraphicsContext2D().drawImage(loImage, x, y, aoCanvas.getWidth(), aoCanvas.getHeight());
+        canvas.getGraphicsContext2D().drawImage(image, x, y, canvas.getWidth(), canvas.getHeight());
     }
 }

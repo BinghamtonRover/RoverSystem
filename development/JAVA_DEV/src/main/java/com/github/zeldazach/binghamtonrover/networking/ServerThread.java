@@ -4,32 +4,42 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
 
-public abstract class ServerThread extends Thread {
-    protected Manager serverManager;
+abstract class ServerThread extends Thread
+{
+    Manager serverManager;
 
-    protected ServerThread(String name, Manager m) {
+    ServerThread(String name, Manager m)
+    {
         super(name);
-        this.serverManager = m;
+        serverManager = m;
     }
 }
 
-class ServerReceiver extends ServerThread {
-    ServerReceiver(Manager m) {
+class ServerReceiver extends ServerThread
+{
+    ServerReceiver(Manager m)
+    {
         super("UDP Receiver", m);
 
         // So the program actually stops...
         setDaemon(true);
     }
 
-    public void run() {
+    public void run()
+    {
         DatagramPacket datagramPacket;
 
-        while (!this.serverManager.socket.isClosed()) {
+        while (!serverManager.getSocket().isClosed())
+        {
             datagramPacket = Packet.makeReceivingPacket();
 
-            try {
-                this.serverManager.socket.receive(datagramPacket);
-            } catch (IOException e) {
+            // TODO: Explain how this is UDP protocol
+            try
+            {
+                serverManager.getSocket().receive(datagramPacket);
+            }
+            catch (IOException e)
+            {
                 e.printStackTrace();
                 continue;
             }

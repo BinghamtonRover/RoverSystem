@@ -6,42 +6,50 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-class PacketHeader {
+class PacketHeader
+{
     public static final int SIZE = 5; // The current size of a packet header.
 
     private char version; // equivalent to unsigned short
     private byte type;
     private char timestamp; // equivalent to unsigned short
 
-    PacketHeader(char version, byte type, char timestamp) {
-        this.version = version;
-        this.type = type;
-        this.timestamp = timestamp;
+    PacketHeader(char _version, byte _type, char _timestamp)
+    {
+        version = _version;
+        type = _type;
+        timestamp = _timestamp;
     }
 
-    public PacketHeader() {
+    PacketHeader()
+    {
 
     }
 
-    public int getVersion() {
+    public int getVersion()
+    {
         return version;
     }
 
-    public int getType() {
+    public int getType()
+    {
         return type & 0xFF; // if the type if over 127 we get an underflow
     }
 
-    public int getTimestamp() {
+    public int getTimestamp()
+    {
         return timestamp;
     }
 
-    public void writeToBuffer(ByteBuffer buff) {
+    public void writeToBuffer(ByteBuffer buff)
+    {
         buff.putShort((short) version);
         buff.put(type);
         buff.putShort((short) timestamp);
     }
 
-    public void readFromBuffer(ByteBuffer buff) {
+    public void readFromBuffer(ByteBuffer buff)
+    {
         version = buff.getChar();
         type = buff.get();
         timestamp = buff.getChar();
@@ -55,7 +63,8 @@ class PacketHeader {
  * This is temporary, until I have time to design a better
  * system.
  */
-public abstract class Packet {
+public abstract class Packet
+{
     private final static int MAX_SIZE = 6; // max size known for a packet
 
     private byte type;
@@ -64,23 +73,26 @@ public abstract class Packet {
     /**
      * Sets the type of the packet and its length.
      * Since Packet is abstract, this will be implemented by its children.
-     * @param type The packet type.
-     * @param size The packet size.
+     * @param _type The packet type.
+     * @param _size The packet size.
      */
-    public Packet(byte type, int size) {
-        this.type = type;
-        this.size = size;
+    Packet(byte _type, int _size)
+    {
+        type = _type;
+        size = _size;
     }
 
-    public Packet() {
-
+    public Packet()
+    {
     }
 
-    public byte getType() {
+    public byte getType()
+    {
         return type;
     }
 
-    public int getSize() {
+    public int getSize()
+    {
         return size;
     }
 
@@ -93,11 +105,13 @@ public abstract class Packet {
     public abstract void writeToBuffer(ByteBuffer buff);
     public abstract void readFromBuffer(ByteBuffer buff);
 
-    public static DatagramPacket makeReceivingPacket() {
+    public static DatagramPacket makeReceivingPacket()
+    {
         return makeReceivingPacket(MAX_SIZE);
     }
 
-    public static DatagramPacket makeReceivingPacket(int readAmt) {
+    private static DatagramPacket makeReceivingPacket(int readAmt)
+    {
         return new DatagramPacket(new byte[MAX_SIZE], readAmt);
     }
 }

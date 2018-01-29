@@ -1,108 +1,145 @@
 package com.github.zeldazach.binghamtonrover.controller;
 
+// TODO: Change this to import what you need instead of wildcard
 import net.java.games.input.*;
 
+// TODO: Change this to import what you need instead of wildcard
 import javax.swing.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class ControllerHandler implements Runnable {
+public class ControllerHandler implements Runnable
+{
+    private static ControllerHandler controllerHandler;
+    private Controller controller;
+    private ControllerState controllerState;
 
-    private static ControllerHandler instance;
-
-    public static void init() {
-        if (instance != null) {
+    public static void init()
+    {
+        if (controllerHandler != null)
+        {
             throw new IllegalStateException("ControllerHandler was already initialized!");
         }
 
-        ControllerEnvironment loEnvironment = ControllerEnvironment.getDefaultEnvironment();
+        ControllerEnvironment controllerEnvironment = ControllerEnvironment.getDefaultEnvironment();
 
         // This prevents JInput from spamming stderr with useless warning messages.
         Logger.getLogger(ControllerEnvironment.class.getName()).setUseParentHandlers(false);
 
-        List<Controller> laValidControllers = new ArrayList<>();
+        // TODO: Explain what this is used for
+        List<Controller> validControllersList = new ArrayList<>();
 
-        for (Controller loController : loEnvironment.getControllers()) {
-            if (loController.getType() != Controller.Type.GAMEPAD) continue;
-            if (loController.getPortType() != Controller.PortType.USB) continue;
+        for (Controller controller : controllerEnvironment.getControllers())
+        {
+            if (controller.getType() != Controller.Type.GAMEPAD)
+            {
+                continue;
+            }
 
-            laValidControllers.add(loController);
+            if (controller.getPortType() != Controller.PortType.USB)
+            {
+                continue;
+            }
+
+            validControllersList.add(controller);
         }
 
-        if (laValidControllers.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No USB controllers were found!", "Error", JOptionPane.ERROR_MESSAGE);
+        if (validControllersList.isEmpty())
+        {
+            JOptionPane.showMessageDialog(null,
+                                          "No USB controllers were found!",
+                                          "Error",
+                                          JOptionPane.ERROR_MESSAGE);
+
             throw new RuntimeException("No USB controllers were found");
         }
 
-        Controller loChosenController;
+        // TODO: Explain what this is used for
+        Controller chosenController;
 
-        if (laValidControllers.size() > 1) {
+        if (validControllersList.size() > 1)
+        {
             System.out.println("There are more than one USB controller connected!");
 
-            String[] laNames = new String[laValidControllers.size()];
-            for (int i = 0; i < laValidControllers.size(); i++) {
-                laNames[i] = laValidControllers.get(i).getName();
-            }
+            Controller selectedController =
+                    (Controller) JOptionPane.showInputDialog(null,
+                                                             "Select the controller:",
+                                                             "More than one USB controller was found!",
+                                                             JOptionPane.INFORMATION_MESSAGE,
+                                                             null,
+                                                             validControllersList.toArray(),
+                                                             validControllersList.get(0));
 
-            Controller loSelected = (Controller) JOptionPane.showInputDialog(null, "Select the controller:", "More than one USB controller was found!", JOptionPane.INFORMATION_MESSAGE, null, laValidControllers.toArray(), laValidControllers.get(0));
-            if (loSelected == null) {
+            if (selectedController == null)
+            {
                 throw new RuntimeException("User cancelled controller selection.");
             }
 
-            loChosenController = loSelected;
-            System.out.println("User selected controller: " + loChosenController);
-        } else {
-            loChosenController = laValidControllers.get(0);
-            System.out.println("Defaulting to only controller: " + loChosenController);
+            chosenController = selectedController;
+            System.out.println("User selected controller: " + chosenController);
+        }
+        else
+        {
+            chosenController = validControllersList.get(0);
+            System.out.println("Defaulting to only controller: " + chosenController);
         }
 
-        instance = new ControllerHandler(loChosenController);
+        controllerHandler = new ControllerHandler(chosenController);
 
-        Thread loInstanceThread = new Thread(instance);
-        loInstanceThread.setDaemon(true);
-        loInstanceThread.start();
+        // TODO: Explain what this thread does
+        Thread controllerHandlerThread = new Thread(controllerHandler);
+        controllerHandlerThread.setDaemon(true);
+        controllerHandlerThread.start();
     }
 
-    public static ControllerHandler getInstance() {
-        if (instance == null) {
+    public static ControllerHandler getInstance()
+    {
+        if (controllerHandler == null)
+        {
             throw new IllegalStateException("ControllerHandler.init() MUST be called before ControllerHandler.getInstance() !!!!!");
         }
 
-        return instance;
+        return controllerHandler;
     }
 
-    private Controller controller;
-    private ControllerState state;
-
-    public ControllerHandler(Controller controller) {
-        this.controller = controller;
-        this.state = new ControllerState();
+    private ControllerHandler(Controller c)
+    {
+        controller = c;
+        controllerState = new ControllerState();
     }
 
-    public ControllerState getState() {
-        return state;
+    public ControllerState getControllerState()
+    {
+        return controllerState;
     }
 
-    @Override public void run() {
-        while (true) {
+    @Override
+    public void run()
+    {
+        // TODO: Explain what this permanent loop does
+        while (true)
+        {
             controller.poll();
 
             EventQueue queue = controller.getEventQueue();
 
             Event event = new Event();
 
-            while (queue.getNextEvent(event)) {
-                state.update(event.getComponent().getName(), event.getValue());
+            while (queue.getNextEvent(event))
+            {
+                controllerState.update(event.getComponent().getName(), event.getValue());
             }
-//
-//            for (Component loComponent : controller.getComponents()) {
-//                state.update(loComponent.getName(), loComponent.getPollData());
-//            }
 
-            try {
+            try
+            {
                 Thread.sleep(100);
-            } catch (InterruptedException e) {}
+            }
+            catch (InterruptedException e)
+            {
+                System.exit(0);
+            }
         }
     }
 }
