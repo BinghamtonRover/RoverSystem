@@ -1,5 +1,6 @@
 *.iml
 .idea/
+*.so
 target/
 *.pyc
 cmake-build-debug/
