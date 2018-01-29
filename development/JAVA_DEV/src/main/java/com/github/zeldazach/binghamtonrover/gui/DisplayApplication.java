@@ -103,8 +103,7 @@ public class DisplayApplication extends Application {
                 loCtx.setFill(Color.BLACK);
                 loCtx.fillRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
 
-                if (loState.buttonA)    drawImage(xboxCanvas, "a_pressed");
-                else                    drawImage(xboxCanvas, "a_unpressed");
+                drawImage(xboxCanvas, loState.buttonA ? "a_pressed" : "a_unpressed");
 
                 if (loState.buttonB)    drawImage(xboxCanvas, "b_pressed");
                 else                    drawImage(xboxCanvas, "b_unpressed");
@@ -134,14 +133,16 @@ public class DisplayApplication extends Application {
 
                 drawImage(xboxCanvas, "js_left_background");
                 if (loState.lStickX != 0.0 || loState.lStickY != 0.0) {
-                    drawImage(xboxCanvas, "js_left_pressed", Math.floor(loState.lStickX * joystickOffset), Math.floor(loState.lStickY * joystickOffset));
+                    drawImage(xboxCanvas, "js_left_pressed", Math.floor(loState.lStickX * joystickOffset),
+                            Math.floor(loState.lStickY * joystickOffset));
                 } else {
                     drawImage(xboxCanvas, "js_left_unpressed");
                 }
 
                 drawImage(xboxCanvas, "js_right_background");
                 if (loState.rStickX != 0.0 || loState.rStickY != 0.0) {
-                    drawImage(xboxCanvas, "js_right_pressed", Math.floor(loState.rStickX * joystickOffset), Math.floor(loState.rStickY * joystickOffset));
+                    drawImage(xboxCanvas, "js_right_pressed", Math.floor(loState.rStickX * joystickOffset),
+                            Math.floor(loState.rStickY * joystickOffset));
                 } else {
                     drawImage(xboxCanvas, "js_right_unpressed");
                 }

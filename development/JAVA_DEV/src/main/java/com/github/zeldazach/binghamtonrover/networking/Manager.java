@@ -127,7 +127,7 @@ public class Manager {
     }
 
     public synchronized void sendPacket(Packet p, String roverAddress, int roverPort) throws IOException {
-        InetAddress addr = Inet4Address.getByName(roverAddress);
+        InetAddress addr = InetAddress.getByName(roverAddress);
 
         for (int i = 0; i < resendCount; i++) {
             // We fill the packet header here, since the user of this API shouldn't have to touch it.
