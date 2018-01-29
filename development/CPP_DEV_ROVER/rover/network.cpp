@@ -86,7 +86,7 @@ void NetworkManager::poll() {
         if (res == -1) {
             // Two options here: either its because no packets were around, or there's an actual error...
             if (errno == EAGAIN) {
-                printf("> Nothing to read.\n");
+                // printf("> Nothing to read.\n");
                 break;
             } else {
                 // Handle failure
