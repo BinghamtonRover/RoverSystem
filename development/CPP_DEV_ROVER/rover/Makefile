@@ -1,11 +1,14 @@
 SOURCES = main.cpp network.cpp
 HEADERS = network.h
+CXX_VERSION = -std=c++14
+BUILD_FLAGS = $(CXX_VERSION) -Wall -Wextra -Werror -Wpedantic -pedantic-errors -g
 
 all: rover
 
 rover: $(SOURCES) $(HEADERS)
-	g++ -std=c++11 -Wall -o rover $(SOURCES)
+	g++ $(SOURCES) $(BUILD_FLAGS) -o rover
 
 .PHONY: clean
+
 clean:
-	rm rover
+	rm -f rover
