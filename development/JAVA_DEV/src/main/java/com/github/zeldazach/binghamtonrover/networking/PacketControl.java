@@ -14,7 +14,7 @@ public class PacketControl extends Packet {
     public MovementDirection direction;
 
     public PacketControl(MovementDirection direction) {
-        super((byte) 0, 1);
+        super((byte) 1, 1);
 
         this.direction = direction;
     }

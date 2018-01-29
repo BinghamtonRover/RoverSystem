@@ -9,6 +9,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.image.Image;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -16,6 +17,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class DisplayApplication extends Application {
 
@@ -27,6 +31,11 @@ public class DisplayApplication extends Application {
     public static final int XBOX_VIEW_WIDTH = 800, XBOX_VIEW_HEIGHT = 450;
 
     public static final int CAMERA_VIEW_WIDTH = 400, CAMERA_VIEW_HEIGHT = 400;
+
+    /**
+     * Yes, this is hardcoded. It's used in the calculation of the offset of the joystick "pressed" image.
+     */
+    private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
     @Override
     public void start(Stage primary) throws Exception {
@@ -106,20 +115,52 @@ public class DisplayApplication extends Application {
                 if (loState.buttonY)    drawImage(xboxCanvas, "y_pressed");
                 else                    drawImage(xboxCanvas, "y_unpressed");
 
-                if (loState.buttonSelect)   drawImage(xboxCanvas, "menu_pressed");
-                else                        drawImage(xboxCanvas, "menu_unpressed");
+                if (loState.buttonSelect)   drawImage(xboxCanvas, "view_pressed");
+                else                        drawImage(xboxCanvas, "view_unpressed");
 
                 if (loState.buttonMode)     drawImage(xboxCanvas, "xbox_pressed");
                 else                        drawImage(xboxCanvas, "xbox_unpressed");
 
-                if (loState.buttonStart)    drawImage(xboxCanvas, "view_pressed");
-                else                        drawImage(xboxCanvas, "view_unpressed");
+                if (loState.buttonStart)    drawImage(xboxCanvas, "menu_pressed");
+                else                        drawImage(xboxCanvas, "menu_unpressed");
 
                 if (loState.buttonLBumper)  drawImage(xboxCanvas, "lb_pressed");
                 else                        drawImage(xboxCanvas, "lb_unpressed");
 
                 if (loState.buttonRBumper)  drawImage(xboxCanvas, "rb_pressed");
                 else                        drawImage(xboxCanvas, "rb_unpressed");
+
+                double joystickOffset = JOYSTICK_OFFSET_RATIO * XBOX_VIEW_WIDTH;
+
+                drawImage(xboxCanvas, "js_left_background");
+                if (loState.lStickX != 0.0 || loState.lStickY != 0.0) {
+                    drawImage(xboxCanvas, "js_left_pressed", Math.floor(loState.lStickX * joystickOffset), Math.floor(loState.lStickY * joystickOffset));
+                } else {
+                    drawImage(xboxCanvas, "js_left_unpressed");
+                }
+
+                drawImage(xboxCanvas, "js_right_background");
+                if (loState.rStickX != 0.0 || loState.rStickY != 0.0) {
+                    drawImage(xboxCanvas, "js_right_pressed", Math.floor(loState.rStickX * joystickOffset), Math.floor(loState.rStickY * joystickOffset));
+                } else {
+                    drawImage(xboxCanvas, "js_right_unpressed");
+                }
+
+                drawImage(xboxCanvas, "dpad_unpressed");
+                if (loState.dpad == 0.25)   drawImage(xboxCanvas, "dpad_pressed_up");
+                if (loState.dpad == 0.50)   drawImage(xboxCanvas, "dpad_pressed_right");
+                if (loState.dpad == 0.75)   drawImage(xboxCanvas, "dpad_pressed_down");
+                if (loState.dpad == 1.00)   drawImage(xboxCanvas, "dpad_pressed_left");
+
+                drawImage(xboxCanvas, "lt_unpressed");
+                loCtx.setGlobalAlpha((loState.lTrigger + 1.0) / 2.0);
+                drawImage(xboxCanvas, "lt_pressed");
+                loCtx.setGlobalAlpha(1.0);
+
+                drawImage(xboxCanvas, "rt_unpressed");
+                loCtx.setGlobalAlpha((loState.rTrigger + 1.0) / 2.0);
+                drawImage(xboxCanvas, "rt_pressed");
+                loCtx.setGlobalAlpha(1.0);
             }
         };
 
@@ -128,8 +169,22 @@ public class DisplayApplication extends Application {
         return xboxCanvas;
     }
 
+    private Map<String, Image> controllerImageMap = new HashMap<>();
+
     private void drawImage(Canvas aoCanvas, String asImageName) {
-        Image loImage = new Image("xbox/" + asImageName + ".png");
-        aoCanvas.getGraphicsContext2D().drawImage(loImage, 0, 0, aoCanvas.getWidth(), aoCanvas.getHeight());
+        drawImage(aoCanvas, asImageName, 0, 0);
+    }
+
+    private void drawImage(Canvas aoCanvas, String asImageName, double x, double y) {
+        Image loImage;
+
+        if (!controllerImageMap.containsKey(asImageName)) {
+            loImage = new Image("xbox/" + asImageName + ".png");
+            controllerImageMap.put(asImageName, loImage);
+        } else {
+            loImage = controllerImageMap.get(asImageName);
+        }
+
+        aoCanvas.getGraphicsContext2D().drawImage(loImage, x, y, aoCanvas.getWidth(), aoCanvas.getHeight());
     }
 }

@@ -16,6 +16,9 @@ public abstract class ServerThread extends Thread {
 class ServerReceiver extends ServerThread {
     ServerReceiver(Manager m) {
         super("UDP Receiver", m);
+
+        // So the program actually stops...
+        setDaemon(true);
     }
 
     public void run() {

@@ -24,10 +24,10 @@ public class BaseStation {
      * @param args Command-line arguments.
      */
     public static void main(String[] args) {
-        baseStationBindAddress = args[1];
-        baseStationBindPort = Integer.parseInt(args[2]);
-        roverAddress = args[3];
-        roverPort = Integer.parseInt(args[4]);
+        baseStationBindAddress = args[0];
+        baseStationBindPort = Integer.parseInt(args[1]);
+        roverAddress = args[2];
+        roverPort = Integer.parseInt(args[3]);
 
         ControllerHandler.init();
 
@@ -52,15 +52,11 @@ public class BaseStation {
             System.exit(1);
         }
 
-        //  Create a ControllerState and a ControllerUpdater object to send updates of the DPAD buttons to the rover
+        //  Create a ControllerUpdater object to send updates of the DPAD buttons to the rover
         try {
-            //BaseStation base = new BaseStation();
-            ControllerState controllerChanging = new ControllerState();
             ControllerUpdater sendDpad = new ControllerUpdater(networkManager);
-            controllerChanging.addObserver(sendDpad);
-
-        }
-        catch (Exception e){
+            ControllerHandler.getInstance().getState().addObserver(sendDpad);
+        } catch (Exception e) {
             System.out.println("Failed to observe things: " + e.getMessage());
 
         }

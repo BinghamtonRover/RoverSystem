@@ -129,11 +129,11 @@ public class Manager {
     public synchronized void sendPacket(Packet p, String roverAddress, int roverPort) throws IOException {
         InetAddress addr = Inet4Address.getByName(roverAddress);
 
-        // We fill the packet header here, since the user of this API shouldn't have to touch it.
-        ByteBuffer buff = packetToBuffer(p);
-
-        DatagramPacket dp = new DatagramPacket(buff.array(), buff.limit(), addr, roverPort);
         for (int i = 0; i < resendCount; i++) {
+            // We fill the packet header here, since the user of this API shouldn't have to touch it.
+            ByteBuffer buff = packetToBuffer(p);
+
+            DatagramPacket dp = new DatagramPacket(buff.array(), buff.limit(), addr, roverPort);
             socket.send(dp);
         }
     }

@@ -14,11 +14,14 @@ public class ControllerUpdater implements Observer {
 
     //  The observable that this observer is watching and updating
     private ControllerState controllerObservable = ControllerHandler.getInstance().getState();
+
     //  Use the Manager to send packets to the rover
-    private Manager managerUpdates = null;
+    private Manager managerUpdates;
+
     //  Gets the port and address of the rover from the variables in the BaseStation class
-    private  static int port = BaseStation.roverPort;
+    private static int port = BaseStation.roverPort;
     private static String address = BaseStation.roverAddress;
+
     //  The previous status of the DPAD to compare to
     private float dpadState = controllerObservable.dpad;
 
@@ -36,9 +39,7 @@ public class ControllerUpdater implements Observer {
         //  Make sure the observable notifying this observer is the correct one
         if(obs == controllerObservable) {
             //  Check the status of the DPAD (for DEBUGGING purposes
-            System.out.println("Previous:\t"+ dpadState + "\tCurrent:\t" + ((ControllerState)obs).dpad);
-            //  See what arg contains/its purpose
-            System.out.println("arg:\t" + arg);
+            // System.out.println("Previous:\t"+ dpadState + "\tCurrent:\t" + ((ControllerState)obs).dpad);
 
             float currentDpadState = ((ControllerState)obs).dpad;
             //If the states are different make a PacketControl and then send it
