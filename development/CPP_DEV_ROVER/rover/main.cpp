@@ -17,7 +17,7 @@ static void handle_control(void* void_packet)
 {
     PacketControl packet = *((PacketControl*) void_packet);
 
-	if (packet.movement_state == lastState)
+    if (packet.movement_state == lastState)
     {
         return;
     }
@@ -48,7 +48,7 @@ static void handle_control(void* void_packet)
 
     printf("> Received CONTROL packet: %s\n", message.c_str());
 
-	lastState = packet.movement_state;
+    lastState = packet.movement_state;
 }
 
 int main(int argc, char** argv)
@@ -56,9 +56,9 @@ int main(int argc, char** argv)
 
     if (argc != 3)
     {
-		printf("[!] Usage: rover <bind address> <bind port>\n");
-		return 1;
-	}
+        printf("[!] Usage: rover <bind address> <bind port>\n");
+        return 1;
+    }
 
     NetworkManager manager(std::string(argv[1]), atoi(argv[2]));
 
