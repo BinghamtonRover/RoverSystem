@@ -5,26 +5,30 @@ import java.util.Observable;
 /**
  * ControllerState represents the state of the XBox controller at a given moment in time.
  */
-public class ControllerState extends Observable {
+public class ControllerState extends Observable
+{
 
     /**
      * The margin about a floating-point number in which other floats are considered to be equal.
      */
-    public static final float EQUALITY_MARGIN = 1.0E-6f;
+    private static final float EQUALITY_MARGIN = 1.0E-6f;
 
     /**
      * The threshold about 0.0 at which a stick movement will actually be processed.
      * This is fixed for now, but could be calibrated at runtime if necessary.
      */
-    public static final float STICK_THRESHOLD = 0.02f;
+    private static final float STICK_THRESHOLD = 0.02f;
 
     /**
      * Simple buttons, have an off state (false) and an on state (true).
      *
      * Select is the left-most middle button, mode is the glowing button with the logo, and start is the right-most middle button.
      * LThumb and RThumb are the left and right sticks when pressed.
+     *
+     * TODO: Getters/Setters possibly?
      */
-    public boolean buttonX, buttonY, buttonA, buttonB, buttonSelect, buttonMode, buttonStart, buttonLBumper, buttonRBumper, buttonLThumb, buttonRThumb;
+    public boolean buttonX, buttonY, buttonA, buttonB, buttonSelect, buttonMode, buttonStart;
+    public boolean buttonLBumper, buttonRBumper, buttonLThumb, buttonRThumb;
 
     /**
      * Normalized values (between -1 and 1) for "continuous" axes.
@@ -46,8 +50,10 @@ public class ControllerState extends Observable {
      */
     public float lStickX, lStickY, rStickX, rStickY, lTrigger, rTrigger, dpad;
 
-    public void update(String name, float value) {
-        switch (name) {
+    public void update(String name, float value)
+    {
+        switch (name)
+        {
             case "X":
                 buttonX = floatToBool(value);
                 break;
@@ -110,16 +116,15 @@ public class ControllerState extends Observable {
         notifyObservers();
     }
 
-    private boolean floatToBool(float value) {
-        if (Math.abs(value - 0.0f) < EQUALITY_MARGIN) {
-            return false;
-        }
-
-        return true;
+    private boolean floatToBool(float value)
+    {
+        return !(Math.abs(value - 0.0f) < EQUALITY_MARGIN);
     }
 
-    private float clampStickValue(float value) {
-        if (Math.abs(value) < STICK_THRESHOLD) {
+    private float clampStickValue(float value)
+    {
+        if (Math.abs(value) < STICK_THRESHOLD)
+        {
             return 0;
         }
 

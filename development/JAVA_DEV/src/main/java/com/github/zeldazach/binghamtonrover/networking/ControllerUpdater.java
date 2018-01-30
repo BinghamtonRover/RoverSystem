@@ -10,10 +10,10 @@ import java.util.Observable;
 
 import static com.github.zeldazach.binghamtonrover.networking.PacketControl.MovementDirection;
 
-public class ControllerUpdater implements Observer {
-
+public class ControllerUpdater implements Observer
+{
     //  The observable that this observer is watching and updating
-    private ControllerState controllerObservable = ControllerHandler.getInstance().getState();
+    private ControllerState controllerObservable = ControllerHandler.getInstance().getControllerState();
 
     //  Use the Manager to send packets to the rover
     private Manager managerUpdates;
@@ -25,8 +25,9 @@ public class ControllerUpdater implements Observer {
     //  The previous status of the DPAD to compare to
     private float dpadState = controllerObservable.dpad;
 
-    public ControllerUpdater(Manager man) {
-        managerUpdates = man;
+    public ControllerUpdater(Manager manager)
+    {
+        managerUpdates = manager;
     }
 
     /**
@@ -35,71 +36,93 @@ public class ControllerUpdater implements Observer {
      *  @param obs the observable object this observer is responsible for keeping track of
      *  @param arg I have no idea what this does a tutorial told me to have it
      */
-    public void update(Observable obs, Object arg) {
+    public void update(Observable obs, Object arg)
+    {
         //  Make sure the observable notifying this observer is the correct one
-        if(obs == controllerObservable) {
+        if (obs == controllerObservable)
+        {
             //  Check the status of the DPAD (for DEBUGGING purposes
             // System.out.println("Previous:\t"+ dpadState + "\tCurrent:\t" + ((ControllerState)obs).dpad);
-
             float currentDpadState = ((ControllerState)obs).dpad;
             //If the states are different make a PacketControl and then send it
-            if(dpadState != currentDpadState) {
-                try {
+
+            if (dpadState != currentDpadState)
+            {
+                try
+                {
                     //  When no buttons are pressed tell the rover to stop
-                    if (currentDpadState == 0) {
+                    if (currentDpadState == 0)
+                    {
                         PacketControl stopMoving = new PacketControl(MovementDirection.STOP);
                         managerUpdates.sendPacket(stopMoving, address, port);
                     }
+
                     //  Case 1 when only up is pushed
-                    if (currentDpadState == .25) {
+                    if (currentDpadState == .25)
+                    {
                         PacketControl moveForward = new PacketControl(PacketControl.MovementDirection.FORWARD);
                         managerUpdates.sendPacket(moveForward, address, port);
                     }
+
                     //  Case 2 when only right is pushed
-                    if (currentDpadState == .5) {
+                    if (currentDpadState == .5)
+                    {
                         PacketControl moveRight = new PacketControl(PacketControl.MovementDirection.RIGHT);
                         managerUpdates.sendPacket(moveRight, address, port);
                     }
+
                     //  Case 3 when only down is pushed
-                    if (currentDpadState == .75) {
+                    if (currentDpadState == .75)
+                    {
                         PacketControl moveBack = new PacketControl(PacketControl.MovementDirection.BACKWARD);
                         managerUpdates.sendPacket(moveBack, address, port); // <-----PacketControl extends Packet
                     }
+
                     //  Case 4 when only left is pushed
-                    if (currentDpadState == 1.0) {
+                    if (currentDpadState == 1.0)
+                    {
                         PacketControl moveLeft = new PacketControl(PacketControl.MovementDirection.LEFT);
                         managerUpdates.sendPacket(moveLeft, address, port);
                     }
 
                     //  Additions if we decide to allow pushing two directions on the DPAD at the same time
                     /*
-                    if(currentDpadState == .125) {
+                    if(currentDpadState == .125)
+                    {
                         PacketControl moveForward = new PacketControl(MovementDirection.FORWARD);
                         PacketControl moveLeft = new PacketControl(MovementDirection.LEFT);
                         managerUpdates.sendPacket(moveForward, address, port);
                         managerUpdates.sendPacket(moveLeft, address, port);
                     }
-                    if(currentDpadState == .375) {
+
+                    if(currentDpadState == .375)
+                    {
                         PacketControl moveForward = new PacketControl(MovementDirection.FORWARD);
                         PacketControl moveRight = new PacketControl(PacketControl.MovementDirection.RIGHT);
                         managerUpdates.sendPacket(moveForward, address, port);
                         managerUpdates.sendPacket(moveRight, address, port);
                     }
-                    if(currentDpadState == .675) {
+
+                    if(currentDpadState == .675)
+                    {
                         PacketControl moveBack = new PacketControl(PacketControl.MovementDirection.BACKWARD);
                         PacketControl moveRight = new PacketControl(PacketControl.MovementDirection.RIGHT);
                         managerUpdates.sendPacket(moveBack, address, port);
                         managerUpdates.sendPacket(moveRight, address, port);
                     }
-                    if(currentDpadState == .875) {
+
+                    if(currentDpadState == .875)
+                    {
                         PacketControl moveBack = new PacketControl(PacketControl.MovementDirection.BACKWARD);
                         PacketControl moveLeft = new PacketControl(MovementDirection.LEFT);
                         managerUpdates.sendPacket(moveBack, address, port);
                         managerUpdates.sendPacket(moveLeft, address, port);
                     }*/
+
                     dpadState = currentDpadState;
                 }
-                catch (IOException e) {
+                catch (IOException e)
+                {
                     System.out.println("Failed to send packet to rover: " + e.getMessage());
                 }
             }

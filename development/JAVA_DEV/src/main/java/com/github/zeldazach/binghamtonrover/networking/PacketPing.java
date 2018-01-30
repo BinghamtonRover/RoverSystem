@@ -2,27 +2,31 @@ package com.github.zeldazach.binghamtonrover.networking;
 
 import java.nio.ByteBuffer;
 
-public class PacketPing extends Packet {
-    public static enum Direction {
+public class PacketPing extends Packet
+{
+    public enum Direction
+    {
         PING,
         PONG
     }
 
-    public Direction direction;
+    private Direction direction;
 
-    public PacketPing(Direction direction) {
+    public PacketPing(Direction _direction)
+    {
         super((byte) 0, 1);
-
-        this.direction = direction;
+        direction = _direction;
     }
 
     @Override
-    public void writeToBuffer(ByteBuffer buff) {
+    public void writeToBuffer(ByteBuffer buff)
+    {
         buff.put((byte) direction.ordinal());
     }
 
     @Override
-    public void readFromBuffer(ByteBuffer buff) {
+    public void readFromBuffer(ByteBuffer buff)
+    {
         direction = Direction.values()[buff.get()];
     }
 }
