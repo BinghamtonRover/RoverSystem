@@ -86,26 +86,38 @@ to rover at some fixed or variable rate. All fields must be specified in each pa
                     The state must remain for the duration of the command. For instance, if the rover
                     is to move forward while a controller button is held, then the FORWARD value must
                     be specified in every control packet sent while the button is held. When the button
-                    is released and the rover is expected to stop, the STOP value will be specified in
+                    is released and the rover is expected to stop, the STOP value will be specified i
                     every control packet sent until another button is pressed.
 
 > Type 2: Camera Packet
 
 The camera packet is used to send webcam camera frames from the rover to the base station. These packets
 are never repeated; dropped frames are acceptable. Note that timestamps of camera packets are still
-checked, since out-of-order frames are unacceptable. Each frame is a BMP file using the BITMAPINFOHEADER,
-no compression, and 24-bit color. Frames are 640 by 360 pixels.
+checked, since out-of-order frames are unacceptable, but timestamps have a slightly different meaning
+for camera packets (see below). Each packet contains a 160 by 90 pixel section of a 640 by 360 pixel frame.
 
 | (Field Name)      | (Field Type)      | (Field Size, in Bytes)    |
 ---------------------------------------------------------------------
-| Frame             | BMP Image         | 921654 (see below)        |
+| Section ID        | Unsigned Byte     | 1                         |
+| Section Data      | Binary Data       | 43200 (see below)         |
 
-* Frame:    A BMP image of a single frame of the camera feed. The data must be a self-contained BMP file,
-            for ease-of-use with the base station frontend. The size of each frame is fixed, and is
-            calculated as the sum of the following:
-                - The size of the bitmap file header = 14;
-                - The size of the bitmap DIB header = 40 (for BITMAPINFOHEADER);
-                - The size of the pixel data = WIDTH * HEIGHT * 4 = 640 * 360 * 4 = 921600.
-            Even though the bit depth is 24 (and thus each pixel is represented by 3 bytes), bitmaps
-            align their pixel data to multiples of 4 bytes, hence the "*4" above. For more information
-            about bitmaps, see https://msdn.microsoft.com/en-us/library/vs/alm/dd183391(v=vs.85).aspx.
+* Section ID:   A single byte which defines what section of a frame the section data represents. This must
+                be one of the following:
+                    - 0 (TOP_LEFT): The section data represents the top left corner of the frame.
+                    - 1 (TOP_RIGHT): The section data represents the top right corner of the frame.
+                    - 2 (BOTTOM_LEFT): The section data represents the bottom left corner of the frame.
+                    - 3 (BOTTOM_RIGHT): The section data represents the bottom right corner of the frame.
+                Thus the resulting frame will be composed of sections as follows:
+                    | 0 | 1 |
+                    | 2 | 3 |.
+* Section Data: The image data of the frame section. This is packed in 90 consecutive rows of 480 bytes.
+                Each row represents a horizontal pixel row of the image, starting from the top and moving
+                to the bottom. Within each row, there are 160 consecutive 3-byte tuples. Each tuple
+                represents a single pixel, moving from the left-most pixel to the right-most pixel in the
+                row. The 3-byte tuple contains the red, green, and blue components of each pixel, in that
+                order.
+
+The timestamp value in the header of camera packets has a slightly different meaning than that of other
+packets. All 4 packets which make up a single camera frame must have the same timestamp value. The sending
+side should use the next available timestamp value and assign it to all 4 packets for each frame. The
+receiving side must not discard camera packets that have the same timestamp as the last received timestamp.
