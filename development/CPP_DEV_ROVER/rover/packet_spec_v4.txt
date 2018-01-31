@@ -1,4 +1,4 @@
-=== [ Version 3 ] ===
+=== [ Version 4 ] ===
 
 This file describes the specification of the rover packet protocol, of version listed above.
 
@@ -88,3 +88,24 @@ to rover at some fixed or variable rate. All fields must be specified in each pa
                     be specified in every control packet sent while the button is held. When the button
                     is released and the rover is expected to stop, the STOP value will be specified in
                     every control packet sent until another button is pressed.
+
+> Type 2: Camera Packet
+
+The camera packet is used to send webcam camera frames from the rover to the base station. These packets
+are never repeated; dropped frames are acceptable. Note that timestamps of camera packets are still
+checked, since out-of-order frames are unacceptable. Each frame is a BMP file using the BITMAPINFOHEADER,
+no compression, and 24-bit color. Frames are 640 by 360 pixels.
+
+| (Field Name)      | (Field Type)      | (Field Size, in Bytes)    |
+---------------------------------------------------------------------
+| Frame             | BMP Image         | 921654 (see below)        |
+
+* Frame:    A BMP image of a single frame of the camera feed. The data must be a self-contained BMP file,
+            for ease-of-use with the base station frontend. The size of each frame is fixed, and is
+            calculated as the sum of the following:
+                - The size of the bitmap file header = 14;
+                - The size of the bitmap DIP header = 40 (for BITMAPINFOHEADER);
+                - The size of the pixel data = WIDTH * HEIGHT * 4 = 640 * 360 * 4 = 921600.
+            Even though the bit depth is 24 (and thus each pixel is represented by 3 bytes), bitmaps
+            align their pixel data to multiples of 4 bytes, hence the "*4" above. For more information
+            about bitmaps, see https://msdn.microsoft.com/en-us/library/vs/alm/dd183391(v=vs.85).aspx.
