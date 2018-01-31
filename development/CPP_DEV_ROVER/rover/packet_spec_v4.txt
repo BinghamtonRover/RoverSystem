@@ -104,7 +104,7 @@ no compression, and 24-bit color. Frames are 640 by 360 pixels.
             for ease-of-use with the base station frontend. The size of each frame is fixed, and is
             calculated as the sum of the following:
                 - The size of the bitmap file header = 14;
-                - The size of the bitmap DIP header = 40 (for BITMAPINFOHEADER);
+                - The size of the bitmap DIB header = 40 (for BITMAPINFOHEADER);
                 - The size of the pixel data = WIDTH * HEIGHT * 4 = 640 * 360 * 4 = 921600.
             Even though the bit depth is 24 (and thus each pixel is represented by 3 bytes), bitmaps
             align their pixel data to multiples of 4 bytes, hence the "*4" above. For more information
