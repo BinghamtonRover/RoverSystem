@@ -86,13 +86,14 @@ to rover at some fixed or variable rate. All fields must be specified in each pa
                     The state must remain for the duration of the command. For instance, if the rover
                     is to move forward while a controller button is held, then the FORWARD value must
                     be specified in every control packet sent while the button is held. When the button
-                    is released and the rover is expected to stop, the STOP value will be specified in
+                    is released and the rover is expected to stop, the STOP value will be specified i
                     every control packet sent until another button is pressed.
 
 > Type 2: Camera Packet
 
 The camera packet is used to send webcam camera frames from the rover to the base station. These packets
 are never repeated; dropped frames are acceptable. Note that timestamps of camera packets are still
+<<<<<<< HEAD
 checked, since out-of-order frames are unacceptable. Each frame is a 640 by 360 pixel JPEG image.
 
 | (Field Name)      | (Field Type)      | (Field Size, in Bytes)    |
