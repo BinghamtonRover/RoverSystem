@@ -93,19 +93,16 @@ to rover at some fixed or variable rate. All fields must be specified in each pa
 
 The camera packet is used to send webcam camera frames from the rover to the base station. These packets
 are never repeated; dropped frames are acceptable. Note that timestamps of camera packets are still
-checked, since out-of-order frames are unacceptable. Each frame is a BMP file using the BITMAPINFOHEADER,
-no compression, and 24-bit color. Frames are 640 by 360 pixels.
+checked, since out-of-order frames are unacceptable. Each frame is a 640 by 360 pixel JPEG image.
 
 | (Field Name)      | (Field Type)      | (Field Size, in Bytes)    |
 ---------------------------------------------------------------------
-| Frame             | BMP Image         | 921654 (see below)        |
+| Frame Size        | unsigned short    | 2                         |
+| Frame             | JPEG image        | [4_000, 40_000]           |
 
-* Frame:    A BMP image of a single frame of the camera feed. The data must be a self-contained BMP file,
-            for ease-of-use with the base station frontend. The size of each frame is fixed, and is
-            calculated as the sum of the following:
-                - The size of the bitmap file header = 14;
-                - The size of the bitmap DIB header = 40 (for BITMAPINFOHEADER);
-                - The size of the pixel data = WIDTH * HEIGHT * 4 = 640 * 360 * 4 = 921600.
-            Even though the bit depth is 24 (and thus each pixel is represented by 3 bytes), bitmaps
-            align their pixel data to multiples of 4 bytes, hence the "*4" above. For more information
-            about bitmaps, see https://msdn.microsoft.com/en-us/library/vs/alm/dd183391(v=vs.85).aspx.
+* Frame Size:   The size, in bytes, of the Frame field.
+* Frame:        A complete JPEG image of size Frame Size, in bytes. The size of this frame is guaranteed to
+                exist within the range listed above. 
+
+Implementations should read the Camera Packet with a buffer of at least size 40_007 (max size of Frame plus
+header and Frame Size).
