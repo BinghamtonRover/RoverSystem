@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <cstring>
 #include <string>
@@ -40,13 +41,15 @@ NetworkManager::~NetworkManager()
     close(socket_fd);
 }
 
-void NetworkManager::send_packet(PacketType type, void* packet, std::string address, int port)
+#define BUFFERVALUE(buff, byte_offset, data_type) *((data_type*) &buff[byte_offset])
+
+void NetworkManager::send_packet(PacketType type, void* packet, size_t packet_length, std::string address, int port)
 {
-    uint8_t buffer[MAXIMUM_PACKET_LENGTH];
+    uint8_t buffer[HEADER_LENGTH + packet_length];
     
-    *((uint16_t*) &buffer[0]) = htons(CURRENT_ROVER_PROTOCOL_VERSION);
-    buffer[2] = (uint8_t) type;
-    *((uint16_t*) &buffer[3]) = htons(send_timestamp);
+    BUFFERVALUE(buffer, 0, uint16_t) = htons(CURRENT_ROVER_PROTOCOL_VERSION);
+    BUFFERVALUE(buffer, 2, uint8_t) = (uint8_t) type;
+    BUFFERVALUE(buffer, 3, uint16_t) = htons(send_timestamp);
 
     // Do our own overflow, since its undefined for C++.
     if (send_timestamp == UINT16_MAX)
@@ -61,10 +64,15 @@ void NetworkManager::send_packet(PacketType type, void* packet, std::string addr
     switch (type)
     {
         case PacketType::PING:
-            buffer[5] = (uint8_t) ((PacketPing*) packet)->ping_direction;
+            BUFFERVALUE(buffer, HEADER_LENGTH, uint8_t) = (uint8_t) ((PacketPing*) packet)->ping_direction;
             break;
         case PacketType::CONTROL:
-            buffer[5] = (uint8_t) ((PacketControl*) packet)->movement_state;
+            BUFFERVALUE(buffer, HEADER_LENGTH, uint8_t) = (uint8_t) ((PacketControl*) packet)->movement_state;
+            break;
+        case PacketType::CAMERA:
+            PacketCamera* camera = (PacketCamera*) packet;
+            BUFFERVALUE(buffer, HEADER_LENGTH, uint16_t) = camera->size;
+            memcpy(&buffer[HEADER_LENGTH + 2], camera->data, (size_t) camera->size);
             break;
     }
 
@@ -116,11 +124,16 @@ void NetworkManager::poll()
             }
         }
 
+        // Get sender information
+        struct sockaddr_in src_addr_in = (struct sockaddr_in) src_addr;
+        int port = (int) ntohs(src_addr_in.sin_port);
+        std::string address(inet_ntoa(src_addr_in.sin_addr));
+
         // We have to convert non-byte values from network order (Big Endian) to host order.
 
-        uint16_t version = ntohs(*((uint16_t*) &buffer[0]));
-        uint8_t type = buffer[2];
-        uint16_t timestamp = ntohs(*((uint16_t*) &buffer[3]));
+        uint16_t version = ntohs(BUFFERVALUE(buffer, 0, uint16_t));
+        uint8_t type = BUFFERVALUE(buffer, 2, uint8_t);
+        uint16_t timestamp = ntohs(BUFFERVALUE(buffer, 3, uint8_t);
 
         // Handle the version.
         if (version != CURRENT_ROVER_PROTOCOL_VERSION)
@@ -148,13 +161,13 @@ void NetworkManager::poll()
         switch ((PacketType) type)
         {
             case PacketType::PING: {
-                PacketPing packet = { (PingDirection) buffer[5] };
-                packet_handlers[type](&packet);
+                PacketPing packet = { (PingDirection) buffer[HEADER_LENGTH] };
+                packet_handlers[type](*this, &packet, address, port);
                 break;
             }
             case PacketType::CONTROL: {
-                PacketControl packet = { (MovementState) buffer[5] };
-                packet_handlers[type](&packet);
+                PacketControl packet = { (MovementState) buffer[HEADER_LENGTH] };
+                packet_handlers[type](*this, &packet, address, port);
                 break;
             }
             default: {

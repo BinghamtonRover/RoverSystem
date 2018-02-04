@@ -61,9 +61,9 @@ struct CaptureSession {
     // Closes the connection to the camera.
     ~CaptureSession();
 
-    // Starts a capture session with the camera located at the given file path.
+    // Opens a capture session with the camera located at the given file path.
     // Returns true on success and false on failure.
-    bool start(std::string camera_path);
+    bool open(std::string camera_path);
 
     // Checks the capabilities of the camera to make sure that it supports
     // reading with the default format. Method ''start'' MUST be called first.
