@@ -1,5 +1,5 @@
-SOURCES = main.cpp network.cpp
-HEADERS = network.h
+SOURCES = main.cpp network.cpp camera.cpp
+HEADERS = network.h camera.h
 CXX_VERSION = -std=c++14
 BUILD_FLAGS = $(CXX_VERSION) -Wall -Wextra -Werror -Wpedantic -pedantic-errors -g
 
