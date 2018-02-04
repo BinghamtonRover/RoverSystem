@@ -2,9 +2,10 @@ package com.github.zeldazach.binghamtonrover.networking;
 
 import java.nio.ByteBuffer;
 
-public class PacketPing extends Packet
+// This is tad strange naming convention, so I'm proposing a change to
+// this new name
+public class PacketHeartbeat extends Packet
 {
-    private static int MAX_SIZE = 6;
     public enum Direction
     {
         PING,
@@ -13,13 +14,11 @@ public class PacketPing extends Packet
 
     private Direction direction;
 
-    public PacketPing(Direction _direction)
+    public PacketHeartbeat(Direction _direction)
     {
         super((byte) 0, 1);
         direction = _direction;
     }
-
-
 
     @Override
     public void writeToBuffer(ByteBuffer buff)

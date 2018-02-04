@@ -1,10 +1,8 @@
 package com.github.zeldazach.binghamtonrover.networking;
 
 import java.net.DatagramPacket;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 
 class PacketHeader
 {
@@ -21,10 +19,7 @@ class PacketHeader
         timestamp = _timestamp;
     }
 
-    PacketHeader()
-    {
-
-    }
+    PacketHeader() {}
 
     public int getVersion()
     {
@@ -82,9 +77,7 @@ public abstract class Packet
         size = _size;
     }
 
-    public Packet()
-    {
-    }
+    Packet() {}
 
     public byte getType()
     {

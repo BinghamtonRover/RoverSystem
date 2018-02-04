@@ -27,6 +27,11 @@ public class PacketControl extends Packet
         buff.put((byte) direction.ordinal());
     }
 
+    /*
+    TODO: THe point of this method is to make an appropriate packet object from
+    a ByteBuffer... but since we won't ever do this for this packet type it's
+    unnecessary, maybe we should throw an exception instead?
+    */
     @Override
     public void readFromBuffer(ByteBuffer buff)
     {

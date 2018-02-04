@@ -96,11 +96,6 @@ public class Manager
         closed = true;
     }
 
-    public void setHandler(int packetType, PacketHandler handler)
-    {
-        handlers.put(packetType, handler);
-    }
-
     private PacketHandler getHandler(int type)
     {
         return handlers.get(type);
@@ -145,16 +140,6 @@ public class Manager
     public DatagramSocket getSocket()
     {
         return socket;
-    }
-
-    public InetAddress getAddress()
-    {
-        return address;
-    }
-
-    public int getPort()
-    {
-        return port;
     }
 
     public synchronized void sendPacket(Packet p, String roverAddress, int roverPort) throws IOException
