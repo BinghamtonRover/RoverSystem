@@ -39,8 +39,7 @@ public class DisplayApplication extends Application
     private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
     @Override
-    public void start(Stage primary) throws Exception
-    {
+    public void start(Stage primary) {
         primary.setTitle(WINDOW_TITLE);
 
         VBox root = buildRoot();
