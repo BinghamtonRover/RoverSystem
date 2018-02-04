@@ -92,8 +92,7 @@ to rover at some fixed or variable rate. All fields must be specified in each pa
 > Type 2: Camera Packet
 
 The camera packet is used to send webcam camera frames from the rover to the base station. These packets
-are never repeated; dropped frames are acceptable. Note that timestamps of camera packets are still
-<<<<<<< HEAD
+are never repeated; dropped frames are acceptable. Note that timestamps of camera packets are still 
 checked, since out-of-order frames are unacceptable. Each frame is a 640 by 360 pixel JPEG image.
 
 | (Field Name)      | (Field Type)      | (Field Size, in Bytes)    |
