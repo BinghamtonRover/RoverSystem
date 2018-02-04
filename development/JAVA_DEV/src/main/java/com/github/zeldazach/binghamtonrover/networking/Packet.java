@@ -60,10 +60,11 @@ class PacketHeader
  */
 public abstract class Packet
 {
-    private final static int MAX_SIZE = 6; // max size known for a packet
+    private final static int MAX_SIZE = 40007; // max size known for a packet
 
     private byte type;
     private int size;
+    private Optional<Manager> manager = Optional.empty();
 
     /**
      * Sets the type of the packet and its length.
@@ -87,6 +88,18 @@ public abstract class Packet
     public int getSize()
     {
         return size;
+    }
+
+    public Optional<Manager> getManager() {
+        return manager;
+    }
+
+    private void setManager(Optional<Manager> manager) {
+        this.manager = manager;
+    }
+
+    public void setManager(Manager manager) {
+        setManager(Optional.of(manager));
     }
 
     /**

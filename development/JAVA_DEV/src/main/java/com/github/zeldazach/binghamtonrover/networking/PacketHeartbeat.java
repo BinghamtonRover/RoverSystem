@@ -14,7 +14,7 @@ public class PacketHeartbeat extends Packet
 
     private Direction direction;
 
-    public PacketHeartbeat(Direction _direction)
+    PacketHeartbeat(Direction _direction)
     {
         super((byte) 0, 1);
         direction = _direction;
@@ -31,5 +31,9 @@ public class PacketHeartbeat extends Packet
     public void readFromBuffer(ByteBuffer buff)
     {
         direction = Direction.values()[buff.get()];
+    }
+
+    public Direction getDirection() {
+        return direction;
     }
 }

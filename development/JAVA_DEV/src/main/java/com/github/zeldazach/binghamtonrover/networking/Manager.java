@@ -1,11 +1,15 @@
 package com.github.zeldazach.binghamtonrover.networking;
 
+import com.github.zeldazach.binghamtonrover.BaseStation;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Manager
 {
@@ -43,10 +47,19 @@ public class Manager
     private char sendTimestamp = 0;
     private char receiveTimestamp = 0;
     private DatagramSocket socket;
+    private Timer serverHeart = new Timer("Server Heart", true);
+    private int serverHeartBeatPeriod = 5;
+    private TimerTask serverHeartState;
 
-    private Map<Integer, PacketHandler> handlers = new HashMap<>();
+    private Map<Integer, PacketHandler> handlers = new HashMap<Integer, PacketHandler>() {{
+        put(null, new PacketUnknownHandler());
+        put(0, new PacketHearbeatHandler());
+        put(2, new PacketCameraHandler());
+    }};
     private Map<Integer, Class<? extends Packet>> packetsByType = new HashMap<Integer, Class<? extends Packet>>() {{
+        put(0, PacketHeartbeat.class);
         put(1, PacketControl.class);
+        put(2, PacketCamera.class);
     }};
 
     /**
@@ -83,7 +96,7 @@ public class Manager
         closed = false;
     }
 
-    public void closeServer() throws AlreadyClosed, InterruptedException
+    private void closeServer() throws AlreadyClosed, InterruptedException
     {
         if (closed)
         {
@@ -111,15 +124,32 @@ public class Manager
 
         PacketHeader header = new PacketHeader();
         header.readFromBuffer(buff);
+        int timestamp = header.getTimestamp();
+        int version = header.getVersion();
+        int expectedTimestamp = getLastReceiveTimestamp();
+        if (version != CURRENT_VERSION) {
+            outputVersionMismatch(version);
+            return;
+        }
+        else if (timestamp <= expectedTimestamp) {
+            outputTimestampMismatch(timestamp, expectedTimestamp);
+            return;
+        }
+        setReceiveTimestamp(header.getTimestamp());
 
         Packet packet = instantiatePacket(header);
         if (packet != null)
         {
+            packet.setManager(this);
             packet.readFromBuffer(buff);
         }
 
         // Now we need to get the handler for the packet type.
-        getHandler(header.getType()).handle(packet);
+        try {
+            getHandler(header.getType()).handle(packet);
+        } catch (PacketHandler.PacketHandlerException e) {
+            e.printStackTrace();
+        }
     }
 
     private Packet instantiatePacket(PacketHeader packetHeader)
@@ -156,6 +186,38 @@ public class Manager
         }
     }
 
+
+    public synchronized void requestHeartBeat() {
+        if (serverHeartState != null) {
+            serverHeartState.cancel();
+        }
+        try {
+            sendPacket(new PacketHeartbeat(PacketHeartbeat.Direction.PING), BaseStation.roverAddress, BaseStation.roverPort);
+        } catch (IOException e) {
+            System.err.println("Unable to request heartbeat.");
+            if (serverHeartState != null) System.out.println("WARNING: Previously requested hearbeat unrequested");
+            return;
+        }
+        serverHeartState = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("Hearbeat not received in " + serverHeartBeatPeriod + "seconds, closing server");
+                try {
+                    closeServer();
+                } catch (AlreadyClosed alreadyClosed) {
+                    System.err.println(alreadyClosed.getMessage());
+                } catch (InterruptedException e) {
+                    System.err.println("Socket already closed");
+                }
+            }
+        };
+        serverHeart.schedule(serverHeartState, serverHeartBeatPeriod * 1000);
+    }
+
+    protected synchronized void onHeartBeatReceive() {
+        if (serverHeartState != null) serverHeartState.cancel();
+    }
+
     /**
      * Creates a buffer with the contents of the given packet, and readies it for sending.
      * This will flip the buffer so that it is ready to be read.
@@ -177,12 +239,12 @@ public class Manager
         return buff;
     }
 
-    synchronized void incrementReceiveTimestamp()
+    private synchronized void setReceiveTimestamp(int timestamp)
     {
-        receiveTimestamp++;
+        receiveTimestamp = (char) timestamp;
     }
 
-    synchronized int getLastReceiveTimestamp()
+    private synchronized int getLastReceiveTimestamp()
     {
         return receiveTimestamp;
     }
