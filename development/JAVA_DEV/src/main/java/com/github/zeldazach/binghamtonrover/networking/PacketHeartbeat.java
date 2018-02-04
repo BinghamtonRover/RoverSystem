@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 public class PacketPing extends Packet
 {
+    private static int MAX_SIZE = 6;
     public enum Direction
     {
         PING,
@@ -18,12 +19,15 @@ public class PacketPing extends Packet
         direction = _direction;
     }
 
+
+
     @Override
     public void writeToBuffer(ByteBuffer buff)
     {
         buff.put((byte) direction.ordinal());
     }
 
+    // See other comment about readFromBuffer
     @Override
     public void readFromBuffer(ByteBuffer buff)
     {
