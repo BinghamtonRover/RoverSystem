@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <cstring>
 #include <string>
@@ -45,7 +46,7 @@ NetworkManager::~NetworkManager()
 
 void NetworkManager::send_packet(PacketType type, void* packet, size_t packet_length, std::string address, int port)
 {
-    uint8_t buffer[HEADER_LENGTH + packet_length];
+    uint8_t* buffer = (uint8_t*) alloca(HEADER_LENGTH + packet_length);
     
     BUFFERVALUE(buffer, 0, uint16_t) = htons(CURRENT_ROVER_PROTOCOL_VERSION);
     BUFFERVALUE(buffer, 2, uint8_t) = (uint8_t) type;
@@ -83,7 +84,7 @@ void NetworkManager::send_packet(PacketType type, void* packet, size_t packet_le
     send_addr.sin_port = htons(port);
     inet_aton(address.c_str(), &send_addr.sin_addr);
 
-    if (sendto(socket_fd, buffer, MAXIMUM_PACKET_LENGTH, 0, (struct sockaddr*) &send_addr, sizeof(send_addr)) < 0)
+    if (sendto(socket_fd, buffer, HEADER_LENGTH + packet_length, 0, (struct sockaddr*) &send_addr, sizeof(send_addr)) < 0)
     {
         // Send failure
         printf("[!] Failed to send packet!\n");
@@ -125,7 +126,7 @@ void NetworkManager::poll()
         }
 
         // Get sender information
-        struct sockaddr_in src_addr_in = (struct sockaddr_in) src_addr;
+        struct sockaddr_in src_addr_in = *((struct sockaddr_in*) &src_addr);
         int port = (int) ntohs(src_addr_in.sin_port);
         std::string address(inet_ntoa(src_addr_in.sin_addr));
 
@@ -133,7 +134,7 @@ void NetworkManager::poll()
 
         uint16_t version = ntohs(BUFFERVALUE(buffer, 0, uint16_t));
         uint8_t type = BUFFERVALUE(buffer, 2, uint8_t);
-        uint16_t timestamp = ntohs(BUFFERVALUE(buffer, 3, uint8_t);
+        uint16_t timestamp = ntohs(BUFFERVALUE(buffer, 3, uint8_t));
 
         // Handle the version.
         if (version != CURRENT_ROVER_PROTOCOL_VERSION)

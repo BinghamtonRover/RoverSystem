@@ -20,9 +20,9 @@ static void handle_ping(NetworkManager& manager, void* void_packet, std::string 
         printf("> Received ping... responding!\n");
         
         PacketPing response;
-        response.direction = PingDirection::PONG;
+        response.ping_direction = PingDirection::PONG;
 
-        manager.send_packet(PacketType::PONG, &response, PACKET_PING_MAX, address, port);
+        manager.send_packet(PacketType::PING, &response, PACKET_PING_MAX, address, port);
     } else {
         printf("> Our ping was answered by a PONG!\n");
     }
@@ -32,6 +32,11 @@ static MovementState lastState = MovementState::STOP;
 
 static void handle_control(NetworkManager& manager, void* void_packet, std::string address, int port)
 {
+    // We do not use these.
+    (void)manager;
+    (void)address;
+    (void)port;
+    
     PacketControl packet = *((PacketControl*) void_packet);
 
     if (packet.movement_state == lastState)
@@ -89,12 +94,12 @@ int main(int argc, char** argv)
     CaptureSession camera;
 
     if (!camera.open(std::string(argv[4]))) return 1;
-    if (!camera.check_capabilites()) return 1;
+    if (!camera.check_capabilities()) return 1;
     if (!camera.init_buffers()) return 1;
     if (!camera.start_stream()) return 1;
     
     // Create OpenCV matrix for image data.
-    cv::Mat image_mat(camera.height, camera_width);
+    cv::Mat image_mat(camera.height, camera.width, CV_8UC3);
 
     // Create a vector with JPEG quality data.
     // This is for OpenCV's encoding function.

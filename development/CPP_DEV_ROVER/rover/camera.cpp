@@ -37,7 +37,7 @@ CaptureSession::~CaptureSession() {
 
 bool CaptureSession::open(std::string camera_path) {
     // Open the camera file. This returns -1 on error.
-    fd = open(camera_path.c_str(), O_RDWR);
+    fd = ::open(camera_path.c_str(), O_RDWR);
     if (fd == -1) {
         std::cerr << "[!] Failed to open camera file at " << camera_path << "!" << std::endl;
         return false;

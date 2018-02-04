@@ -6,7 +6,7 @@ BUILD_FLAGS = $(CXX_VERSION) -Wall -Wextra -Werror -Wpedantic -pedantic-errors -
 all: rover
 
 rover: $(SOURCES) $(HEADERS)
-	g++ $(SOURCES) $(BUILD_FLAGS) -o rover
+	g++ $(SOURCES) $(BUILD_FLAGS) -o rover `pkg-config --cflags --libs opencv`
 
 .PHONY: clean
 

@@ -3,6 +3,7 @@
 
 #define CURRENT_ROVER_PROTOCOL_VERSION 4
 #define HEADER_LENGTH 5
+#define MAXIMUM_PACKET_LENGTH 40007 // Includes header
 
 enum class PacketType : uint8_t
 {
@@ -44,6 +45,8 @@ struct PacketCamera
     uint16_t size;
     uint8_t* data;
 };
+
+class NetworkManager;
 
 // Reference to manager, pointer to packet, sender address, sender port
 typedef void (*PacketHandler)(NetworkManager&, void*, std::string, int);
