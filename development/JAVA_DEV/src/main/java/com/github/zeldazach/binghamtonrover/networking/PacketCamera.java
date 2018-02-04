@@ -22,6 +22,7 @@ public class PacketCamera extends Packet {
     public void readFromBuffer(ByteBuffer buff) {
         frameSize = buff.getChar();
         byte[] imageData = new byte[frameSize];
+        System.arraycopy(buff.array(), 6, imageData, 0, frameSize);
         ByteArrayInputStream imageStream = new ByteArrayInputStream(imageData);
         try {
             bufferedImage = ImageIO.read(imageStream);
