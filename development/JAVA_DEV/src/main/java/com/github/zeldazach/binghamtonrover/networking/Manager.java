@@ -33,7 +33,7 @@ public class Manager
         }
     }
 
-    private static final int CURRENT_VERSION = 3; // The current supported version.
+    private static final int CURRENT_VERSION = 4; // The current supported version.
     private InetAddress address;
     private int port;
     private int resendCount;
