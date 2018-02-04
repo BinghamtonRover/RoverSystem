@@ -1,4 +1,4 @@
-=== [ Version 3 ] ===
+=== [ Version 4 ] ===
 
 This file describes the specification of the rover packet protocol, of version listed above.
 
@@ -86,5 +86,23 @@ to rover at some fixed or variable rate. All fields must be specified in each pa
                     The state must remain for the duration of the command. For instance, if the rover
                     is to move forward while a controller button is held, then the FORWARD value must
                     be specified in every control packet sent while the button is held. When the button
-                    is released and the rover is expected to stop, the STOP value will be specified in
+                    is released and the rover is expected to stop, the STOP value will be specified i
                     every control packet sent until another button is pressed.
+
+> Type 2: Camera Packet
+
+The camera packet is used to send webcam camera frames from the rover to the base station. These packets
+are never repeated; dropped frames are acceptable. Note that timestamps of camera packets are still 
+checked, since out-of-order frames are unacceptable. Each frame is a 640 by 360 pixel JPEG image.
+
+| (Field Name)      | (Field Type)      | (Field Size, in Bytes)    |
+---------------------------------------------------------------------
+| Frame Size        | unsigned short    | 2                         |
+| Frame             | JPEG image        | [4_000, 40_000]           |
+
+* Frame Size:   The size, in bytes, of the Frame field.
+* Frame:        A complete JPEG image of size Frame Size, in bytes. The size of this frame is guaranteed to
+                exist within the range listed above. 
+
+Implementations should read the Camera Packet with a buffer of at least size 40_007 (max size of Frame plus
+header and Frame Size).
