@@ -1,6 +1,8 @@
 package com.github.zeldazach.binghamtonrover.networking;
 
 import com.github.zeldazach.binghamtonrover.BaseStation;
+import com.github.zeldazach.binghamtonrover.gui.DisplayApplication;
+import javafx.application.Platform;
 import javafx.scene.image.Image;
 
 import java.io.IOException;
@@ -56,9 +58,15 @@ class PacketCameraHandler implements PacketHandler {
     public void handle(Packet packet) {
         try {
             Image currentFrame = ((PacketCamera) packet).toJavaFXImage();
+
+            Platform.runLater(() -> {
+                DisplayApplication app = DisplayApplication.INSTANCE;
+                if (app != null) {
+                    app.cameraImageView.setImage(currentFrame);
+                }
+            });
         } catch (IllegalStateException e) {
             System.out.println("Unable to update camera feed");
         }
-        // update java fx image??
     }
 }

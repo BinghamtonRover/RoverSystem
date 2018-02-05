@@ -7,11 +7,12 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 
 public class PacketCamera extends Packet {
-    private char frameSize;
-    private BufferedImage bufferedImage;
+    private int frameSize;
+    private Image image;
 
     @Override
     public void writeToBuffer(ByteBuffer buff) {
@@ -20,19 +21,23 @@ public class PacketCamera extends Packet {
 
     @Override
     public void readFromBuffer(ByteBuffer buff) {
-        frameSize = buff.getChar();
-        byte[] imageData = new byte[frameSize];
-        System.arraycopy(buff.array(), 6, imageData, 0, frameSize);
-        ByteArrayInputStream imageStream = new ByteArrayInputStream(imageData);
         try {
-            bufferedImage = ImageIO.read(imageStream);
-        } catch (IOException e) {
+            buff.getChar();
+
+            byte[] buffarr = new byte[buff.limit() - buff.position()];
+
+            buff.get(buffarr);
+
+            ByteArrayInputStream imageStream = new ByteArrayInputStream(buffarr);
+
+
+            image = new Image(imageStream);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public Image toJavaFXImage() throws IllegalStateException {
-        if (bufferedImage == null) throw new IllegalStateException("BufferedImage not available");
-        return SwingFXUtils.toFXImage(bufferedImage, null);
+        return image;
     }
 }
