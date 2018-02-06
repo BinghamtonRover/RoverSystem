@@ -10,7 +10,7 @@
 
 // A number between 0 and 100 representing the amount of JPEG compression.
 // 0 is a blob of pixels and 100 is uncompressed.
-#define JPEG_QUALITY 30
+#define JPEG_QUALITY 55
 
 static void handle_ping(NetworkManager& manager, void* void_packet, std::string address, int port)
 {
@@ -126,5 +126,10 @@ int main(int argc, char** argv)
 
         // Send the packet.
         manager.send_packet(PacketType::CAMERA, &camera_packet, camera_packet.size + 2, base_station_address, base_station_port);
+
+        image_mat = cv::imdecode(jpeg_buffer, CV_LOAD_IMAGE_COLOR);
+
+        cv::imshow("image", image_mat);
+        cv::waitKey(20);
     }
 }

@@ -74,12 +74,22 @@ bool CaptureSession::check_capabilities() {
 
     // Query the video format.
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+    // First fill it with most relevant info.
     if (ioctl(fd, VIDIOC_G_FMT, &fmt) != 0) {
         std::cerr << "[!] Failed to query video format!" << std::endl;
         return false;
     }
 
-    // Check the pixel format.
+    // Then set the pixel format we want.
+    fmt.fmt.pix.pixelformat = PIXEL_FORMAT;
+
+    if (ioctl(fd, VIDIOC_S_FMT, &fmt) != 0) {
+        std::cerr << "[!] Failed to set video format!" << std::endl;
+        return false;
+    }
+
+    // Check the returned pixel format.
     if (fmt.fmt.pix.pixelformat != PIXEL_FORMAT) {
         std::cerr << "[!] Camera uses unsupported pixel format!" << std::endl;
         return false;
@@ -188,6 +198,8 @@ bool CaptureSession::grab_frame(cv::Mat& out_image) {
     uint8_t* frame_data = (uint8_t*) vbuf.m.userptr;
     // Get the actual size of the frame data.
     size_t frame_size = vbuf.bytesused;
+
+    out_image = cv::Scalar(0, 0, 0);
 
     // The YUYV format is stored in 4-byte chunks. Each 4-byte chunk defines
     // two pixels. The following link specifies the data format:

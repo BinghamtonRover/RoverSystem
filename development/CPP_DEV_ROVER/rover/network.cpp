@@ -89,6 +89,7 @@ void NetworkManager::send_packet(PacketType type, void* packet, size_t packet_le
         // Send failure
         printf("[!] Failed to send packet!\n");
     }
+
 }
 
 void NetworkManager::set_packet_handler(PacketType pt, PacketHandler h)
