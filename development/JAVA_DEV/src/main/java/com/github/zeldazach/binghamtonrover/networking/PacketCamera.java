@@ -11,30 +11,23 @@ import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 
 public class PacketCamera extends Packet {
-    private int frameSize;
     private Image image;
 
     @Override
     public void writeToBuffer(ByteBuffer buff) {
-        // what should we do? currently noop. Exception?
+        throw new IllegalStateException("BASE STATION MUST NOT SEND CAMERA PACKETS!");
     }
 
     @Override
     public void readFromBuffer(ByteBuffer buff) {
-        try {
-            buff.getChar();
+        // Skip the length.
+        buff.getChar();
 
-            byte[] buffarr = new byte[buff.limit() - buff.position()];
+        byte[] buffarr = new byte[buff.limit() - buff.position()];
+        buff.get(buffarr);
+        ByteArrayInputStream imageStream = new ByteArrayInputStream(buffarr);
 
-            buff.get(buffarr);
-
-            ByteArrayInputStream imageStream = new ByteArrayInputStream(buffarr);
-
-
-            image = new Image(imageStream);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        image = new Image(imageStream);
     }
 
     public Image toJavaFXImage() throws IllegalStateException {
