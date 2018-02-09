@@ -2,7 +2,6 @@ package com.github.zeldazach.binghamtonrover.gui;
 
 import com.github.zeldazach.binghamtonrover.controller.ControllerHandler;
 import com.github.zeldazach.binghamtonrover.controller.ControllerState;
-import com.github.zeldazach.binghamtonrover.networking.KeyboardControls;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.EventHandler;
@@ -47,11 +46,13 @@ public class DisplayApplication extends Application
         primary.setTitle(WINDOW_TITLE);
 
         VBox root = buildRoot();
+
         // Me ruining everything in the name of science
-       // KeyboardControls.keyStart(primary, root);
         Scene scene = new Scene(root);
 
-        /** Left + Up     : 0.125
+        /**
+         * DPAD Values
+         * Left + Up     : 0.125
          * Up            : 0.25
          * Up + Right    : 0.375
          * Right         : 0.5
@@ -68,6 +69,9 @@ public class DisplayApplication extends Application
         catch(IllegalStateException e) {
             System.out.println("ControllerHandler Error: " + e);
         }
+
+        // Create event handler for when the key is pressed and change the controllerState dpad values according to
+        // the list of values above
         EventHandler<KeyEvent> pressedHandler = event -> {
             switch (event.getCode()) {
                 case W:
@@ -85,6 +89,8 @@ public class DisplayApplication extends Application
             }
         };
 
+        // Create event handler for when the key is released and change the controllerState dpad values to 0
+        // Specify each direction in case of future additions
         EventHandler<KeyEvent> releasedHandler = event -> {
             switch (event.getCode()) {
                 case W:
@@ -102,6 +108,7 @@ public class DisplayApplication extends Application
             }
         };
 
+        // Add event handlers for the two types of KeyEvents to the scene
         scene.addEventHandler(KeyEvent.KEY_PRESSED, pressedHandler);
         scene.addEventHandler(KeyEvent.KEY_RELEASED, releasedHandler);
         // The end of my experiment
