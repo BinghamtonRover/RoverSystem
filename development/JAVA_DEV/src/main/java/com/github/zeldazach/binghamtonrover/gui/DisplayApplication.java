@@ -2,14 +2,17 @@ package com.github.zeldazach.binghamtonrover.gui;
 
 import com.github.zeldazach.binghamtonrover.controller.ControllerHandler;
 import com.github.zeldazach.binghamtonrover.controller.ControllerState;
+import com.github.zeldazach.binghamtonrover.networking.KeyboardControls;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -44,10 +47,68 @@ public class DisplayApplication extends Application
         primary.setTitle(WINDOW_TITLE);
 
         VBox root = buildRoot();
+        // Me ruining everything in the name of science
+       // KeyboardControls.keyStart(primary, root);
+        Scene scene = new Scene(root);
+
+        /** Left + Up     : 0.125
+         * Up            : 0.25
+         * Up + Right    : 0.375
+         * Right         : 0.5
+         * Right + Down  : 0.675
+         * Down          : 0.75
+         * Down + Left   : 0.875
+         * Left          : 1.0
+         **/
+
+        // The ControllerHandler must be initialized so this is in case it was already
+        try {
+            ControllerHandler.init();
+        }
+        catch(IllegalStateException e) {
+            System.out.println("ControllerHandler Error: " + e);
+        }
+        EventHandler<KeyEvent> pressedHandler = event -> {
+            switch (event.getCode()) {
+                case W:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.125;
+                    break;
+                case S:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.75;
+                    break;
+                case A:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 1.0;
+                    break;
+                case D:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.5;
+                    break;
+            }
+        };
+
+        EventHandler<KeyEvent> releasedHandler = event -> {
+            switch (event.getCode()) {
+                case W:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
+                    break;
+                case S:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
+                    break;
+                case A:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
+                    break;
+                case D:
+                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
+                    break;
+            }
+        };
+
+        scene.addEventHandler(KeyEvent.KEY_PRESSED, pressedHandler);
+        scene.addEventHandler(KeyEvent.KEY_RELEASED, releasedHandler);
+        // The end of my experiment
 
         // We do not specify a width and a height. This will cause the window to be sized automatically,
         // which is exactly what we want.
-        primary.setScene(new Scene(root));
+        primary.setScene(scene);
         primary.show();
     }
 
