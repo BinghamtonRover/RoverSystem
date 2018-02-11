@@ -2,8 +2,10 @@ package com.github.zeldazach.binghamtonrover.gui;
 
 import com.github.zeldazach.binghamtonrover.controller.ControllerHandler;
 import com.github.zeldazach.binghamtonrover.controller.ControllerState;
+import com.github.zeldazach.binghamtonrover.controller.KeyboardHandler;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,6 +23,8 @@ import javafx.stage.Stage;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
 
 public class DisplayApplication extends Application
 {
@@ -47,71 +51,10 @@ public class DisplayApplication extends Application
 
         VBox root = buildRoot();
 
-        // Me ruining everything in the name of science
         Scene scene = new Scene(root);
 
-        /**
-         * DPAD Values
-         * Left + Up     : 0.125
-         * Up            : 0.25
-         * Up + Right    : 0.375
-         * Right         : 0.5
-         * Right + Down  : 0.675
-         * Down          : 0.75
-         * Down + Left   : 0.875
-         * Left          : 1.0
-         **/
-
-        // The ControllerHandler must be initialized so this is in case it was already
-        try {
-            ControllerHandler.init();
-        }
-        catch(IllegalStateException e) {
-            System.out.println("ControllerHandler Error: " + e);
-        }
-
-        // Create event handler for when the key is pressed and change the controllerState dpad values according to
-        // the list of values above
-        EventHandler<KeyEvent> pressedHandler = event -> {
-            switch (event.getCode()) {
-                case W:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.125;
-                    break;
-                case S:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.75;
-                    break;
-                case A:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 1.0;
-                    break;
-                case D:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.5;
-                    break;
-            }
-        };
-
-        // Create event handler for when the key is released and change the controllerState dpad values to 0
-        // Specify each direction in case of future additions
-        EventHandler<KeyEvent> releasedHandler = event -> {
-            switch (event.getCode()) {
-                case W:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
-                    break;
-                case S:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
-                    break;
-                case A:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
-                    break;
-                case D:
-                    ControllerHandler.getInstance().getControllerState().dpad = (float) 0.0;
-                    break;
-            }
-        };
-
-        // Add event handlers for the two types of KeyEvents to the scene
-        scene.addEventHandler(KeyEvent.KEY_PRESSED, pressedHandler);
-        scene.addEventHandler(KeyEvent.KEY_RELEASED, releasedHandler);
-        // The end of my experiment
+        // Register keyboard control
+        KeyboardHandler.registerHandlers(scene);
 
         // We do not specify a width and a height. This will cause the window to be sized automatically,
         // which is exactly what we want.
@@ -159,6 +102,63 @@ public class DisplayApplication extends Application
         return cameraView;
     }
 
+    private void renderXboxState(Canvas xboxCanvas) {
+        double joystickOffset = JOYSTICK_OFFSET_RATIO * XBOX_VIEW_WIDTH;
+        ControllerState controllerState = ControllerHandler.getInstance().getControllerState();
+        GraphicsContext graphicsContext = xboxCanvas.getGraphicsContext2D();
+
+        graphicsContext.setFill(Color.BLACK);
+        graphicsContext.fillRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
+
+        drawImage(xboxCanvas, (controllerState.buttonA) ? "a_pressed" : "a_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonB) ? "b_pressed" : "b_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonX) ? "x_pressed" : "x_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonY) ? "y_pressed" : "y_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonSelect) ? "view_pressed" : "view_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonMode) ? "xbox_pressed" : "xbox_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonStart) ? "menu_pressed" : "menu_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonLBumper) ? "lb_pressed" : "lb_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonRBumper) ? "rb_pressed" : "rb_unpressed");
+
+        drawImage(xboxCanvas, "js_left_background");
+        if (controllerState.lStickX != 0.0 || controllerState.lStickY != 0.0)
+        {
+            drawImage(xboxCanvas, "js_left_pressed", Math.floor(controllerState.lStickX * joystickOffset),
+                    Math.floor(controllerState.lStickY * joystickOffset));
+        }
+        else
+        {
+            drawImage(xboxCanvas, "js_left_unpressed");
+        }
+
+        drawImage(xboxCanvas, "js_right_background");
+        if (controllerState.rStickX != 0.0 || controllerState.rStickY != 0.0)
+        {
+            drawImage(xboxCanvas, "js_right_pressed", Math.floor(controllerState.rStickX * joystickOffset),
+                    Math.floor(controllerState.rStickY * joystickOffset));
+        }
+        else
+        {
+            drawImage(xboxCanvas, "js_right_unpressed");
+        }
+
+        drawImage(xboxCanvas, "dpad_unpressed");
+        if (controllerState.dpad == 0.25) drawImage(xboxCanvas, "dpad_pressed_up");
+        if (controllerState.dpad == 0.50) drawImage(xboxCanvas, "dpad_pressed_right");
+        if (controllerState.dpad == 0.75) drawImage(xboxCanvas, "dpad_pressed_down");
+        if (controllerState.dpad == 1.00) drawImage(xboxCanvas, "dpad_pressed_left");
+
+        drawImage(xboxCanvas, "lt_unpressed");
+        graphicsContext.setGlobalAlpha((controllerState.lTrigger + 1.0) / 2.0);
+        drawImage(xboxCanvas, "lt_pressed");
+        graphicsContext.setGlobalAlpha(1.0);
+
+        drawImage(xboxCanvas, "rt_unpressed");
+        graphicsContext.setGlobalAlpha((controllerState.rTrigger + 1.0) / 2.0);
+        drawImage(xboxCanvas, "rt_pressed");
+        graphicsContext.setGlobalAlpha(1.0);
+    }
+
     private Canvas buildXboxView()
     {
         Canvas xboxCanvas = new Canvas(XBOX_VIEW_WIDTH, XBOX_VIEW_HEIGHT);
@@ -166,69 +166,10 @@ public class DisplayApplication extends Application
         xboxCanvas.getGraphicsContext2D().setFill(Color.BLUE);
         xboxCanvas.getGraphicsContext2D().fillRect(0, 0, XBOX_VIEW_WIDTH, XBOX_VIEW_HEIGHT);
 
-        AnimationTimer animationTimer = new AnimationTimer()
-        {
-            @Override
-            public void handle(long now)
-            {
-                double joystickOffset = JOYSTICK_OFFSET_RATIO * XBOX_VIEW_WIDTH;
-                ControllerState controllerState = ControllerHandler.getInstance().getControllerState();
-                GraphicsContext graphicsContext = xboxCanvas.getGraphicsContext2D();
+        ControllerHandler.getInstance().getControllerState().addObserver((obs, o) -> Platform.runLater(() -> renderXboxState(xboxCanvas)));
 
-                graphicsContext.setFill(Color.BLACK);
-                graphicsContext.fillRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
-
-                drawImage(xboxCanvas, (controllerState.buttonA) ? "a_pressed" : "a_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonB) ? "b_pressed" : "b_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonX) ? "x_pressed" : "x_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonY) ? "y_pressed" : "y_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonSelect) ? "view_pressed" : "view_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonMode) ? "xbox_pressed" : "xbox_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonStart) ? "menu_pressed" : "menu_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonLBumper) ? "lb_pressed" : "lb_unpressed");
-                drawImage(xboxCanvas, (controllerState.buttonRBumper) ? "rb_pressed" : "rb_unpressed");
-
-                drawImage(xboxCanvas, "js_left_background");
-                if (controllerState.lStickX != 0.0 || controllerState.lStickY != 0.0)
-                {
-                    drawImage(xboxCanvas, "js_left_pressed", Math.floor(controllerState.lStickX * joystickOffset),
-                            Math.floor(controllerState.lStickY * joystickOffset));
-                }
-                else
-                {
-                    drawImage(xboxCanvas, "js_left_unpressed");
-                }
-
-                drawImage(xboxCanvas, "js_right_background");
-                if (controllerState.rStickX != 0.0 || controllerState.rStickY != 0.0)
-                {
-                    drawImage(xboxCanvas, "js_right_pressed", Math.floor(controllerState.rStickX * joystickOffset),
-                            Math.floor(controllerState.rStickY * joystickOffset));
-                }
-                else
-                {
-                    drawImage(xboxCanvas, "js_right_unpressed");
-                }
-
-                drawImage(xboxCanvas, "dpad_unpressed");
-                if (controllerState.dpad == 0.25) drawImage(xboxCanvas, "dpad_pressed_up");
-                if (controllerState.dpad == 0.50) drawImage(xboxCanvas, "dpad_pressed_right");
-                if (controllerState.dpad == 0.75) drawImage(xboxCanvas, "dpad_pressed_down");
-                if (controllerState.dpad == 1.00) drawImage(xboxCanvas, "dpad_pressed_left");
-
-                drawImage(xboxCanvas, "lt_unpressed");
-                graphicsContext.setGlobalAlpha((controllerState.lTrigger + 1.0) / 2.0);
-                drawImage(xboxCanvas, "lt_pressed");
-                graphicsContext.setGlobalAlpha(1.0);
-
-                drawImage(xboxCanvas, "rt_unpressed");
-                graphicsContext.setGlobalAlpha((controllerState.rTrigger + 1.0) / 2.0);
-                drawImage(xboxCanvas, "rt_pressed");
-                graphicsContext.setGlobalAlpha(1.0);
-            }
-        };
-
-        animationTimer.start();
+        // Render this now to show the initial state.
+        renderXboxState(xboxCanvas);
 
         return xboxCanvas;
     }
