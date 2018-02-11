@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -25,6 +26,8 @@ public class DisplayApplication extends Application
 
     private static final String WINDOW_TITLE = "Binghamton Rover Base Station";
 
+    public static DisplayApplication INSTANCE = null;
+
     /**
      * These need to be anything with a 16:9 ratio.
      */
@@ -38,9 +41,12 @@ public class DisplayApplication extends Application
      */
     private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
+    public ImageView cameraImageView;
+
     @Override
-    public void start(Stage primary) throws Exception
-    {
+    public void start(Stage primary) {
+        INSTANCE = this;
+
         primary.setTitle(WINDOW_TITLE);
 
         VBox root = buildRoot();
@@ -81,12 +87,9 @@ public class DisplayApplication extends Application
         StackPane cameraView = new StackPane();
         cameraView.setAlignment(Pos.CENTER);
 
-        Rectangle rect = new Rectangle(CAMERA_VIEW_WIDTH, CAMERA_VIEW_HEIGHT);
-        rect.setFill(Color.AQUAMARINE);
+        cameraImageView = new ImageView();
 
-        Text rectLabel = new Text("Camera Feed");
-
-        cameraView.getChildren().addAll(rect, rectLabel);
+        cameraView.getChildren().add(cameraImageView);
 
         return cameraView;
     }
