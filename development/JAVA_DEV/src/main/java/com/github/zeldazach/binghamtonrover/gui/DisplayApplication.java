@@ -32,8 +32,7 @@ public class DisplayApplication extends Application
      * These need to be anything with a 16:9 ratio.
      */
     private static final int XBOX_VIEW_WIDTH = 800, XBOX_VIEW_HEIGHT = 450;
-
-    private static final int CAMERA_VIEW_WIDTH = 400, CAMERA_VIEW_HEIGHT = 400;
+    private static final int CAMERA_VIEW_WIDTH = 800, CAMERA_VIEW_HEIGHT = 450;
 
     /**
      * Yes, this is hardcoded. It's used in the calculation of the offset of the joystick "pressed" image.
@@ -88,6 +87,8 @@ public class DisplayApplication extends Application
         cameraView.setAlignment(Pos.CENTER);
 
         cameraImageView = new ImageView();
+        cameraImageView.setFitWidth(CAMERA_VIEW_WIDTH);
+        cameraImageView.setFitHeight(CAMERA_VIEW_HEIGHT);
 
         cameraView.getChildren().add(cameraImageView);
 
