@@ -11,7 +11,42 @@
 
 #include "network.h"
 
-NetworkManager::NetworkManager(std::string address_string, int port)
+namespace network {
+
+PacketType<PacketHeartbeat> PacketTypeHeartbeat(0, 1);
+PacketType<PacketControl> PacketTypeControl(1, 1);
+PacketType<PacketCamera> PacketTypeCamera(2, 4 + CAMERA_PACKET_FRAME_DATA_MAX_SIZE);
+
+void register_packet_functions() {
+    PacketTypeHeartbeat.reader = [](PacketHeartbeat* packet, Buffer& buffer) {
+        packet->direction = buffer.read_value<PacketHeartbeat::Direction>();
+    };
+    PacketTypeHeartbeat.writer = [](PacketHeartbeat* packet, Buffer& buffer) {
+        buffer.write_value(packet->direction);
+    };
+
+    PacketTypeControl.reader = [](PacketControl* packet, Buffer& buffer) {
+        packet->movement_state = buffer.read_value<PacketControl::MovementState>();
+    };
+    PacketTypeControl.writer = [](PacketControl* packet, Buffer& buffer) {
+        buffer.write_value(packet->movement_state);
+    };
+
+    PacketTypeCamera.reader = [](PacketCamera* packet, Buffer& buffer) {
+        packet->section_index = buffer.read_value<uint8_t>();
+        packet->section_count = buffer.read_value<uint8_t>();
+        packet->size = ntohs(buffer.read_value<uint16_t>());
+        packet->data = buffer.get_pointer();
+    };
+    PacketTypeCamera.writer = [](PacketCamera* packet, Buffer& buffer) {
+        buffer.write_value(packet->section_index);
+        buffer.write_value(packet->section_count);
+        buffer.write_value(htons(packet->size));
+        buffer.write_bytes(packet->data, packet->size);
+    };
+}
+
+Manager::Manager(std::string address_string, int port)
 {
     receive_timestamp = 0;
     send_timestamp = 0;
@@ -37,69 +72,35 @@ NetworkManager::NetworkManager(std::string address_string, int port)
     }
 }
 
-NetworkManager::~NetworkManager()
+Manager::~Manager()
 {
     close(socket_fd);
 }
 
-#define BUFFERVALUE(buff, byte_offset, data_type) *((data_type*) &buff[byte_offset])
-
-void NetworkManager::send_packet(PacketType type, void* packet, size_t packet_length, std::string address, int port)
+void Manager::send_raw_packet(uint8_t* buffer, size_t size, std::string address, int port)
 {
-    uint8_t* buffer = (uint8_t*) alloca(HEADER_LENGTH + packet_length);
-    
-    BUFFERVALUE(buffer, 0, uint16_t) = htons(CURRENT_ROVER_PROTOCOL_VERSION);
-    BUFFERVALUE(buffer, 2, uint8_t) = (uint8_t) type;
-    BUFFERVALUE(buffer, 3, uint16_t) = htons(send_timestamp);
-
-    // Do our own overflow, since its undefined for C++.
-    if (send_timestamp == UINT16_MAX)
-    {
-        send_timestamp = 0;
-    }
-    else
-    {
-        send_timestamp++;
-    }
-
-    switch (type)
-    {
-        case PacketType::PING:
-            BUFFERVALUE(buffer, HEADER_LENGTH, uint8_t) = (uint8_t) ((PacketPing*) packet)->ping_direction;
-            break;
-        case PacketType::CONTROL:
-            BUFFERVALUE(buffer, HEADER_LENGTH, uint8_t) = (uint8_t) ((PacketControl*) packet)->movement_state;
-            break;
-        case PacketType::CAMERA:
-            PacketCamera* camera = (PacketCamera*) packet;
-            BUFFERVALUE(buffer, HEADER_LENGTH, uint16_t) = camera->size;
-            memcpy(&buffer[HEADER_LENGTH + 2], camera->data, (size_t) camera->size);
-            break;
-    }
-
-    // TODO: Explain this block
+    // Create an address structure.
     struct sockaddr_in send_addr;
+    // Initialize it to zero.
     memset((char*)&send_addr, 0, sizeof(send_addr));
+    // Specify the IP protocol.
     send_addr.sin_family = AF_INET;
+    // Specify the remote port.
     send_addr.sin_port = htons(port);
+    // Specify the remote address. This will parse and set it for us.
     inet_aton(address.c_str(), &send_addr.sin_addr);
 
-    if (sendto(socket_fd, buffer, HEADER_LENGTH + packet_length, 0, (struct sockaddr*) &send_addr, sizeof(send_addr)) < 0)
+    // Send the packet.
+    if (sendto(socket_fd, buffer, HEADER_LENGTH + size, 0, (struct sockaddr*) &send_addr, sizeof(send_addr)) < 0)
     {
         // Send failure
         printf("[!] Failed to send packet!\n");
     }
-
 }
 
-void NetworkManager::set_packet_handler(PacketType pt, PacketHandler h)
+void Manager::poll()
 {
-    packet_handlers[(uint8_t) pt] = h;
-}
-
-void NetworkManager::poll()
-{
-    uint8_t buffer[MAXIMUM_PACKET_LENGTH];
+    uint8_t buffer_back[READ_BUFFER_SIZE];
     struct sockaddr src_addr;
     socklen_t src_addr_len;
 
@@ -109,7 +110,7 @@ void NetworkManager::poll()
     {
         src_addr_len = sizeof(src_addr);
 
-        res = recvfrom(socket_fd, buffer, MAXIMUM_PACKET_LENGTH, MSG_DONTWAIT, &src_addr, &src_addr_len);
+        res = recvfrom(socket_fd, buffer_back, READ_BUFFER_SIZE, MSG_DONTWAIT, &src_addr, &src_addr_len);
         if (res == -1)
         {
             // Two options here: either its because no packets were around, or there's an actual error...
@@ -132,10 +133,10 @@ void NetworkManager::poll()
         std::string address(inet_ntoa(src_addr_in.sin_addr));
 
         // We have to convert non-byte values from network order (Big Endian) to host order.
-
-        uint16_t version = ntohs(BUFFERVALUE(buffer, 0, uint16_t));
-        uint8_t type = BUFFERVALUE(buffer, 2, uint8_t);
-        uint16_t timestamp = ntohs(BUFFERVALUE(buffer, 3, uint8_t));
+        Buffer buffer(buffer_back);
+        uint16_t version = ntohs(buffer.read_value<uint16_t>());
+        uint8_t type = buffer.read_value<uint8_t>();
+        uint16_t timestamp = ntohs(buffer.read_value<uint16_t>());
 
         // Handle the version.
         if (version != CURRENT_ROVER_PROTOCOL_VERSION)
@@ -144,14 +145,14 @@ void NetworkManager::poll()
             continue;
         }
 
-        // Handle the timestamp.
+        // Handle the timestamp.... unless its a camera packet.
         if (timestamp == 0)
         {
             receive_timestamp = 0;
         }
         else
         {
-            if (timestamp <= receive_timestamp)
+            if (timestamp <= receive_timestamp && type != PacketTypeCamera.type)
             {
                 printf("[!] Ignoring out-of-order packet!\n");
                 continue;
@@ -160,22 +161,33 @@ void NetworkManager::poll()
 
         receive_timestamp = timestamp;
 
-        switch ((PacketType) type)
+        switch (type) {
+        case 0: 
         {
-            case PacketType::PING: {
-                PacketPing packet = { (PingDirection) buffer[HEADER_LENGTH] };
-                packet_handlers[type](*this, &packet, address, port);
-                break;
-            }
-            case PacketType::CONTROL: {
-                PacketControl packet = { (MovementState) buffer[HEADER_LENGTH] };
-                packet_handlers[type](*this, &packet, address, port);
-                break;
-            }
-            default: {
-                // TODO: Handle unknown packet
-                break;
-            }
+            PacketHeartbeat p;
+            PacketTypeHeartbeat.reader(&p, buffer);
+            PacketTypeHeartbeat.handler(*this, &p, address, port);
+            break;
+        }
+        case 1:
+        {
+            PacketControl p;
+            PacketTypeControl.reader(&p, buffer);
+            PacketTypeControl.handler(*this, &p, address, port);            
+            break;
+        }
+        case 2:
+        {
+            PacketCamera p;
+            PacketTypeCamera.reader(&p, buffer);
+            PacketTypeCamera.handler(*this, &p, address, port);            
+            break;
+        }
+        default:
+            printf("[!] Unknown packet type %d encountered!\n", type);
+            continue;
         }
     }
 }
+
+} // namespace network
