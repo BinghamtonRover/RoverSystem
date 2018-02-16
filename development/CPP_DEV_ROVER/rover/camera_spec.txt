@@ -1,5 +1,5 @@
 The idea of this branch is to explore a protocol for streaming video. This protocol sits within the general 
-packet protocol v4, with minor adjustments.
+packet protocol v5, with minor adjustments.
 
 Constants
 ~~~~~~~~~
