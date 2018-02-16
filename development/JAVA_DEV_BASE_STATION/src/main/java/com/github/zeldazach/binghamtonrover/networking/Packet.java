@@ -60,7 +60,7 @@ class PacketHeader
  */
 public abstract class Packet
 {
-    private final static int MAX_SIZE = 40007; // max size known for a packet
+    private final static int MAX_SIZE = 40009; // max size known for a packet
 
     private byte type;
     private int size;

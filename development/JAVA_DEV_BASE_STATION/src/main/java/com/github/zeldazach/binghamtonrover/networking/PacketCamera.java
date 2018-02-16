@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 public class PacketCamera extends Packet {
     private int sectionIndex, sectionCount, sectionSize;
-    private ByteBuffer sectionData;
+    private byte[] sectionData;
 
     @Override
     public void writeToBuffer(ByteBuffer buff) {
@@ -16,10 +16,9 @@ public class PacketCamera extends Packet {
         // Skip the length.
         sectionIndex = buff.get();
         sectionCount = buff.get();
-        sectionSize = buff.getShort();
-        byte[] sectionArray = new byte[buff.limit() - buff.position()];
-        buff.get(sectionArray);
-        sectionData = ByteBuffer.wrap(sectionArray);
+        sectionSize = buff.getChar();
+        sectionData = new byte[buff.limit() - buff.position()];
+        buff.get(sectionData);
     }
 
     public int getSectionIndex() {
@@ -34,7 +33,7 @@ public class PacketCamera extends Packet {
         return sectionSize;
     }
 
-    public ByteBuffer getSectionData() {
+    public byte[] getSectionData() {
         return sectionData;
     }
 }

@@ -11,22 +11,21 @@ import java.nio.ByteBuffer;
 
 
 class FrameBuffer {
-    int timestamp, remaining_sections, buffer_size;
-    ByteBuffer[] internal_buffers;
+    private static final int FRAME_MAX_SIZE = 40000000;
 
-    FrameBuffer(int numBuffers) {
+    int timestamp, remaining_sections, buffer_size;
+    byte[] internal_buffer = new byte[FRAME_MAX_SIZE];
+
+    FrameBuffer() {
         timestamp = remaining_sections = buffer_size = 0;
-        internal_buffers = new ByteBuffer[numBuffers];
     }
 
     void push() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            for (ByteBuffer buff : internal_buffers) baos.write(buff.array());
-        } catch (IOException ex) {
-            System.out.println("boaty mc boat face");
-        }
-        Image image = new Image(new ByteArrayInputStream(baos.toByteArray()));
+        byte[] frame_buffer = new byte[buffer_size];
+
+        System.arraycopy(internal_buffer, 0, frame_buffer, 0, buffer_size);
+
+        Image image = new Image(new ByteArrayInputStream(frame_buffer));
         Platform.runLater(() -> {
             if (DisplayApplication.INSTANCE != null) {
                 DisplayApplication.INSTANCE.getCameraImageView().setImage(image);
@@ -47,14 +46,19 @@ class FrameBufferContainer {
         this.maxSize = maxSize;
         next_buffer = 0;
         buffers = new FrameBuffer[maxSize];
+
+        for (int i = 0; i < maxSize; i++) {
+            buffers[i] = new FrameBuffer();
+        }
     }
 
     void update_buffer(PacketCamera packet) {
         int timestamp = packet.getHeader().getTimestamp();
         int section_count = packet.getSectionCount();
         int section_id = packet.getSectionIndex();
-        ByteBuffer frame_data = packet.getSectionData();
+        byte[] frame_data = packet.getSectionData();
         int frame_data_size = packet.getSectionSize();
+
         // Search for a buffer that already has that timestamp.
         int found_buffer_idx = -1;
         for (int i = 0; i < maxSize; i++) {
@@ -69,15 +73,12 @@ class FrameBufferContainer {
             // We did not find a buffer... it is a new frame!
             total_frames_received++;
 
-            FrameBuffer our_buffer = buffers[next_buffer] = new FrameBuffer(section_count);
+            FrameBuffer our_buffer = buffers[next_buffer];
 
             if (our_buffer.timestamp != 0) {
                 // It is not a new buffer... it already has a frame in it.
 
                 if (our_buffer.remaining_sections == 0) {
-                    // We are ready to push to screen!
-
-                    our_buffer.push();
                 } else {
                     System.out.println("> Dropped frame with timestamp " + our_buffer.timestamp + ", dropped perc " + total_frames_dropped / (double) total_frames_received);
                     total_frames_dropped++;
@@ -86,7 +87,7 @@ class FrameBufferContainer {
 
             our_buffer.timestamp = timestamp;
             our_buffer.remaining_sections = section_count - 1;
-            our_buffer.internal_buffers[section_id] = frame_data;
+            System.arraycopy(frame_data, 0, our_buffer.internal_buffer, 0, frame_data_size);
             our_buffer.buffer_size = frame_data_size;
 
             if (our_buffer.remaining_sections == 0) {
@@ -101,7 +102,7 @@ class FrameBufferContainer {
             FrameBuffer our_buffer = buffers[found_buffer_idx];
 
             our_buffer.remaining_sections--;
-            our_buffer.internal_buffers[section_id] = frame_data;
+            System.arraycopy(frame_data, 0, our_buffer.internal_buffer, section_id*40000, frame_data_size);
             our_buffer.buffer_size += frame_data_size;
 
             if (our_buffer.remaining_sections == 0) {
@@ -112,7 +113,7 @@ class FrameBufferContainer {
 }
 
 public class PacketCameraHandler implements PacketHandler {
-    private FrameBufferContainer frameBufferContainer = new FrameBufferContainer(5);
+    private FrameBufferContainer frameBufferContainer = new FrameBufferContainer(10);
 
     @Override
     public void handle(Packet packet) {
