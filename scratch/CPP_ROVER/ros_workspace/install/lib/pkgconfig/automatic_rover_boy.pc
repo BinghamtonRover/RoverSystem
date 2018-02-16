@@ -1,0 +1,8 @@
+prefix=/home/IEEE_PI/ros_workspace/install
+
+Name: automatic_rover_boy
+Description: Description of automatic_rover_boy
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/IEEE_PI/ros_workspace/install/lib 
+Requires: 

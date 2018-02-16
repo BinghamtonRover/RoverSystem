@@ -1,0 +1,8 @@
+prefix=/home/IEEE_PI/ros_workspace/devel
+
+Name: serial
+Description: Description of serial
+Version: 1.2.1
+Cflags: -I/home/IEEE_PI/ros_workspace/src/serial/include
+Libs: -L/home/IEEE_PI/ros_workspace/devel/lib -lserial -lrt -lpthread
+Requires: 

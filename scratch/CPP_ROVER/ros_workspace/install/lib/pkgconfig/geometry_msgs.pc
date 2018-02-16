@@ -1,0 +1,8 @@
+prefix=/home/IEEE_PI/ros_workspace/install
+
+Name: geometry_msgs
+Description: Description of geometry_msgs
+Version: 1.12.5
+Cflags: -I/home/IEEE_PI/ros_workspace/install/include
+Libs: -L/home/IEEE_PI/ros_workspace/install/lib 
+Requires: message_runtime std_msgs
