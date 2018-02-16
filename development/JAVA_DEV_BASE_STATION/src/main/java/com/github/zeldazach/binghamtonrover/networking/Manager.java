@@ -6,10 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class Manager
 {
@@ -37,7 +34,7 @@ public class Manager
         }
     }
 
-    private static final int CURRENT_VERSION = 4; // The current supported version.
+    private static final int CURRENT_VERSION = 5; // The current supported version.
     private InetAddress address;
     private int port;
     private int resendCount;
@@ -60,6 +57,9 @@ public class Manager
         put(0, PacketHeartbeat.class);
         put(1, PacketControl.class);
         put(2, PacketCamera.class);
+    }};
+    private List<Class<? extends Packet>> timestampIgnorePackets = new ArrayList<Class<? extends Packet>>() {{
+        add(PacketCamera.class);
     }};
 
     /**
@@ -127,20 +127,23 @@ public class Manager
         int timestamp = header.getTimestamp();
         int version = header.getVersion();
         int expectedTimestamp = getLastReceiveTimestamp();
+        Packet packet = instantiatePacket(header);
         if (version != CURRENT_VERSION) {
             outputVersionMismatch(version);
             return;
+        } else if (timestamp <= expectedTimestamp) {
+            if (packet == null || !timestampIgnorePackets.contains(packet.getClass())) {
+                outputTimestampMismatch(timestamp, expectedTimestamp);
+                return;
+            }
+        } else if (timestamp >= expectedTimestamp) {
+            setReceiveTimestamp(header.getTimestamp());
         }
-        else if (timestamp <= expectedTimestamp) {
-            outputTimestampMismatch(timestamp, expectedTimestamp);
-            return;
-        }
-        setReceiveTimestamp(header.getTimestamp());
 
-        Packet packet = instantiatePacket(header);
         if (packet != null)
         {
             packet.setManager(this);
+            packet.setHeader(header);
             packet.readFromBuffer(buff);
         }
 

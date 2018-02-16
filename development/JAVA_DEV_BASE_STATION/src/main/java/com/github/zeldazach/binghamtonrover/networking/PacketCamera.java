@@ -1,17 +1,10 @@
 package com.github.zeldazach.binghamtonrover.networking;
 
-import javafx.embed.swing.SwingFXUtils;
-import javafx.scene.image.Image;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 
 public class PacketCamera extends Packet {
-    private Image image;
+    private int sectionIndex, sectionCount, sectionSize;
+    private ByteBuffer sectionData;
 
     @Override
     public void writeToBuffer(ByteBuffer buff) {
@@ -21,16 +14,27 @@ public class PacketCamera extends Packet {
     @Override
     public void readFromBuffer(ByteBuffer buff) {
         // Skip the length.
-        buff.getChar();
-
-        byte[] buffarr = new byte[buff.limit() - buff.position()];
-        buff.get(buffarr);
-        ByteArrayInputStream imageStream = new ByteArrayInputStream(buffarr);
-
-        image = new Image(imageStream);
+        sectionIndex = buff.get();
+        sectionCount = buff.get();
+        sectionSize = buff.getShort();
+        byte[] sectionArray = new byte[buff.limit() - buff.position()];
+        buff.get(sectionArray);
+        sectionData = ByteBuffer.wrap(sectionArray);
     }
 
-    public Image toJavaFXImage() throws IllegalStateException {
-        return image;
+    public int getSectionIndex() {
+        return sectionIndex;
+    }
+
+    public int getSectionCount() {
+        return sectionCount;
+    }
+
+    public int getSectionSize() {
+        return sectionSize;
+    }
+
+    public ByteBuffer getSectionData() {
+        return sectionData;
     }
 }

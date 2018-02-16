@@ -65,6 +65,7 @@ public abstract class Packet
     private byte type;
     private int size;
     private Optional<Manager> manager = Optional.empty();
+    private PacketHeader header;
 
     /**
      * Sets the type of the packet and its length.
@@ -119,5 +120,13 @@ public abstract class Packet
     private static DatagramPacket makeReceivingPacket(int readAmt)
     {
         return new DatagramPacket(new byte[MAX_SIZE], readAmt);
+    }
+
+    public void setHeader(PacketHeader header) {
+        this.header = header;
+    }
+
+    public PacketHeader getHeader() {
+        return header;
     }
 }

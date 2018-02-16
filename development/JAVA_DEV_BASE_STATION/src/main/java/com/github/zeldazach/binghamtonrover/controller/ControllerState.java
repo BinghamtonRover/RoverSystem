@@ -50,6 +50,13 @@ public class ControllerState extends Observable
      */
     public float lStickX, lStickY, rStickX, rStickY, lTrigger, rTrigger, dpad;
 
+    public ControllerState() {
+        // Set some defaults. We want everything to be off by default.
+
+        lTrigger = -1.0f;
+        rTrigger = -1.0f;
+    }
+
     public void update(String name, float value)
     {
         switch (name)
