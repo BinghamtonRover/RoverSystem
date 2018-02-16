@@ -104,7 +104,7 @@ bool CaptureSession::check_capabilities() {
 
     // Check the returned dimensions.
     if (fmt.fmt.pix.width != width || fmt.fmt.pix.height != height) {
-        std::cerr << "[!] Camera uses undesired dimensions!" << std::endl;
+        std::cerr << "[!] Camera uses undesired dimensions " << fmt.fmt.pix.width << " x " << fmt.fmt.pix.height << "." << std::endl;
         return false;
     }
 

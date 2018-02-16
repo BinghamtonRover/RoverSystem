@@ -42,7 +42,6 @@ void register_packet_functions() {
         buffer.write_value(packet->section_index);
         buffer.write_value(packet->section_count);
         buffer.write_value(htons(packet->size));
-		printf("WRITING %u BYTES OF FRAME DATA\n", packet->size);
         buffer.write_bytes(packet->data, packet->size);
     };
 }

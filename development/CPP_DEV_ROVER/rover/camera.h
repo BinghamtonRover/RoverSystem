@@ -11,8 +11,6 @@
 
 #include <string>
 
-#include <opencv2/opencv.hpp>
-
 namespace camera {
 
 // The number of buffers to use while capturing frames.

@@ -3,14 +3,14 @@
 #include <vector>
 #include <unistd.h>
 
-#include <opencv2/opencv.hpp>
+#include <iostream>
 
 #include "network.h"
 #include "camera.h"
 
 // Camera dimentions.
-const int CAMERA_WIDTH = 1920;
-const int CAMERA_HEIGHT = 1080;
+const int CAMERA_WIDTH = 640;
+const int CAMERA_HEIGHT = 360;
 
 using network::PacketHeartbeat;
 using network::PacketControl;
@@ -132,8 +132,6 @@ int main(int argc, char** argv)
 
         // Create the packets needed.
         int num_packets = (frame_size + (network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE - 1)) / network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE;
-
-		printf("FRAME SIZE %lu\n", frame_size);
 
         // Send all but the last packet.
         for (int i = 0; i < num_packets - 1; i++) {

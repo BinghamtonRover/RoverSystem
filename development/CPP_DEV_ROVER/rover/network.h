@@ -152,8 +152,6 @@ void Manager::send_packet(P* packet, std::string send_address, int send_port)
     packet->type->writer(packet, packet_buffer);
 	size_t packet_size = packet_buffer.index;
 
-	printf("PACKET SIZE %lu\n", packet_size);
-
     packet_buffer.reset();
     send_raw_packet(packet_buffer.get_pointer(), packet_size, send_address, send_port);
 }
