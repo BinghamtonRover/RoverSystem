@@ -49,12 +49,14 @@ public class DisplayApplication extends Application
     private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
     private ImageView cameraImageView;
-    public Thread cameraViewWatcher = new Thread("cameraViewWatcher") {
+    public final Thread cameraViewWatcher = new Thread("cameraViewWatcher") {
         @Override
         public void run() {
             while (true) {
                 try {
-                    wait();
+                    synchronized(INSTANCE.cameraViewWatcher) {
+                        INSTANCE.cameraViewWatcher.wait();
+                    }
                 } catch (InterruptedException e) {
                     System.err.println("Camera View Watcher has been interruped");
                 }

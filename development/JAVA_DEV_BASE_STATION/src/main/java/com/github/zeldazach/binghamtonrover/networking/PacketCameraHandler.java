@@ -31,9 +31,10 @@ public class PacketCameraHandler implements PacketHandler {
             if (this.complete()) {
                 // this potential frame has just been completed, notify the camera view watcher
                 Platform.runLater(() -> {
-                    DisplayApplication app = DisplayApplication.INSTANCE;
-                    if (app != null) {
-                        app.cameraViewWatcher.notify();
+                    if (DisplayApplication.INSTANCE != null) {
+                        synchronized (DisplayApplication.INSTANCE) {
+                            DisplayApplication.INSTANCE.cameraViewWatcher.notify();
+                        }
                     }
                 });
             }
