@@ -28,7 +28,7 @@ public class ControllerHandler implements Runnable
         // This prevents JInput from spamming stderr with useless warning messages.
         Logger.getLogger(ControllerEnvironment.class.getName()).setUseParentHandlers(false);
 
-        // TODO: Explain what this is used for
+        // Holds potentially valid controllers.
         List<Controller> validControllersList = new ArrayList<>();
 
         for (Controller controller : controllerEnvironment.getControllers())
@@ -38,29 +38,18 @@ public class ControllerHandler implements Runnable
                 continue;
             }
 
-            if (controller.getPortType() != Controller.PortType.USB)
-            {
-                continue;
-            }
-
             validControllersList.add(controller);
         }
 
-        if (validControllersList.isEmpty())
-        {
-            JOptionPane.showMessageDialog(null,
-                                          "No USB controllers were found!",
-                                          "Error",
-                                          JOptionPane.ERROR_MESSAGE);
-
-            throw new RuntimeException("No USB controllers were found");
+        if (validControllersList.isEmpty()) {
+            System.out.println("> No valid controllers were found! Defaulting to keyboard input.");
         }
 
-        // TODO: Explain what this is used for
-        Controller chosenController;
+        // The controller chosen by the user.
+        // Will remain null if no controllers exist.
+        Controller chosenController = null;
 
-        if (validControllersList.size() > 1)
-        {
+        if (validControllersList.size() > 1) {
             System.out.println("There are more than one USB controller connected!");
 
             Controller selectedController =
@@ -72,27 +61,28 @@ public class ControllerHandler implements Runnable
                                                              validControllersList.toArray(),
                                                              validControllersList.get(0));
 
-            if (selectedController == null)
-            {
-                throw new RuntimeException("User cancelled controller selection.");
-            }
-
             chosenController = selectedController;
-            System.out.println("User selected controller: " + chosenController);
+            System.out.println("> User selected controller: " + chosenController);
         }
-        else
+        else if (validControllersList.size() == 1)
         {
             chosenController = validControllersList.get(0);
-            System.out.println("Defaulting to only controller: " + chosenController);
+            System.out.println("> Defaulting to only controller: " + chosenController);
         }
 
         controllerHandler = new ControllerHandler(chosenController);
 
-        // TODO: Explain what this thread does
-        Thread controllerHandlerThread = new Thread(controllerHandler);
-        controllerHandlerThread.setDaemon(true);
-        controllerHandlerThread.start();
+        // Only start listening if we have a controller.
+        if (chosenController != null) {
+            // Launch thread to listen for controller input.
+            Thread controllerHandlerThread = new Thread(controllerHandler);
+            controllerHandlerThread.setDaemon(true);
+            controllerHandlerThread.start();
+        } else {
+            System.out.println("> No controller found or selected. Using keyboard input only.");
+        }
     }
+
 
     public static ControllerHandler getInstance()
     {
@@ -118,9 +108,8 @@ public class ControllerHandler implements Runnable
     @Override
     public void run()
     {
-        // TODO: Explain what this permanent loop does
-        while (true)
-        {
+        // Continuously polls the controller.
+        while (true) {
             controller.poll();
 
             EventQueue queue = controller.getEventQueue();

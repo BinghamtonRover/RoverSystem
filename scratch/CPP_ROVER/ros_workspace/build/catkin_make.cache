@@ -1,0 +1,2 @@
+automatic_rover_boy
+-DCATKIN_DEVEL_PREFIX=/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/devel -DCMAKE_INSTALL_PREFIX=/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/install -G Unix Makefiles
