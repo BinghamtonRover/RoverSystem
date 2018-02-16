@@ -17,7 +17,7 @@ const int CURRENT_ROVER_PROTOCOL_VERSION = 5;
 const int HEADER_LENGTH = 5;
 
 // See camera_spec.txt for details about this value.
-const int CAMERA_PACKET_FRAME_DATA_MAX_SIZE = 20000;
+const int CAMERA_PACKET_FRAME_DATA_MAX_SIZE = 40000;
 
 // Must be large enough to fit any packet.
 const int READ_BUFFER_SIZE = 65000;
@@ -114,13 +114,12 @@ void register_packet_functions();
 
 class Manager
 {
-    private:
+    public:
         int socket_fd;
         uint16_t receive_timestamp, send_timestamp;
 
         void send_raw_packet(uint8_t*, size_t, std::string, int);
 
-    public:
         Manager(std::string, int);
         ~Manager();
 
@@ -142,16 +141,21 @@ void Manager::send_packet(P* packet, std::string send_address, int send_port)
     packet_buffer.write_value(packet->type->type);
     packet_buffer.write_value<uint16_t>(htons(send_timestamp));
 
-    // Do our own overflow, since its undefined for C++.
-    if (send_timestamp == UINT16_MAX)
-        send_timestamp = 0;
-    else
-        send_timestamp++;
+	if (packet->type->type != PacketTypeCamera.type) {
+			// Do our own overflow, since its undefined for C++.
+			if (send_timestamp == UINT16_MAX)
+				send_timestamp = 0;
+			else
+				send_timestamp++;
+	}
 
     packet->type->writer(packet, packet_buffer);
+	size_t packet_size = packet_buffer.index;
+
+	printf("PACKET SIZE %lu\n", packet_size);
 
     packet_buffer.reset();
-    send_raw_packet(packet_buffer.get_pointer(), packet_buffer.index, send_address, send_port);
+    send_raw_packet(packet_buffer.get_pointer(), packet_size, send_address, send_port);
 }
 
 } // namespace network
