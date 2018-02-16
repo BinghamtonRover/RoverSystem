@@ -32,8 +32,7 @@ static void handle_heartbeat(network::Manager& manager, PacketHeartbeat* packet,
 
 static PacketControl::MovementState lastState = PacketControl::MovementState::STOP;
 
-static void handle_control(network::Manager& manager, PacketControl* packet, std::string address, int port)
-{
+static void handle_control(network::Manager& manager, PacketControl* packet, std::string address, int port) {
     // We do not use these.
     (void)manager;
     (void)address;
@@ -114,7 +113,6 @@ int main(int argc, char** argv)
     
     // Create buffer for image data.
     uint8_t* frame_buffer_back = (uint8_t*) malloc(camera.image_size);
-    Buffer frame_buffer(frame_buffer_back);
 
     // For cycles per second tracking.
     uint64_t last_time = millisecond_time();
@@ -124,8 +122,7 @@ int main(int argc, char** argv)
     {
         manager.poll();
 
-        // Reset the buffer.
-        frame_buffer.reset();
+		uint8_t* frame_buffer = frame_buffer_back;
         
         size_t frame_size = camera.grab_frame(frame_buffer_back);
         if (frame_size == 0) {
@@ -136,13 +133,20 @@ int main(int argc, char** argv)
         // Create the packets needed.
         int num_packets = (frame_size + (network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE - 1)) / network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE;
 
+		printf("FRAME SIZE %lu\n", frame_size);
+
         // Send all but the last packet.
         for (int i = 0; i < num_packets - 1; i++) {
             PacketCamera camera_packet;
             camera_packet.section_index = (uint8_t) i;
             camera_packet.section_count = (uint8_t) num_packets;
             camera_packet.size = (uint16_t) network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE;
-            camera_packet.data = frame_buffer.get_pointer(network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE);
+            camera_packet.data = frame_buffer;
+
+			frame_buffer += network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE;
+
+			// This is for now... java is too slow! We need to get packet size down.
+			usleep(10 * 1000);
 
             manager.send_packet(&camera_packet, base_station_address, base_station_port);            
         }
@@ -152,9 +156,16 @@ int main(int argc, char** argv)
         camera_packet.section_index = (uint8_t) (num_packets - 1);
         camera_packet.section_count = (uint8_t) num_packets;
         camera_packet.size = (uint16_t) (frame_size % network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE);
-        camera_packet.data = frame_buffer.get_pointer();
+        camera_packet.data = frame_buffer;
 
         manager.send_packet(&camera_packet, base_station_address, base_station_port);
+
+		// Manually increment timestamp
+	// Do our own overflow, since its undefined for C++.
+	if (manager.send_timestamp == UINT16_MAX)
+		manager.send_timestamp = 0;
+	else
+		manager.send_timestamp++;
 
         if (cycles % 30 == 0)
             std::cout << "> " << ((float) cycles / (millisecond_time() - last_time)*1000.0) << " cycles per second at millisecond mark " << (millisecond_time() - last_time) << std::endl;
