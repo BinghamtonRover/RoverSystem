@@ -4,6 +4,8 @@ import com.github.zeldazach.binghamtonrover.controller.ControllerHandler;
 import com.github.zeldazach.binghamtonrover.controller.ControllerState;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import com.github.zeldazach.binghamtonrover.networking.PacketCameraHandler;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -14,12 +16,16 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.github.zeldazach.binghamtonrover.networking.PacketCameraHandler.*;
 
 public class DisplayApplication extends Application
 {
@@ -40,7 +46,20 @@ public class DisplayApplication extends Application
      */
     private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
-    public ImageView cameraImageView;
+    private ImageView cameraImageView;
+    public Thread cameraViewWatcher = new Thread("cameraViewWatcher") {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    System.err.println("Camera View Watcher has been interruped");
+                }
+                Platform.runLater(() -> { if (INSTANCE != null) { INSTANCE.updateImageView(); } });
+            }
+        }
+    };
 
     @Override
     public void start(Stage primary) {
@@ -92,7 +111,83 @@ public class DisplayApplication extends Application
 
         cameraView.getChildren().add(cameraImageView);
 
+        cameraViewWatcher.start();
+
         return cameraView;
+    }
+
+    private void updateImageView() {
+        PotentialFrame completeFrame = PacketCameraHandler.getFramesToCreate().getMostRecentCompletedFrame();
+        if (completeFrame == null) return; // frame dropped under time out, irrelevant
+        // sections start at index 0 until the total number of sections for this frame
+        ByteArrayOutputStream concatenatedFrame = new ByteArrayOutputStream();
+        try {
+            for (int i = 0; i < completeFrame.getMaxSections(); i ++) {
+                concatenatedFrame.write(((ByteBuffer) completeFrame.get(i)).array());
+            }
+        } catch (IOException e) {
+            System.out.println("Could not concatenate frame bytes; dropping");
+            return;
+        }
+        cameraImageView.setImage(new Image(new ByteArrayInputStream(concatenatedFrame.toByteArray())));
+
+    }
+
+    private void renderXboxState(Canvas xboxCanvas) {
+        double joystickOffset = JOYSTICK_OFFSET_RATIO * XBOX_VIEW_WIDTH;
+        ControllerState controllerState = ControllerHandler.getInstance().getControllerState();
+        GraphicsContext graphicsContext = xboxCanvas.getGraphicsContext2D();
+
+        graphicsContext.setFill(Color.BLACK);
+        graphicsContext.fillRect(0, 0, xboxCanvas.getWidth(), xboxCanvas.getHeight());
+
+        drawImage(xboxCanvas, (controllerState.buttonA) ? "a_pressed" : "a_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonB) ? "b_pressed" : "b_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonX) ? "x_pressed" : "x_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonY) ? "y_pressed" : "y_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonSelect) ? "view_pressed" : "view_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonMode) ? "xbox_pressed" : "xbox_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonStart) ? "menu_pressed" : "menu_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonLBumper) ? "lb_pressed" : "lb_unpressed");
+        drawImage(xboxCanvas, (controllerState.buttonRBumper) ? "rb_pressed" : "rb_unpressed");
+
+        drawImage(xboxCanvas, "js_left_background");
+        if (controllerState.lStickX != 0.0 || controllerState.lStickY != 0.0)
+        {
+            drawImage(xboxCanvas, "js_left_pressed", Math.floor(controllerState.lStickX * joystickOffset),
+                    Math.floor(controllerState.lStickY * joystickOffset));
+        }
+        else
+        {
+            drawImage(xboxCanvas, "js_left_unpressed");
+        }
+
+        drawImage(xboxCanvas, "js_right_background");
+        if (controllerState.rStickX != 0.0 || controllerState.rStickY != 0.0)
+        {
+            drawImage(xboxCanvas, "js_right_pressed", Math.floor(controllerState.rStickX * joystickOffset),
+                    Math.floor(controllerState.rStickY * joystickOffset));
+        }
+        else
+        {
+            drawImage(xboxCanvas, "js_right_unpressed");
+        }
+
+        drawImage(xboxCanvas, "dpad_unpressed");
+        if (controllerState.dpad == 0.25) drawImage(xboxCanvas, "dpad_pressed_up");
+        if (controllerState.dpad == 0.50) drawImage(xboxCanvas, "dpad_pressed_right");
+        if (controllerState.dpad == 0.75) drawImage(xboxCanvas, "dpad_pressed_down");
+        if (controllerState.dpad == 1.00) drawImage(xboxCanvas, "dpad_pressed_left");
+
+        drawImage(xboxCanvas, "lt_unpressed");
+        graphicsContext.setGlobalAlpha((controllerState.lTrigger + 1.0) / 2.0);
+        drawImage(xboxCanvas, "lt_pressed");
+        graphicsContext.setGlobalAlpha(1.0);
+
+        drawImage(xboxCanvas, "rt_unpressed");
+        graphicsContext.setGlobalAlpha((controllerState.rTrigger + 1.0) / 2.0);
+        drawImage(xboxCanvas, "rt_pressed");
+        graphicsContext.setGlobalAlpha(1.0);
     }
 
     private Canvas buildXboxView()
