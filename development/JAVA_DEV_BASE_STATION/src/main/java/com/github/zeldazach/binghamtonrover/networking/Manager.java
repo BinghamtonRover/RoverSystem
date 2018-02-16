@@ -131,10 +131,11 @@ public class Manager
         if (version != CURRENT_VERSION) {
             outputVersionMismatch(version);
             return;
-        }
-        else if (!timestampIgnorePackets.contains(packet == null ? null : packet.getClass()) && timestamp <= expectedTimestamp) {
-            outputTimestampMismatch(timestamp, expectedTimestamp);
-            return;
+        } else if (timestamp <= expectedTimestamp) {
+            if (packet == null || !timestampIgnorePackets.contains(packet.getClass())) {
+                outputTimestampMismatch(timestamp, expectedTimestamp);
+                return;
+            }
         } else if (timestamp >= expectedTimestamp) {
             setReceiveTimestamp(header.getTimestamp());
         }

@@ -49,21 +49,6 @@ public class DisplayApplication extends Application
     private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
     private ImageView cameraImageView;
-    public final Thread cameraViewWatcher = new Thread("cameraViewWatcher") {
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    synchronized(INSTANCE.cameraViewWatcher) {
-                        INSTANCE.cameraViewWatcher.wait();
-                    }
-                } catch (InterruptedException e) {
-                    System.err.println("Camera View Watcher has been interruped");
-                }
-                Platform.runLater(() -> { if (INSTANCE != null) { INSTANCE.updateImageView(); } });
-            }
-        }
-    };
 
     @Override
     public void start(Stage primary) {
@@ -120,27 +105,13 @@ public class DisplayApplication extends Application
 
         cameraView.getChildren().add(cameraImageView);
 
-        cameraViewWatcher.start();
-
         return cameraView;
     }
 
-    private void updateImageView() {
-        PotentialFrame completeFrame = PacketCameraHandler.getFramesToCreate().getMostRecentCompletedFrame();
-        if (completeFrame == null) return; // frame dropped under time out, irrelevant
-        // sections start at index 0 until the total number of sections for this frame
-        ByteArrayOutputStream concatenatedFrame = new ByteArrayOutputStream();
-        try {
-            for (int i = 0; i < completeFrame.getMaxSections(); i ++) {
-                concatenatedFrame.write(((ByteBuffer) completeFrame.get(i)).array());
-            }
-        } catch (IOException e) {
-            System.out.println("Could not concatenate frame bytes; dropping");
-            return;
-        }
-        cameraImageView.setImage(new Image(new ByteArrayInputStream(concatenatedFrame.toByteArray())));
-
+    public ImageView getCameraImageView() {
+        return cameraImageView;
     }
+
 
     private void renderXboxState(Canvas xboxCanvas) {
         double joystickOffset = JOYSTICK_OFFSET_RATIO * XBOX_VIEW_WIDTH;

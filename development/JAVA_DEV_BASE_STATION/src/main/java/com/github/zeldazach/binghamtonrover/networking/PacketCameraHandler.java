@@ -2,111 +2,88 @@ package com.github.zeldazach.binghamtonrover.networking;
 
 import com.github.zeldazach.binghamtonrover.gui.DisplayApplication;
 import javafx.application.Platform;
+import javafx.scene.image.Image;
 
-import java.nio.Buffer;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Arrays;
+
+class FrameBuffer {
+    private ByteBuffer[][] internalBuffer;
+
+    private int[] timestamps;
+
+    private int size;
+
+    FrameBuffer(int size) {
+        this.size = size;
+        timestamps = new int[size];
+        internalBuffer = new ByteBuffer[5][0]; // internal arrays are changed anyway
+    }
+
+    private void updateFrame(PacketCamera packet, int index) {
+        internalBuffer[index][packet.getSectionIndex()] = packet.getSectionData();
+        if (!Arrays.asList(internalBuffer[index]).contains(null)) {
+            // frame is complete
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try {
+                for (ByteBuffer buff: internalBuffer[index]) {
+                    baos.write(buff.array());
+                }
+            } catch (IOException ex) {
+                System.err.println("Couldn't concat complete frame TIMESTAMP: " + timestamps[index]);
+                return;
+            }
+            Image image = new Image(new ByteArrayInputStream(baos.toByteArray()));
+            Platform.runLater(() -> {
+                if (DisplayApplication.INSTANCE != null) {
+                    DisplayApplication.INSTANCE.getCameraImageView().setImage(image);
+                }
+            });
+        }
+    }
+
+    private void shiftBuffer(PacketCamera packet) {
+        int[] tempTimestamps = new int[size];
+        ByteBuffer[][] tempInternalBuffer = new ByteBuffer[size][0];
+        System.arraycopy(timestamps, 1, tempTimestamps, 0, size - 1);
+        System.arraycopy(internalBuffer, 1, tempInternalBuffer, 0, size - 1);
+        timestamps[size - 1] = packet.getHeader().getTimestamp();
+        internalBuffer[size - 1] = new ByteBuffer[packet.getSectionCount()];
+        timestamps = tempTimestamps;
+        internalBuffer = tempInternalBuffer;
+    }
+
+    public void update(PacketCamera packet) {
+        boolean timestampWithin = false;
+        for (int i = 0; i < timestamps.length; i++) {
+            if (timestamps[i] == 0) {
+                timestamps[i] = packet.getHeader().getTimestamp();
+                internalBuffer[i] = new ByteBuffer[packet.getSectionCount()];
+                timestampWithin = true;
+                updateFrame(packet, i);
+            } else if (timestamps[i] == packet.getHeader().getTimestamp()) {
+                updateFrame(packet, i);
+                timestampWithin = true;
+            }
+        }
+        if (!timestampWithin) {
+            shiftBuffer(packet);
+            updateFrame(packet, size - 1);
+        }
+    }
+}
+
 
 public class PacketCameraHandler implements PacketHandler {
-    public static class PotentialFrame<K extends Integer, V extends Buffer> extends HashMap {
-        private final int maxSections;
-
-        PotentialFrame(int _maxSections, int initialCapacity) {
-            super(initialCapacity);
-            maxSections = _maxSections;
-        }
-
-        PotentialFrame(int _maxSections) {
-            this(_maxSections, 16); // see oracle default initial values
-        }
-
-        synchronized void addSection(int section, ByteBuffer sectionBuffer) {
-            if (section >= maxSections) {
-                throw new IllegalArgumentException("section index out of bounds for this PotentialFrame");
-            } /*else if (this.containsKey(section) ? what should we do in this case? */ else {
-                put(section, sectionBuffer);
-            }
-            if (this.complete()) {
-                // this potential frame has just been completed, notify the camera view watcher
-                Platform.runLater(() -> {
-                    if (DisplayApplication.INSTANCE != null) {
-                        synchronized (DisplayApplication.INSTANCE) {
-                            DisplayApplication.INSTANCE.cameraViewWatcher.notify();
-                        }
-                    }
-                });
-            }
-        }
-
-        synchronized boolean complete() { return this.size() == this.maxSections; }
-
-        public int getMaxSections() { return maxSections; }
-    }
-
-    public static class FrameBuffer<K extends Number, V extends PotentialFrame> extends HashMap {
-        private final int maxFrameBuffer = 5; // should be sufficiently large to avoid issues getting individual sections out of order
-
-        synchronized void setFrameSection(int timestamp, int sectionIndex, int sectionCount, ByteBuffer sectionBuff) {
-            boolean conditionalContains = true;
-            // if we are current'y holding maxFrameBuffer potential frames,
-            // and the currently received frame isn't one of them,
-            if (this.size() == this.maxFrameBuffer && !this.containsKey(timestamp)) {
-                // and is a newly timed frame, and not one from earlier
-                if (timestamp > ((Integer) Collections.max(keySet()))) {
-                    // remove the oldest potential frame to make room for this new one
-                    this.remove(Collections.min(keySet()));
-                    conditionalContains = false;
-                } else {
-                    // well we don't have this one, but it's not new, so we don't care
-                    return;
-                }
-            }
-            // if we definitely don't have it, short circuit and add a new one
-            // otherwise, make sure we don't have it before adding a new one
-            if (!conditionalContains || !this.containsKey(timestamp)) {
-                // this technically subclasses potential frame, but it's fine because we upcast internally
-                put(timestamp, new PotentialFrame<Integer, ByteBuffer>(sectionCount) {{
-                    addSection(sectionIndex, sectionBuff);
-                }});
-            } else {
-                // we got it, downcast and update it with the new section
-                ((PotentialFrame) this.get(timestamp)).addSection(sectionIndex, sectionBuff);
-            }
-        }
-
-        synchronized void setFrameSection(PacketCamera packet) {
-            setFrameSection(
-                    packet.getHeader().getTimestamp(),
-                    packet.getSectionIndex(),
-                    packet.getSectionCount(),
-                    packet.getSectionData());
-        }
-
-        public synchronized PotentialFrame getMostRecentCompletedFrame() {
-            Integer largestTimestamp = 0;
-            PotentialFrame completedFrame, currentFrame;
-            completedFrame = null;
-            for (Object key: keySet()) {
-                if ((Integer) key > largestTimestamp) {
-                    largestTimestamp = (Integer) key;
-                    currentFrame = (PotentialFrame) get(largestTimestamp);
-                    if (currentFrame.complete()) completedFrame = currentFrame;
-                }
-            }
-            return completedFrame;
-        }
-
-    }
-    private static final FrameBuffer<Integer, PotentialFrame<Integer, ByteBuffer>> framesToCreate = new FrameBuffer<>();
-
-    public static FrameBuffer<Integer, PotentialFrame<Integer, ByteBuffer>> getFramesToCreate() { return framesToCreate; }
+    private FrameBuffer frameBuffer = new FrameBuffer(5);
 
     @Override
     public void handle(Packet packet) {
         try {
-            framesToCreate.setFrameSection((PacketCamera) packet);
+            frameBuffer.update((PacketCamera) packet);
         } catch (IllegalArgumentException e) {
             System.out.println("Unable to add section to potential frame " + e.getMessage());
         }
