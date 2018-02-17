@@ -1,4 +1,4 @@
-package com.github.zeldazach.binghamtonrover.gui;
+package BinghamtonRover.gui;
 
 import eu.hansolo.medusa.*;
 import javafx.animation.AnimationTimer;
@@ -59,7 +59,7 @@ public final class Gauges {
             .barColor(VERMILLION)
             .prefSize(260, 200)
             .title("Temperature")
-            .unit("°K")
+            .unit("°C")
             .startAngle(270)     //Origin 270
             .angleRange(180)    //Origin 270
             .minValue(0)
