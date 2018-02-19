@@ -3,10 +3,9 @@ package com.github.zeldazach.binghamtonrover.gui;
 import com.github.zeldazach.binghamtonrover.controller.ControllerHandler;
 import com.github.zeldazach.binghamtonrover.controller.ControllerState;
 import com.github.zeldazach.binghamtonrover.controller.KeyboardHandler;
-import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import com.github.zeldazach.binghamtonrover.networking.PacketCameraHandler;
 import javafx.application.Platform;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,14 +16,18 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+
+import com.github.zeldazach.binghamtonrover.networking.PacketCameraHandler.*;
 
 public class DisplayApplication extends Application
 {
@@ -37,8 +40,7 @@ public class DisplayApplication extends Application
      * These need to be anything with a 16:9 ratio.
      */
     private static final int XBOX_VIEW_WIDTH = 800, XBOX_VIEW_HEIGHT = 450;
-
-    private static final int CAMERA_VIEW_WIDTH = 400, CAMERA_VIEW_HEIGHT = 400;
+    private static final int CAMERA_VIEW_WIDTH = 800, CAMERA_VIEW_HEIGHT = 450;
 
     /**
      * Yes, this is hardcoded. It's used in the calculation of the offset of the joystick "pressed" image.
@@ -46,7 +48,7 @@ public class DisplayApplication extends Application
      */
     private static final double JOYSTICK_OFFSET_RATIO = 0.02125;
 
-    public ImageView cameraImageView;
+    private ImageView cameraImageView;
 
     @Override
     public void start(Stage primary) {
@@ -98,11 +100,18 @@ public class DisplayApplication extends Application
         cameraView.setAlignment(Pos.CENTER);
 
         cameraImageView = new ImageView();
+        cameraImageView.setFitWidth(CAMERA_VIEW_WIDTH);
+        cameraImageView.setFitHeight(CAMERA_VIEW_HEIGHT);
 
         cameraView.getChildren().add(cameraImageView);
 
         return cameraView;
     }
+
+    public ImageView getCameraImageView() {
+        return cameraImageView;
+    }
+
 
     private void renderXboxState(Canvas xboxCanvas) {
         double joystickOffset = JOYSTICK_OFFSET_RATIO * XBOX_VIEW_WIDTH;

@@ -2,20 +2,23 @@
 
 #include "camera.h"
 
+namespace camera {
+
 // Converts a YCrCb color to RGB.
-static void ycc_to_rgb(uint8_t y, uint8_t cb, uint8_t cr, uint8_t* r, uint8_t* g, uint8_t* b) {
-    float fy = (float) y;
-    float fcb = (float) cb;
-    float fcr = (float) cr;
+// Currently unused.
+// static void ycc_to_rgb(uint8_t y, uint8_t cb, uint8_t cr, uint8_t* r, uint8_t* g, uint8_t* b) {
+//     float fy = (float) y;
+//     float fcb = (float) cb;
+//     float fcr = (float) cr;
 
-    float fr = fy + 1.402f * (fcr - 128.0f);
-    float fg = fy - 0.344136f * (fcb - 128.0f) - 0.714136f * (fcr - 128.0f);
-    float fb = fy + 1.772f  * (fcb - 128.0f);
+//     float fr = fy + 1.402f * (fcr - 128.0f);
+//     float fg = fy - 0.344136f * (fcb - 128.0f) - 0.714136f * (fcr - 128.0f);
+//     float fb = fy + 1.772f  * (fcb - 128.0f);
 
-    *r = (uint8_t) fr;
-    *g = (uint8_t) fg;
-    *b = (uint8_t) fb;
-}
+//     *r = (uint8_t) fr;
+//     *g = (uint8_t) fg;
+//     *b = (uint8_t) fb;
+// }
 
 void Buffer::allocate(size_t _size) {
     size = _size;
@@ -31,7 +34,8 @@ Buffer::~Buffer() {
 
 CaptureSession::~CaptureSession() {
     // Close the connection to the camera.
-    close(fd);
+    if (fd != -1)
+        close(fd);
 }
 
 
@@ -82,7 +86,10 @@ bool CaptureSession::check_capabilities() {
     }
 
     // Then set the pixel format we want.
+    // Also set our desired size.
     fmt.fmt.pix.pixelformat = PIXEL_FORMAT;
+    fmt.fmt.pix.width = width;
+    fmt.fmt.pix.height = height;
 
     if (ioctl(fd, VIDIOC_S_FMT, &fmt) != 0) {
         std::cerr << "[!] Failed to set video format!" << std::endl;
@@ -95,9 +102,11 @@ bool CaptureSession::check_capabilities() {
         return false;
     }
 
-    // Record the width and height of the camera.
-    width = (size_t) fmt.fmt.pix.width;
-    height = (size_t) fmt.fmt.pix.height;
+    // Check the returned dimensions.
+    if (fmt.fmt.pix.width != width || fmt.fmt.pix.height != height) {
+        std::cerr << "[!] Camera uses undesired dimensions " << fmt.fmt.pix.width << " x " << fmt.fmt.pix.height << "." << std::endl;
+        return false;
+    }
 
     // Record the frame size (in bytes).
     image_size = (size_t) fmt.fmt.pix.sizeimage;
@@ -129,7 +138,7 @@ bool CaptureSession::init_buffers() {
 
     // Link each buffer with the driver.
     for (size_t i = 0; i < NUM_BUFFERS; i++) {
-            struct v4l2_buffer vbuf;
+        struct v4l2_buffer vbuf;
         memset(&vbuf, 0, sizeof(vbuf));
 
         vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -161,7 +170,7 @@ bool CaptureSession::start_stream() {
     return true;
 }
 
-bool CaptureSession::grab_frame(cv::Mat& out_image) {
+size_t CaptureSession::grab_frame(uint8_t* buffer) {
     // Set up object for the select call.
     fd_set fds;
     struct timeval tv;
@@ -177,7 +186,7 @@ bool CaptureSession::grab_frame(cv::Mat& out_image) {
     // Wait for the next frame. See select(2) for more information.
     if (select(fd + 1, &fds, NULL, NULL, &tv) <= 0) {
         std::cerr << "[!] Failed to select!" << std::endl;
-        return false;
+        return 0;
     }
 
     // Set up the video4linux "buffer" (which points to our buffer).
@@ -191,49 +200,25 @@ bool CaptureSession::grab_frame(cv::Mat& out_image) {
     if (ioctl(fd, VIDIOC_DQBUF, &vbuf) != 0) {
         // TODO: Handle EAGAIN.
         std::cerr << "[!] Failed to read frame!" << std::endl;
-        return false;
+        return 0;
     }
 
     // Get the pointer to our frame data.
     uint8_t* frame_data = (uint8_t*) vbuf.m.userptr;
+
     // Get the actual size of the frame data.
     size_t frame_size = vbuf.bytesused;
 
-    out_image = cv::Scalar(0, 0, 0);
-
-    // The YUYV format is stored in 4-byte chunks. Each 4-byte chunk defines
-    // two pixels. The following link specifies the data format:
-    // https://linuxtv.org/downloads/v4l-dvb-apis/uapi/v4l/pixfmt-yuyv.html.
-    for (size_t i = 0; i < frame_size; i += 4) {
-        uint8_t y0 = frame_data[i];     // Y component of first pixel.
-        uint8_t cr = frame_data[i+1];   // Cr component of both pixels.
-        uint8_t y1 = frame_data[i+2];   // Y component of second pixel.
-        uint8_t cb = frame_data[i+3];   // Cb component of both pixels.
-
-        uint8_t r, g, b;
-
-        // First pixel conversion.
-        ycc_to_rgb(y0, cb, cr, &r, &g, &b);
-
-        // Set the appropriate pixel in the Mat.
-        out_image.at<cv::Vec3b>(i/2)[0] = r;
-        out_image.at<cv::Vec3b>(i/2)[0] = g;
-        out_image.at<cv::Vec3b>(i/2)[0] = b;
-
-        // Second pixel conversion.
-        ycc_to_rgb(y1, cb, cr, &r, &g, &b);
-
-        // Set the approprate pixel in the Mat.
-        out_image.at<cv::Vec3b>((i/2)+1)[0] = r;
-        out_image.at<cv::Vec3b>((i/2)+1)[1] = g;
-        out_image.at<cv::Vec3b>((i/2)+1)[2] = b;
-    }
+    // Copy the frame.
+    memcpy(buffer, frame_data, frame_size);
 
     // Reset the buffer we just used.
     if (ioctl(fd, VIDIOC_QBUF, &vbuf) != 0) {
         std::cerr << "[!] Failed to prepare buffer for next read!" << std::endl;
-        return false;
+        return 0;
     }
 
-    return true;
+    return frame_size;
 }
+
+} // namespace camera

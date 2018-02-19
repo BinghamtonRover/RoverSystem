@@ -3,64 +3,63 @@
 #include <vector>
 #include <unistd.h>
 
-#include <opencv2/opencv.hpp>
+#include <iostream>
 
 #include "network.h"
 #include "camera.h"
 
-// A number between 0 and 100 representing the amount of JPEG compression.
-// 0 is a blob of pixels and 100 is uncompressed.
-#define JPEG_QUALITY 55
+// Camera dimentions.
+const int CAMERA_WIDTH = 640;
+const int CAMERA_HEIGHT = 360;
 
-static void handle_ping(NetworkManager& manager, void* void_packet, std::string address, int port)
+using network::PacketHeartbeat;
+using network::PacketControl;
+using network::PacketCamera;
+
+static void handle_heartbeat(network::Manager& manager, PacketHeartbeat* packet, std::string address, int port)
 {
-    PacketPing packet = *((PacketPing*) void_packet);
-
-    if (packet.ping_direction == PingDirection::PING) {
+    if (packet->direction == PacketHeartbeat::Direction::PING) {
         printf("> Received ping... responding!\n");
         
-        PacketPing response;
-        response.ping_direction = PingDirection::PONG;
+        PacketHeartbeat response;
+        response.direction = PacketHeartbeat::Direction::PONG;
 
-        manager.send_packet(PacketType::PING, &response, PACKET_PING_MAX, address, port);
+        manager.send_packet(&response, address, port);
     } else {
         printf("> Our ping was answered by a PONG!\n");
     }
 }
 
-static MovementState lastState = MovementState::STOP;
+static PacketControl::MovementState lastState = PacketControl::MovementState::STOP;
 
-static void handle_control(NetworkManager& manager, void* void_packet, std::string address, int port)
-{
+static void handle_control(network::Manager& manager, PacketControl* packet, std::string address, int port) {
     // We do not use these.
     (void)manager;
     (void)address;
     (void)port;
-    
-    PacketControl packet = *((PacketControl*) void_packet);
 
-    if (packet.movement_state == lastState)
+    if (packet->movement_state == lastState)
     {
         return;
     }
 
     std::string message;
 
-    switch (packet.movement_state)
+    switch (packet->movement_state)
     {
-        case MovementState::STOP:
+        case PacketControl::MovementState::STOP:
             message = "stop";
             break;
-        case MovementState::FORWARD:
+        case PacketControl::MovementState::FORWARD:
             message = "move forward";
             break;
-        case MovementState::LEFT:
+        case PacketControl::MovementState::LEFT:
             message = "turn left";
             break;
-        case MovementState::RIGHT:
+        case PacketControl::MovementState::RIGHT:
             message = "turn right";
             break;
-        case MovementState::BACKWARD:
+        case PacketControl::MovementState::BACKWARD:
             message = "move backward";
             break;
         default:
@@ -70,7 +69,14 @@ static void handle_control(NetworkManager& manager, void* void_packet, std::stri
 
     printf("> Received CONTROL packet: %s\n", message.c_str());
 
-    lastState = packet.movement_state;
+    lastState = packet->movement_state;
+}
+
+uint64_t millisecond_time() {
+    struct timespec  ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    return (ts.tv_sec) * 1000 + (ts.tv_nsec) / 1000000;
 }
 
 int main(int argc, char** argv)
@@ -85,51 +91,84 @@ int main(int argc, char** argv)
     std::string base_station_address(argv[1]);
     int base_station_port = atoi(argv[2]);
 
-    NetworkManager manager("0.0.0.0", atoi(argv[3]));
+    // Initialize the packet readers and writers.
+    network::register_packet_functions();
 
-    manager.set_packet_handler(PacketType::PING, handle_ping);
-    manager.set_packet_handler(PacketType::CONTROL, handle_control);
+    // Bind to our listening port.
+    network::Manager manager("0.0.0.0", atoi(argv[3]));
+
+    // Register packet handlers.
+    network::PacketTypeHeartbeat.handler = handle_heartbeat;
+    network::PacketTypeControl.handler = handle_control;
 
     // Set up camera feed.
-    CaptureSession camera;
+    camera::CaptureSession camera(CAMERA_WIDTH, CAMERA_HEIGHT);
 
     if (!camera.open(std::string(argv[4]))) return 1;
     if (!camera.check_capabilities()) return 1;
     if (!camera.init_buffers()) return 1;
     if (!camera.start_stream()) return 1;
+
+    std::cout << "IMAGE SIZE " << camera.image_size << std::endl;
     
-    // Create OpenCV matrix for image data.
-    cv::Mat image_mat(camera.height, camera.width, CV_8UC3);
+    // Create buffer for image data.
+    uint8_t* frame_buffer_back = (uint8_t*) malloc(camera.image_size);
 
-    // Create a vector with JPEG quality data.
-    // This is for OpenCV's encoding function.
-    std::vector<int> encode_options;
-    encode_options.push_back(CV_IMWRITE_JPEG_QUALITY);
-    encode_options.push_back(JPEG_QUALITY);
-
-    // Create a buffer for JPEG output.
-    std::vector<unsigned char> jpeg_buffer;
+    // For cycles per second tracking.
+    uint64_t last_time = millisecond_time();
+    uint64_t cycles = 0;
 
     while (1)
     {
         manager.poll();
+
+		uint8_t* frame_buffer = frame_buffer_back;
         
-        if (!camera.grab_frame(image_mat)) break; // For now... this will be more robust eventually!
+        size_t frame_size = camera.grab_frame(frame_buffer_back);
+        if (frame_size == 0) {
+            std::cerr << "[!] Failed to grab frame!" << std::endl;
+            continue;
+        }
 
-        // Encode the image.
-        cv::imencode(".jpg", image_mat, jpeg_buffer, encode_options);
+        // Create the packets needed.
+        int num_packets = (frame_size + (network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE - 1)) / network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE;
 
-        // Create a packet.
+        // Send all but the last packet.
+        for (int i = 0; i < num_packets - 1; i++) {
+            PacketCamera camera_packet;
+            camera_packet.section_index = (uint8_t) i;
+            camera_packet.section_count = (uint8_t) num_packets;
+            camera_packet.size = (uint16_t) network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE;
+            camera_packet.data = frame_buffer;
+
+			frame_buffer += network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE;
+
+			// This is for now... java is too slow! We need to get packet size down.
+			usleep(10 * 1000);
+
+            manager.send_packet(&camera_packet, base_station_address, base_station_port);            
+        }
+
+        // Send the last packet.
         PacketCamera camera_packet;
-        camera_packet.size = (uint16_t) jpeg_buffer.size();
-        camera_packet.data = (uint8_t*) jpeg_buffer.data();
+        camera_packet.section_index = (uint8_t) (num_packets - 1);
+        camera_packet.section_count = (uint8_t) num_packets;
+        camera_packet.size = (uint16_t) (frame_size % network::CAMERA_PACKET_FRAME_DATA_MAX_SIZE);
+        camera_packet.data = frame_buffer;
 
-        // Send the packet.
-        manager.send_packet(PacketType::CAMERA, &camera_packet, camera_packet.size + 2, base_station_address, base_station_port);
+        manager.send_packet(&camera_packet, base_station_address, base_station_port);
 
-        image_mat = cv::imdecode(jpeg_buffer, CV_LOAD_IMAGE_COLOR);
+		// Manually increment timestamp
+	// Do our own overflow, since its undefined for C++.
+	if (manager.send_timestamp == UINT16_MAX)
+		manager.send_timestamp = 0;
+	else
+		manager.send_timestamp++;
 
-        cv::imshow("image", image_mat);
-        cv::waitKey(20);
+        if (cycles % 30 == 0)
+            std::cout << "> " << ((float) cycles / (millisecond_time() - last_time)*1000.0) << " cycles per second at millisecond mark " << (millisecond_time() - last_time) << std::endl;
+        cycles++;
     }
+
+    free(frame_buffer_back);
 }

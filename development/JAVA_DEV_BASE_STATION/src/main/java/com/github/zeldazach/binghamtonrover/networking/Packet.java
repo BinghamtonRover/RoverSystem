@@ -60,11 +60,13 @@ class PacketHeader
  */
 public abstract class Packet
 {
-    private final static int MAX_SIZE = 40007; // max size known for a packet
+    // This value is magic. This is the maximum size of a full camera packet.
+    private final static int MAX_SIZE = 40009;
 
     private byte type;
     private int size;
     private Optional<Manager> manager = Optional.empty();
+    private PacketHeader header;
 
     /**
      * Sets the type of the packet and its length.
@@ -119,5 +121,13 @@ public abstract class Packet
     private static DatagramPacket makeReceivingPacket(int readAmt)
     {
         return new DatagramPacket(new byte[MAX_SIZE], readAmt);
+    }
+
+    public void setHeader(PacketHeader header) {
+        this.header = header;
+    }
+
+    public PacketHeader getHeader() {
+        return header;
     }
 }
