@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 
 
 class FrameBuffer {
+    // The maximum size of a single frame.
     private static final int FRAME_MAX_SIZE = 40000000;
 
     int timestamp, remaining_sections, buffer_size;
@@ -23,6 +24,7 @@ class FrameBuffer {
     void push() {
         byte[] frame_buffer = new byte[buffer_size];
 
+        // Copy only the frame bytes out of our buffer.
         System.arraycopy(internal_buffer, 0, frame_buffer, 0, buffer_size);
 
         Image image = new Image(new ByteArrayInputStream(frame_buffer));
@@ -87,7 +89,7 @@ class FrameBufferContainer {
 
             our_buffer.timestamp = timestamp;
             our_buffer.remaining_sections = section_count - 1;
-            System.arraycopy(frame_data, 0, our_buffer.internal_buffer, 0, frame_data_size);
+            System.arraycopy(frame_data, 0, our_buffer.internal_buffer, section_id*PacketCamera.MAX_FRAME_DATA_SIZE, frame_data_size);
             our_buffer.buffer_size = frame_data_size;
 
             if (our_buffer.remaining_sections == 0) {
@@ -102,7 +104,7 @@ class FrameBufferContainer {
             FrameBuffer our_buffer = buffers[found_buffer_idx];
 
             our_buffer.remaining_sections--;
-            System.arraycopy(frame_data, 0, our_buffer.internal_buffer, section_id*40000, frame_data_size);
+            System.arraycopy(frame_data, 0, our_buffer.internal_buffer, section_id*PacketCamera.MAX_FRAME_DATA_SIZE, frame_data_size);
             our_buffer.buffer_size += frame_data_size;
 
             if (our_buffer.remaining_sections == 0) {

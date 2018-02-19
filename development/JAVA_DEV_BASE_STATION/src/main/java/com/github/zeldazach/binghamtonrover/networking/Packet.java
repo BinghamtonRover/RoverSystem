@@ -60,7 +60,8 @@ class PacketHeader
  */
 public abstract class Packet
 {
-    private final static int MAX_SIZE = 40009; // max size known for a packet
+    // This value is magic. This is the maximum size of a full camera packet.
+    private final static int MAX_SIZE = 40009;
 
     private byte type;
     private int size;

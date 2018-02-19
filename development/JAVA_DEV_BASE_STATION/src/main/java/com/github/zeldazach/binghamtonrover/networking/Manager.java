@@ -58,9 +58,6 @@ public class Manager
         put(1, PacketControl.class);
         put(2, PacketCamera.class);
     }};
-    private List<Class<? extends Packet>> timestampIgnorePackets = new ArrayList<Class<? extends Packet>>() {{
-        add(PacketCamera.class);
-    }};
 
     /**
      * Construct a Manager for sending and receiving packets
@@ -132,7 +129,8 @@ public class Manager
             outputVersionMismatch(version);
             return;
         } else if (timestamp <= expectedTimestamp) {
-            if (packet == null || !timestampIgnorePackets.contains(packet.getClass())) {
+            // Only output a timestamp mismatch if it is not a camera packet.
+            if (packet == null || !(packet instanceof PacketCamera)) {
                 outputTimestampMismatch(timestamp, expectedTimestamp);
                 return;
             }
