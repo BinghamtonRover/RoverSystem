@@ -24,8 +24,10 @@ public class DisplayApplication extends Application
     {
         INSTANCE = this;
         FXMLLoader loader = new FXMLLoader(getClass().getResource("DisplayApplication.fxml"));
-        controller = loader.getController();
         Parent root = loader.load();
+
+        controller = loader.getController();
+
         Scene scene = new Scene(root);
 
         // Register keyboard control
