@@ -59,7 +59,7 @@ public class DisplayApplicationController {
         double joystickOffset = JOYSTICK_OFFSET_RATIO * xboxView.getWidth();
         ControllerState controllerState = ControllerHandler.getInstance().getControllerState();
 
-        xboxViewGraphicsContext.setFill(javafx.scene.paint.Color.BLACK);
+        xboxViewGraphicsContext.setFill(Color.BLACK);
         xboxViewGraphicsContext.fillRect(0, 0, xboxView.getWidth(), xboxView.getHeight());
 
         drawImage(controllerState.buttonA ? "a_pressed" : "a_unpressed");
@@ -111,7 +111,7 @@ public class DisplayApplicationController {
         xboxViewGraphicsContext.setGlobalAlpha(1.0);
     }
 
-    private Map<String, javafx.scene.image.Image> controllerImageMap = new HashMap<>();
+    private Map<String, Image> controllerImageMap = new HashMap<>();
 
     private void drawImage(String imageName)
     {
@@ -120,7 +120,7 @@ public class DisplayApplicationController {
 
     private void drawImage(String imageName, double x, double y)
     {
-        javafx.scene.image.Image image;
+        Image image;
 
         if (!controllerImageMap.containsKey(imageName))
         {
