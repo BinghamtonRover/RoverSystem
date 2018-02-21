@@ -67,7 +67,7 @@ set(automatic_rover_boy_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
-  set(automatic_rover_boy_SOURCE_PREFIX /home/IEEE_PI/ros_workspace/src/automatic_rover_boy)
+  set(automatic_rover_boy_SOURCE_PREFIX /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy)
   set(automatic_rover_boy_DEVEL_PREFIX /home/IEEE_PI/ros_workspace/devel)
   set(automatic_rover_boy_INSTALL_PREFIX "")
   set(automatic_rover_boy_PREFIX ${automatic_rover_boy_DEVEL_PREFIX})

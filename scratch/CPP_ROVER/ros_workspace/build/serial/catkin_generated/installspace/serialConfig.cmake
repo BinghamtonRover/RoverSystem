@@ -67,7 +67,7 @@ set(serial_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
-  set(serial_SOURCE_PREFIX /home/IEEE_PI/ros_workspace/src/serial)
+  set(serial_SOURCE_PREFIX /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial)
   set(serial_DEVEL_PREFIX /home/IEEE_PI/ros_workspace/devel)
   set(serial_INSTALL_PREFIX "")
   set(serial_PREFIX ${serial_DEVEL_PREFIX})

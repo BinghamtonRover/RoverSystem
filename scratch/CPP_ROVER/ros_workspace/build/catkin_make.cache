@@ -1,2 +1,2 @@
-automatic_rover_boy:geometry_msgs:serial
+BallTracking:automatic_rover_boy:geometry_msgs:serial
 -DCATKIN_DEVEL_PREFIX=/home/IEEE_PI/ros_workspace/devel -DCMAKE_INSTALL_PREFIX=/home/IEEE_PI/ros_workspace/install -G Unix Makefiles

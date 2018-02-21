@@ -67,7 +67,7 @@ set(geometry_msgs_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
-  set(geometry_msgs_SOURCE_PREFIX /home/IEEE_PI/ros_workspace/src/geometry_msgs)
+  set(geometry_msgs_SOURCE_PREFIX /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/geometry_msgs)
   set(geometry_msgs_DEVEL_PREFIX /home/IEEE_PI/ros_workspace/devel)
   set(geometry_msgs_INSTALL_PREFIX "")
   set(geometry_msgs_PREFIX ${geometry_msgs_DEVEL_PREFIX})

@@ -1,4 +1,4 @@
-# Install script for directory: /home/IEEE_PI/ros_workspace/src/serial/tests
+# Install script for directory: /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial/tests
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

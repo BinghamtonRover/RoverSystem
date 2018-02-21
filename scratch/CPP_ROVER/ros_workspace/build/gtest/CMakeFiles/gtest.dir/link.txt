@@ -1,1 +1,1 @@
-/usr/bin/c++  -fPIC   -shared -Wl,-soname,libgtest.so -o libgtest.so CMakeFiles/gtest.dir/src/gtest-all.cc.o  -L/home/IEEE_PI/ros_workspace/build/gtest/src -lpthread -Wl,-rpath,/home/IEEE_PI/ros_workspace/build/gtest/src 
+/usr/bin/c++  -fPIC   -shared -Wl,-soname,libgtest.so -o libgtest.so CMakeFiles/gtest.dir/src/gtest-all.cc.o  -L/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/gtest/src -lpthread -Wl,-rpath,/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/gtest/src 

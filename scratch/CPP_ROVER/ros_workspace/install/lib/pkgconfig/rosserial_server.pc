@@ -1,8 +1,0 @@
-prefix=/home/IEEE_PI/ros_workspace/install
-
-Name: rosserial_server
-Description: Description of rosserial_server
-Version: 0.7.7
-Cflags: -I/home/IEEE_PI/ros_workspace/install/include
-Libs: -L/home/IEEE_PI/ros_workspace/install/lib 
-Requires: roscpp rosserial_msgs std_msgs topic_tools

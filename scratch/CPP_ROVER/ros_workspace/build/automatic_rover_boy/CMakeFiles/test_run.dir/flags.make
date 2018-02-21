@@ -6,5 +6,5 @@ CXX_FLAGS =
 
 CXX_DEFINES = -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\"automatic_rover_boy\"
 
-CXX_INCLUDES = -I/home/IEEE_PI/ros_workspace/devel/include -I/home/IEEE_PI/ros_workspace/src/serial/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp 
+CXX_INCLUDES = -I/home/IEEE_PI/ros_workspace/devel/include -I/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial/include -I/opt/ros/kinetic/include -I/opt/ros/kinetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp 
 

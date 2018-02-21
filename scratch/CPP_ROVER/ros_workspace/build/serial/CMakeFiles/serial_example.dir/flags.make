@@ -6,5 +6,5 @@ CXX_FLAGS =
 
 CXX_DEFINES = -DROS_BUILD_SHARED_LIBS=1
 
-CXX_INCLUDES = -I/home/IEEE_PI/ros_workspace/src/serial/include 
+CXX_INCLUDES = -I/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial/include 
 

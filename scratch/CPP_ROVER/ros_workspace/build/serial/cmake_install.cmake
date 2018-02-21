@@ -1,4 +1,4 @@
-# Install script for directory: /home/IEEE_PI/ros_workspace/src/serial
+# Install script for directory: /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -33,18 +33,18 @@ if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/home/IEEE_PI/ros_workspace/build/serial/catkin_generated/installspace/serial.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/serial/catkin_generated/installspace/serial.pc")
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/serial/cmake" TYPE FILE FILES
-    "/home/IEEE_PI/ros_workspace/build/serial/catkin_generated/installspace/serialConfig.cmake"
-    "/home/IEEE_PI/ros_workspace/build/serial/catkin_generated/installspace/serialConfig-version.cmake"
+    "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/serial/catkin_generated/installspace/serialConfig.cmake"
+    "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/serial/catkin_generated/installspace/serialConfig-version.cmake"
     )
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/serial" TYPE FILE FILES "/home/IEEE_PI/ros_workspace/src/serial/package.xml")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/serial" TYPE FILE FILES "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial/package.xml")
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
@@ -65,14 +65,14 @@ endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/serial" TYPE FILE FILES
-    "/home/IEEE_PI/ros_workspace/src/serial/include/serial/serial.h"
-    "/home/IEEE_PI/ros_workspace/src/serial/include/serial/v8stdint.h"
+    "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial/include/serial/serial.h"
+    "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/serial/include/serial/v8stdint.h"
     )
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/IEEE_PI/ros_workspace/build/serial/tests/cmake_install.cmake")
+  include("/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/serial/tests/cmake_install.cmake")
 
 endif()
 

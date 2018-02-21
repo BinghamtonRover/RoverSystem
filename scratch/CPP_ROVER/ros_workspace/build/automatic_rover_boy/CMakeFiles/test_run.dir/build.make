@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/IEEE_PI/ros_workspace/src
+CMAKE_SOURCE_DIR = /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/IEEE_PI/ros_workspace/build
+CMAKE_BINARY_DIR = /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build
 
 # Include any dependencies generated for this target.
 include automatic_rover_boy/CMakeFiles/test_run.dir/depend.make
@@ -58,17 +58,17 @@ include automatic_rover_boy/CMakeFiles/test_run.dir/progress.make
 include automatic_rover_boy/CMakeFiles/test_run.dir/flags.make
 
 automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.o: automatic_rover_boy/CMakeFiles/test_run.dir/flags.make
-automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.o: /home/IEEE_PI/ros_workspace/src/automatic_rover_boy/src/test_run.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/IEEE_PI/ros_workspace/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.o"
-	cd /home/IEEE_PI/ros_workspace/build/automatic_rover_boy && /usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test_run.dir/src/test_run.cpp.o -c /home/IEEE_PI/ros_workspace/src/automatic_rover_boy/src/test_run.cpp
+automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.o: /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy/src/test_run.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.o"
+	cd /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy && /usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test_run.dir/src/test_run.cpp.o -c /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy/src/test_run.cpp
 
 automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/test_run.dir/src/test_run.cpp.i"
-	cd /home/IEEE_PI/ros_workspace/build/automatic_rover_boy && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/IEEE_PI/ros_workspace/src/automatic_rover_boy/src/test_run.cpp > CMakeFiles/test_run.dir/src/test_run.cpp.i
+	cd /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy/src/test_run.cpp > CMakeFiles/test_run.dir/src/test_run.cpp.i
 
 automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/test_run.dir/src/test_run.cpp.s"
-	cd /home/IEEE_PI/ros_workspace/build/automatic_rover_boy && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/IEEE_PI/ros_workspace/src/automatic_rover_boy/src/test_run.cpp -o CMakeFiles/test_run.dir/src/test_run.cpp.s
+	cd /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy/src/test_run.cpp -o CMakeFiles/test_run.dir/src/test_run.cpp.s
 
 automatic_rover_boy/CMakeFiles/test_run.dir/src/test_run.cpp.o.requires:
 
@@ -117,8 +117,8 @@ test_run_EXTERNAL_OBJECTS =
 /home/IEEE_PI/ros_workspace/devel/lib/automatic_rover_boy/test_run: /usr/lib/arm-linux-gnueabihf/librt.so
 /home/IEEE_PI/ros_workspace/devel/lib/automatic_rover_boy/test_run: /usr/lib/arm-linux-gnueabihf/libpthread.so
 /home/IEEE_PI/ros_workspace/devel/lib/automatic_rover_boy/test_run: automatic_rover_boy/CMakeFiles/test_run.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/IEEE_PI/ros_workspace/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable /home/IEEE_PI/ros_workspace/devel/lib/automatic_rover_boy/test_run"
-	cd /home/IEEE_PI/ros_workspace/build/automatic_rover_boy && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/test_run.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable /home/IEEE_PI/ros_workspace/devel/lib/automatic_rover_boy/test_run"
+	cd /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/test_run.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 automatic_rover_boy/CMakeFiles/test_run.dir/build: /home/IEEE_PI/ros_workspace/devel/lib/automatic_rover_boy/test_run
@@ -130,10 +130,10 @@ automatic_rover_boy/CMakeFiles/test_run.dir/requires: automatic_rover_boy/CMakeF
 .PHONY : automatic_rover_boy/CMakeFiles/test_run.dir/requires
 
 automatic_rover_boy/CMakeFiles/test_run.dir/clean:
-	cd /home/IEEE_PI/ros_workspace/build/automatic_rover_boy && $(CMAKE_COMMAND) -P CMakeFiles/test_run.dir/cmake_clean.cmake
+	cd /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy && $(CMAKE_COMMAND) -P CMakeFiles/test_run.dir/cmake_clean.cmake
 .PHONY : automatic_rover_boy/CMakeFiles/test_run.dir/clean
 
 automatic_rover_boy/CMakeFiles/test_run.dir/depend:
-	cd /home/IEEE_PI/ros_workspace/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/IEEE_PI/ros_workspace/src /home/IEEE_PI/ros_workspace/src/automatic_rover_boy /home/IEEE_PI/ros_workspace/build /home/IEEE_PI/ros_workspace/build/automatic_rover_boy /home/IEEE_PI/ros_workspace/build/automatic_rover_boy/CMakeFiles/test_run.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy/CMakeFiles/test_run.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : automatic_rover_boy/CMakeFiles/test_run.dir/depend
 

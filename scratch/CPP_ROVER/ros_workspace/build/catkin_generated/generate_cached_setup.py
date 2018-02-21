@@ -21,7 +21,7 @@ except ImportError:
 
 code = generate_environment_script('/home/IEEE_PI/ros_workspace/devel/env.sh')
 
-output_filename = '/home/IEEE_PI/ros_workspace/build/catkin_generated/setup_cached.sh'
+output_filename = '/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/catkin_generated/setup_cached.sh'
 with open(output_filename, 'w') as f:
     #print('Generate script for cached setup "%s"' % output_filename)
     f.write('\n'.join(code))

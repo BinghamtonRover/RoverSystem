@@ -1,25 +1,25 @@
 Determining if the pthread_create exist failed with the following output:
-Change Dir: /home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp
+Change Dir: /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp
 
-Run Build Command:"/usr/bin/make" "cmTC_f6377/fast"
-/usr/bin/make -f CMakeFiles/cmTC_f6377.dir/build.make CMakeFiles/cmTC_f6377.dir/build
-make[1]: Entering directory '/home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_f6377.dir/CheckSymbolExists.c.o
-/usr/bin/cc     -o CMakeFiles/cmTC_f6377.dir/CheckSymbolExists.c.o   -c /home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
-Linking C executable cmTC_f6377
-/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_f6377.dir/link.txt --verbose=1
-/usr/bin/cc       CMakeFiles/cmTC_f6377.dir/CheckSymbolExists.c.o  -o cmTC_f6377 -rdynamic 
-CMakeFiles/cmTC_f6377.dir/CheckSymbolExists.c.o: In function `main':
+Run Build Command:"/usr/bin/make" "cmTC_b3634/fast"
+/usr/bin/make -f CMakeFiles/cmTC_b3634.dir/build.make CMakeFiles/cmTC_b3634.dir/build
+make[1]: Entering directory '/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b3634.dir/CheckSymbolExists.c.o
+/usr/bin/cc     -o CMakeFiles/cmTC_b3634.dir/CheckSymbolExists.c.o   -c /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_b3634
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b3634.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTC_b3634.dir/CheckSymbolExists.c.o  -o cmTC_b3634 -rdynamic 
+CMakeFiles/cmTC_b3634.dir/CheckSymbolExists.c.o: In function `main':
 CheckSymbolExists.c:(.text+0xe): undefined reference to `pthread_create'
 CheckSymbolExists.c:(.text+0x12): undefined reference to `pthread_create'
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_f6377.dir/build.make:97: recipe for target 'cmTC_f6377' failed
-make[1]: *** [cmTC_f6377] Error 1
-make[1]: Leaving directory '/home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp'
-Makefile:126: recipe for target 'cmTC_f6377/fast' failed
-make: *** [cmTC_f6377/fast] Error 2
+CMakeFiles/cmTC_b3634.dir/build.make:97: recipe for target 'cmTC_b3634' failed
+make[1]: *** [cmTC_b3634] Error 1
+make[1]: Leaving directory '/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_b3634/fast' failed
+make: *** [cmTC_b3634/fast] Error 2
 
-File /home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+File /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
 /* */
 #include <pthread.h>
 
@@ -35,22 +35,22 @@ int main(int argc, char** argv)
 }
 
 Determining if the function pthread_create exists in the pthreads failed with the following output:
-Change Dir: /home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp
+Change Dir: /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp
 
-Run Build Command:"/usr/bin/make" "cmTC_a96b7/fast"
-/usr/bin/make -f CMakeFiles/cmTC_a96b7.dir/build.make CMakeFiles/cmTC_a96b7.dir/build
-make[1]: Entering directory '/home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_a96b7.dir/CheckFunctionExists.c.o
-/usr/bin/cc    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_a96b7.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.5/Modules/CheckFunctionExists.c
-Linking C executable cmTC_a96b7
-/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a96b7.dir/link.txt --verbose=1
-/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_a96b7.dir/CheckFunctionExists.c.o  -o cmTC_a96b7 -rdynamic -lpthreads 
+Run Build Command:"/usr/bin/make" "cmTC_eda7b/fast"
+/usr/bin/make -f CMakeFiles/cmTC_eda7b.dir/build.make CMakeFiles/cmTC_eda7b.dir/build
+make[1]: Entering directory '/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_eda7b.dir/CheckFunctionExists.c.o
+/usr/bin/cc    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_eda7b.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.5/Modules/CheckFunctionExists.c
+Linking C executable cmTC_eda7b
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_eda7b.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_eda7b.dir/CheckFunctionExists.c.o  -o cmTC_eda7b -rdynamic -lpthreads 
 /usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_a96b7.dir/build.make:97: recipe for target 'cmTC_a96b7' failed
-make[1]: *** [cmTC_a96b7] Error 1
-make[1]: Leaving directory '/home/IEEE_PI/ros_workspace/build/CMakeFiles/CMakeTmp'
-Makefile:126: recipe for target 'cmTC_a96b7/fast' failed
-make: *** [cmTC_a96b7/fast] Error 2
+CMakeFiles/cmTC_eda7b.dir/build.make:97: recipe for target 'cmTC_eda7b' failed
+make[1]: *** [cmTC_eda7b] Error 1
+make[1]: Leaving directory '/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_eda7b/fast' failed
+make: *** [cmTC_eda7b/fast] Error 2
 
 
