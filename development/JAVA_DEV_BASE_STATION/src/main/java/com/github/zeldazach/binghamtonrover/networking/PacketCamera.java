@@ -1,17 +1,13 @@
 package com.github.zeldazach.binghamtonrover.networking;
 
-import javafx.embed.swing.SwingFXUtils;
-import javafx.scene.image.Image;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 
 public class PacketCamera extends Packet {
-    private Image image;
+    // Maximum size of frame data included within a single packet.
+    public static final int MAX_FRAME_DATA_SIZE = 40000;
+
+    private int sectionIndex, sectionCount, sectionSize;
+    private byte[] sectionData;
 
     @Override
     public void writeToBuffer(ByteBuffer buff) {
@@ -20,17 +16,34 @@ public class PacketCamera extends Packet {
 
     @Override
     public void readFromBuffer(ByteBuffer buff) {
-        // Skip the length.
-        buff.getChar();
+        // This will fail if the sectionCount or sectionIndex is greater than 127.
+        // That will never happen due to the side of our frames, but it is possible
+        // for this to fail theoretically.
+        // TODO: Switch this to properly handle the unsigned type.
+        // We might want to create a utility class which handles this reliably for us.
 
-        byte[] buffarr = new byte[buff.limit() - buff.position()];
-        buff.get(buffarr);
-        ByteArrayInputStream imageStream = new ByteArrayInputStream(buffarr);
-
-        image = new Image(imageStream);
+        sectionIndex = buff.get();
+        sectionCount = buff.get();
+        // Char just so happens to be the only unsigned type in Java,
+        // so we take advantage of that here.
+        sectionSize = buff.getChar();
+        sectionData = new byte[buff.limit() - buff.position()];
+        buff.get(sectionData);
     }
 
-    public Image toJavaFXImage() throws IllegalStateException {
-        return image;
+    public int getSectionIndex() {
+        return sectionIndex;
+    }
+
+    public int getSectionCount() {
+        return sectionCount;
+    }
+
+    public int getSectionSize() {
+        return sectionSize;
+    }
+
+    public byte[] getSectionData() {
+        return sectionData;
     }
 }

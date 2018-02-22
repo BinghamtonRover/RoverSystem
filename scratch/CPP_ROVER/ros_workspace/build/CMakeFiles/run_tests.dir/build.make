@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src
+CMAKE_SOURCE_DIR = /home/IEEE_PI/ros_workspace/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build
+CMAKE_BINARY_DIR = /home/IEEE_PI/ros_workspace/build
 
 # Utility rule file for run_tests.
 
@@ -67,6 +67,6 @@ CMakeFiles/run_tests.dir/clean:
 .PHONY : CMakeFiles/run_tests.dir/clean
 
 CMakeFiles/run_tests.dir/depend:
-	cd /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/CMakeFiles/run_tests.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/IEEE_PI/ros_workspace/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/IEEE_PI/ros_workspace/src /home/IEEE_PI/ros_workspace/src /home/IEEE_PI/ros_workspace/build /home/IEEE_PI/ros_workspace/build /home/IEEE_PI/ros_workspace/build/CMakeFiles/run_tests.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/run_tests.dir/depend
 

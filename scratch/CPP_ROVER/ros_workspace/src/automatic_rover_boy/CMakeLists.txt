@@ -8,11 +8,8 @@ project(automatic_rover_boy)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
   roscpp
   std_msgs
-  tf
-  serial
 )
 
 ## System dependencies are found with CMake's conventions
@@ -72,7 +69,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   std_msgs
+#   std_msgs
 # )
 
 ################################################
@@ -107,7 +104,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES automatic_rover_boy
-#  CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf
+#  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
 
@@ -202,4 +199,8 @@ include_directories(
 
 add_executable(test_run src/test_run.cpp)
 target_link_libraries(test_run ${catkin_LIBRARIES})
-add_dependencies(test_run ${catkin_EXPORTED_TARGETS})
+add_dependencies(test_run generate_messages_cpp)
+
+add_executable(navigator src/navigator.cpp)
+target_link_libraries(navigator ${catkin_LIBRARIES})
+add_dependencies(navigator generate_messages_cpp)

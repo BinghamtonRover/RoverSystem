@@ -1,0 +1,213 @@
+The idea of this branch is to explore a protocol for streaming video. This protocol sits within the general 
+packet protocol v5, with minor adjustments.
+
+Constants
+~~~~~~~~~
+
+There are several constants which need to be defined on the sending and/or receiving sides. They are as follows:
+	
+	1. CAMERA_PACKET_FRAME_DATA_MAX_SIZE	The maximum size, in bytes, of the frame data in a single camera packet. This
+                                            should be in the range defined previously for camera packets.
+	2. CAMERA_FRAME_BUFFER_SIZE				The size, in bytes, of any buffer that will hold a frame. In other words, the
+                                            maximum size of any single frame.
+	3. CAMERA_FRAME_BUFFER_COUNT			The number of frames to collect on the receiving side before pushing frames
+                                            to a view. The receiving side will have CAMERA_FRAME_BUFFER_COUNT buffers, each of
+                                            size CAMERA_FRAME_BUFFER_SIZE, to hold frames.
+
+Changes to Packet Protocol
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Camera packets make special use of the timestamp header field. The first packet of a given frame will automatically
+   receive the next available timestamp. Each subsequent packet carrying the same frame will also have the same
+   timestamp. The timestamp values for camera packets represent frames, not individual packets, so the network
+   manager on the receiving side must not compare camera packet timestamps to its last receieved timestamp.
+
+2. Camera packets have two additional fields, each an unsigned byte, called ''section index'' and ''section count''. 
+   These fields appear first in all camera packets. The section index indicates which section of a frame the packet is
+   carrying. When the sending side serializes a frame, it will fit into n packets. The first packet for that frame will 
+   have a section index of 0, the second packet will have a section index of 1, the third packet will have a section index
+   of 2, and so on. The last packet for that frame (the nth packet) will have a section index of n-1. The section count
+   will be n for each packet. Thus when a new frame is encountered (as signified by the timestamp), its section count will 
+   indicate how many packets are needed for that frame. For any camera packets which are not the first of a frame, their 
+   section indices will be used to place their data appropriately into their frame's buffer on the receiving side. 
+
+3. For any given frame, all packets carrying sections of that frame must carry CAMERA_PACKET_FRAME_DATA_MAX_SIZE bytes of frame
+   data, except the last packet. This is to ensure section placement in receiving side buffers.
+
+Sending Camera Packets
+~~~~~~~~~~~~~~~~~~~~~~
+
+The sending side protocol:
+
+	1. Capture frame F from the camera.
+	2. Encode frame F into a high-quality JPEG image.
+	3. Let F_s be the size, in bytes, of F. Then construct (F_s / CAMERA_PACKET_FRAME_DATA_MAX_SIZE) + 1 camera packets and
+	   distribute the contents of F across them, setting section index starting at 0 and ending at 
+	   F_s / CAMERA_PACKET_FRAME_DATA_MAX_SIZE. Set the section count of each packet to (F_s / CAMERA_PACKET_FRAME_DATA_MAX_SIZE) + 1.
+	   Set the size field of each camera packet to F_s, except for the last packet, which must have size
+	   F_s % CAMERA_PACKET_FRAME_DATA_MAX_SIZE.
+	4. Assign the next available timestamp to all packets carrying F. The packets carrying F must all have the same
+	   timestamp value.
+	5. Send the packets.
+
+Here is an example. Say the latest frame from the camera, when encoded as a JPEG image, has a size of 141330 bytes.
+Assume a CAMERA_PACKET_FRAME_DATA_MAX_SIZE of 40000 bytes. Then 4 packets will be created. Assume that the next timestamp
+is 12345. Then the packets for this frame should appear as the following:
+
+	| Version: 4       |	| Version: 4       |	| Version: 4       |	| Version: 4       |
+	| Packet Type: 2   |    | Packet Type: 2   |    | Packet Type: 2   |    | Packet Type: 2   |
+	| Timestamp: 1234  |    | Timestamp: 1234  |    | Timestamp: 1234  |    | Timestamp: 1234  |
+	--------------------    --------------------    --------------------    --------------------
+	| Section Index: 0 |    | Section Index: 1 |    | Section Index: 2 |    | Section Index: 3 |
+	| Section Count: 4 |	| Section Count: 4 |    | Section Count: 4 |    | Section Count: 4 |
+	| Size: 40000      |    | Size: 40000      |    | Size: 40000      |    | Size: 21330      |
+	| <Frame data>     |    | <Frame data>     |    | <Frame data>     |    | <Frame data>     |
+
+Receiving Camera Packets
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The receiving side protocol:
+
+	1. Before receiving any packets, set up CAMERA_FRAME_BUFFER_COUNT buffers, each of CAMERA_FRAME_BUFFER_SIZE. These buffers
+	   must be 'smart', in that each buffer records the timestamp of the frame it represents. Each buffer must also record
+	   the number of sections it has left to receive for the frame it represents. The next "available" buffer must be recorded. When a 
+	   buffer is full, the next buffer record must be updated to the next available buffer. If the next buffer has not yet been
+	   pushed to screen, then that frame is overwritten and dropped. Once the record reaches the last buffer, the record is reset to the 
+	   first buffer.
+	2. A camera packet is received. If one of the buffers contains the timestamp of the packet, then the packet is providing
+	   another section of the frame within that buffer. Let P_s be the section index of the packet. Then the frame data of
+	   the packet is copied into the proper buffer at the offset CAMERA_PACKET_FRAME_DATA_MAX_SIZE * P_s. That buffer's remaining count
+	   is decremented. If the remaining count is equal to zero, the buffer is full and the frame has been fully received.
+	   If none of the buffers contain the timestamp of the packet, then a new frame is being received. The next available buffer
+	   must be reserved for this frame, and the next buffer record must be updated.
+
+Here is an example. Assume that CAMERA_FRAME_BUFFER_COUNT is 2. Thus we have two buffers:
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 0     |    | Timestamp: 0     |
+	| Remaining: 0     |    | Remaining: 0     |
+	| <Empty>          |	| <Empty>          |
+
+and a next buffer of 0.
+
+A camera packet is received. It has timestamp 21. Since neither buffer has a timestamp of 21, this is a new frame. The packet has
+a section id of 0 and a section count of 4. The current buffer (BUFFER 0) is updated and the frame data is copied. The next buffer
+is set to 1.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 21    |    | Timestamp: 0     |
+	| Remaining: 3     |    | Remaining: 0     |
+	| <Section 0 Data> |	| <Empty>          |
+	| <Empty>		   |
+
+Another camera packet is received. It has timestamp 21, which is assigned to BUFFER 0. Thus this is not a new frame. The packet has
+a section id of 2 and a section count of 4. Notice this means that section 1 and section 2 are arriving out-of-order, but that is
+okay. BUFFER 0 is updated.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 21    |    | Timestamp: 0     |
+	| Remaining: 2     |    | Remaining: 0     |
+	| <Section 0 Data> |	| <Empty>          |
+	| <Empty>		   |
+	| <Section 2 Data> |
+	| <Empty>		   |
+
+Another camera packet is received. It has timestamp 21, which is assigned to BUFFER 0. The packet has a section id of 1 and a section
+count of 4. Buffer 0 is updated.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 21    |    | Timestamp: 0     |
+	| Remaining: 1     |    | Remaining: 0     |
+	| <Section 0 Data> |	| <Empty>          |
+	| <Section 1 Data> |
+	| <Section 2 Data> |
+	| <Empty>          |
+
+Another camera packet is received. It has timestamp 26, which is not assigned to a buffer. Thus the next buffer is updated to 0,
+and BUFFER 1 is updated accordingly. The packet has a section id of 0 and a section count of 3.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 21    |    | Timestamp: 26    |
+	| Remaining: 1     |    | Remaining: 2     |
+	| <Section 0 Data> |	| <Section 0 Data> |
+	| <Section 1 Data> |	| <Empty>          |
+	| <Section 2 Data> |
+	| <Empty>          |
+
+Another camera packet is received. It has timestamp 21, which is assigned to BUFFER 0. The packet has a section id of 3 and a section
+count of 4. Now BUFFER 0 is full, since its section count equals the packet's section count. BUFFER 0 is pushed to screen.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 21    |    | Timestamp: 26    |
+	| Remaining: 4     |    | Remaining: 1     |
+	| <Section 0 Data> |	| <Section 0 Data> |
+	| <Section 1 Data> |	| <Empty>          |
+	| <Section 2 Data> |
+	| <Section 3 Data> |
+
+Another camera packet is received. It has timestamp 28, which is not assigned to a buffer. Since the next buffer is 0 and BUFFER 0 has a
+non-zero timestamp (meaning that it has at least a partial frame), we check its remaining count. Since that is 0, the buffer is full
+and thus not dropped. BUFFER 0 is then reset with the information from the new packet, and the next buffer is updated to 1. The
+packet has a section id of 1 and a section count of 2.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 28    |    | Timestamp: 26    |
+	| Remaining: 1     |    | Remaining: 1     |
+	| <Empty>          |    | <Section 0 Data> |
+	| <Section 1 Data> |    | <Empty>          |
+
+Yet another camera packet is received. It has timestamp 29, which is not assigned to a buffer. Since the next buffer is 1 and BUFFER 1 has
+a non-sero timestamp, we check its remaining count. Since that is non-zero, we have not received all the packets of frame 26, so the frame
+is dropped. Thus the next buffer is BUFFER 0 and BUFFER 1 is updated. The new packet has a section id of 0 and a section count of 2.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 28    |    | Timestamp: 29    |
+	| Remaining: 1     |    | Remaining: 1     |
+	| <Empty>          |    | <Section 0 Data> |
+	| <Section 1 Data> |    | <Empty>          |
+
+Yet another camera packet is received. It has timestamp 26, which is not assigned to a buffer. This was the frame that was just discarded!
+But we don't know that, so the next buffer is 0 and we discard BUFFER 0 since it has a non-zero remaining count. The last frame has a
+section id of 1 and a section count of 2.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 26    |    | Timestamp: 29    |
+	| Remaining: 1     |    | Remaining: 1     |
+	| <Section 0 Data> |    | <Section 0 Data> |
+	| <Empty>          |    | <Empty>          |
+
+Of course, the next camera packet to arrive has timestamp of 28, which we just discarded. Since the next buffer is 1, BUFFER 1 is discarded
+and filled with the new information. The new packet has a section id of 0 and a section count of 2.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 28    |    | Timestamp: 29    |
+	| Remaining: 1     |    | Remaining: 1     |
+	| <Section 0 Data> |    | <Section 0 Data> |
+	| <Empty>          |    | <Empty>          |
+
+The next camera packet has a timestamp of 29, a section id of 1, and a section count of 2. BUFFER 1 contains this packet, so BUFFER 1 is
+filled. The next buffer is updated to 0. BUFFER 1 is then pushed to screen.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 28    |    | Timestamp: 29    |
+	| Remaining: 1     |    | Remaining: 0     |
+	| <Section 0 Data> |    | <Section 0 Data> |
+	| <Empty>          |    | <Section 1 Data> |
+
+The next camera packet has a timestamp of 30, a section id of 0, and a section count of 3. BUFFER 0 is the next buffer, so it is discarded
+(since it has a non-zero remaining count) and the next packet's information is filled.
+
+	| BUFFER 0         |	| BUFFER 1         |
+	| Timestamp: 30    |    | Timestamp: 29    |
+	| Remaining: 2     |    | Remaining: 0     |
+	| <Section 0 Data> |    | <Section 0 Data> |
+	| <Empty>          |    | <Section 1 Data> |
+
+This process is continued indefinetly.
+
+It is important to note that in the above example, two frames were rendered and two frames were lost (even though none of their packets
+were lost). This is mostly due to the tiny CAMERA_FRAME_BUFFER_COUNT value of 2. With a higher value (around 5), much more packet reordering is
+tolerable. If a packet is dropped, the frame will never be completed, which will result in more efficient buffer usage. Thus a higher
+CAMERA_FRAME_BUFFER_COUNT will avoid dropping most, if not all, frames with out-of-order packets.
+
+A reference C++ implementation of the receiving side is available in /BinghamtonRover2017/scratch/CPP/camerafeed/receiver.
