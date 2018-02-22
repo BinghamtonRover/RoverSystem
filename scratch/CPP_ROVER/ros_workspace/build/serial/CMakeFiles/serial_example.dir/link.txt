@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/serial_example.dir/examples/serial_example.cc.o  -o /home/IEEE_PI/ros_workspace/devel/lib/serial/serial_example -rdynamic /home/IEEE_PI/ros_workspace/devel/lib/libserial.so -lrt -lpthread -Wl,-rpath,/home/IEEE_PI/ros_workspace/devel/lib 
