@@ -10,6 +10,7 @@ project(automatic_rover_boy)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  serial
 )
 
 ## System dependencies are found with CMake's conventions
@@ -197,10 +198,10 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(test_run src/test_run.cpp)
-target_link_libraries(test_run ${catkin_LIBRARIES})
-add_dependencies(test_run generate_messages_cpp)
+add_executable(sample_serial_sender src/sample_publisher.cpp)
+target_link_libraries(sample_serial_sender ${catkin_LIBRARIES})
+add_dependencies(sample_serial_sender generate_messages_cpp)
 
-add_executable(navigator src/navigator.cpp)
-target_link_libraries(navigator ${catkin_LIBRARIES})
-add_dependencies(navigator generate_messages_cpp)
+add_executable(serial_reciever src/serial_reciever.cpp src/My_SerialHandler.cpp)
+target_link_libraries(serial_reciever ${catkin_LIBRARIES})
+add_dependencies(serial_reciever generate_messages_cpp)

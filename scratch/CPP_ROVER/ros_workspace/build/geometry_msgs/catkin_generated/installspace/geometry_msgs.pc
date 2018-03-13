@@ -1,8 +1,8 @@
-prefix=/home/IEEE_PI/ros_workspace/install
+prefix=/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/install
 
 Name: geometry_msgs
 Description: Description of geometry_msgs
 Version: 1.12.5
-Cflags: -I/home/IEEE_PI/ros_workspace/install/include
-Libs: -L/home/IEEE_PI/ros_workspace/install/lib 
+Cflags: -I/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/install/include
+Libs: -L/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/install/lib 
 Requires: message_runtime std_msgs

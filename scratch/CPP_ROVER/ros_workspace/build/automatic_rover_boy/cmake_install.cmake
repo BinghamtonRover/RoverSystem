@@ -1,8 +1,8 @@
-# Install script for directory: /home/IEEE_PI/ros_workspace/src/automatic_rover_boy
+# Install script for directory: /home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/IEEE_PI/ros_workspace/install")
+  set(CMAKE_INSTALL_PREFIX "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/install")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -33,17 +33,17 @@ if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/home/IEEE_PI/ros_workspace/build/automatic_rover_boy/catkin_generated/installspace/automatic_rover_boy.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy/catkin_generated/installspace/automatic_rover_boy.pc")
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/automatic_rover_boy/cmake" TYPE FILE FILES
-    "/home/IEEE_PI/ros_workspace/build/automatic_rover_boy/catkin_generated/installspace/automatic_rover_boyConfig.cmake"
-    "/home/IEEE_PI/ros_workspace/build/automatic_rover_boy/catkin_generated/installspace/automatic_rover_boyConfig-version.cmake"
+    "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy/catkin_generated/installspace/automatic_rover_boyConfig.cmake"
+    "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/automatic_rover_boy/catkin_generated/installspace/automatic_rover_boyConfig-version.cmake"
     )
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/automatic_rover_boy" TYPE FILE FILES "/home/IEEE_PI/ros_workspace/src/automatic_rover_boy/package.xml")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/automatic_rover_boy" TYPE FILE FILES "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/automatic_rover_boy/package.xml")
 endif()
 

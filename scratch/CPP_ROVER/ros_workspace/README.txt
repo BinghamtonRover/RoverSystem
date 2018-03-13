@@ -1,3 +1,11 @@
+To create workspace:
+    mkdir build
+    cd build
+    cmake ../src/
+    cd ..
+    catkin_make
+Then source devel/setup to get paths to ros nodes
+
 To run the tennis ball code ensure ros and opencv are installed.
 
 **

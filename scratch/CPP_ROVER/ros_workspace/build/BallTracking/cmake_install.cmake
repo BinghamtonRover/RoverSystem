@@ -1,8 +1,8 @@
-# Install script for directory: /home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/BallTracking
+# Install script for directory: /home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/BallTracking
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/IEEE_PI/ros_workspace/install")
+  set(CMAKE_INSTALL_PREFIX "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/install")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -33,17 +33,17 @@ if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/BallTracking/catkin_generated/installspace/BallTracking.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/BallTracking/catkin_generated/installspace/BallTracking.pc")
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/BallTracking/cmake" TYPE FILE FILES
-    "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/BallTracking/catkin_generated/installspace/BallTrackingConfig.cmake"
-    "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/BallTracking/catkin_generated/installspace/BallTrackingConfig-version.cmake"
+    "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/BallTracking/catkin_generated/installspace/BallTrackingConfig.cmake"
+    "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/build/BallTracking/catkin_generated/installspace/BallTrackingConfig-version.cmake"
     )
 endif()
 
 if(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/BallTracking" TYPE FILE FILES "/home/IEEE_PI/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/BallTracking/package.xml")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/BallTracking" TYPE FILE FILES "/home/yuxuwu/BinghamtonRover2017/scratch/CPP_ROVER/ros_workspace/src/BallTracking/package.xml")
 endif()
 
