@@ -1,13 +1,12 @@
-# Binghamton University Mars Rover Software Specification
+# Binghamton University Mars Rover System Overview
 
-This document describes the rover software architecture and defines certain protocols. It is designed to be a high-level overview of the project, with included details where communication is neccessary (i.e. networking between base station and rover).
+This document describes the rover software and system architecture at a broad scale.
 
 ## Table of Contents
 
 1. [Overview](#overview)
 2. [Base Station](#base-station)
 3. [Rover](#rover)
-4. [Network Protocol](#network-protocol)
 
 ## Overview
 
@@ -18,5 +17,3 @@ The rover system is comprised of two main components: the base station (abbrevia
 The base station is the control center for the rover. It is used to control the rover in manual mode, to view the rover's camera feeds, to view rover sensor data and logs, and to command the rover to complete autonomous tasks.
 
 ## Rover
-
-## Network Protocol
