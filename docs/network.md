@@ -102,4 +102,4 @@ The movement message describes how the rover should be moving in manual mode. It
 * `Left`: The speed (magnitude) and direction (sign) of the left side wheel motors.
 * `Right`: The speed (magnitude) and direction (sign) of the right side wheel motors.
 
-Movement messages are not acked and are not order-sensitive.
+Movement messages are not acked and are order-sensitive.
