@@ -4,16 +4,16 @@ This document describes the network protocol used in all communication between b
 
 ## Index
 
-* [Introduction](#Introduction)
-* [Protocol](#Protocol)
-    * [Message Indices](#Message-Indices)
-    * [Message Ordering](#Message-Ordering)
-    * [Message Acknowledgement](#Message-Acknowledgement)
-    * [Packet Header](#Packet-Header)
-    * [Message Header](#Message-Header)
-* [Message Type Specification](#Message-Type-Specification)
-    * [0 - Heartbeat](#0---Heartbeat)
-    * [1 - Movement](#1---Movement)
+* [Introduction](#introduction)
+* [Protocol](#protocol)
+    * [Message Indices](#message-indices)
+    * [Message Ordering](#message-ordering)
+    * [Message Acknowledgement](#message-acknowledgement)
+    * [Packet Header](#packet-header)
+    * [Message Header](#message-header)
+* [Message Type Specification](#message-type-specification)
+    * [0 - Heartbeat](#0---heartbeat)
+    * [1 - Movement](#1---movement)
 
 ## Introduction
 
