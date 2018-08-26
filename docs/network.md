@@ -72,11 +72,11 @@ Each message contains a header. Its format is as follows:
 
 | Field Name    | Field Type / Size |
 | ------------- | ----------------- |
-| Message Index | u16               |
-| Message Type  | u8                |
+| Index         | u16               |
+| Type          | u8                |
 
-* `Message Index`: The index of the given message.
-* `Message Type`: The type of the given message.
+* `Index`: The index of the given message.
+* `Type`: The type of the given message.
 
 This header is then followed by the message itself.
 
