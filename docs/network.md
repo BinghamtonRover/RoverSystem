@@ -2,6 +2,19 @@
 
 This document describes the network protocol used in all communication between base station and rover. First, the goals and requirements of the protocol are described. Then the protocol is defined in detail. Finally, the message types used in the protocol are specified.
 
+## Index
+
+* [Introduction](#Introduction)
+* [Protocol](#Protocol)
+    * [Message Indices](#Message-Indices)
+    * [Message Ordering](#Message-Ordering)
+    * [Message Acknowledgement](#Message-Acknowledgement)
+    * [Packet Header](#Packet-Header)
+    * [Message Header](#Message-Header)
+* [Message Type Specification](#Message-Type-Specification)
+    * [0 - Heartbeat](#0---Heartbeat)
+    * [1 - Movement](#1---Movement)
+
 ## Introduction
 
 Due to the real-time nature of the Mars Society rover competition, this protocol has several guiding principles:
@@ -84,13 +97,13 @@ This header is then followed by the message itself.
 
 This section describes the use, encoding, and procedure of each message type.
 
-### `0 - Heartbeat`
+### 0 - Heartbeat
 
 The heartbeat message simply alerts the receiving side that the sending side is awake. This message is only sent during periods of inactivity. It has no body.
 
 Heartbeat messages are acked and are not order-sensitive.
 
-### `1 - Movement`
+### 1 - Movement
 
 The movement message describes how the rover should be moving in manual mode. It contains two signed values, one for the left side motors and one for the right side. The magnitude of these values decribes the movement speed and the sign dictates forward or backward movement.
 
