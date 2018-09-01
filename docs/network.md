@@ -14,7 +14,6 @@ This document describes the network protocol used in all communication between b
 * [Message Type Specification](#message-type-specification)
     * [0 - Heartbeat](#0---heartbeat)
     * [1 - Movement](#1---movement)
-	* [2 - Camera](#2---camera)
 
 ## Introduction
 
@@ -117,7 +116,3 @@ The movement message describes how the rover should be moving in manual mode. It
 * `Right`: The speed (magnitude) and direction (sign) of the right side wheel motors.
 
 Movement messages are not acked and are order-sensitive.
-
-### 2 - Camera
-
-The camera packets follow a unique protocol, defined [here](camera.md) 
