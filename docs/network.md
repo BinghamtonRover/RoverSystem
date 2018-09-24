@@ -45,13 +45,13 @@ Ack messages require acknowledgement of message receipt and order messages are d
 
 ### Message Indices
 
-Every message sent contains a unique index (disregarding rollover). The sender maintains the index of the last sent message (`last_sent_idx`) and the index of the last received message (`last_received_idx`). These indices are independent of each other. Each index starts as `0`. When sending a message, `last_sent_idx` is incremented and the result is placed in the header of the outgoing message.
+Every message sent contains a unique index (disregarding rollover). The sender maintains the index of the last sent message (`last_sent_idx`) and a mapping from message type to the index of the last received message of that type (`last_received_idx[?]`). These indices are independent of each other. Each index starts as `0`. When sending a message, `last_sent_idx` is incremented and the result is placed in the header of the outgoing message.
 
 Message indices are unsigned 16-bit integers. When they reach `65535`, they must roll over to `0`. All comparisons must be careful to take this into account: as an example, the message index `1` is "greater" (or "more recent") than a message index of `65534` but not greater than `2`. See [this](https://gafferongames.com/post/reliability_ordering_and_congestion_avoidance_over_udp#handling-sequence-number-wrap-around) for a method of properly comparing message indices.
 
 ### Message Ordering
 
-For message types which are order-sensitive, the message index of each received message (`incoming_idx`) is then compared to `last_received_idx`. If `incoming_idx` is not greater than the `last_received_idx`, the packet is discarded. Otherwise, `last_received_idx` is set to `incoming_idx`.
+For message types which are order-sensitive, the message index of each received message with type `A` (`incoming_idx`) is then compared to `last_received_idx[A]`. If `incoming_idx` is not greater than the `last_received_idx[A]`, the packet is discarded. Otherwise, `last_received_idx[A]` is set to `incoming_idx`.
 
 ### Message Acknowledgement
 
