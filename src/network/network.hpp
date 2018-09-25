@@ -6,182 +6,238 @@
 
 #include <queue>
 
-#include "../utils/utils.hpp"
-#include "arena.hpp"
-
-#define NETWORK_BUFFER_SIZE 65500
+#include "arena.hpp" 
 
 namespace network
 {
 
-class IncomingBuffer
-{
-private:
+const int PROTOCOL_VERSION = 1;
 
-    u8 buffer[NETWORK_BUFFER_SIZE];
-    int buffer_size;
-    int buffer_idx;
+const int BUFFER_SIZE = 65500;
 
-public:
+//
+// Buffer Definition
+//
 
-    void bytes(u8* data, int size)
-    {
-        memcpy(data, buffer + buffer_idx, size);
-        buffer_idx += size;
-    }
+struct Buffer {
+    uint8_t buffer[BUFFER_SIZE];
+    int size;
+    int idx;
 
-    inline bool incoming() const
-    {
-        return true;
-    }
+    bool incoming;
 };
 
-class OutgoingBuffer
-{
-private:
+void init_buffer(Buffer* buffer, bool incoming) {
+    buffer->size = 0;
+    buffer->idx = 0;
+    buffer->incoming = incoming;
+}
 
-    u8 buffer[NETWORK_BUFFER_SIZE];
-    int buffer_idx;
-
-public:
-
-    void bytes(u8* data, int size)
-    {
-        memcpy(buffer + buffer_idx, data, size);
-        buffer_idx += size;
-    }
-
-    inline bool incoming() const
-    {
-        return false;
-    }
-};
+/*
+    This macro gives us the ability to:
+        (a) Put a value of an arbitrary type within a byte buffer at an arbitrary location;
+        (b) Interpret bytes at an arbitrary location of a byte buffer as an arbitrary type.
+    Parameters:
+        thing: the byte buffer. Always a uint8_t* for our purposes.
+        idx: the byte index into the buffer.
+        type: the type being inserted or removed.
+    Examples:
+        (a) Placing a 32-bit integer into a byte buffer at byte position 7:
+            VALUE(buffer, 7, int32_t) = -12344454;
+        (b) Interpreting two bytes at byte buffer position 3 as an unsigned 16-bit integer:
+            uint16_t my_int = VALUE(buffer, 3, uint16_t);
+*/
+#define VALUE(thing, idx, type) *((type*)&(thing[idx]))
 
 //
 // Type Serialization Definitions
 //
 
-template <typename Buffer>
-void serialize(Buffer buffer, u8& v)
-{
-    buffer.bytes(&v, 1);
-}
+void serialize(Buffer* buffer, uint8_t v);
+void serialize(Buffer* buffer, int8_t v);
+void serialize(Buffer* buffer, uint16_t v);
+void serialize(Buffer* buffer, int16_t v);
+void serialize(Buffer* buffer, uint32_t v);
+void serialize(Buffer* buffer, int32_t v);
 
-template <typename Buffer>
-void serialize(Buffer buffer, i8& v)
-{
-    serialize(buffer, (u8&)v);
-}
+//
+// Type Deserialization Funcitons
+//
 
-template <typename Buffer>
-void serialize(Buffer buffer, u16& v)
-{
-    if (buffer.incoming())
-    {
-        v = be16toh(v);
-        buffer.bytes((u8*)&v, 2);
-    } else
-    {
-        u16 v1 = htobe16(v);
-        buffer.bytes((u8*)&v1, 2);
-    }
-}
-
-template <typename Buffer>
-void serialize(Buffer buffer, i16& v)
-{
-    serialize(buffer, (u16&)v);
-}
-
-template <typename Buffer>
-void serialize(Buffer buffer, u32& v)
-{
-    if (buffer.incoming())
-    {
-        v = be32toh(v);
-        buffer.bytes((u8*)&v, 4);
-    } else
-    {
-        u32 v1 = htobe32(v);
-        buffer.bytes((u8*)&v1, 4);
-    }
-}
-
-template <typename Buffer>
-void serialize(Buffer buffer, i32& v)
-{
-    serialize(buffer, (u32&) v);
-}
+void deserialize(Buffer* buffer, uint8_t* v);
+void deserialize(Buffer* buffer, int8_t* v);
+void deserialize(Buffer* buffer, uint16_t* v);
+void deserialize(Buffer* buffer, int16_t* v);
+void deserialize(Buffer* buffer, uint32_t* v);
+void deserialize(Buffer* buffer, int32_t* v);
 
 //
 // Message Type Definitions
 //
 
-enum class MessageType : u8
-{
+/*
+    To add a message type:
+        1. Add a value for it to MessageType;
+        2. Add a struct to contain its deserialized values;
+        3. Define serialize and deserialize overloads here and implement them in network.cpp;
+        4. Add an entry to message_type_info.
+*/
+
+enum class MessageType : u8 {
     HEARTBEAT,
     MOVEMENT,
 
     NUM
 };
 
-struct MovementMessage
-{
-    i16 left;
-    i16 right;
 
-    template <typename Buffer>
-    void serialize(Buffer buffer) {
-        serialize(buffer, left);
-        serialize(buffer, right);
-    }
+struct MovementMessage {
+    int16_t left;
+    int16_t right;
 };
 
-struct MessageTypeRequirements
-{
+void serialize(Buffer* buffer, MovementMessage* message);
+void deserialize(Buffer* buffer, MovementMessage* message);
+
+struct MessageTypeInfo {
     bool order;
     bool ack;
+    uint16_t size; // In bytes.
 };
 
-const MessageTypeRequirements message_type_requirements[] =
-{
-    [(u8)MessageType::HEARTBEAT] = {false, true},
-    [(u8)MessageType::MOVEMENT]  = {true , false}
+constexpr MessageTypeinfo message_type_info[] = {
+    [(uint8_t)MessageType::HEARTBEAT] = {false, true, 0},
+    [(uint8_t)MessageType::MOVEMENT]  = {true , false, 4}
 };
 
 //
-// Manager Definition
+// Core API Definitions
 //
 
-struct MessageContainer
-{
-    MessageType type;
-    u16 index;
-    union {
-        IncomingBuffer* incoming_buffer;
-        OutgoingBuffer* outgoing_buffer;
-    }
+enum class Error {
+    OK,
+
+    OPEN_SOCKET,
+    BIND_SOCKET,
+    READ_PACKET,
+    WRONG_VERSION,
 }
 
-class Manager
-{
-private:
+struct Message {
+    MessageType type;
+    uint16_t index;
+    Buffer* buffer;
+}
 
-    Arena<IncomingBuffer> incoming_arena;
-    Arena<OutgoingBuffer> outgoing_arena;
+struct AckTable {
 
-    std::queue<MessageContainer> incoming_queue;
-    std::queue<MessageContainer> outgoing_queue;
-
-public:
-
-    Manager();
-
-    OutgoingBuffer* get_outgoing_buffer();
-    void queue_message(MessageType type, OutgoingBuffer* buffer);
-
-    bool poll_message(IncomingBuffer** buffer);
 };
+
+struct Connection {
+    int socket_fd;
+
+    std::queue<Message> incoming_queue;
+    std::queue<Message> outgoing_queue;
+
+    // Ack information for the other side's messages.
+    uint16_t last_ack_idx;
+    uint32_t ack_diff;
+
+    // Table to keep information about our ack'ed messages.
+    AckTable ack_table;
+
+    uint16_t next_outgoing_idx;
+
+    uint16_t last_received_idx[(int)MessageType::NUM];
+
+    const char* destination_address;
+    int destination_port;
+    int local_port;
+
+    // TODO: Statistic information ...
+}
+
+/*
+    Opens a socket for communication and binds that socket to a port.
+    Also sets the destination for outgoing messages.
+
+    Parameters:
+        conn: The connection state object. This should be uninitialized.
+        destination_address: The destination ip address of the connection.
+        destination_port: The destination port of the connection.
+        local_port: The local port for the network socket.
+    
+    Returns Error::OK on success and a relevant error on failure:
+        Error::OPEN_SOCKET: Failed to open a network socket.
+        Error::BIND_SOCKET: Failed to bind the opened socket to the given local port.
+*/
+Error connect(Connection* conn, const char* destination_address, int destination_port, int local_port);
+
+/*
+    Queues a message for sending. This also returns ownership of the buffer
+    to the library, so it is invalid after this call.
+
+    The message is not sent until a call to `drain_outgoing`.
+
+    Parameters:
+        conn: The connection state object. Must be initialized with `connect`.
+        type: The type of the message to be sent.
+        buffer: A buffer containing the message body. A buffer must be obtained from `get_outgoing_buffer`.
+*/
+void queue_outgoing(Connection* conn, MessageType type, Buffer* buffer);
+
+/*
+    Dequeues (pops) a message from the incoming buffer and places it in the given pointer.
+
+    The buffer returned in message must be returned after use with `return_incoming_buffer`!
+
+    Parameters:
+        conn: The connection state object. Must be initialized with `connect`.
+        message: The message struct to fill in.
+    
+    Returns true if a message was available. `dequeue_incoming` should be called in a loop until
+    it returns false, at which point there are no messages. Note that when `dequeue_incoming` returns
+    false, no message was read.
+*/
+bool dequeue_incoming(Connection* conn, Message* message);
+
+/*
+    Reads incoming packets and places their messages onto the incoming message queue.
+
+    Parameters:
+        conn: The connection state object. Must be initialized with `connect`.
+
+    Returns Error::OK on success and a relevant error on failure:
+        Error::READ_PACKET: Failed to read a UDP packet.
+        Error::WRONG_VERSION: Received a packet using the wrong protocol version.
+*/
+Error poll_incoming(Connection* conn);
+
+/*
+    Sends the messages queued by `queue_outgoing`.
+
+    Parameters:
+        conn: The connection state object. Must be initialized with `connect`.
+    
+    Returns Error::OK on success and a relevant error on failure.
+*/
+Error drain_outgoing(Connection* conn);
+
+/*
+    Returns a buffer for use with `queue_outgoing`. Once given to `queue_outgoing`, the
+    buffer is no longer valid and must not be used.
+*/
+Buffer* get_outgoing_buffer();
+
+/*
+    Hands ownership of a buffer back to the library. This must be called with a buffer
+    obtained from `poll_incoming` after its contents are processed.
+
+    Parameters:
+        buffer: A buffer obtained from `poll_incoming`.
+*/
+void return_incoming_buffer(Buffer* buffer);
+
 
 } // namespace network
 

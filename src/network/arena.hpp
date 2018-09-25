@@ -65,8 +65,7 @@ struct TContainer {
 };
 
 template <typename T>
-class Arena
-{
+class Arena {
 private:
 
     int num_segments;
@@ -77,9 +76,7 @@ private:
 
 public:
 
-    Arena(int _segment_size) :
-        indices(_segment_size)
-    {
+    Arena(int _segment_size) : indices(_segment_size) {
         segment_size = _segment_size;
 
         segments = new TContainer<T>*[1];
@@ -92,18 +89,15 @@ public:
         }
     }
 
-    ~Arena()
-    {
-        for (int i = 0; i < num_segments; i++)
-        {
+    ~Arena() {
+        for (int i = 0; i < num_segments; i++) {
             if (segments[i]) delete[] segments[i];
         }
 
         delete[] segments;
     }
 
-    T* alloc()
-    {
+    T* alloc() {
         int index;
         if (!indices.pop(index)) {
             TContainer<T>** new_segments = new TContainer<T>*[num_segments + 1];
@@ -127,8 +121,7 @@ public:
         return &((segments[segment] + segment_offset)->t);
     }
 
-    void free(T* t)
-    {
+    void free(T* t) {
         // The TContainer for this T starts before it in memory. We need to backtrack to find that point.
         u8* t_u8 = (u8*)t;
         t_u8 -= offsetof(TContainer<T>, t);
