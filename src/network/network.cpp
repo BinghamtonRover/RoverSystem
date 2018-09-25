@@ -9,17 +9,24 @@ namespace network
 //
 
 void serialize(Buffer* buffer, uint8_t v) {
+    // See network.hpp for info about the VALUE macro.
     VALUE(buffer, buffer->idx, uint8_t) = v;
+
+    // Update the buffer size and index.
     buffer->idx += 1;
+    buffer->size += 1;
 }
 
 void serialize(Buffer* buffer, int8_t v) {
+    // Interpret the bytes of v as if it were unsigned.
     serialize(buffer, reinterpret_cast<uint8_t>(v));
 }
 
 void serialize(Buffer* buffer, uint16_t v) {
+    // Convert the value to big endian form before sending.
     VALUE(buffer, buffer->idx, uint16_t) = htobe16(v);
     buffer->idx += 2;
+    buffer->size += 2;
 }
 
 void serialize(Buffer* buffer, int16_t v) {
@@ -29,6 +36,7 @@ void serialize(Buffer* buffer, int16_t v) {
 void serialize(Buffer* buffer, uint32_t v) {
     VALUE(buffer, buffer->idx, uint32_t) = htobe32(uint32_t);
     buffer->idx += 4;
+    buffer->size += 4;
 }
 
 void serialize(Buffer* buffer, int32_t v) {
@@ -90,8 +98,12 @@ void deserialize(Buffer* buffer, MovementMessage* message) {
 static Arena<Buffer> buffer_arena;
 
 Error connect(Connection* conn, const char* destination_address, int destination_port, int local_port) {
-    // Zero the index information.
-    conn->next_outgoing_idx = 0;
+    // Set the destination information.
+    conn->destination_address = destination_address;
+    conn->destination_port = destination_port;
+
+    // And set our port!
+    conn->local_port = local_port;
 
     // Note that this technically implies that idx `0` has already been read for every packet type.
     // For now, comparisons against last_received_idx[i] will take this into account and only count
@@ -222,7 +234,32 @@ Error poll_incoming(Connection* connt) {
             return Error::WRONG_VERSION;
         }
 
-        // TODO: Update ack table.
+        // Update the ack table based on what we got back.
+        for (uint16_t i = 0; i < 32; i++) {
+            // For each entry in the ack diff...
+            
+            // Calculate the message index.
+            // We shift 1 by i to get the ith bit, and then and that with
+            // the diff to see if that bit is set.
+            if(ack_diff & (1 << i)) {
+                // The "+1" accounts for the fact that bit 0 represents a difference of 1.
+                uint16_t idx = last_ack_index - i + 1;
+
+                // If that index is in the ack table, get rid of that message.
+                // TODO: Performance! This is O(N) and we can do it in O(1).
+                // However, I don't think this will be a bottleneck, simply
+                // because we will always be IO-bound.
+                for (int j = 0; j < ACK_TABLE_LEN; j++) {
+                    if (conn->table[j].not_yet_acked && conn->table[j].message.index == idx) {
+                        // We found our message and it needs to be removed from the table.
+                        // Return its buffer and flip not_yet_acked.
+                        buffer_arena.free(conn->table[j].message.buffer);
+                        conn->table[j].not_yet_acked = false;
+                        break;
+                    }
+                }
+            }
+        }
 
         for (uint8_t i = 0; i < num_messages; i++) {
             // For each message, read its header first.
@@ -274,12 +311,12 @@ Error poll_incoming(Connection* connt) {
                     if (idx_diff <= 32) {
                         // Now we set the bit which represents last_ack_idx, which is
                         // the (index - idx_diff - 1)th bit.
-                        // If we shift by 1, then the LSB must be set, so we need to subtract 1
-                        // from the idx_diff here.
+                        // The "- 1" accounts for the "1st" bit actually being bit 0.
                         conn->ack_diff |= (1 << (idx_diff - 1));
                     }
                 } else if (index < conn->last_ack_idx) {
                     // We simply set the relevant bit!
+
                     uint16_t idx_diff = conn->last_ack_idx - index;
 
                     // See above for how this bit is calculated.
@@ -303,6 +340,155 @@ Error poll_incoming(Connection* connt) {
             incoming_queue.push({ type, index, message_buffer });
         }
     }
+
+    return Error::OK;
+}
+
+Error drain_outgoing(Connection* conn) {
+    // Take all the messages off of the queue.
+    // Try to put them in the next packet to be sent.
+    // If there is no space, put it on another queue.
+    // Packets are sent until there are no messages left.
+
+    std::queue<Message> alternate_queue;
+
+    while (!conn->outgoing_queue.empty()) {
+        // Collect messages.
+
+        // Allocate a buffer for the outgoing packet.
+        // Make sure it is labeled as outgoing.
+        Buffer packet_buffer;
+        init_buffer(&packet_buffer, false);
+
+        // We need to account for space that the packet header occupies.
+        // But that needs to be filled out after we add the packets.
+        // So we will leave space for that now, and fill it later.
+        packet_buffer.size += PACKET_HEADER_SIZE;
+        packet_buffer.idx += PACKET_HEADER_SIZE;
+
+        // We will need to count how many messages we have.
+        uint8_t num_messages = 0;
+
+        // Check if we are about to make num_messages overflow.
+        // This probably won't ever happen, but its ok to be safe.
+        while (!conn->outgoing_queue.empty() && num_messages < UINT8_MAX) {
+            // Get a message. This does not remove it from the queue.
+            Message m = outgoing_queue.front();
+            // This removes it from the queue.
+            outgoing_queue.pop();
+            
+            // Get information about that message type.
+            MessageTypeInfo mti = message_type_info[(int)m.type];
+
+            // Check if it can fit. If not, put it on alternate_queue.
+            // Since it needs a header, factor that size in as well.
+            if (mti.size + MESSAGE_HEADER_SIZE > BUFFER_SIZE - packet_buffer.size) {
+                alternate_queue.push(m);
+                continue;
+            }
+
+            // Put the header in first.
+            uint16_t message_index = m.index;
+            uint8_t message_type = (uint8_t) m.type;
+            serialize(&packet_buffer, message_index);
+            serialize(&packet_buffer, message_type);
+
+            // Include it in the current packet.
+            // Note we use the size as set by the buffer, not the packet size.
+            // This is because packet size is actually the maximum size of the packet.
+            // This means that if a message doesn't use all of its alotted space, then
+            // there will be some garbage following it in the packet.
+            // It is up to message types to add a field which indicates the length of
+            // any content of variable length.
+            // TODO: Do we want to zero out the packet_buffer memory first?
+            memcpy(packet_buffer.buffer + packet_buffer.idx, m.buffer.buffer, m.buffer.size);
+
+            // Advance the packet buffer by the size of the message type, not the buffer size.
+            packet_buffer.size += mti.size;
+            packet_buffer.idx += mti.size;
+
+            if (mti.ack) {
+                // Add this message to the ack table. Don't free its buffer, because
+                // we might need to resend it.
+                conn->ack_table.table[conn->ack_table.next_index] = { true, m };
+                // Make sure the next index wraps around.
+                conn->ack_table.next_index = (conn->ack_table.next_index + 1) % ACK_TABLE_LEN;
+            } else {
+                // We don't need this message anymore, so we can return the buffer.
+                buffer_arena.free(m.buffer);
+            }
+
+            num_messages++;
+        }
+
+        // We need to fill the packet header.
+        uint8_t version = PROTOCOL_VERSION;
+        uint16_t last_ack_index = conn->last_ack_idx;
+        uint32_t ack_diff = conn->ack_diff;
+        // uint8_t num_messages was defined above.
+
+        // "cheat" by forcing serialize to put the packet header at the beginning.
+        packet_buffer.size -= PACKET_HEADER_SIZE;
+        packet_buffer.idx = 0;
+        serialize(packet_buffer, version);
+        serialize(packet_buffer, last_ack_index);
+        serialize(packet_buffer, ack_diff);
+        serialize(packet_buffer, num_messages);
+
+        // We messed with the packet buffer index and didn't reset it, but its okay
+        // since we never use it from here on out.
+        // The size was displaced by PACKET_HEADER_SIZE worth of writing, so that
+        // is still accurate.
+
+        // Now we send the packet.
+
+        // Create an address structure to hold our destination address.
+        struct sockaddr_in send_addr;
+        // Initialize it to zero.
+        memset(&send_addr, 0, sizeof(send_addr));
+        // Specify IPv4.
+        send_addr.sin_family = AF_INET;
+        // Specify the port.
+        send_addr.sin_port = htobe16(destination_port);
+        // Specify the remote address.
+        inet_aton(conn->destination_address, &send_addr.sin_addr);
+
+        // Send the packet!
+        // This sends the packet using our socket, using info about our destination as provided by send_addr.
+        // sendto returns a negative value on failure.
+        if (sendto(conn->socket_fd, packet_buffer.buffer, packet_buffer.size, 0, (struct sockaddr*) &send_addr, sizeof(send_addr)) < 0) {
+            return Error::SEND_PACKET;
+        }
+
+        // Rotate the queues.
+        while (!alternate_queue.empty()) {
+            conn->outgoing_queue.push(alternate_queue.front());
+            alternate_queue.pop();
+        }
+    }
+}
+
+bool dequeue_incoming(Connection* conn, Message* message) {
+    // Just take the message off the top of the queue, if one exists.
+
+    if (conn->incoming_queue.empty()) return false;
+
+    *message = conn->incoming_queue.front();
+    conn->incoming_queue.pop();
+
+    return true;
+}
+
+Buffer* get_outgoing_buffer() {
+    // Grab a buffer and initialize it, setting the direction to outgoing.
+    Buffer* b = buffer_arena.alloc();
+    init_buffer(b, false);
+
+    return b;
+}
+
+void return_incoming_buffer(Buffer* buffer) {
+    buffer_arena.free(buffer);
 }
 
 } // namespace network

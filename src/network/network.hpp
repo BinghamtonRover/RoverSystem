@@ -13,7 +13,13 @@ namespace network
 
 const int PROTOCOL_VERSION = 1;
 
-const int BUFFER_SIZE = 65500;
+const unsigned int BUFFER_SIZE = 65500;
+
+const unsigned int PACKET_HEADER_SIZE = 8;
+const unsigned int MESSAGE_HEADER_SIZE = 3;
+
+// Number of messages held at any time in the ack table.
+const int ACK_TABLE_LEN = 32;
 
 //
 // Buffer Definition
@@ -83,7 +89,7 @@ void deserialize(Buffer* buffer, int32_t* v);
         4. Add an entry to message_type_info.
 */
 
-enum class MessageType : u8 {
+enum class MessageType : uint8_t {
     HEARTBEAT,
     MOVEMENT,
 
@@ -121,6 +127,7 @@ enum class Error {
     BIND_SOCKET,
     READ_PACKET,
     WRONG_VERSION,
+    SEND_PACKET
 }
 
 struct Message {
@@ -129,8 +136,17 @@ struct Message {
     Buffer* buffer;
 }
 
-struct AckTable {
+// Entry for the AckTable below.
+struct AckTableEntry {
+    bool not_yet_acked = false;
+    Message message;
+}
 
+// Holds ack messages until we have confirmation of their arrival.
+struct AckTable {
+    int next_index = 0;
+
+    ackTableEntry table[ACK_TABLE_LEN] = {};
 };
 
 struct Connection {
@@ -140,15 +156,15 @@ struct Connection {
     std::queue<Message> outgoing_queue;
 
     // Ack information for the other side's messages.
-    uint16_t last_ack_idx;
-    uint32_t ack_diff;
+    uint16_t last_ack_idx = 0;
+    uint32_t ack_diff = 0;
 
     // Table to keep information about our ack'ed messages.
-    AckTable ack_table;
+    AckTable ack_table = {};
 
-    uint16_t next_outgoing_idx;
+    uint16_t next_outgoing_idx = 0;
 
-    uint16_t last_received_idx[(int)MessageType::NUM];
+    uint16_t last_received_idx[(int)MessageType::NUM] = {};
 
     const char* destination_address;
     int destination_port;
@@ -219,7 +235,8 @@ Error poll_incoming(Connection* conn);
     Parameters:
         conn: The connection state object. Must be initialized with `connect`.
     
-    Returns Error::OK on success and a relevant error on failure.
+    Returns Error::OK on success and a relevant error on failure:
+        Error::SEND_PACKET: Failed to send a packet.
 */
 Error drain_outgoing(Connection* conn);
 
