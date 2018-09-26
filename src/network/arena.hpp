@@ -3,8 +3,7 @@
 
 #include <string.h>
 #include <stddef.h>
-
-#include "../utils/utils.hpp"
+#include <stdint.h>
 
 template <typename T>
 class Stack
@@ -123,7 +122,7 @@ public:
 
     void free(T* t) {
         // The TContainer for this T starts before it in memory. We need to backtrack to find that point.
-        u8* t_u8 = (u8*)t;
+        uint8_t* t_u8 = (uint8_t*)t;
         t_u8 -= offsetof(TContainer<T>, t);
         TContainer<T>* t_container = (TContainer<T>*) t_u8;
 

@@ -1,12 +1,106 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
-#include <endian.h>
-#include <string.h>
+#include <stdint.h>
 
 #include <queue>
 
-#include "arena.hpp" 
+#include "arena.hpp"
+
+/*
+    This library provides network support with a custom protocol over UDP.
+    For more information about the protocol, the spec can be found in the docs folder of the repository.
+
+    Here is an example program:
+
+    ```
+    int main() {
+        // Allocate a connection.
+        // This struct holds all information about a single socket. To use multiple sockets, create multiple connections.
+        network::Connection conn;
+
+        network::Error error;
+        // Connect to the network library running on 192.168.1.1:45545. Open local port 45545.
+        if ((error = network::connect(&conn, "192.168.1.1", 45545, 45545)) != network::Error::OK) {
+            fprintf(stderr, "[!] Failed to connect to rover!\n");
+            return 1;
+        }
+
+        // The network library is designed to be invoked in a main loop.
+        while (true) {
+            // First, process incoming packets in the kernel packet queue.
+            network::poll_incoming(&conn);
+
+            // Allocate a message struct to receive each message that just arrived.
+            network::Message message;
+
+            // dequeue_incoming returns false when there are no more messages to be processed.
+            while (network::dequeue_incoming(&conn, &message)) {
+
+                // Check what type of message this is and handle it accordingly.
+                switch (message.type) {
+
+                    case network::MessageType::HEARTBEAT:
+
+                        // This message doesn't have a body, so it doesn't need to be read.
+                        // To send a message, first get a buffer. Don't allocate these yourself!
+                        network::Buffer* outgoing = network::get_outgoing_buffer();
+
+                        // This puts the message on a queue. The message will be sent on the next drain_outgoing call.
+                        // The HEARTBEAT packet in this example doesn't have any data, so we didn't write anything to the buffer.
+                        network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+                        break;
+
+                    case network::MessageType::ECHO:
+
+                        // This message type has some data in it, assume its a string variable 'str'.
+                        // So we can create a struct which represents one and call deserialize on the buffer that came with the incoming message!
+                        network::EchoMessage echo;
+                        network::deserialize(message.buffer, &echo);
+
+                        // In this example, our ECHO reverses the characters it receives in str.
+                        // ... Reverse the characters in echo.str ...
+
+                        // To send, first get an outgoing buffer.
+                        network::Buffer* outgoing = network::get_outgoing_buffer();
+
+                        // Serialize our reply, which includes the reversed string.
+                        network::serialize(outgoing, &echo);
+
+                        // Place the message on a queue to be sent later.
+                        network::queue_outgoing(&conn, network::MessageType::ECHO, outgoing);
+                        break;
+                }
+
+                // Make sure to always return the message buffer when you are finished with it!
+                network::return_incoming_buffer(message.buffer);
+            }
+
+            // This must be called once per main loop. It sends all queued messages.
+            network::drain_outgoing(&conn);
+        }
+    }
+    ```
+
+    This library follows the natural programmatic symmetry of read data, operate on the data, and output the data. As such, your main loop networking
+    code will contain some helpful symmetry:
+
+        At the top of your loop, a call to poll_incoming will read packets off the wire...
+        ... and at the bottom, drain_outgoing will write packets to the wire.
+
+        Between poll_incoming and drain_outgoing, calls to dequeue_incoming read messages out of the received packets...
+        ... and queue_outgoing puts messages into packets.
+
+        A call to dequeue_incoming provides a Buffer, which must be returned with return_incoming_buffer...
+        ... and a Buffer can be obtained from get_outgoing_buffer and is returned with queue_outgoing.
+    
+    This library is NOT complete. Right now, it can sends and receives fixed-length messages and handles acknowledgement and order-sensitivity. 
+    It is missing the following:
+        - Session/connection status: there is currently no concept of a real connection.
+        - Network statistics: we are not recording bandwidth, packet loss, etc.
+        - Repeated messages: the library currently does not discard repeat incoming messages.
+        - Variable length messages: currently, each message must be the size that its type mandates.
+*/
 
 namespace network
 {
@@ -33,11 +127,7 @@ struct Buffer {
     bool incoming;
 };
 
-void init_buffer(Buffer* buffer, bool incoming) {
-    buffer->size = 0;
-    buffer->idx = 0;
-    buffer->incoming = incoming;
-}
+void init_buffer(Buffer* buffer, bool incoming);
 
 /*
     This macro gives us the ability to:
@@ -59,23 +149,29 @@ void init_buffer(Buffer* buffer, bool incoming) {
 // Type Serialization Definitions
 //
 
-void serialize(Buffer* buffer, uint8_t v);
-void serialize(Buffer* buffer, int8_t v);
-void serialize(Buffer* buffer, uint16_t v);
-void serialize(Buffer* buffer, int16_t v);
-void serialize(Buffer* buffer, uint32_t v);
-void serialize(Buffer* buffer, int32_t v);
+template <typename T>
+void serialize(Buffer* buffer, T t);
+
+// void serialize(Buffer* buffer, uint8_t v);
+// void serialize(Buffer* buffer, int8_t v);
+// void serialize(Buffer* buffer, uint16_t v);
+// void serialize(Buffer* buffer, int16_t v);
+// void serialize(Buffer* buffer, uint32_t v);
+// void serialize(Buffer* buffer, int32_t v);
 
 //
 // Type Deserialization Funcitons
 //
 
-void deserialize(Buffer* buffer, uint8_t* v);
-void deserialize(Buffer* buffer, int8_t* v);
-void deserialize(Buffer* buffer, uint16_t* v);
-void deserialize(Buffer* buffer, int16_t* v);
-void deserialize(Buffer* buffer, uint32_t* v);
-void deserialize(Buffer* buffer, int32_t* v);
+template <typename T>
+void deserialize(Buffer* buffer, T* t);
+
+// void deserialize(Buffer* buffer, uint8_t* v);
+// void deserialize(Buffer* buffer, int8_t* v);
+// void deserialize(Buffer* buffer, uint16_t* v);
+// void deserialize(Buffer* buffer, int16_t* v);
+// void deserialize(Buffer* buffer, uint32_t* v);
+// void deserialize(Buffer* buffer, int32_t* v);
 
 //
 // Message Type Definitions
@@ -102,16 +198,13 @@ struct MovementMessage {
     int16_t right;
 };
 
-void serialize(Buffer* buffer, MovementMessage* message);
-void deserialize(Buffer* buffer, MovementMessage* message);
-
 struct MessageTypeInfo {
     bool order;
     bool ack;
     uint16_t size; // In bytes.
 };
 
-constexpr MessageTypeinfo message_type_info[] = {
+constexpr MessageTypeInfo message_type_info[] = {
     [(uint8_t)MessageType::HEARTBEAT] = {false, true, 0},
     [(uint8_t)MessageType::MOVEMENT]  = {true , false, 4}
 };
@@ -128,25 +221,25 @@ enum class Error {
     READ_PACKET,
     WRONG_VERSION,
     SEND_PACKET
-}
+};
 
 struct Message {
     MessageType type;
     uint16_t index;
     Buffer* buffer;
-}
+};
 
 // Entry for the AckTable below.
 struct AckTableEntry {
     bool not_yet_acked = false;
     Message message;
-}
+};
 
 // Holds ack messages until we have confirmation of their arrival.
 struct AckTable {
     int next_index = 0;
 
-    ackTableEntry table[ACK_TABLE_LEN] = {};
+    AckTableEntry table[ACK_TABLE_LEN] = {};
 };
 
 struct Connection {
@@ -171,7 +264,7 @@ struct Connection {
     int local_port;
 
     // TODO: Statistic information ...
-}
+};
 
 /*
     Opens a socket for communication and binds that socket to a port.
