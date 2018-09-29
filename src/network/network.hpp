@@ -158,13 +158,6 @@ void serialize(Buffer* buffer, T t);
 template <typename T>
 void deserialize(Buffer* buffer, T* t);
 
-// void deserialize(Buffer* buffer, uint8_t* v);
-// void deserialize(Buffer* buffer, int8_t* v);
-// void deserialize(Buffer* buffer, uint16_t* v);
-// void deserialize(Buffer* buffer, int16_t* v);
-// void deserialize(Buffer* buffer, uint32_t* v);
-// void deserialize(Buffer* buffer, int32_t* v);
-
 //
 // Message Type Definitions
 //
