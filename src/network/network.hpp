@@ -146,24 +146,15 @@ void init_buffer(Buffer* buffer, bool incoming);
 */
 #define VALUE(thing, idx, type) *((type*)&(thing[idx]))
 
-//
-// Type Serialization Definitions
-//
-
+// Handles serialization of all types.
+// All definitions are in network.cpp.
+// If something you want to send isn't overloaded, do it there.
 template <typename T>
 void serialize(Buffer* buffer, T t);
 
-// void serialize(Buffer* buffer, uint8_t v);
-// void serialize(Buffer* buffer, int8_t v);
-// void serialize(Buffer* buffer, uint16_t v);
-// void serialize(Buffer* buffer, int16_t v);
-// void serialize(Buffer* buffer, uint32_t v);
-// void serialize(Buffer* buffer, int32_t v);
-
-//
-// Type Deserialization Funcitons
-//
-
+// Handles deserialization of all types.
+// All definitions are in network.cpp.
+// If something you want to receive isn't overloaded, do it there.
 template <typename T>
 void deserialize(Buffer* buffer, T* t);
 
