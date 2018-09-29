@@ -236,7 +236,7 @@ Error poll_incoming(Connection* conn) {
             // There was an error.
             // Two options: No packets left to read, or a read error.
 
-            if (res == EAGAIN || res == EWOULDBLOCK) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // No packets left.
                 break;
             }

@@ -100,6 +100,7 @@
         - Network statistics: we are not recording bandwidth, packet loss, etc.
         - Repeated messages: the library currently does not discard repeat incoming messages.
         - Variable length messages: currently, each message must be the size that its type mandates.
+        - A way to get a descriptive string from an error code.
 */
 
 namespace network
