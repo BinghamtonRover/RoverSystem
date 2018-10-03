@@ -103,8 +103,7 @@
         - A way to get a descriptive string from an error code.
 */
 
-namespace network
-{
+namespace network {
 
 const int PROTOCOL_VERSION = 1;
 
