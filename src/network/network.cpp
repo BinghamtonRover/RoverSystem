@@ -268,7 +268,7 @@ Error poll_incoming(Connection* conn) {
             // Calculate the message index.
             // We shift 1 by i to get the ith bit, and then and that with
             // the diff to see if that bit is set.
-            if(ack_diff & (1 << i)) {
+            if (ack_diff & (1 << i)) {
                 // The "+1" accounts for the fact that bit 0 represents a difference of 1.
                 uint16_t idx = last_ack_index - i + 1;
 
