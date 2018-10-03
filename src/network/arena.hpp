@@ -1,9 +1,9 @@
 #ifndef ARENA_HPP
 #define ARENA_HPP
 
-#include <string.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstddef>
+#include <cstdint>
 
 /*
     This file defines a Stack and an Arena type which are used exclusively within the network library.

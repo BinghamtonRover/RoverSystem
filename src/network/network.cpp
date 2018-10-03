@@ -1,7 +1,7 @@
-#include <endian.h>
-#include <string.h>
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 
+#include <endian.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

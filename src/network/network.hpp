@@ -1,7 +1,7 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <queue>
 
