@@ -178,13 +178,11 @@ enum class MessageType : uint8_t {
 
 
 struct MovementMessage {
-    int16_t left;
-    int16_t right;
+    int16_t left, right;
 };
 
 struct MessageTypeInfo {
-    bool order;
-    bool ack;
+    bool order, ack;
     uint16_t size; // In bytes.
 };
 
