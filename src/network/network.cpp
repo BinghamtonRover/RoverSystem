@@ -162,12 +162,8 @@ Error connect(Connection* conn, const char* destination_address, int destination
     // AF_INET indicates IPv4.
     bind_address.sin_family = AF_INET;
 
-    // Parses and assigns the local bind address.
-    // The value "0.0.0.0" indicates "bind on any interface". If we require a more complicated
-    // network stack in the future with multiple network interfaces, this would be replaced
-    // with an IP address assigned to that interface.
-    // TODO: Robustness: this works if we don't care about interfaces.
-    inet_aton("0.0.0.0", &bind_address.sin_addr);
+	// Specify that we can bind to any interface.
+	bind_address.sin_addr.s_addr = INADDR_ANY;
 
     // Set the local port.
     // The bind call below expects this to be in network byte order (big-endian).
