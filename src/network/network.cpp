@@ -209,7 +209,6 @@ Error poll_incoming(Connection* conn) {
     // TODO: Performance! This implies that each message must be copied to its
     // own buffer. If this function is taking a while, look into this!
     Buffer buffer;
-    init_buffer(&buffer, true);
 
     // These two fields are updated every loop by recvfrom.
     // They can start uninitialized.
@@ -219,6 +218,9 @@ Error poll_incoming(Connection* conn) {
     socklen_t src_addr_len;
 
     while (true) {
+        // Initialize buffer every time.
+        init_buffer(&buffer, true);
+
         // recvfrom expects us to update this every call.
         src_addr_len = sizeof(src_addr);
 
@@ -311,6 +313,9 @@ Error poll_incoming(Connection* conn) {
                     buffer.idx += info.size;
                     continue;
                 }
+
+                // Update last received.
+                conn->last_received_idx[type] = index;
             }
 
             if (info.ack) {
