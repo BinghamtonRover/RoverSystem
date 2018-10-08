@@ -1,4 +1,4 @@
-# Rover Network Protocol Specification, Version 1
+# Rover Network Protocol Specification, Version 2
 
 This document describes the network protocol used in all communication between base station and rover. First, the goals and requirements of the protocol are described. Then the protocol is defined in detail. Finally, the message types used in the protocol are specified.
 
@@ -14,6 +14,7 @@ This document describes the network protocol used in all communication between b
 * [Message Type Specification](#message-type-specification)
     * [0 - Heartbeat](#0---heartbeat)
     * [1 - Movement](#1---movement)
+    * [2 - Camera](#2---camera)
 
 ## Introduction
 
@@ -59,7 +60,7 @@ When a message is sent which requires acknowledgement, it must be kept in a buff
 
 The index of the last received ack message (`last_ack_idx`) must be maintaned. Additionally, an 32-bit bitfield (`ack_diff`) must also be maintained and sent within each UDP packet. Each bit in `ack_diff` represents an offset from `last_ack_idx`: bit 0 represents `last_ack_idx - 1`, bit 1 represents `last_ack_idx - 2`, and so forth. If bit 0 is set, then the message with index `last_ack_idx - 1` was received; if bit 1 is set, then the message with index `last_ack_idx - 2` was received, and so on. It is important to note that this offset must roll over: if `last_ack_idx == 0` then bit 0 represents a message with index `365535`. When a new ack message is received, `last_ack_idx` must be updated, and `ack_diff` must be shifted left by `new_last_ack_idx - old_last_ack_idx` bits. Note that this subtraction must be able to handle the case when `last_ack_idx` rolls over to 0.
 
-The sender checks incoming ack information and remove any acked messages from its resend buffer.
+The sender checks incoming ack information and removes any acked messages from its resend buffer.
 
 ### Packet Header
 
@@ -87,9 +88,11 @@ Each message contains a header. Its format is as follows:
 | ------------- | ----------------- |
 | Index         | u16               |
 | Type          | u8                |
+| Size          | u16               |
 
 * `Index`: The index of the given message.
 * `Type`: The type of the given message.
+* `Size`: The size of the given message, in bytes.
 
 This header is then followed by the message itself.
 
@@ -116,3 +119,7 @@ The movement message describes how the rover should be moving in manual mode. It
 * `Right`: The speed (magnitude) and direction (sign) of the right side wheel motors.
 
 Movement messages are not acked and are order-sensitive.
+
+### 2 - Camera
+
+The camera message encodes a part of a camera frame. The definition of this message can be found in [camera.md](camera.md).
