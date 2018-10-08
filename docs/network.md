@@ -123,3 +123,5 @@ Movement messages are not acked and are order-sensitive.
 ### 2 - Camera
 
 The camera message encodes a part of a camera frame. The definition of this message can be found in [camera.md](camera.md).
+
+Camera messages are not acked and are not order-sensitive.
