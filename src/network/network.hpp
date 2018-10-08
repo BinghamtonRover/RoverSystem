@@ -105,8 +105,9 @@
 
 namespace network {
 
-const int PROTOCOL_VERSION = 1;
+const int PROTOCOL_VERSION = 2;
 
+// Maximum size of any single UDP packet sent by this protocol.
 const unsigned int BUFFER_SIZE = 65500;
 
 const unsigned int PACKET_HEADER_SIZE = 8;
@@ -172,6 +173,7 @@ void deserialize(Buffer* buffer, T* t);
 enum class MessageType : uint8_t {
     HEARTBEAT,
     MOVEMENT,
+    CAMERA,
 
     NUM
 };
@@ -183,12 +185,12 @@ struct MovementMessage {
 
 struct MessageTypeInfo {
     bool order, ack;
-    uint16_t size; // In bytes.
 };
 
 constexpr MessageTypeInfo message_type_info[] = {
-    [(uint8_t)MessageType::HEARTBEAT] = {false, true, 0},
-    [(uint8_t)MessageType::MOVEMENT]  = {true , false, 4}
+    [(uint8_t)MessageType::HEARTBEAT] = {false, true},
+    [(uint8_t)MessageType::MOVEMENT]  = {true , false},
+    [(uint8_t)MessageType::CAMERA]    = {false, false}
 };
 
 //

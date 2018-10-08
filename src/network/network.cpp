@@ -291,9 +291,11 @@ Error poll_incoming(Connection* conn) {
             // For each message, read its header first.
             uint16_t index;
             uint8_t type;
+            uint16_t size;
 
             deserialize(&buffer, &index);
             deserialize(&buffer, &type);
+            deserialize(&buffer, &size);
 
             // TODO: Assert that the type is valid?
 
@@ -310,7 +312,7 @@ Error poll_incoming(Connection* conn) {
 
                     // Drop it!
                     // We need to advance the packet buffer by the length of the message.
-                    buffer.idx += info.size;
+                    buffer.idx += size;
                     continue;
                 }
 
@@ -357,13 +359,13 @@ Error poll_incoming(Connection* conn) {
             Buffer* message_buffer = buffer_arena.alloc();
             init_buffer(message_buffer, true);
 
-            message_buffer->size = info.size;
+            message_buffer->size = size;
 
             // Copy the message from where we are in the packet buffer to the message buffer.
-            memcpy(message_buffer->buffer, buffer.buffer + buffer.idx, info.size);
+            memcpy(message_buffer->buffer, buffer.buffer + buffer.idx, size);
 
             // Update the index of our packet buffer.
-            buffer.idx += info.size;
+            buffer.idx += size;
 
             // Create and push a Message for this message!
             conn->incoming_queue.push({ (MessageType)type, index, message_buffer });
@@ -411,7 +413,7 @@ Error drain_outgoing(Connection* conn) {
 
             // Check if it can fit. If not, put it on alternate_queue.
             // Since it needs a header, factor that size in as well.
-            if (mti.size + MESSAGE_HEADER_SIZE > BUFFER_SIZE - packet_buffer.size) {
+            if (m.buffer->size + MESSAGE_HEADER_SIZE > BUFFER_SIZE - packet_buffer.size) {
                 alternate_queue.push(m);
                 continue;
             }
@@ -419,8 +421,10 @@ Error drain_outgoing(Connection* conn) {
             // Put the header in first.
             uint16_t message_index = m.index;
             uint8_t message_type = (uint8_t) m.type;
+            uint16_t message_size = m.buffer->size;
             serialize(&packet_buffer, message_index);
             serialize(&packet_buffer, message_type);
+            serialize(&packet_buffer, message_size);
 
             // Include it in the current packet.
             // Note we use the size as set by the buffer, not the packet size.
@@ -432,9 +436,9 @@ Error drain_outgoing(Connection* conn) {
             // TODO: Do we want to zero out the packet_buffer memory first?
             memcpy(packet_buffer.buffer + packet_buffer.idx, m.buffer->buffer, m.buffer->size);
 
-            // Advance the packet buffer by the size of the message type, not the buffer size.
-            packet_buffer.size += mti.size;
-            packet_buffer.idx += mti.size;
+            // Advance the packet buffer by the size of the buffer size.
+            packet_buffer.size += m.buffer->size;
+            packet_buffer.idx += m.buffer->size;
 
             if (mti.ack) {
                 // Add this message to the ack table. Don't free its buffer, because
