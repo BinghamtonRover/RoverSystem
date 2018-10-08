@@ -84,7 +84,7 @@ Another camera message is received. It has frame index 21, which is assigned to 
 	| <Section 0 Data> |   | <Empty>        |
 	| <Empty>          |
 	| <Section 2 Data> |
-	| <Empty>	       |
+	| <Empty>          |
 
 Another camera message is received. It has frame index 21, which is assigned to BUFFER 0. The message has a section index of 1 and a section count of 4. Buffer 0 is updated.
 
