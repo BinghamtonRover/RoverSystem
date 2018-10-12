@@ -118,3 +118,4 @@ The following API MUST be implemented as a C++14 library, using the C++14 ABI. E
 		* `Error::SET_LEFT`: The movement was not updated successfully.
 #### Error set_right(MVec)
 		The `set_right` call is identical to `set_left`, except that `set_right` updates the movement of the suspension's right side.
+
