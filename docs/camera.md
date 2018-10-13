@@ -1,4 +1,4 @@
-# Camera Protocol, Version 1
+# Camera Protocol, Version 2
 
 Camera messages use the network protocol defined [in the network spec](network.md).
 
@@ -26,9 +26,9 @@ The raw frame data follows the header.
 
 There are several constants which need to be defined on the sending and/or receiving sides. They are as follows:
 	
-1. `CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE`: The maximum size, in bytes, of the frame data in a single camera message. This should be small enough that a single camera message can fit within a UDP packet sent by the network protocol.
-2. `CAMERA_FRAME_BUFFER_SIZE`: The size, in bytes, of any buffer that will hold a frame. In other words, the maximum size of any single frame.
-3. `CAMERA_FRAME_BUFFER_COUNT`:	The number of frames to collect on the receiving side before pushing frames to a view. The receiving side will have `CAMERA_FRAME_BUFFER_COUNT` buffers, each of size `CAMERA_FRAME_BUFFER_SIZE`, to hold frames.
+1. `CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = 65000`: The maximum size, in bytes, of the frame data in a single camera message. This should be small enough that a single camera message can fit within a UDP packet sent by the network protocol.
+2. `CAMERA_FRAME_BUFFER_SIZE = 6220800`: The size, in bytes, of any buffer that will hold a frame. In other words, the maximum size of any single frame.
+3. `CAMERA_FRAME_BUFFER_COUNT`:	The number of frames to collect on the receiving side before pushing frames to a view. The receiving side will have `CAMERA_FRAME_BUFFER_COUNT` buffers, each of size `CAMERA_FRAME_BUFFER_SIZE`, to hold frames. This value can be adjusted, as it only pertains to the base station. A higher `CAMERA_FRAME_BUFFER_COUNT` will result in a higher delay, but less skipped frames.
 
 ## Regarding Camera Streams
 
