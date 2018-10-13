@@ -183,6 +183,20 @@ struct MovementMessage {
     int16_t left, right;
 };
 
+// When deserializing a CameraMessage, providing data == nullptr will cause a new buffer to be allocated.
+// If data != nullptr, the frame data will be written to the memory to which data points. In this case,
+// be sure that the size of that block is at least CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE bytes!
+// In either case, be sure to free the memory with delete[] once you are finished with that buffer!
+struct CameraMessage {
+    uint8_t stream_index;
+    uint16_t frame_index;
+    uint8_t section_index;
+    uint8_t section_count;
+    uint16_t size;
+
+    uint8_t* data;
+};
+
 struct MessageTypeInfo {
     bool order, ack;
 };

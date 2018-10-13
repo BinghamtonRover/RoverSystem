@@ -115,6 +115,36 @@ void deserialize(Buffer* buffer, MovementMessage* message) {
     deserialize(buffer, &message->right);
 }
 
+template <>
+void serialize(Buffer* buffer, CameraMessage* message) {
+    serialize(buffer, message->stream_index);
+    serialize(buffer, message->frame_index);
+    serialize(buffer, message->section_index);
+    serialize(buffer, message->section_count);
+    serialize(buffer, message->size);
+
+    memcpy(buffer->buffer + buffer->idx, message->data, message->size);
+    buffer->idx += message->size;
+    buffer->size += message->size;
+}
+
+// See the note in network.hpp regarding memory management.
+template <>
+void deserialize(Buffer* buffer, CameraMessage* message) {
+    deserialize(buffer, &(message->stream_index));
+    deserialize(buffer, &(message->frame_index));
+    deserialize(buffer, &(message->section_index));
+    deserialize(buffer, &(message->section_count));
+    deserialize(buffer, &(message->size));
+    
+    if (message->data == nullptr) {
+        message->data = new uint8_t[message->size];
+    }
+
+    memcpy(message->data, buffer->buffer + buffer->idx, message->size);
+    buffer->idx += message->size;
+}
+
 //
 // Core functionality.
 //
