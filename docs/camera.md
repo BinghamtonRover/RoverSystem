@@ -8,11 +8,13 @@ Each camera message has a common header:
 
 | Field Name    | Field Size / Type |
 | ------------- | ----------------- |
+| Stream Index  | u8                |
 | Frame Index   | u16               |
 | Section Index | u8                |
 | Section Count | u8                |
 | Size          | u16               |
 
+* `Stream Index` - An identifier for the camera stream which contains this message.
 * `Frame Index` - A running index assigned to each frame.
 * `Section Index` - The section of the frame being sent.
 * `Section Count` - The total number of sections for this frame.
@@ -27,6 +29,10 @@ There are several constants which need to be defined on the sending and/or recei
 1. `CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE`: The maximum size, in bytes, of the frame data in a single camera message. This should be small enough that a single camera message can fit within a UDP packet sent by the network protocol.
 2. `CAMERA_FRAME_BUFFER_SIZE`: The size, in bytes, of any buffer that will hold a frame. In other words, the maximum size of any single frame.
 3. `CAMERA_FRAME_BUFFER_COUNT`:	The number of frames to collect on the receiving side before pushing frames to a view. The receiving side will have `CAMERA_FRAME_BUFFER_COUNT` buffers, each of size `CAMERA_FRAME_BUFFER_SIZE`, to hold frames.
+
+## Regarding Camera Streams
+
+The following protocols and examples assume a single stream, and thus elide the `Stream Index` field. To handle multiple streams, the receiving side must allocate several collections of buffers, with one such collection associated with each stream.
 
 ## Sending Camera Messages
 
