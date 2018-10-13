@@ -38,15 +38,31 @@ int main() {
 	}
 
 	while(true) {
+		/// Camera
 		//Grab a frame
 		uint8_t* frame_buffer;
 		std::size_t frame_size;
 
 		err1 = camera::grab_frame(&session1, &frame_buffer, &frame_size);
-		//std::cout << "1" << camera::get_error_string(err1) << std::endl;
 		err1 = camera::return_buffer(&session1, frame_buffer);
-		//std::cout << "2" << camera::get_error_string(err1) << std::endl;
 
+
+		/// Network
+		network::poll_incoming(&conn);
+		network::Message message;
+		// Receive incoming messages
+		while(network::dequeue_incoming(&conn, &message)) {
+				switch(message.type) {
+					case network::MessageType::HEARTBEAT:
+					{
+						network::Buffer* outgoing = network::get_outgoing_buffer();
+						network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+						break;
+					}
+					default:
+						break;
+				}
+		}
 	}
 	/// Destruct Rover objects
 	// Close the camera session
