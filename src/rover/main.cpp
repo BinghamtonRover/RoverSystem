@@ -41,12 +41,44 @@ int main() {
 		//Grab a frame
 		uint8_t* frame_buffer;
 		std::size_t frame_size;
-
 		err1 = camera::grab_frame(&session1, &frame_buffer, &frame_size);
 		std::cout << "1" << camera::get_error_string(err1) << std::endl;
 		err1 = camera::return_buffer(&session1, frame_buffer);
 		std::cout << "2" << camera::get_error_string(err1) << std::endl;
 
+
+
+		/// Network
+		network::poll_incoming(&conn);
+		network::Message message;
+		// Receive incoming messages //
+		while(network::dequeue_incoming(&conn, &message)) {
+				switch(message.type) {
+					case network::MessageType::HEARTBEAT:
+					{
+						network::Buffer* outgoing = network::get_outgoing_buffer();
+						network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+						break;
+					}
+					default:
+						break;
+				}
+		}
+		// Sample code to send outgoing packets //
+		// Log messages
+		network::Buffer* log_buffer = network::get_outgoing_buffer();
+		char s[] = "[LOG] Hewwo Wowld!\n";
+		unsigned int sl= strlen(s);
+		serialize(log_buffer, sl);
+		memcpy(log_buffer->buffer + log_buffer->idx, s, sl);
+		log_buffer->idx += sl;
+		log_buffer->size += sl;
+		network::queue_outgoing(&conn, network::MessageType::LOG, log_buffer);
+		// TODO: Camera frames
+		
+		// Send iiiitttttt
+		network::drain_outgoing(&conn);
+		
 	}
 	/// Destruct Rover objects
 	// Close the camera session
