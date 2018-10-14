@@ -174,6 +174,7 @@ enum class MessageType : uint8_t {
     HEARTBEAT,
     MOVEMENT,
     CAMERA,
+	LOG,
 
     NUM
 };
@@ -197,6 +198,12 @@ struct CameraMessage {
     uint8_t* data;
 };
 
+struct LogMessage {
+	uint8_t size;
+	
+	char* log_string;
+};
+
 struct MessageTypeInfo {
     bool order, ack;
 };
@@ -204,7 +211,8 @@ struct MessageTypeInfo {
 constexpr MessageTypeInfo message_type_info[] = {
     [(uint8_t)MessageType::HEARTBEAT] = {false, true},
     [(uint8_t)MessageType::MOVEMENT]  = {true , false},
-    [(uint8_t)MessageType::CAMERA]    = {false, false}
+    [(uint8_t)MessageType::CAMERA]    = {false, false},
+	[(uint8_t)MessageType::LOG]       = {false, true}
 };
 
 //
