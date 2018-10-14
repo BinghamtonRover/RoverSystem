@@ -42,15 +42,15 @@ int main() {
 		//Grab a frame
 		uint8_t* frame_buffer;
 		std::size_t frame_size;
-
 		err1 = camera::grab_frame(&session1, &frame_buffer, &frame_size);
 		err1 = camera::return_buffer(&session1, frame_buffer);
+
 
 
 		/// Network
 		network::poll_incoming(&conn);
 		network::Message message;
-		// Receive incoming messages
+		// Receive incoming messages //
 		while(network::dequeue_incoming(&conn, &message)) {
 				switch(message.type) {
 					case network::MessageType::HEARTBEAT:
@@ -63,6 +63,21 @@ int main() {
 						break;
 				}
 		}
+		// Sample code to send outgoing packets //
+		// Log messages
+		network::Buffer* log_buffer = network::get_outgoing_buffer();
+		char s[] = "[LOG] Hewwo Wowld!\n";
+		unsigned int sl= strlen(s);
+		serialize(log_buffer, sl);
+		memcpy(log_buffer->buffer + log_buffer->idx, s, sl);
+		log_buffer->idx += sl;
+		log_buffer->size += sl;
+		network::queue_outgoing(&conn, network::MessageType::LOG, log_buffer);
+		// TODO: Camera frames
+		
+		// Send iiiitttttt
+		network::drain_outgoing(&conn);
+		
 	}
 	/// Destruct Rover objects
 	// Close the camera session
