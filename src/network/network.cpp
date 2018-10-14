@@ -128,6 +128,15 @@ void serialize(Buffer* buffer, CameraMessage* message) {
     buffer->size += message->size;
 }
 
+template <>
+void serialize(Buffer* buffer, LogMessage* message) {
+	serialize(buffer, message->size);
+
+	memcpy(buffer->buffer + buffer->idx, message->log_string, message->size);
+	buffer->idx += message->size;
+	buffer->size += message->size;
+}
+
 // See the note in network.hpp regarding memory management.
 template <>
 void deserialize(Buffer* buffer, CameraMessage* message) {
@@ -143,6 +152,14 @@ void deserialize(Buffer* buffer, CameraMessage* message) {
 
     memcpy(message->data, buffer->buffer + buffer->idx, message->size);
     buffer->idx += message->size;
+}
+
+template <>
+void deserialize(Buffer* buffer, LogMessage* message) {
+	deserialize(buffer, &(message->size));
+
+	memcpy(message->log_string, buffer->buffer + buffer->idx, message->size);
+	buffer->idx += message->size;
 }
 
 //
