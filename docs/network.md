@@ -15,6 +15,7 @@ This document describes the network protocol used in all communication between b
     * [0 - Heartbeat](#0---heartbeat)
     * [1 - Movement](#1---movement)
     * [2 - Camera](#2---camera)
+    * [3 - Log](#3---log)
 
 ## Introduction
 
@@ -125,3 +126,15 @@ Movement messages are not acked and are order-sensitive.
 The camera message encodes a part of a camera frame. The definition of this message can be found in [camera.md](camera.md).
 
 Camera messages are not acked and are not order-sensitive.
+
+### 3 - Log
+
+The log message describes a string of information that the rover wishes to report to the base station.
+
+| Field Name | Field Type / Size |
+| ---------- | ----------------- |
+| Length     | u16               |
+| String     | bytes, variable   |
+
+* `Length`: The length of `String`.
+* `String`: A string composed of ASCII characters in the inclusive (decimal) range [32, 126]. `String` is NOT null-terminated. Both the length of `String` in terms of characters and the size of `String` in terms of bytes are represented by `Length`.
