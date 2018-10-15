@@ -1,4 +1,4 @@
-# Rover Network Protocol Specification, Version 2
+# Rover Network Protocol Specification, Version 3
 
 This document describes the network protocol used in all communication between base station and rover. First, the goals and requirements of the protocol are described. Then the protocol is defined in detail. Finally, the message types used in the protocol are specified.
 
