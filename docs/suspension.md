@@ -73,7 +73,7 @@ Implementations MUST define `MVec` as a typedef of `uint8_t`.
 
 A `constexpr uint8_t VERSION` MUST be defined. Implementations MUST set the value of `VERSION` to match the verison of the API which is implemented.
 
-### COmmands
+### Commands
 
 #### Error init()
 
