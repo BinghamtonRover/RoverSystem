@@ -46,6 +46,7 @@ int main(){
 		while(network::dequeue_incoming(&sideB,&messageB)){
 			//Check for a heartbeat message
 			if(messageB.type == network::MessageType::HEARTBEAT){
+				//If a message was received, icrement message counter by one and calculate the time stuff as well as print out the information
 				messagesReceived++;
 				double currentTime = ((std::clock() - start) / (double) CLOCKS_PER_SEC) * 1000;
 				double timeOfMessage = currentTime-timeOfLastMessage;
@@ -54,9 +55,12 @@ int main(){
 				averageTime = (averageTime + currentTime)/messagesReceived;
 			}
 			network::return_incoming_buffer(messageB.buffer);
+			//Check to see if we got to 50 messages received (if statement in here in case there are more messages in the dequeue that we don't care about)
+			if (messagesReceived >= 50)
+				break;
 		}
-		//As of right now, can't figure out how to change it so the delay doesn't mess up when to break from the loop
-		if(messagesReceived >= 50)
+		//Breaking out of the communication loop once side B has 50 messages
+		if (messagesReceived >= 50)
 			break;
 		
 	}
