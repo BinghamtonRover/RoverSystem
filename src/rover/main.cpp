@@ -1,3 +1,6 @@
+//#define DEBUG
+#define TIME
+
 #include "camera.hpp"
 #include "../network/network.hpp"
 
@@ -6,6 +9,11 @@
 #include <vector>
 #include <cstring>
 #include <cstdlib>
+#ifdef TIME
+	#include <chrono> // Time keeping from stdlib
+	using namespace std::chrono;
+#endif
+
 
 const unsigned int CAMERA_MESSAGE_SIZE = 65000;
 
@@ -20,22 +28,28 @@ int main() {
 	camera::CaptureSession session3;
 
 	camera::Error err0 = camera::open(&session0, "/dev/video0", 1280, 720);
-	std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
 	camera::Error err1 = camera::open(&session1, "/dev/video1", 1280, 720);
-	std::cout << "Camera 1: " << camera::get_error_string(err0) << std::endl;
 	camera::Error err2 = camera::open(&session2, "/dev/video2", 1280, 720);
-	std::cout << "Camera 2: " << camera::get_error_string(err0) << std::endl;
 	camera::Error err3 = camera::open(&session3, "/dev/video3", 1280, 720);
-	std::cout << "Camera 3: " << camera::get_error_string(err0) << std::endl;
 
-	err0 = camera::start(&session0);
+#ifdef DEBUG
 	std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
+	std::cout << "Camera 1: " << camera::get_error_string(err0) << std::endl;
+	std::cout << "Camera 2: " << camera::get_error_string(err0) << std::endl;
+	std::cout << "Camera 3: " << camera::get_error_string(err0) << std::endl;
+#endif
+	
+	err0 = camera::start(&session0);
 	err1 = camera::start(&session1);
-	std::cout << "Camera 1: " << camera::get_error_string(err1) << std::endl;
 	err2 = camera::start(&session2);
-	std::cout << "Camera 2: " << camera::get_error_string(err2) << std::endl;
 	err3 = camera::start(&session3);
+
+#ifdef DEBUG
+	std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
+	std::cout << "Camera 1: " << camera::get_error_string(err1) << std::endl;
+	std::cout << "Camera 2: " << camera::get_error_string(err2) << std::endl;
 	std::cout << "Camera 3: " << camera::get_error_string(err3) << std::endl;
+#endif
 
 	// Open UDP connection
 	network::Connection conn;
@@ -45,13 +59,28 @@ int main() {
 	}
 
 	while(true) {
+#ifdef TIME
+	auto start_all = high_resolution_clock::now();
+#endif
 		//Grab a frame
 		uint8_t* frame_buffer;
 		std::size_t frame_size;
 		err1 = camera::grab_frame(&session0, &frame_buffer, &frame_size);
+		frame_counter ++;
+#ifdef DEBUG
+		// Print camera buffer info
 		std::cout << (void*)frame_buffer << std::endl;
 		std::cout << "1" << camera::get_error_string(err1) << std::endl;
-		frame_counter ++;
+#endif
+
+#ifdef TIME
+	auto end_grab_frame = high_resolution_clock::now();
+	std::cout << 
+		"[LOCAL_TIME] Time to grab frame: " <<
+		duration_cast<milliseconds>(end_grab_frame - start_all).count() <<
+		"ms" <<
+	std::endl;
+#endif
 
 
 
@@ -80,15 +109,8 @@ int main() {
 
 		network::queue_outgoing(&conn, network::MessageType::LOG, log_buffer);
 
-		// TODO: Camera frames
-		// For each camera frame:
-		//     Get the required number of buffers by FRAME_SIZE/BUFFER_SIZE + 1
-		//     For each buffer:
-		//         Serialize the buffer with data from
-		//             CAMERA_FRAME_BASE_POINTER + BUFFER_SIZE*i
-		//         Queue outgoing buffer
-		
-		// Temporary for loop to use the same one frame for all streams
+		// Camera Frames
+		//Temporary 'for' loop to use the same frame from session0 for all streams
 		for (unsigned int i = 0; i < 4; i++) {
 			uint8_t num_buffers = (frame_size/CAMERA_MESSAGE_SIZE) + 1;
 			for (unsigned int j = 0; j < num_buffers; j++) {
@@ -103,8 +125,8 @@ int main() {
 					buffer_size,                          // size
 					nullptr                               // data
 				};
-				std::cout << "Frame #:" << j << std::endl;
 				message.data = (uint8_t*) malloc(CAMERA_MESSAGE_SIZE);
+				// OPTIMIZE: reuse the same message object to avoid reallocating memory
 				memcpy(message.data, frame_buffer+CAMERA_MESSAGE_SIZE*j, CAMERA_MESSAGE_SIZE);
 				network::serialize(camera_buffer, &message);
 
@@ -112,14 +134,27 @@ int main() {
 			}
 		}
 
-
-
-		// Send iiiitttttt
+		// Send iiiitttttt //
 		network::drain_outgoing(&conn);
 		
+		/// Return all buffers
 		err1 = camera::return_buffer(&session1, frame_buffer);
+
+
+#ifdef DEBUG
 		std::cout << "2" << camera::get_error_string(err1) << std::endl;
+#endif
+#ifdef TIME
+		auto end_all = high_resolution_clock::now();
+		std::cout << 
+			"[LOCAL_TIME] Time to send all logging and camera buffers: " <<
+			duration_cast<milliseconds>(end_all - end_grab_frame).count() <<
+			"ms" <<
+		std::endl;
+#endif
 	}
+
+
 	/// Destruct Rover objects
 	// Close the camera session
 	camera::close(&session0);
