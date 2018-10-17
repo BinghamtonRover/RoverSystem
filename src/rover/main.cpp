@@ -18,39 +18,37 @@
 const unsigned int CAMERA_MESSAGE_SIZE = 65000;
 
 int main() {
-	/// Initialization of Rover objects
+	/*
+	 * INITILIZATION: Rover Objects
+	 * OPTIMIZE: Consider making a rover class with an iteratable list of cameras
+	 */
 	unsigned int frame_counter = 0;
-	// OPTIMIZE: Consider making a rover class with an iteratable list of cameras
 	// Open all cameras
 	camera::CaptureSession session0;
 	camera::CaptureSession session1;
 	camera::CaptureSession session2;
 	camera::CaptureSession session3;
-
 	camera::Error err0 = camera::open(&session0, "/dev/video0", 1280, 720);
 	camera::Error err1 = camera::open(&session1, "/dev/video1", 1280, 720);
 	camera::Error err2 = camera::open(&session2, "/dev/video2", 1280, 720);
 	camera::Error err3 = camera::open(&session3, "/dev/video3", 1280, 720);
-
 #ifdef DEBUG
 	std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
 	std::cout << "Camera 1: " << camera::get_error_string(err0) << std::endl;
 	std::cout << "Camera 2: " << camera::get_error_string(err0) << std::endl;
 	std::cout << "Camera 3: " << camera::get_error_string(err0) << std::endl;
 #endif
-	
+	// Start cameras
 	err0 = camera::start(&session0);
 	err1 = camera::start(&session1);
 	err2 = camera::start(&session2);
 	err3 = camera::start(&session3);
-
 #ifdef DEBUG
 	std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
 	std::cout << "Camera 1: " << camera::get_error_string(err1) << std::endl;
 	std::cout << "Camera 2: " << camera::get_error_string(err2) << std::endl;
 	std::cout << "Camera 3: " << camera::get_error_string(err3) << std::endl;
 #endif
-
 	// Open UDP connection
 	network::Connection conn;
 	network::Error net_err = network::connect(&conn, "192.168.1.1", 45545, 45545);
@@ -58,7 +56,16 @@ int main() {
 		std::cerr << "[!]Failed to connect to rover!" << std::endl;
 	}
 
+	/*
+	 * MAIN LOOP
+	 * 1. Process Info Locally
+	 * 2. Send out packets
+	 */
 	while(true) {
+		/*
+		 * 1. Process Info Locally
+		 * - Grabbing frames
+		 */
 #ifdef TIME
 	auto start_all = high_resolution_clock::now();
 #endif
@@ -72,11 +79,10 @@ int main() {
 		std::cout << (void*)frame_buffer << std::endl;
 		std::cout << "1" << camera::get_error_string(err1) << std::endl;
 #endif
-
 #ifdef TIME
 	auto end_grab_frame = high_resolution_clock::now();
 	std::cout << 
-		"[LOCAL_TIME] Time to grab frame: " <<
+		"[LOCAL_TIME] Time to GRAB FRAME from session0: " <<
 		duration_cast<milliseconds>(end_grab_frame - start_all).count() <<
 		"ms" <<
 	std::endl;
@@ -84,7 +90,11 @@ int main() {
 
 
 
-		/// Network
+		/*
+		 * 2. Send out packets
+		 * - Send Logging packets
+		 * - Create camera messages and send Camera packets
+		 */
 		network::poll_incoming(&conn);
 		network::Message message;
 		// Receive incoming messages //
@@ -100,7 +110,7 @@ int main() {
 						break;
 				}
 		}
-		// Sample code to send outgoing packets //
+		// THIS IS SAMPLE CODE to send outgoing packets //
 		// Log messages
 		network::Buffer* log_buffer = network::get_outgoing_buffer();
 		char s[] = "[LOG] Hewwo Wowld!";
@@ -134,7 +144,6 @@ int main() {
 			}
 		}
 
-		// Send iiiitttttt //
 		network::drain_outgoing(&conn);
 		
 		/// Return all buffers
@@ -147,7 +156,7 @@ int main() {
 #ifdef TIME
 		auto end_all = high_resolution_clock::now();
 		std::cout << 
-			"[LOCAL_TIME] Time to send all logging and camera buffers: " <<
+			"[LOCAL_TIME] Time to CREATE and SEND all Logging and Camera buffers: " <<
 			duration_cast<milliseconds>(end_all - end_grab_frame).count() <<
 			"ms" <<
 		std::endl;
