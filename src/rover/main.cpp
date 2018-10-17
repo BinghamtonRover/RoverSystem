@@ -1,10 +1,16 @@
 #include "camera.hpp"
+#include "../network/network.hpp"
+
 #include <stddef.h>
 #include <iostream>
-#include "../network/network.hpp"
+#include <vector>
+#include <cstring>
+
+const unsigned int CAMERA_MESSAGE_SIZE = 65000;
 
 int main() {
 	/// Initialization of Rover objects
+	unsigned int frame_counter = 0;
 	// OPTIMIZE: Consider making a rover class with an iteratable list of cameras
 	// Open all cameras
 	camera::CaptureSession session0;
@@ -45,6 +51,7 @@ int main() {
 		std::cout << "1" << camera::get_error_string(err1) << std::endl;
 		err1 = camera::return_buffer(&session1, frame_buffer);
 		std::cout << "2" << camera::get_error_string(err1) << std::endl;
+		frame_counter ++;
 
 
 
@@ -67,15 +74,45 @@ int main() {
 		// Sample code to send outgoing packets //
 		// Log messages
 		network::Buffer* log_buffer = network::get_outgoing_buffer();
-		char s[] = "[LOG] Hewwo Wowld!\n";
-		unsigned int sl= strlen(s);
-		serialize(log_buffer, sl);
-		memcpy(log_buffer->buffer + log_buffer->idx, s, sl);
-		log_buffer->idx += sl;
-		log_buffer->size += sl;
+		char s[] = "[LOG] Hewwo Wowld!";
+		network::LogMessage log_message = {static_cast<uint8_t>(strlen(s)), s};
+		network::serialize(log_buffer, &log_message);
+
 		network::queue_outgoing(&conn, network::MessageType::LOG, log_buffer);
+
 		// TODO: Camera frames
+		// For each camera frame:
+		//     Get the required number of buffers by FRAME_SIZE/BUFFER_SIZE + 1
+		//     For each buffer:
+		//         Serialize the buffer with data from
+		//             CAMERA_FRAME_BASE_POINTER + BUFFER_SIZE*i
+		//         Queue outgoing buffer
 		
+		// Temporary for loop to use the same one frame for all streams
+		for (unsigned int i = 0; i < 4; i++) {
+			uint8_t num_buffers = (frame_size/CAMERA_MESSAGE_SIZE) + 1;
+			std::vector<network::Buffer*> buffers(num_buffers);
+			buffers.push_back(network::get_outgoing_buffer());
+			for (unsigned int j = 0; j < buffers.size(); j++) {
+				// If we are not at the last buffer
+				uint16_t buffer_size = (j != buffers.size()-1)?CAMERA_MESSAGE_SIZE:frame_size%CAMERA_MESSAGE_SIZE;
+				network::CameraMessage message = {
+					static_cast<uint8_t>(i),              // stream_index
+					static_cast<uint16_t>(frame_counter), // frame_index
+					static_cast<uint8_t>(j),              // section_index
+					num_buffers,                          // section_count
+					buffer_size,                          // size
+					nullptr                               // data
+				};
+				memcpy(message.data, frame_buffer+CAMERA_MESSAGE_SIZE*j, CAMERA_MESSAGE_SIZE);
+				network::serialize(buffers[j], &message);
+
+				network::queue_outgoing(&conn, network::MessageType::CAMERA, buffers[j]);
+			}
+		}
+
+
+
 		// Send iiiitttttt
 		network::drain_outgoing(&conn);
 		
