@@ -1,10 +1,11 @@
 #include "camera.hpp"
 #include "../network/network.hpp"
 
-#include <stddef.h>
+#include <cstddef>
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <cstdlib>
 
 const unsigned int CAMERA_MESSAGE_SIZE = 65000;
 
@@ -47,10 +48,9 @@ int main() {
 		//Grab a frame
 		uint8_t* frame_buffer;
 		std::size_t frame_size;
-		err1 = camera::grab_frame(&session1, &frame_buffer, &frame_size);
+		err1 = camera::grab_frame(&session0, &frame_buffer, &frame_size);
+		std::cout << (void*)frame_buffer << std::endl;
 		std::cout << "1" << camera::get_error_string(err1) << std::endl;
-		err1 = camera::return_buffer(&session1, frame_buffer);
-		std::cout << "2" << camera::get_error_string(err1) << std::endl;
 		frame_counter ++;
 
 
@@ -91,11 +91,10 @@ int main() {
 		// Temporary for loop to use the same one frame for all streams
 		for (unsigned int i = 0; i < 4; i++) {
 			uint8_t num_buffers = (frame_size/CAMERA_MESSAGE_SIZE) + 1;
-			std::vector<network::Buffer*> buffers(num_buffers);
-			buffers.push_back(network::get_outgoing_buffer());
-			for (unsigned int j = 0; j < buffers.size(); j++) {
+			for (unsigned int j = 0; j < num_buffers; j++) {
+				network::Buffer* camera_buffer = network::get_outgoing_buffer();
 				// If we are not at the last buffer
-				uint16_t buffer_size = (j != buffers.size()-1)?CAMERA_MESSAGE_SIZE:frame_size%CAMERA_MESSAGE_SIZE;
+				uint16_t buffer_size = (j != num_buffers-1)?CAMERA_MESSAGE_SIZE:frame_size%CAMERA_MESSAGE_SIZE;
 				network::CameraMessage message = {
 					static_cast<uint8_t>(i),              // stream_index
 					static_cast<uint16_t>(frame_counter), // frame_index
@@ -104,10 +103,12 @@ int main() {
 					buffer_size,                          // size
 					nullptr                               // data
 				};
+				std::cout << "Frame #:" << j << std::endl;
+				message.data = (uint8_t*) malloc(CAMERA_MESSAGE_SIZE);
 				memcpy(message.data, frame_buffer+CAMERA_MESSAGE_SIZE*j, CAMERA_MESSAGE_SIZE);
-				network::serialize(buffers[j], &message);
+				network::serialize(camera_buffer, &message);
 
-				network::queue_outgoing(&conn, network::MessageType::CAMERA, buffers[j]);
+				network::queue_outgoing(&conn, network::MessageType::CAMERA, camera_buffer);
 			}
 		}
 
@@ -116,6 +117,8 @@ int main() {
 		// Send iiiitttttt
 		network::drain_outgoing(&conn);
 		
+		err1 = camera::return_buffer(&session1, frame_buffer);
+		std::cout << "2" << camera::get_error_string(err1) << std::endl;
 	}
 	/// Destruct Rover objects
 	// Close the camera session
