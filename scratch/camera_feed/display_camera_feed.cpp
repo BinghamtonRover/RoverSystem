@@ -180,6 +180,7 @@ int main(){
 										//Decompress image into buffer
 
 						}
+                network::return_incoming_buffer(message.buffer);
 				}
 		}
 		//free all the SDL parts to avoid memory leaks
