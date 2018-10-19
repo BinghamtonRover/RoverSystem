@@ -1,6 +1,6 @@
 # Suspension API, Version 1
 
-This document describes the rover's suspension API of the version indicated above.
+This document describes the rover's suspension command API of the version indicated above.
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119.
 
@@ -14,11 +14,8 @@ This document is broken down into several components:
 - General Functionality
 	- Operations
 	- Safety Mechanisms
-	- Command Hierarchy
-- API
-	- Types
-	- Constants
-	- Commands
+  - Command Hierarchy
+- Commands
 
 ## General Functionality
 <!-- picture of setup -->
@@ -38,67 +35,14 @@ In order for the suspension system to continue movement, it requires constant re
 
 ### Command Hierarchy
 
-<!-- Command Hierarchy Chart --> 
+Command precidence is based on the time-of-execution, with the most-recent command taking precidence.
 
-Generally, command precidence is based on the time-of-execution, with the most-recent command taking precidence. Any command issued after a quit command will be ignored until the init command is re-issued.
+## Commands
 
-## API
+The following commands MUST be sent over a serial connection. Each command is two bytes long. The first byte is the control byte, which specifies the command. The second byte is the value byte, which provides extra information relating to the command.
 
-The following API MUST be implemented as a C++14 library, using the C++14 ABI. Each command described below MUST be implemented as a function within the namespace `suspension`. Integer types described below MUST be implemented as those from `stdint.h` with the correct sign and bit count. Any other types described below MUST be defined or typedefed within the namespace `suspension`, with an exception made for pointer or array types. Enums MUST be defined with `enum class`.
-
-### Types
-
-#### Error
-
-`Error` is an enum which describes the possible error states across all commands. It contains the following entries:
-```
-Error::OK = 0, // No error occured. This MUST be returned if a command completed successfully.
-Error::INIT = 1, // An error occured during initialization.
-Error::SET_LEFT = 2, // An error occured while attempting to set left wheel motor speed.
-Error::SET_RIGHT = 3, // An error occured while attempting to set right wheel motor speed.
-Error::QUIT = 4 // An error occured during cleanup.
-```
-		
-Implementations MUST use `uint8_t` as the backing type of `Error`.
-
-#### MVec
-
-`MVec` is a vector which describes the current speed and direction of the left and right-side suspension movement. It MUST be implemented as a sign-magnitude 8-bit integer. Thus, the high bit indicates sign (`0` positive, `1` negative) and the remaining 7 bits indicate magnitude. A positive `MVec` indicates forward movement, and a negative `MVec` indicates backward movement. `MVec` magnitude indicates motor speed and allows up to 127 different non-zero speeds. Due to the sign-magnitude encoding, there are two possible representations of zero (`0x80` and `0x00`). Implementations MUST treat both as `0`.
-
-Implementations MUST define `MVec` as a typedef of `uint8_t`.
-
-### Constants
-
-#### VERSION
-
-A `constexpr uint8_t VERSION` MUST be defined. Implementations MUST set the value of `VERSION` to match the verison of the API which is implemented.
-
-### Commands
-
-#### Error init()
-
-The `init` command takes no parameters and returns an error code as type `Error`. All initialization for the suspension API implementation SHOULD occur within this command. The possible error codes for this command are:
-  * `Error::OK`: Initialization completed successfully.
-  * `Error::INIT`: Initialization did not complete successfully.
-
-Users of this API MUST NOT use any other commands prior to `init`.
-
-#### Error quit()
-
-The `quit` command takes no parameters and returns an error code as type `Error`. All cleanup for the suspension API implementation MUST occur whithin this command. All resources (memory, file, etc.) aquired during the execution of any other command MUST be released within this command. All motor movement MUST be ceased within this command. The possible error codes for this command are:
-  * `Error::OK`: Cleanup completed successfully.
-  * `Error::QUIT`: Cleanup did not complete successfully.
-
-Users of this API MUST NOT use any commands other than `init` after using `quit`. Users SHALL NOT call `quit` unless `init` was called prior.
-
-#### Error set_left(MVec)
-
-The `set_left` command takes a single parameter of type `MVec` and returns an error code as type `Error`. This command sets the current speed and direction of the movement of the suspension's left side. The parameter is described as follows:
-  * `MVec vec`: The new speed and direction of the movement of the suspension's left side. The implementation MUST maintain this speed and direction until another `set_left` command or a `quit` command.
-The possible error codes for this command are:
-  * `Error::OK`: The movement was updated successfully.
-  * `Error::SET_LEFT`: The movement was not updated successfully.
-
-#### Error set_right(MVec)
-
-The `set_right` command is identical to `set_left`, except that `set_right` updates the movement of the suspension's right side.
+| Command Name | Command Byte | Value Byte | Description |
+| - | - | - | - |
+| STOP | 0x00 | Must be 0x00. | Instructs the suspension to cease all motor functions. |
+| LMOV | 0x01 | Movement speed and direction of the left side motors, encoded as sign-magnitude. | Sets the movement speed and direction of the left side motors. Positive indicates forward movement, and negative indicates backward movement. Due to the sign-magnitude encoding, there are two zero values. Both MUST be interpreted as indicating zero motion. The encoding of the speed occupies the lower 7 bits of the value byte, so the range of the speed is [0, 127], where each speed value `s` equates to movement at `s/127` times maximum speed. |
+| RMOV | 0x02 | Movement speed and direction of the right side motors, encoded as sign-magnitude. | Sets the movement speed and direction of the right side motors. Positive indicates forward movement, and negative indicates backward movement. Due to the sign-magnitude encoding, there are two zero values. Both MUST be interpreted as indicating zero motion. The encoding of the speed occupies the lower 7 bits of the value byte, so the range of the speed is [0, 127], where each speed value `s` equates to movement at `s/127` times maximum speed. |
