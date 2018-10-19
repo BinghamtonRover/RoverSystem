@@ -107,7 +107,16 @@ int main(){
 		SDL_Texture *texture = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, 1024, 768);
 		std::cout << "Initialized everything" << std::endl;
 		std::cout << "Starting Loops" << std::endl;
-		while(true){
+
+		bool running = true;
+		while(running){
+			SDL_Event event;
+			while (SDL_PollEvent(&event)) {
+				if (event.type == SDL_QUIT) {
+					running = false;
+					break;
+				}
+			}
 				//polls for incoming messages
 				network::poll_incoming(&conn);
 				//declares a message to hold the incoming data
@@ -117,9 +126,9 @@ int main(){
 						std::cout << "dequeueing messages" << std::endl;
 						//get the mesage type
 						switch (message.type) {
-								case network::MessageType::CAMERA: 
+								case network::MessageType::CAMERA: {
 										std::cout << "recieved CameraMessage" << std::endl;
-										network::CameraMessage frame;
+										network::CameraMessage frame{ 0 };
 										std::cout << "Created the frame" << std::endl;
 										//deserialize the message into the cameraMessage
 										network::deserialize(message.buffer, &frame);
@@ -174,6 +183,7 @@ int main(){
 												SDL_RenderPresent(ren);
 										}
 										break;
+								}
 								default:
 										std::cout << "Non CameraMessage message recieved" << std::endl;
 										//deserialize the message into the buffer.
