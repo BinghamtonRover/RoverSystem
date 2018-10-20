@@ -18,7 +18,7 @@ This document is broken down into several components:
 - Commands
 
 ## General Functionality
-<!-- picture of setup -->
+
 The API allows for manual control of the suspension system.
 
 ### Operations
