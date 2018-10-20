@@ -39,13 +39,10 @@ const int16_t
     MIN_POS = 3000;
 //Fixed controller update rate
 const auto RATE = std::chrono::milliseconds(100);
-struct movement {
-    int16_t left, 
-            right;
-};
-
 const char* device_name = "/dev/input/js0";
-
+struct movement {
+    int16_t left, right;
+};
 //Joystick values range from -32767 to +32767
 //Used formula scaled_val = (new_max - new_min) / (old_max - old_min) * (v - old_min) + new_min
 int16_t recalibrate(int16_t axis_value){
@@ -107,25 +104,20 @@ int main(int argc, char *argv[]) {
                      //Ignore init events
                     break;
               }
-
-           
         }  
         //End program if controller is disconnected
         if (errno != EAGAIN) {
             fprintf(stderr, "[!] Controller disconnected\n");
             return 1;
         }
-            now = std::chrono::system_clock::now();
-            if (now-lastUpdated > RATE) {
-                outgoing = network::get_outgoing_buffer();
-                network::serialize(outgoing, &currentMovement); 
-                network::queue_outgoing(&conn, network::MessageType::MOVEMENT, outgoing);
-                std::cout << currentMovement.left << " " << currentMovement.right << std::endl;
-            }
- 
+        now = std::chrono::system_clock::now();
+        if (now-lastUpdated > RATE) {
+            outgoing = network::get_outgoing_buffer();
+            network::serialize(outgoing, &currentMovement); 
+            network::queue_outgoing(&conn, network::MessageType::MOVEMENT, outgoing);
+            lastUpdated = now;
+        }
         network::drain_outgoing(&conn);
-
      }
-
 }
 
