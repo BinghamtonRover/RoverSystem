@@ -34,6 +34,7 @@ const unsigned short
 //NEGATIVE: -MAX_POS and -MIN_POS
 //and then scaled to fit range -32767 to 32767.
 //Essentially making MIN_POS and less the new 0 or 'dead' value.
+//-3000 to 3000 seems like a good dead range.
 const int16_t 
     MAX_POS = 32767,
     MIN_POS = 3000;
@@ -98,7 +99,6 @@ int main(int argc, char *argv[]) {
                     else if (event.number == JOYSTICK_RIGHT_Y) {
                         currentMovement.right = recalibrate(event.value);
                     }
-
                     break;
                 default:
                      //Ignore init events
@@ -111,7 +111,10 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         now = std::chrono::system_clock::now();
-        if (now-lastUpdated > RATE) {
+        //Push currentMovement to the outgoing buffer if >= RATE has passed
+        //since the last push. now-lastUpdated is an std::chrono::duration.
+        //The difference is evaluated as ms. 
+        if (now-lastUpdated >= RATE) {
             outgoing = network::get_outgoing_buffer();
             network::serialize(outgoing, &currentMovement); 
             network::queue_outgoing(&conn, network::MessageType::MOVEMENT, outgoing);
