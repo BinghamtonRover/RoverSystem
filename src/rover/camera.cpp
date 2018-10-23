@@ -120,13 +120,13 @@ Error open(CaptureSession* session, const char* device_filepath, size_t width, s
     }
 
     // Allocate our buffers.
-    for (size_t i = 0; i < NUM_BUFFERS; i++) {
+    for (uint32_t i = 0; i < NUM_BUFFERS; i++) {
         session->buffers[i].size = session->image_size;
         session->buffers[i].data = new uint8_t[session->image_size];
     }
 
     // Link each buffer with the driver.
-    for (size_t i = 0; i < NUM_BUFFERS; i++) {
+    for (uint32_t i = 0; i < NUM_BUFFERS; i++) {
         // Allocate a V4L2 "buffer".
         // This really isn't a buffer, but a struct that contains information
         // about the buffers we will provide.
