@@ -15,7 +15,13 @@
 #endif
 
 
+/*
+ * GLOBAL CONSTANTS
+ */
 const unsigned int CAMERA_MESSAGE_SIZE = 65000;
+const unsigned int WEBCAM_1_WIDTH = 1280;
+const unsigned int WEBCAM_1_HEIGHT = 720;
+
 
 int main() {
 	/*
@@ -23,38 +29,51 @@ int main() {
 	 * OPTIMIZE: Consider making a rover class with an iteratable list of cameras
 	 */
 	unsigned int frame_counter = 0;
-	// Open all cameras
+	// Camera streams
 	camera::CaptureSession session0;
 	camera::CaptureSession session1;
 	camera::CaptureSession session2;
 	camera::CaptureSession session3;
-	camera::Error err0 = camera::open(&session0, "/dev/video0", 1280, 720);
-	camera::Error err1 = camera::open(&session1, "/dev/video1", 1280, 720);
-	camera::Error err2 = camera::open(&session2, "/dev/video2", 1280, 720);
-	camera::Error err3 = camera::open(&session3, "/dev/video3", 1280, 720);
-#ifdef DEBUG
-	std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
-	std::cout << "Camera 1: " << camera::get_error_string(err0) << std::endl;
-	std::cout << "Camera 2: " << camera::get_error_string(err0) << std::endl;
-	std::cout << "Camera 3: " << camera::get_error_string(err0) << std::endl;
-#endif
-	// Start cameras
-	err0 = camera::start(&session0);
-	err1 = camera::start(&session1);
-	err2 = camera::start(&session2);
-	err3 = camera::start(&session3);
-#ifdef DEBUG
-	std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
-	std::cout << "Camera 1: " << camera::get_error_string(err1) << std::endl;
-	std::cout << "Camera 2: " << camera::get_error_string(err2) << std::endl;
-	std::cout << "Camera 3: " << camera::get_error_string(err3) << std::endl;
-#endif
-	// Open UDP connection
+	// UPD connection
 	network::Connection conn;
-	network::Error net_err = network::connect(&conn, "192.168.1.1", 45545, 45545);
-	if((net_err != network::Error::OK)) {
-		std::cerr << "[!]Failed to connect to rover!" << std::endl;
+
+	// Open all cameras
+	{
+		camera::Error err0 = camera::open(&session0, "/dev/video0", WEBCAM_1_WIDTH, WEBCAM_1_HEIGHT);
+		if(err0 != camera::Error::OK) std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
+
+		camera::Error err1 = camera::open(&session1, "/dev/video1", WEBCAM_1_WIDTH, WEBCAM_1_HEIGHT);
+		if(err1 != camera::Error::OK) std::cout << "Camera 1: " << camera::get_error_string(err1) << std::endl;
+
+		camera::Error err2 = camera::open(&session2, "/dev/video2", WEBCAM_1_WIDTH, WEBCAM_1_HEIGHT);
+		if(err2 != camera::Error::OK) std::cout << "Camera 2: " << camera::get_error_string(err2) << std::endl;
+
+		camera::Error err3 = camera::open(&session3, "/dev/video3", WEBCAM_1_WIDTH, WEBCAM_1_HEIGHT);
+		if(err3 != camera::Error::OK) std::cout << "Camera 3: " << camera::get_error_string(err3) << std::endl;
 	}
+	// Start cameras
+	{
+		camera::Error err0 = camera::start(&session0);
+		if(err0 != camera::Error::OK) std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
+
+		camera::Error err1 = camera::start(&session1);
+		if(err1 != camera::Error::OK) std::cout << "Camera 1: " << camera::get_error_string(err1) << std::endl;
+
+		camera::Error err2 = camera::start(&session2);
+		if(err2 != camera::Error::OK) std::cout << "Camera 2: " << camera::get_error_string(err2) << std::endl;
+
+		camera::Error err3 = camera::start(&session3);
+		if(err3 != camera::Error::OK) std::cout << "Camera 3: " << camera::get_error_string(err3) << std::endl;
+	}
+	// Open UDP connection
+	{
+		network::Error net_err = network::connect(&conn, "192.168.1.1", 45545, 45545);
+		if((net_err != network::Error::OK)) {
+			std::cerr << "[!]Failed to connect to rover!" << std::endl;
+		}
+	}
+
+
 
 	/*
 	 * MAIN LOOP
@@ -62,6 +81,8 @@ int main() {
 	 * 2. Send out packets
 	 */
 	while(true) {
+
+
 		/*
 		 * 1. Process Info Locally
 		 * - Grabbing frames
@@ -72,7 +93,10 @@ int main() {
 		//Grab a frame
 		uint8_t* frame_buffer;
 		std::size_t frame_size;
-		err1 = camera::grab_frame(&session0, &frame_buffer, &frame_size);
+		{
+			camera::Error err0 = camera::grab_frame(&session0, &frame_buffer, &frame_size);
+			if(err0 != camera::Error::OK) std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
+		}
 		frame_counter ++;
 #ifdef DEBUG
 		// Print camera buffer info
@@ -89,7 +113,6 @@ int main() {
 #endif
 
 
-
 		/*
 		 * 2. Send out packets
 		 * - Send Logging packets
@@ -99,16 +122,16 @@ int main() {
 		network::Message message;
 		// Receive incoming messages //
 		while(network::dequeue_incoming(&conn, &message)) {
-				switch(message.type) {
-					case network::MessageType::HEARTBEAT:
-					{
-						network::Buffer* outgoing = network::get_outgoing_buffer();
-						network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
-						break;
-					}
-					default:
-						break;
+			switch(message.type) {
+				case network::MessageType::HEARTBEAT:
+				{
+					network::Buffer* outgoing = network::get_outgoing_buffer();
+					network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+					break;
 				}
+				default:
+					break;
+			}
 		}
 		// THIS IS SAMPLE CODE to send outgoing packets //
 		// Log messages
@@ -120,13 +143,24 @@ int main() {
 		network::queue_outgoing(&conn, network::MessageType::LOG, log_buffer);
 
 		// Camera Frames
-		//Temporary 'for' loop to use the same frame from session0 for all streams
+		/*
+		 * This 'for' loop makes sure we create 4 camera streams, one for each camera.
+		 * This is TEMPORARY CODE that will be removed once we have a better system
+		 *     to organize our objects that will allow us to iterate through
+		 *     a collection of camera objects    -yu
+		 */
+		std::vector<uint8_t*> data_refs; //keep a reference of all our buffers so we can free them
 		for (unsigned int i = 0; i < 4; i++) {
+			// Calculate how many buffers we will need to send the entire frame
 			uint8_t num_buffers = (frame_size/CAMERA_MESSAGE_SIZE) + 1;
 			for (unsigned int j = 0; j < num_buffers; j++) {
 				network::Buffer* camera_buffer = network::get_outgoing_buffer();
-				// If we are not at the last buffer
+
+				//This accounts for the last buffer that is not completely divisible
+				//by the defined buffer size, by using up the remaining space calculated
+				//with modulus    -yu
 				uint16_t buffer_size = (j != num_buffers-1)?CAMERA_MESSAGE_SIZE:frame_size%CAMERA_MESSAGE_SIZE;
+
 				network::CameraMessage message = {
 					static_cast<uint8_t>(i),              // stream_index
 					static_cast<uint16_t>(frame_counter), // frame_index
@@ -135,9 +169,11 @@ int main() {
 					buffer_size,                          // size
 					nullptr                               // data
 				};
-				message.data = (uint8_t*) malloc(CAMERA_MESSAGE_SIZE);
+				message.data = new uint8_t[CAMERA_MESSAGE_SIZE];
+				data_refs.push_back(message.data); // keep a ref
+
 				// OPTIMIZE: reuse the same message object to avoid reallocating memory
-				memcpy(message.data, frame_buffer+CAMERA_MESSAGE_SIZE*j, CAMERA_MESSAGE_SIZE);
+				memcpy(message.data, frame_buffer + (CAMERA_MESSAGE_SIZE*j), CAMERA_MESSAGE_SIZE);
 				network::serialize(camera_buffer, &message);
 
 				network::queue_outgoing(&conn, network::MessageType::CAMERA, camera_buffer);
@@ -145,9 +181,13 @@ int main() {
 		}
 
 		network::drain_outgoing(&conn);
+		for(auto ref: data_refs) { delete ref; } // free refs
 		
 		/// Return all buffers
-		err1 = camera::return_buffer(&session1, frame_buffer);
+		{
+			camera::Error err0 = camera::return_buffer(&session0, frame_buffer);
+			if(err0 != camera::Error::OK) std::cout << "Camera 0: " << camera::get_error_string(err0) << std::endl;
+		}
 
 
 #ifdef DEBUG
