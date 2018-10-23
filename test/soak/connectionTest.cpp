@@ -10,15 +10,15 @@ int main(){
 	network::Connection sideA;
 	network::Connection sideB;
 
-	//Checking to see if they can both connect to localhost on port 8080
-	network::Error error1; 
-	network::Error error2;
-	if( (error1 = network::connect(&sideA,"127.0.0.1",8081,8080)) != network::Error::OK){
+	//Checking to see if they can both connect to localhost with side A and side B listening to each other on ports 8080 and 8081 respectively
+	network::Error error; 
+	if( (error = network::connect(&sideA,"127.0.0.1",8081,8080)) != network::Error::OK){
 		fprintf(stderr, "Side A failed to connect to localhost!\n");
 		return 1;
 	}
-	if( (error2 = network::connect(&sideB,"127.0.0.1",8080,8081)) != network::Error::OK){
+	if( (error = network::connect(&sideB,"127.0.0.1",8080,8081)) != network::Error::OK){
 		fprintf(stderr, "Side B failed to connect to localhost!\n");
+		fprintf(stdout,"%d\n",static_cast<int>(error));
 		return 1;
 	}
 
@@ -67,7 +67,6 @@ int main(){
 	duration = (( std::clock() - start) / (double) CLOCKS_PER_SEC) * 1000;
 	std::setprecision(0);
 	std::cout<<"It took " << std::setprecision(4) << duration <<  " milliseconds to send " << messagesReceived << " messages from side A to side B with an average of " << averageTime << " milliseconds per message.\n";
-	system("python3 endSoak.py");	
 	return 0;
 
 }

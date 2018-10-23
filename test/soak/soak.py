@@ -1,5 +1,6 @@
 import subprocess as s
 import sys
+import os
 from itertools import chain
 
 def main():
@@ -32,10 +33,25 @@ def main():
     #Unpacking the temp to useable parameters to call
     parameters = list(chain.from_iterable(temp))
     
+    '''
+    The argument breakdown for the next line is as follows:
+        sudo: Because netem requires sudo privileges
+        tc: A user-space utility program used to manipulate packet control settings in the linux kernel (a.k.a Traffic Control)
+        qdisc: Short for 'queueing discipline'. Basically a queue for packets that the linux kernel uses and how linux handles incoming/sending packets.
+        add: The command to add a qdisc to something
+        dev: Short for device. Specifying that we want to add a qdisc to a device
+        lo: A specific kind of device called a "loopback device". Another name for it is localhost and it's address is "127.0.0.1". We can use it to send packets locally
+        root: Saying that we want to attach this qdisc to the root of the device (The device being "lo" in this scenario)
+        netem: An enhancement of the Linux traffic control facilities that allow to add delay, packet loss, duplication,reorder, and more to packets outgoing from a specific network interface (In our case, the network interface is "lo")
+        
+    '''
+
     arguments = ['sudo','tc','qdisc','add','dev','lo','root','netem'] + parameters
     #Calling the netem
     s.call(arguments)
-    #Calling the program to listen in to the modified network at localhost
-    s.call(["./connectionTest"]);
+    #Calling the "connectionTest" executable to listen in to the modified network at localhost
+    os.system("./connectionTest")
+    #Calling the "endSoak" python script to stop the network emulation
+    os.system("python3 endSoak.py")
     
 main()
