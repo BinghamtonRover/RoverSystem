@@ -1,19 +1,23 @@
 #include "../../src/network/network.hpp"
+#include "display_camera_feed.hpp"
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
 #include <turbojpeg.h>
 #include "SDL2/SDL.h"
+#include <inttypes.h> //to print uints
 
 #define CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE 65000
 #define CAMERA_FRAME_BUFFER_SIZE 6220800
 #define CAMERA_FRAME_BUFFER_COUNT 5
 
 void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitch, uint32_t size){
-		long unsigned int _jpegSize = (long unsigned int) size; //!< _jpegSize from above
+		
+		if(compressed_image[CAMERA_FRAME_BUFFER_SIZE] == '\0')
+				printf("Ending character present.\n");
 		std::cout << "decompressing" << std::endl;
 		int  width = 1920, height = 1080 ;
-
+		long unsigned int _jpegSize = width * height * 3;
 		tjhandle _jpegDecompressor = tjInitDecompress();
 		if(_jpegDecompressor != NULL)
 				std::cout << "decompressor was made" << std::endl;
@@ -22,6 +26,9 @@ void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitc
 		//image as an unsigned long, the buffer, the width of the jpeg, the pitch,
 		//the height, the pixel type (We have RGB here each contained in 1 byte),
 		//and the flags. Basically we say decompress it quickly.
+		printf("Compressed image ptr: %p", compressed_image);
+	    std::cout << ". JPG size: " << _jpegSize <<  ". Pitch " << pitch << std::endl;
+		printf(". Buffer ptr %p\n", buffer); 
 		if (tjDecompress2(_jpegDecompressor, compressed_image, _jpegSize, buffer, width, pitch, height, TJPF_RGB, TJFLAG_FASTDCT) != -1)
 				std::cout << "decompressed correctly" << std::endl;
 		else
@@ -31,39 +38,19 @@ void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitc
 }
 
 //method to get the size from the byte buffer.
-uint16_t getTotalSize(unsigned char** byteBuffer, int section){
-		uint16_t total_size = *((uint16_t*) (&byteBuffer[section][0]));
-		return total_size;
-}
-
-void setRemaining(unsigned char** byteBuffer, int section, uint8_t value){
-		*(((uint8_t*) (byteBuffer[section]))+3) = value;
-		return;
-}
-
-uint8_t getRemaining(unsigned char** byteBuffer, int section){
-		uint8_t remaining = *(((uint8_t*) (byteBuffer[section]))+3);
-		std::cout << "Remaining: " << remaining << std::endl;
-		return remaining;
-}
-
-void decreaseRemaining(unsigned char** byteBuffer, int section){
-		(*(((uint8_t*) (byteBuffer[section]))+3))--;
-		return;
-}
 
 int main(){
 		std::cout << "Starting" << std::endl;
 		//create a 2d array of buffers.
 		int pitch = 1920*3, *pitchptr = &pitch;
-		unsigned char** frame_buffer = new unsigned char*[CAMERA_FRAME_BUFFER_COUNT];
-		void* pixel_location;
+		unsigned char* temp_compressed_message_buffer = new unsigned char[CAMERA_FRAME_BUFFER_SIZE];
+		BufferItem* frame_buffer = new BufferItem[CAMERA_FRAME_BUFFER_COUNT];
+		unsigned char* pixel_location;
 		//
 		for(int i = 0; i < CAMERA_FRAME_BUFFER_COUNT; i++){
-				frame_buffer[i] = new unsigned char[CAMERA_FRAME_BUFFER_SIZE];
+				frame_buffer[i].data_sections = new unsigned char[CAMERA_FRAME_BUFFER_SIZE+1];
+				frame_buffer[i].data_sections[CAMERA_FRAME_BUFFER_SIZE] = '\340';
 		}
-		uint16_t frame_list[CAMERA_FRAME_BUFFER_COUNT];
-		uint16_t data_size[CAMERA_FRAME_BUFFER_COUNT];
 		uint8_t indx = 0;
 		//establish a newtwork connection
 		network::Connection conn;
@@ -107,7 +94,16 @@ int main(){
 		SDL_Texture *texture = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, 1024, 768);
 		std::cout << "Initialized everything" << std::endl;
 		std::cout << "Starting Loops" << std::endl;
-		while(true){
+		bool running = true;
+		SDL_Event event;
+		while(running){
+				 if (SDL_PollEvent(&event)) {
+  	 		  	 	switch (event.type) {
+					case SDL_QUIT:
+						running = false;
+						break;
+				 	}
+				 }
 				//polls for incoming messages
 				network::poll_incoming(&conn);
 				//declares a message to hold the incoming data
@@ -121,25 +117,28 @@ int main(){
 										std::cout << "recieved CameraMessage" << std::endl;
 										network::CameraMessage frame;
 										std::cout << "Created the frame" << std::endl;
+										frame.data = temp_compressed_message_buffer;
 										//deserialize the message into the cameraMessage
 										network::deserialize(message.buffer, &frame);
-										std::cout << "deserialized message, Size: " << std::endl;
-										std::cout << frame.size << std::endl;
+										std::cout << "deserialized message, Size: " << frame.size << std::endl;
 										std::cout << "deserialized message index: " << frame.frame_index << std::endl;
 										//get the index of the buffer that the frame is supposed to go into
 										indx = frame.frame_index % CAMERA_FRAME_BUFFER_COUNT;
-										if(frame_list[indx] != frame.frame_index){
-												frame_list[indx] = frame.frame_index;
-												std::cout << "Section count: " << frame.section_count << std::endl;
-												setRemaining(frame_buffer, indx, frame.section_count);
-												data_size[indx] = 0;
-												std::cout << "data is 0 " << data_size[indx] << std::endl;
+										if(frame_buffer[indx].frame_index != frame.frame_index){
+												frame_buffer[indx].frame_index = frame.frame_index;
+												std::cout << "Section count: " << unsigned(frame.section_count) << std::endl;
+												printf("%" PRIu16 "\n", frame_buffer[indx].sections_remaining);
+												frame_buffer[indx].frame_index = frame.frame_index;
+												frame_buffer[indx].sections_remaining = frame.section_count;
+												frame_buffer[indx].data_size = 0;
+												std::cout << "Initial Sections Remaining: " << unsigned(frame_buffer[indx].sections_remaining) << std::endl;
+												std::cout << "data is 0. Proof: " << unsigned(frame_buffer[indx].data_size) << std::endl;
 										}
-										std::cout << "Where " << std::endl;
-										data_size[indx] += frame.size;
-										std::cout << "do " << std::endl;
-										decreaseRemaining(frame_buffer, indx);
-										std::cout << "I  " << std::endl;
+										frame_buffer[indx].data_size += frame.size;
+										std::cout << "New data: " << unsigned(frame_buffer[indx].data_size) << std::endl;
+										frame_buffer[indx].sections_remaining--;
+										std::cout << "buffer remaining: " << unsigned(frame_buffer[indx].sections_remaining) << 	std::endl;
+										std::cout << "Section index: " << unsigned(frame.section_index) << 	std::endl;
 										//TODO check if the frame full if it is a new index.
 										//if it is we unlock the pixel buffer,
 										//decompress the JPEG stored into a pixels buffer to be displayed,
@@ -149,16 +148,17 @@ int main(){
 										//the +5 here is to get past the first 5 bytes which are the 
 										//frame index and the remaining number of sections to be recieved respectively
 										//TODO make sure below code is how Layne wants it done
-										std::memcpy(frame_buffer[indx]+ (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * frame.section_index + 5), frame.data, frame.size);
+										std::memcpy(frame_buffer[indx].data_sections+ (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * frame.section_index), frame.data, frame.size);
 										//decompress the buffer
 										//check if we have a full frame
-										std::cout << "Remaining: " << getRemaining(frame_buffer, indx) << std::endl;
-										if(getRemaining(frame_buffer, indx) == 0){
+										std::cout << "Remaining: " << unsigned(frame_buffer[indx].sections_remaining) << std::endl;
+										if(frame_buffer[indx].sections_remaining  == 0){
 												std::cout << "We have a full frame" << std::endl;
+												std::cout << "Remaining: " << unsigned(frame_buffer[indx].data_size) << std::endl;
 												//if we do decompress the buffer
 												//Lock texture to allow writing to pictures
-												SDL_LockTexture( texture,NULL,  &pixel_location, pitchptr);
-												decompress(((unsigned char*) pixel_location) , frame_buffer[indx], pitch, data_size[indx]);
+												SDL_LockTexture( texture,NULL, (void **) &pixel_location, pitchptr);
+												decompress(( pixel_location) , frame_buffer[indx].data_sections, pitch, frame_buffer[indx].data_size);
 												//unlock texture to update it again.
 												SDL_UnlockTexture(texture);
 												//actually render texture in for loop below
@@ -189,4 +189,3 @@ int main(){
 		SDL_DestroyWindow(win);
 		SDL_Quit();
 }
-
