@@ -112,9 +112,9 @@ int main(){
 						std::cout << "dequeueing messages" << std::endl;
 						//get the mesage type
 						switch (message.type) {
-								case network::MessageType::CAMERA: 
+								case network::MessageType::CAMERA: {
 										std::cout << "recieved CameraMessage" << std::endl;
-										network::CameraMessage frame;
+										network::CameraMessage frame{ 0 };
 										std::cout << "Created the frame" << std::endl;
 										frame.data = temp_compressed_message_buffer;
 										//deserialize the message into the cameraMessage
@@ -173,6 +173,7 @@ int main(){
 												SDL_RenderPresent(ren);
 										}
 										break;
+								}
 								default:
 										std::cout << "Non CameraMessage message recieved" << std::endl;
 										//deserialize the message into the buffer.
