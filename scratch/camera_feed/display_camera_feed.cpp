@@ -48,8 +48,7 @@ int main(){
 		unsigned char* pixel_location;
 		//
 		for(int i = 0; i < CAMERA_FRAME_BUFFER_COUNT; i++){
-				frame_buffer[i].data_sections = new unsigned char[CAMERA_FRAME_BUFFER_SIZE+1];
-				frame_buffer[i].data_sections[CAMERA_FRAME_BUFFER_SIZE] = '\340';
+				frame_buffer[i].data_sections = new unsigned char[CAMERA_FRAME_BUFFER_SIZE];
 		}
 		uint8_t indx = 0;
 		//establish a newtwork connection
