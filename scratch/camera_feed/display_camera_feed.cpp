@@ -42,7 +42,7 @@ void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitc
 int main(){
 		std::cout << "Starting" << std::endl;
 		//create a 2d array of buffers.
-		int pitch = 1920*3, *pitchptr = &pitch;
+		int pitch = 1920*3;
 		unsigned char* temp_compressed_message_buffer = new unsigned char[CAMERA_FRAME_BUFFER_SIZE];
 		BufferItem* frame_buffer = new BufferItem[CAMERA_FRAME_BUFFER_COUNT];
 		unsigned char* pixel_location;
@@ -69,7 +69,7 @@ int main(){
 		}
 		//creates window. pramaeters are window title, x start pos, y start pos,
 		//x end pos, and y end pos.
-		SDL_Window *win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
+		SDL_Window *win = SDL_CreateWindow("Hello World!", 0, 0, 1920, 1080, SDL_WINDOW_SHOWN);
 		//check for failure
 		if (win == nullptr){
 				std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -90,7 +90,7 @@ int main(){
 				SDL_Quit();
 				return 1;
 		}
-		SDL_Texture *texture = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, 1024, 768);
+		SDL_Texture *texture = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, 1920, 1080);
 		std::cout << "Initialized everything" << std::endl;
 		std::cout << "Starting Loops" << std::endl;
 		bool running = true;
@@ -156,7 +156,7 @@ int main(){
 												std::cout << "Remaining: " << unsigned(frame_buffer[indx].data_size) << std::endl;
 												//if we do decompress the buffer
 												//Lock texture to allow writing to pictures
-												SDL_LockTexture( texture,NULL, (void **) &pixel_location, pitchptr);
+												SDL_LockTexture( texture,NULL, (void **) &pixel_location, &pitch);
 												decompress(( pixel_location) , frame_buffer[indx].data_sections, pitch, frame_buffer[indx].data_size);
 												//unlock texture to update it again.
 												SDL_UnlockTexture(texture);
