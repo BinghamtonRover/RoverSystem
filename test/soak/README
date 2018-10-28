@@ -1,0 +1,1 @@
+To run, call soak.py with python3 and list your parameters in the order: [delay] [loss] [duplicate] [corrupt] [reorder]
