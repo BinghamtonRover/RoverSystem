@@ -27,7 +27,7 @@ We define the operations and their effects for both automated and manual control
 
 #### Manual Control
 
-The speed and direction of the left and right-side drive motors can be manaully selected.
+The speed and direction of the left and right-side drive motors can be manually selected.
 
 ### Safety Mechanisms
 
