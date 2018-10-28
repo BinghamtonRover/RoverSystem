@@ -31,7 +31,7 @@ The speed and direction of the left and right-side drive motors can be manually 
 
 ### Safety Mechanisms
 
-In order for the suspension system to continue movement, it requires constant reasurance. If a signal is not recieved from the computer within (5) seconds of the last, the drive motors will be immediately halted.
+In order for the suspension system to continue movement, it requires constant reassurance. If a signal is not received from the computer within (5) seconds of the last, the drive motors shall be immediately halted.
 
 ### Command Hierarchy
 
