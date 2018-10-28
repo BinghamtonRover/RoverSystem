@@ -35,7 +35,7 @@ In order for the suspension system to continue movement, it requires constant re
 
 ### Command Hierarchy
 
-Command precidence is based on the time-of-execution, with the most-recent command taking precidence.
+Command precedence is based on the time-of-execution, with the most-recent command taking precedence.
 
 ## Commands
 
