@@ -33,7 +33,6 @@ void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitc
 }
 
 int main(){
-<<<<<<< HEAD
     int pitch = 1920*3;
     uint32_t offset;
     //create a buffer for the message struct (declared in loop)
@@ -105,7 +104,7 @@ int main(){
             //std::cout << "dequeueing messages" << std::endl;
             switch (message.type) {
                 case network::MessageType::CAMERA: {
-                    network::CameraMessage frame{ 0 };
+                    network::CameraMessage frame{};
                     frame.data = temp_compressed_message_buffer;
                     network::deserialize(message.buffer, &frame);
                     //std::cout << "deserialized message, Size: " << frame.size << std::endl;
