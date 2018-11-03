@@ -33,6 +33,7 @@ void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitc
 }
 
 int main(){
+<<<<<<< HEAD
     int pitch = 1920*3;
     uint32_t offset;
     //create a buffer for the message struct (declared in loop)
@@ -151,7 +152,6 @@ int main(){
             network::return_incoming_buffer(message.buffer);
         }
     }while(running);
-
     //free all the SDL parts to avoid memory leaks
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(ren);
