@@ -10,7 +10,7 @@ OBJECTS = display_camera_feed.o
 # the SDL2 libraries at runtime to match your install
 LIBS = `sdl2-config --cflags --libs` -I/usr/local/include -I/opt/libjpeg-turbo/include -L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/libturbojpeg -L../../bin  -lSDL2 -lnetwork -l:libturbojpeg.a
 # You may need to change -std=c++11 to -std=c++0x if your compiler is a bit older
-CFLAGS = -Wall -g -std=c++14  
+CFLAGS = -Wall -Wextra -pedantic -g -std=c++14  
 EXEC = SDL_Camera
 LFLAGS = $(LIBS)
 # Main target
