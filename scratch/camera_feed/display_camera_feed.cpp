@@ -13,9 +13,9 @@
 #define WINDOW_X_LENGTH 1920 //window resolution. Standard is 1920
 #define WINDOW_Y_LENGTH 1080 //my window resolution. Standard is 1080
 
+const long unsigned int _jpegSize = WINDOW_X_LENGTH * WINDOW_Y_LENGTH * 3;
+
 void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitch){
-    int  width = 1920, height = 1080 ;
-    long unsigned int _jpegSize = width * height * 3;
     tjhandle _jpegDecompressor = tjInitDecompress();
     if(_jpegDecompressor == NULL)
         std::cout << "decompressor was not made" << std::endl;
@@ -26,7 +26,7 @@ void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitc
         and the flags. Basically we say decompress it quickly.
     */
     //std::cout << ". JPG size: " << _jpegSize <<  ". Pitch " << pitch << std::endl;
-    if (tjDecompress2(_jpegDecompressor, compressed_image, _jpegSize, buffer, width, pitch, height, TJPF_RGB, TJFLAG_FASTDCT) == -1)
+    if (tjDecompress2(_jpegDecompressor, compressed_image, _jpegSize, buffer, WINDOW_X_LENGTH, pitch, WINDOW_Y_LENGTH, TJPF_RGB, TJFLAG_FASTDCT) == -1)
         std::cout << "decompressed incorrectly" << std::endl;
     //free the decompressor.
     tjDestroy(_jpegDecompressor);
