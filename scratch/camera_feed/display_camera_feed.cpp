@@ -7,9 +7,7 @@
 //#include <inttypes.h> to print uints
 // If you are trying to print a uintxx_t there are 2 methods I have found.
 /*
-    std::cout << unsigned(frame.section_count) << std::endl;
- */
-/*
+    std::cout << unsigned(uint you are trying to print) << std::endl;
     printf("%" PRIu16 "\n", uint you are trying to print);
  */
 struct BufferItem{
@@ -43,6 +41,58 @@ void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitc
     if (tjDecompress2(_jpegDecompressor, compressed_image, JPEG_SIZE, buffer, WINDOW_X_LENGTH, pitch, WINDOW_Y_LENGTH, TJPF_RGB, TJFLAG_FASTDCT) == -1)
         std::cout << "decompressed incorrectly" << std::endl;
 }
+/*
+    If there are no sections remaining, lock the pixels 
+    for writing, and pass the location into decompress. 
+    Decompress writes the decompressed pixel data to 
+    pixel_location. Then we unlock the texture again 
+    to render it to the screen.
+ */
+void setUpFrame(struct BufferItem* frame_buffer, network::CameraMessage &frame, uint8_t &indx){
+/*
+    Since we know that camera packets will only be sent out once we
+    can manage the buffer by only keeping track of the number of 
+    sections needed. We get the index by taking the frame index mod
+    the total number of buffers.
+ */
+    indx = frame.frame_index % CAMERA_FRAME_BUFFER_COUNT;
+    /*
+        If we have done a full loop and there is a new
+        frame index, then we overwrite the old data.
+     */
+    if(frame_buffer[indx].frame_index != frame.frame_index){
+        frame_buffer[indx].frame_index = frame.frame_index;
+        frame_buffer[indx].frame_index = frame.frame_index;
+        frame_buffer[indx].sections_remaining = frame.section_count;
+        frame_buffer[indx].data_size = 0;
+    }
+    frame_buffer[indx].data_size += frame.size;
+    frame_buffer[indx].sections_remaining--;
+    /*
+        This section handles any data that comes out of order.
+        Each data section is written at the size of
+        a signle data packet times the section index.
+     */
+    uint32_t offset = (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * frame.section_index);
+    std::memcpy(frame_buffer[indx].data_sections + offset , frame.data, frame.size);
+}
+
+void renderFrame(SDL_Texture* texture, SDL_Renderer* ren, unsigned char* pixel_location, int pitch, unsigned char* data_sections){
+    SDL_LockTexture(texture, NULL, (void **) &pixel_location, &pitch);
+    decompress(pixel_location , data_sections, pitch);
+    SDL_UnlockTexture(texture);
+    //This clears anything currently in the renderer
+    SDL_RenderClear(ren);
+    /*
+        This loads the texture onto the renderer.
+        The NULL parameters specify the demensions
+        of the window to render to. Null renders to 
+        the full extent of the window.
+     */
+    SDL_RenderCopy(ren, texture, NULL, NULL);
+    //This renders the contents of the renderer.
+    SDL_RenderPresent(ren);
+}
 
 int main(){
     BufferItem* frame_buffer = new BufferItem[CAMERA_FRAME_BUFFER_COUNT];
@@ -68,7 +118,6 @@ int main(){
         (This value can change if the hardware uses padding)
      */
     int pitch = 1920*3;
-    uint32_t offset;
     uint8_t indx = 0;
     network::Connection conn;
     const char* destination_port = "127.0.0.1";
@@ -113,7 +162,7 @@ int main(){
         should the hardware accelerated rendering fail
     */
     SDL_Renderer *ren = SDL_CreateRenderer(win,-1,
-        SDL_RENDERER_ACCELERATED   | SDL_RENDERER_PRESENTVSYNC);
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (ren == nullptr){
         SDL_DestroyWindow(win);
         std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
@@ -154,57 +203,11 @@ int main(){
                      */
                     frame.data = temp_compressed_message_buffer;
                     network::deserialize(message.buffer, &frame);
-                    /*
-                        Since we know that camera packets will only be
-                        sent out a single time we can manage the buffer
-                        on a modular system. Therefore we get the index
-                        by taking the frame index mod the total number
-                        of buffers.
-                     */
-                    indx = frame.frame_index % CAMERA_FRAME_BUFFER_COUNT;
-                    /*
-                        If we have done a full loop and there is a new
-                        frame index, then we overwrite the old data.
-                     */
-                    if(frame_buffer[indx].frame_index != frame.frame_index){
-                        frame_buffer[indx].frame_index = frame.frame_index;
-                        frame_buffer[indx].frame_index = frame.frame_index;
-                        frame_buffer[indx].sections_remaining = frame.section_count;
-                        frame_buffer[indx].data_size = 0;
-                    }
-                    frame_buffer[indx].data_size += frame.size;
-                    frame_buffer[indx].sections_remaining--;
-                    /*
-                        This section handles any data that comes out of
-                        order. Each data section is written at the size
-                        of a signle data packet * the section index.
-                     */
-                    offset = (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * frame.section_index);
-                    std::memcpy(frame_buffer[indx].data_sections + offset , frame.data, frame.size);
-                    
-                    if(frame_buffer[indx].sections_remaining  == 0){
-                        /*
-                            If there are no sections remaining,
-                            lock the pixels for writing, and pass the
-                            location into decompress. Decompress
-                            writes the decompressed pixel data to 
-                            pixel_location. Then we unlock the texture
-                            again to render it to the screen.
-                         */
-                        SDL_LockTexture(texture, NULL, (void **) &pixel_location, &pitch);
-                        decompress(pixel_location , frame_buffer[indx].data_sections, pitch);
-                        SDL_UnlockTexture(texture);
-                        //This clears anything currently in the renderer
-                        SDL_RenderClear(ren);
-                        /*
-                            This loads the texture onto the renderer.
-                            The NULL parameters specify the demensions
-                            of the window to render to. Null renders to 
-                            the full extent of the window.
-                         */
-                        SDL_RenderCopy(ren, texture, NULL, NULL);
-                        //This renders the contents of the renderer.
-                        SDL_RenderPresent(ren);
+                    setUpFrame(frame_buffer, frame, indx);
+                                        if(frame_buffer[indx].sections_remaining  == 0){
+                        renderFrame(texture, ren, pixel_location, 
+                            pitch, frame_buffer[indx].data_sections);
+                        
                     }
                     break;
                 }
