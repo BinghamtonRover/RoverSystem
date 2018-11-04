@@ -12,6 +12,10 @@ It is assumed that the x86_64 architecture is being targeted.
 
 The base station uses SDL to perform window / input management. Install it with `sudo apt install libsdl2-dev`.
 
+### OpenGL
+
+The base station uses OpenGL for rendering the UI. Install the necessary libraries with `sudo apt install libgl1-mesa-dev`.
+
 ### TurboJpeg
 
 TurboJpeg provides an API for very efficient JPEG encoding/decoding. This is currently used for the camera streams.
