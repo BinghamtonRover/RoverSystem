@@ -6,6 +6,6 @@ OUT = ../../bin/sdl_camerafeed_demo
 $(OUT): $(SOURCES) 
 	g++ -o $@ $(CFLAGS) $(SOURCES) $(LFLAGS)
 
-.PHONY:	clean
+.PHONY: clean
 clean:
 	 rm $(OUT)
