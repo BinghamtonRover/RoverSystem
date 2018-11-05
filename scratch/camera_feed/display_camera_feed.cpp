@@ -4,18 +4,13 @@
 #include <iostream>
 #include <turbojpeg.h>
 #include <SDL2/SDL.h>
-//#include <inttypes.h> to print uints
-// If you are trying to print a uintxx_t there are 2 methods I have found.
-/*
-    std::cout << unsigned(uint you are trying to print) << std::endl;
-    printf("%" PRIu16 "\n", uint you are trying to print);
- */
-typedef struct BufferItem_s{
+
+struct BufferItem {
     uint16_t frame_index;
     uint16_t data_size;
     uint8_t sections_remaining;
     unsigned char* data_sections;
-}BufferItem;
+};
 
 const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE  = 65000;
 const int CAMERA_FRAME_BUFFER_SIZE = 6220800;
@@ -28,12 +23,9 @@ const int WINDOW_X_LENGTH = 1920;
 const int WINDOW_Y_LENGTH = 1080;
 const long unsigned int JPEG_SIZE = WINDOW_X_LENGTH * WINDOW_Y_LENGTH * 3;
 const char* DESTINATION_ADDRESS = "127.0.0.1";
-const tjhandle jpeg_decompressor = tjInitDecompress();
+tjhandle jpeg_decompressor;
 
 void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitch){
-    if(jpeg_decompressor == NULL){
-        std::cout << "decompressor was not made" << std::endl;
-    }
     /*
         The parameters are the decompressor, the compressed image, the size of the
         image as an unsigned long, the buffer, the width of the jpeg, the pitch,
@@ -104,6 +96,12 @@ void renderFrame(SDL_Texture* texture, SDL_Renderer* ren, unsigned char* pixel_l
 }
 
 int main(){
+    jpeg_decompressor = tjInitDecompress();;
+    if (!jpeg_decompressor) {
+        std::cout << "Error creating decompressor!" << std::endl;
+        return 1;
+    }
+
     BufferItem* frame_buffer = new BufferItem[CAMERA_FRAME_BUFFER_COUNT];
     /*
         Allocates space for frame data within each frame buffer.
