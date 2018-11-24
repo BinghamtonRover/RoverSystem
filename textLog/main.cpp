@@ -132,7 +132,7 @@ int draw_text(Font* font, const char* text, int x, int y, float height) {
 class TextLog {
 
 public:
-    std::vector< std::tuple <const char *, int, int> > entries;
+    std::vector< std::tuple <const char *,float,float,float, int, int> > entries;
     int logWidth;
     int logHeight;
     int heightSize;
@@ -145,17 +145,17 @@ public:
     	load_font(&this->textFont, font);
     }
 
-    void addEntry(const char * text){
-	std::tuple <const char *, int,int> entry;
+    void addEntry(const char * text,float red,float green, float blue){
+	std::tuple <const char *,float,float,float,int,int> entry;
 	int width = 0;
 	int height = 0;
 	size_text(&this->textFont,text,&width,&height);
-	entry = std::make_tuple(text,width,height);
+	entry = std::make_tuple(text,red,green,blue,width,height);
 	entries.emplace(this->entries.begin(),entry);
 	this->heightSize += height;
 	while (this->heightSize > this->logHeight) {
 	    int lastEntry = this->entries.size()-1;
-	    heightSize -= std::get<2>(this->entries[lastEntry]);
+	    heightSize -= std::get<5>(this->entries[lastEntry]);
 	    this->entries.erase(this->entries.end()-1);
 	}
     
@@ -164,11 +164,18 @@ public:
     void printEntries(){
 	int heightPos = 0;
 	if (!this->entries.empty()) //To take care of the case where nothing is in our textlog
-	    heightPos = std::get<2>(this->entries[0]);
+	    heightPos = std::get<5>(this->entries[0]);
 
         for(auto it = this->entries.begin(); it != this->entries.end(); it++){
-	    draw_text(&this->textFont,std::get<0>(*it),0,this->logHeight-heightPos,std::get<2>(*it));
-	    heightPos += std::get<2>(*it);
+	    const char * text = std::get<0>(*it);
+	    float red = std::get<1>(*it);
+	    float green = std::get<2>(*it);
+	    float blue = std::get<3>(*it);
+	    int width = std::get<4>(*it);
+	    int height = std::get<5>(*it);
+            glColor4f(red,green,blue,1.0f);
+	    draw_text(&this->textFont,text,0,this->logHeight-heightPos,height);
+	    heightPos += height;
 	}
 
 
@@ -234,18 +241,18 @@ int main() {
             }
 	    if (event.type == SDL_KEYDOWN) {
 		    if (event.key.keysym.sym == SDLK_UP) {
-			log.addEntry("UP KEY was pressed!");
+			log.addEntry("UP KEY was pressed!",1.0f,0.0f,0.0f);
 		    }
 
 		    if (event.key.keysym.sym == SDLK_DOWN) {
-			log.addEntry("DOWN KEY was pressed!");
+			log.addEntry("DOWN KEY was pressed!",0.0f,1.0f,0.0f);
 		    }
 		    
 		    if (event.key.keysym.sym == SDLK_LEFT) {
-			log.addEntry("LEFT KEY was pressed!");
+			log.addEntry("LEFT KEY was pressed!",0.0f,0.0f,1.0f);
 		    }
 		    if (event.key.keysym.sym == SDLK_RIGHT) {
-			log.addEntry("RIGHT KEY was pressed!");
+			log.addEntry("RIGHT KEY was pressed!",1.0f,0.0f,1.0f);
 		    }
 	    }
 
@@ -253,7 +260,6 @@ int main() {
 
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
 	log.printEntries();
 
