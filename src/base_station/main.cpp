@@ -1,5 +1,8 @@
 #include "controller.hpp"
 #include "camera_feed.hpp"
+#include "gui.hpp"
+#include "text.hpp"
+#include "debug.hpp"
 
 #include "../network/network.hpp"
 #include "../shared.hpp"
@@ -12,104 +15,10 @@
 #include <cstdint>
 
 #include <stack>
+#include <string>
+#include <vector>
+#include <iostream>
 
-
-// We know that our base station will have this resolution.
-const int WINDOW_WIDTH = 1920;
-const int WINDOW_HEIGHT = 1080;
-
-// Send movement updates 3x per second.
-const int MOVMENT_SEND_INTERVAL = 1000/3;
-
-struct LayoutState {
-    int x = 0;
-    int y = 0;
-};
-
-struct Layout {
-    LayoutState state_stack[10];
-    int state_stack_len = 0;
-
-    int current_x;
-    int current_y;
-
-    void reset_x() {
-        LayoutState state = state_stack[state_stack_len - 1];
-
-        current_x = state.x;
-    }
-
-    void reset_y() {
-        LayoutState state = state_stack[state_stack_len - 1];
-
-        current_y = state.y;
-    }
-
-    void push() {
-        state_stack[state_stack_len++] = { current_x, current_y };
-    }
-
-    void pop() {
-        state_stack_len--;
-    }
-
-    void advance_x(int d) {
-        current_x += d;
-    }
-
-    void advance_y(int d) {
-        current_y += d;
-    }
-};
-
-void draw_solid_rect(float x, float y, float w, float h, float r, float g, float b) {
-    glBegin(GL_QUADS);
-
-    glColor4f(r, g, b, 1.0f);
-
-    glVertex2f(x, y);
-    glVertex2f(x + w, y);
-    glVertex2f(x + w, y + h);
-    glVertex2f(x, y + h);
-
-    glEnd();
-}
-
-void draw_textured_rect(float x, float y, float w, float h, unsigned int texture_id) {
-     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glBegin(GL_QUADS);
-
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-    glTexCoord2f(0, 0); glVertex2f(x, y);
-    glTexCoord2f(1, 0); glVertex2f(x + w, y);
-    glTexCoord2f(1, 1); glVertex2f(x + w, y + h);
-    glTexCoord2f(0, 1); glVertex2f(x, y + h);
-
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-}
-
-void do_solid_rect(Layout* layout, int width, int height, float r, float g, float b) {
-    int x = layout->current_x;
-    int y = layout->current_y;
-
-    draw_solid_rect(x, y, width, height, r, g, b);
-
-    layout->advance_x(width);
-    layout->advance_y(height);
-}
-
-void do_textured_rect(Layout* layout, int width, int height, unsigned int texture_id) {
-    int x = layout->current_x;
-    int y = layout->current_y;
-
-    draw_textured_rect(x, y, width, height, texture_id);
-
-    layout->advance_x(width);
-    layout->advance_y(height);
-}
 
 void do_gui(camera_feed::Feed feed[4]) {
     // Clear the screen to a modern dark gray.
@@ -215,6 +124,10 @@ int main() {
     // Keep track of when we last sent movement info.
     unsigned int last_movement_send_time = 0;
 
+    bool debug = false;
+    DebugConsole debug_console("fira-mono.regular.ttf");
+
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -224,8 +137,26 @@ int main() {
                 running = false;
                 break;
             case SDL_KEYDOWN:
+                if (debug){
+                    if(event.key.keysym.sym == SDLK_ESCAPE){
+                        debug = false;
+                        break;
+                    }
+                    if(event.key.keysym.sym == SDLK_RETURN){
+                        //Process current command and make a new line
+                        debug_console.history.push_back(debug_console.buffer);
+                        debug_console.process(debug_console.buffer.line.substr(
+                                    debug_console.prompt.size()));
+                        debug_console.buffer = DebugConsole::DebugLine(debug_console.prompt);
+                        break;
+                    }
+                    debug_console.buffer.line += event.key.keysym.sym;
+                }
                 if (event.key.keysym.sym == SDLK_ESCAPE) {
                     running = false;
+                }
+                if (event.key.keysym.sym == DEBUG_KEY){
+                    debug = true;
                 }
                 break;
             }
@@ -300,6 +231,10 @@ int main() {
 
         // Update and draw GUI.
         do_gui(feeds);
+
+        if(debug){
+            debug_console.do_debug();
+        }
 
         // Display our buffer.
         SDL_GL_SwapWindow(window);
