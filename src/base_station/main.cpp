@@ -1,5 +1,6 @@
 #include "controller.hpp"
 #include "camera_feed.hpp"
+#include "gui.hpp"
 
 #include "../network/network.hpp"
 #include "../shared.hpp"
@@ -13,6 +14,8 @@
 
 #include <stack>
 
+// Default angular resolution (vertices / radian) to use when drawing circles.
+constexpr float ANGULAR_RES = 10.0f;
 
 // We know that our base station will have this resolution.
 const int WINDOW_WIDTH = 1920;
@@ -21,102 +24,12 @@ const int WINDOW_HEIGHT = 1080;
 // Send movement updates 3x per second.
 const int MOVMENT_SEND_INTERVAL = 1000/3;
 
-struct LayoutState {
-    int x = 0;
-    int y = 0;
-};
-
-struct Layout {
-    LayoutState state_stack[10];
-    int state_stack_len = 0;
-
-    int current_x;
-    int current_y;
-
-    void reset_x() {
-        LayoutState state = state_stack[state_stack_len - 1];
-
-        current_x = state.x;
-    }
-
-    void reset_y() {
-        LayoutState state = state_stack[state_stack_len - 1];
-
-        current_y = state.y;
-    }
-
-    void push() {
-        state_stack[state_stack_len++] = { current_x, current_y };
-    }
-
-    void pop() {
-        state_stack_len--;
-    }
-
-    void advance_x(int d) {
-        current_x += d;
-    }
-
-    void advance_y(int d) {
-        current_y += d;
-    }
-};
-
-void draw_solid_rect(float x, float y, float w, float h, float r, float g, float b) {
-    glBegin(GL_QUADS);
-
-    glColor4f(r, g, b, 1.0f);
-
-    glVertex2f(x, y);
-    glVertex2f(x + w, y);
-    glVertex2f(x + w, y + h);
-    glVertex2f(x, y + h);
-
-    glEnd();
-}
-
-void draw_textured_rect(float x, float y, float w, float h, unsigned int texture_id) {
-     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glBegin(GL_QUADS);
-
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-    glTexCoord2f(0, 0); glVertex2f(x, y);
-    glTexCoord2f(1, 0); glVertex2f(x + w, y);
-    glTexCoord2f(1, 1); glVertex2f(x + w, y + h);
-    glTexCoord2f(0, 1); glVertex2f(x, y + h);
-
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-}
-
-void do_solid_rect(Layout* layout, int width, int height, float r, float g, float b) {
-    int x = layout->current_x;
-    int y = layout->current_y;
-
-    draw_solid_rect(x, y, width, height, r, g, b);
-
-    layout->advance_x(width);
-    layout->advance_y(height);
-}
-
-void do_textured_rect(Layout* layout, int width, int height, unsigned int texture_id) {
-    int x = layout->current_x;
-    int y = layout->current_y;
-
-    draw_textured_rect(x, y, width, height, texture_id);
-
-    layout->advance_x(width);
-    layout->advance_y(height);
-}
-
 void do_gui(camera_feed::Feed feed[4]) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    Layout layout{};
+    gui::Layout layout{};
 
     // Set margin.
     layout.advance_x(20);
@@ -124,40 +37,33 @@ void do_gui(camera_feed::Feed feed[4]) {
     layout.push();
 
     // Draw the map.
-    do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
+    gui::do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
 
     layout.reset_x();
     layout.advance_y(10);
 
      // Draw the log.
-    do_solid_rect(&layout, 572, 398, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+    gui::do_solid_rect(&layout, 572, 458, 0, 0, 0);
     
     layout.reset_y();
     layout.advance_x(10);
     layout.push();
 
     // Draw the main camera feed.
-    do_textured_rect(&layout, 1298, 730, feed[0].gl_texture_id);
+    gui::do_textured_rect(&layout, 1298, 730, feed[0].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
     layout.push();
 
-    // Draw the three other camera feeds.
-     for (int i = 1; i < 4; i++) {
-        layout.reset_y();
-        do_textured_rect(&layout, 426, 240, feed[i].gl_texture_id);
+    // Draw the other camera feed.
+	layout.reset_y();
+	gui::do_textured_rect(&layout, 533, 300, feed[1].gl_texture_id);
 
-        layout.advance_x(10);
-    }
+	layout.reset_y();
+	layout.advance_x(10);
 
-    layout.pop();
-    layout.pop();
-    layout.reset_x();
-    layout.advance_y(10);
-
-    // Draw bottom bar.
-    do_solid_rect(&layout, 1880, 50, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+	gui::do_solid_rect(&layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 }
 
 int main() {
