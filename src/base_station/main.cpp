@@ -5,7 +5,7 @@
 #include "../network/network.hpp"
 #include "../shared.hpp"
 
-#include <SDL.h>
+#include <GLFW/glfw3.h>
 #include <GL/gl.h>
 
 #include <cstdio>
@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include <stack>
+#include <chrono>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -23,6 +24,15 @@ const int WINDOW_HEIGHT = 1080;
 
 // Send movement updates 3x per second.
 const int MOVMENT_SEND_INTERVAL = 1000/3;
+
+// Save the start time so we can use get_ticks.
+std::chrono::high_resolution_clock::time_point start_time;
+
+unsigned int get_ticks() {
+	auto now = std::chrono::high_resolution_clock::now();
+
+	return (unsigned int) std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+}
 
 void do_gui(camera_feed::Feed feed[4]) {
     // Clear the screen to a modern dark gray.
@@ -67,9 +77,12 @@ void do_gui(camera_feed::Feed feed[4]) {
 }
 
 int main() {
-    // Init just the video subsystem of SDL.
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr, "[!] Failed to init SDL: %s\n", SDL_GetError());
+	// Start the timer.
+	start_time = std::chrono::high_resolution_clock::now();
+
+	// Init GLFW.
+    if (!glfwInit()) {
+        fprintf(stderr, "[!] Failed to init GLFW!\n");
         return 1;
     }
 
@@ -82,11 +95,13 @@ int main() {
     }
 
     // Create a fullscreen window. Title isn't displayed, so doesn't really matter.
-    SDL_Window* window = SDL_CreateWindow("Base Station", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
+
+	// Set sticky keys mode. It makes our input work as intended.
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
     // Create an OpenGL context.
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
+	glfwMakeContextCurrent(window);
 
     // OpenGL Setup.
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -121,21 +136,12 @@ int main() {
     // Keep track of when we last sent movement info.
     unsigned int last_movement_send_time = 0;
 
-    bool running = true;
-    while (running) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT:
-                running = false;
-                break;
-            case SDL_KEYDOWN:
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    running = false;
-                }
-                break;
-            }
-        }
+    while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+			break;
+		}
 
         // Handle incoming network messages.
         network::poll_incoming(&conn);
@@ -186,8 +192,8 @@ int main() {
                 fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
                 controller_loaded = false;
             } else {
-                if (SDL_GetTicks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
-                    last_movement_send_time = SDL_GetTicks();
+                if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
+                    last_movement_send_time = get_ticks();
 
                     network::Buffer* message_buffer = network::get_outgoing_buffer();
 
@@ -201,22 +207,18 @@ int main() {
             }
         }
 
-        // Early exit if we just decided to quit.
-        if (!running) break;
-
         // Update and draw GUI.
         do_gui(feeds);
 
         // Display our buffer.
-        SDL_GL_SwapWindow(window);
+		glfwSwapBuffers(window);
 
         // Send any messages that we accumulated.
         network::drain_outgoing(&conn);
     }
 
     // Cleanup.
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+	glfwTerminate();
 
     return 0;
 }
