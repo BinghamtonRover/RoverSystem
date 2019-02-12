@@ -4,6 +4,7 @@
 
 #include <turbojpeg.h>
 
+#include <sys/ioctl.h>
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
@@ -66,13 +67,30 @@ int main() {
 			1. Process Info Locally
 			2. Send out packets
 	*/
+	fd_set fds;
+	FD_ZERO(&fds);
+	int ready_camera;
+	int max_fd = 0;
+	struct timeval tv;
+	uint8_t * frame_buffer;
+	size_t frame_size;
+	tv.tv_sec = camera::SELECT_TIMEOUT;
+	tv.tv_usec = 0;
+	for (unsigned int i = 0; i < streams.size(); i++){
+		camera::CaptureSession * cs = streams[i];
+		if (cs->fd > max_fd){
+			max_fd = cs->fd;
+		}
+		FD_SET(cs->fd,&fds);
+		
+	}	
 	while(true) {
 		/*
 			1. Process Info Locally
 				- Grabbing frames
 		*/
-
-		for (int i = 0; i < streams.size(); i++) {
+		/*
+		for (unsigned int i = 0; i < streams.size(); i++) {
 			camera::CaptureSession* cs = streams[i];
 
 			// Grab a frame.
@@ -84,6 +102,30 @@ int main() {
 					std::cout << "Camera 0: " << camera::get_error_string(err) << std::endl;
 				}
 			}
+		  */
+			ready_camera = select(max_fd + 1,&fds,NULL,NULL,&tv);
+			if ( ready_camera < 0){
+			    std::cout << camera::get_error_string(camera::Error::READ_FRAME) << std::endl;
+			}
+			camera::CaptureSession * ready_session;
+			for (unsigned int i = 0; i < streams.size(); i++){
+				if(FD_ISSET(streams[i]->fd,&fds)){
+					ready_session = streams[i];
+					ready_camera = streams[i]->fd;
+					break;
+				}
+			}
+			struct v4l2_buffer vbuf;
+			memset(&vbuf,0,sizeof(vbuf));
+			
+			vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+			vbuf.memory = V4L2_MEMORY_USERPTR;
+			if (ioctl(ready_camera, VIDIOC_DQBUF, &vbuf) != 0) {
+				std::cout << "Camera " << ready_camera << ": " << camera::get_error_string(camera::Error::READ_FRAME) << std::endl;
+			}
+			frame_buffer = (uint8_t*) vbuf.m.userptr;
+			frame_size = vbuf.bytesused;
+			ready_session->last_capture_buffer = vbuf;
 
 			// Decode the frame and encode it again to set our desired quality.
 			static uint8_t raw_buffer[CAMERA_WIDTH*CAMERA_HEIGHT*3];
@@ -96,7 +138,6 @@ int main() {
 
 			// Recompress into jpeg buffer.
 			tjCompress2(compressor, raw_buffer, CAMERA_WIDTH, 3*CAMERA_WIDTH, CAMERA_HEIGHT, TJPF_RGB, &frame_buffer, &frame_size, TJSAMP_422, 25, TJFLAG_NOREALLOC);
-
 			/*
 				2. Send out packets
 					- Create camera messages and send Camera packets
@@ -115,7 +156,7 @@ int main() {
 				uint16_t buffer_size = (j != num_buffers-1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE : frame_size%CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
 
 				network::CameraMessage message = {
-					static_cast<uint8_t>(i),              						// stream_index
+					static_cast<uint8_t>(ready_camera-3),              						// stream_index
 					static_cast<uint16_t>(frame_counter), 						// frame_index
 					static_cast<uint8_t>(j),              						// section_index
 					num_buffers,                          						// section_count
@@ -129,7 +170,7 @@ int main() {
 				network::queue_outgoing(&conn, network::MessageType::CAMERA, camera_buffer);
 			}
 
-			camera::return_buffer(cs);
+			camera::return_buffer(ready_session);
 		}
 
 		// Increment global (across all streams) frame counter. Should be ok. Should...
@@ -160,7 +201,7 @@ int main() {
 		}
 
 		network::drain_outgoing(&conn);
-	}
+	
 
 	return 0;
 }

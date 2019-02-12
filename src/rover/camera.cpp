@@ -3,6 +3,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <string.h>
+#include <iostream>
 #include <stdlib.h>
 #include <sys/select.h>
 #include <cstddef>
@@ -181,9 +182,10 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
     tv.tv_usec = 0;
 
     // Wait for the next frame. See man select(2) for more information.
-    if (select(session->fd + 1, &fds, NULL, NULL, &tv) <= 0) {
+    if ( select(session->fd + 1, &fds, NULL, NULL, &tv) <= 0 ){
         return Error::SELECT;
     }
+    
 
     // Set up the video4linux "buffer" (which points to our buffer).
     struct v4l2_buffer vbuf;
@@ -205,7 +207,6 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
 
     // Set the buffer we used!
     session->last_capture_buffer = vbuf;
-
     return Error::OK;
 }
 
