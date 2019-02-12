@@ -74,6 +74,9 @@ struct CaptureSession {
     // The file descriptor of the open camera.
     int fd;
 
+	//The id for the camera
+	int id;
+
     // The width and height of the camera.
     size_t width, height;
 
