@@ -354,6 +354,7 @@ Buffer* get_outgoing_buffer();
 */
 void return_incoming_buffer(Buffer* buffer);
 
+int get_bandwidth(Buffer* buffer);
 
 } // namespace network
 
