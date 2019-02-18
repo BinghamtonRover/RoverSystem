@@ -210,7 +210,7 @@ int main() {
             } else {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
 		    bandwidth_time_passed = get_ticks() - last_movement_send_time;
-		    round_trip_time = bandwidth_time_passed;
+		    round_trip_time = bandwidth_time_passed/1000;
                     last_movement_send_time = get_ticks();
 
                     network::Buffer* message_buffer = network::get_outgoing_buffer();
@@ -223,8 +223,8 @@ int main() {
                     network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
 		    time_passed = 1000/bandwidth_time_passed;
 		    current_bandwidth = sizeof(message)*time_passed; 
-		    printf("%f bandwidth \n",current_bandwidth);
-		    printf("%f round trip time \n",round_trip_time); 
+		    printf("%f bandwidth in bytes per second \n",current_bandwidth);
+		    printf("%f round trip time in ms \n",round_trip_time); 
                 }
             }
         }
