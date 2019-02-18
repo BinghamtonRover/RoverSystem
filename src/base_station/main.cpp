@@ -25,6 +25,9 @@ const int WINDOW_HEIGHT = 1080;
 // Send movement updates 3x per second.
 const int MOVMENT_SEND_INTERVAL = 1000/3;
 
+// Send bandwidth updates once per second
+const int BANDWIDTH_SEND_INTERVAL = 1000;
+
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
 
@@ -135,6 +138,11 @@ int main() {
 
     // Keep track of when we last sent movement info.
     unsigned int last_movement_send_time = 0;
+    unsigned int last_bandwidth_send_time = 0;
+    unsigned int total_bytes = 0;
+    double current_bandwidth = 0;
+    unsigned int bandwidth_time_passed = 0;
+    double round_trip_time = 0;
 
     while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -147,17 +155,19 @@ int main() {
         network::poll_incoming(&conn);
         
         network::Message message;
-        while (network::dequeue_incoming(&conn, &message)) {
-            switch (message.type) {
-                case network::MessageType::HEARTBEAT: {
-                    network::Buffer* outgoing = network::get_outgoing_buffer();
+
+	while (network::dequeue_incoming(&conn, &message)) {
+		total_bytes = sizeof(message);
+		bandwidth_time_passed = get_ticks();
+		switch (message.type) {
+			case network::MessageType::HEARTBEAT: {
+                   network::Buffer* outgoing = network::get_outgoing_buffer();
                     network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
                     break;
                 }
                 case network::MessageType::CAMERA: {
                     // Static buffer so we don't have to allocate and reallocate every frame.
                     static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
-
                     network::CameraMessage camera_message;
                     camera_message.data = camera_message_buffer;
                     network::deserialize(message.buffer, &camera_message);
@@ -175,16 +185,22 @@ int main() {
                 }
                 default:
                     break;
-            }
+		}
+		network::return_incoming_buffer(message.buffer);
+		if(get_ticks() - last_bandwidth_send_time > 0){
+			last_bandwidth_send_time = get_ticks();
+			current_bandwidth = total_bytes / (last_bandwidth_send_time - bandwidth_time_passed);
+			printf("%f bandwidth\n",current_bandwidth);
+		}	       
 
-			network::return_incoming_buffer(message.buffer);
+
         }
 
         if (controller_loaded) {
             // Process controller input.
             controller::Event event;
             controller::Error err;
-            
+            double time_passed;
             // Do nothing since we just want to update current values.
             while ((err = controller::poll(&event)) == controller::Error::OK) {}
 
@@ -193,6 +209,8 @@ int main() {
                 controller_loaded = false;
             } else {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
+		    bandwidth_time_passed = get_ticks() - last_movement_send_time;
+		    round_trip_time = bandwidth_time_passed;
                     last_movement_send_time = get_ticks();
 
                     network::Buffer* message_buffer = network::get_outgoing_buffer();
@@ -203,6 +221,10 @@ int main() {
                     network::serialize(message_buffer, &message);
 
                     network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
+		    time_passed = 1000/bandwidth_time_passed;
+		    current_bandwidth = sizeof(message)*time_passed; 
+		    printf("%f bandwidth \n",current_bandwidth);
+		    printf("%f round trip time \n",round_trip_time); 
                 }
             }
         }
