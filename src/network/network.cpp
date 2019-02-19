@@ -238,7 +238,7 @@ Error reconnect(Connection* conn, const char* destination_address, int destinati
         return Error::OK;
 }
 
-Error connection_Status(Connection * conn) {
+Error check_status(Connection * conn) {
   //Check if socket is closed or timed out
   //conn->socket_fd
   return network::Error::OK;

@@ -302,7 +302,7 @@ Error connect(Connection* conn, const char* destination_address, int destination
 Error reconnect(Connection* conn, const char* destination_address, int destination_port, int local_port);
 void queue_outgoing(Connection* conn, MessageType type, Buffer* buffer);
 
-Error connecion_status(Connection * conn);
+Error check_status(Connection * conn);
 
 /*
     Dequeues (pops) a message from the incoming buffer and places it in the given pointer.
