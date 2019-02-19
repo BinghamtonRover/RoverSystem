@@ -3,6 +3,7 @@
 
 #include <endian.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -223,6 +224,27 @@ Error connect(Connection* conn, const char* destination_address, int destination
         return Error::BIND_SOCKET;
     }
 
+    return Error::OK;
+}
+
+
+Error reconnect(Connection* conn, const char* destination_address, int destination_port, int local_port) {
+    close(conn->socket_fd);
+    
+    while (connect(conn, destination_address, destination_port, local_port) != network::Error::OK) {
+      sleep(4);
+    }
+
+        return Error::OK;
+}
+
+
+Error connection_status(Connection* conn) {
+    //if (conn->socket_fd == 0) {
+    // 
+    //}
+    //
+    
     return Error::OK;
 }
 
