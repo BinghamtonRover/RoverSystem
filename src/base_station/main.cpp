@@ -162,7 +162,7 @@ int main() {
 		}
 
         //Check connection status
-        network::Error connection_status = network::connection_status(&conn);
+        network::Error connection_status = network::check_status(&conn);
         if (connection_status != network::Error::OK) {
             fprintf(stderr, "[!] The socket was closed\n");
         }
