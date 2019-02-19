@@ -54,12 +54,12 @@ int main() {
 	network::Connection conn;
 
 	// Open UDP connection
-	{
+	//{
 		network::Error net_err = network::connect(&conn, "127.0.0.1", 45545, 45546);
 		if(net_err != network::Error::OK) {
 			std::cerr << "[!]Failed to connect to base station!" << std::endl;
 		}
-	}
+	//}
 
 	/*
 		MAIN LOOP
@@ -71,6 +71,12 @@ int main() {
 			1. Process Info Locally
 				- Grabbing frames
 		*/
+    
+	//	network::Error net_err = network::connect(&conn, "127.0.0.1", 45545, 45546);
+    if (true) {
+      //std::cerr << "Current connection is: " << std::endl;
+      //std::cerr << conn.socket_fd << std::endl;
+    }
 
 		for (int i = 0; i < streams.size(); i++) {
 			camera::CaptureSession* cs = streams[i];
@@ -139,10 +145,13 @@ int main() {
 		network::Message message;
 		// Receive incoming messages
 		while(network::dequeue_incoming(&conn, &message)) {
+
+      
 			switch(message.type) {
 				case network::MessageType::HEARTBEAT: {
 					network::Buffer* outgoing = network::get_outgoing_buffer();
 					network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+          printf("Recieved a hearbeat from base, sending it back\n");
 					break;
 				}
 				case network::MessageType::MOVEMENT: {
@@ -155,9 +164,13 @@ int main() {
 				default:
 					break;
 			}
+		    network::Buffer* outgoing = network::get_outgoing_buffer();
+				network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+
 
 			network::return_incoming_buffer(message.buffer);
 		}
+      
 
 		network::drain_outgoing(&conn);
 	}
