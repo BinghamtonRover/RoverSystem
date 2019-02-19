@@ -238,14 +238,10 @@ Error reconnect(Connection* conn, const char* destination_address, int destinati
         return Error::OK;
 }
 
-
-Error connection_status(Connection* conn) {
-    //if (conn->socket_fd == 0) {
-    // 
-    //}
-    //
-    
-    return Error::OK;
+Error connection_Status(Connection * conn) {
+  //Check if socket is closed or timed out
+  //conn->socket_fd
+  return network::Error::OK;
 }
 
 void queue_outgoing(Connection* conn, MessageType type, Buffer* buffer) {

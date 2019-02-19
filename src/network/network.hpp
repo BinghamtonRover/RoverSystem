@@ -288,7 +288,6 @@ struct Connection {
 */
 Error connect(Connection* conn, const char* destination_address, int destination_port, int local_port);
 
-Error connection_status(Connection* conn_port);
 /*
     Queues a message for sending. This also returns ownership of the buffer
     to the library, so it is invalid after this call.
@@ -302,6 +301,8 @@ Error connection_status(Connection* conn_port);
 */
 Error reconnect(Connection* conn, const char* destination_address, int destination_port, int local_port);
 void queue_outgoing(Connection* conn, MessageType type, Buffer* buffer);
+
+Error connecion_status(Connection * conn);
 
 /*
     Dequeues (pops) a message from the incoming buffer and places it in the given pointer.
