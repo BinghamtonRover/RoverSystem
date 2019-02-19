@@ -1,13 +1,12 @@
-#include "controller.hpp"
-#include "camera_feed.hpp"
-#include "gui.hpp"
-#include "text.hpp"
-#include "debug.hpp"
-
 #include "../network/network.hpp"
 #include "../shared.hpp"
 
-#include <SDL.h>
+#include "gui.hpp"
+#include "debug_console.hpp"
+#include "camera_feed.hpp"
+#include "controller.hpp"
+
+#include <GLFW/glfw3.h>
 #include <GL/gl.h>
 
 #include <cstdio>
@@ -18,14 +17,29 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <chrono>
 
+// Default angular resolution (vertices / radian) to use when drawing circles.
+constexpr float ANGULAR_RES = 10.0f;
 
-void do_gui(camera_feed::Feed feed[4]) {
+// Send movement updates 3x per second.
+const int MOVMENT_SEND_INTERVAL = 1000/3;
+
+// Save the start time so we can use get_ticks.
+std::chrono::high_resolution_clock::time_point start_time;
+
+unsigned int get_ticks() {
+	auto now = std::chrono::high_resolution_clock::now();
+
+	return (unsigned int) std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+}
+
+void do_gui(camera_feed::Feed feed[4], gui::Font* font) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    Layout layout{};
+    gui::Layout layout{};
 
     // Set margin.
     layout.advance_x(20);
@@ -33,46 +47,62 @@ void do_gui(camera_feed::Feed feed[4]) {
     layout.push();
 
     // Draw the map.
-    do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
+    gui::do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
 
     layout.reset_x();
     layout.advance_y(10);
 
      // Draw the log.
-    do_solid_rect(&layout, 572, 398, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+    gui::do_solid_rect(&layout, 572, 458, 0, 0, 0);
     
     layout.reset_y();
     layout.advance_x(10);
     layout.push();
 
     // Draw the main camera feed.
-    do_textured_rect(&layout, 1298, 730, feed[0].gl_texture_id);
+    gui::do_textured_rect(&layout, 1298, 730, feed[0].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
     layout.push();
 
-    // Draw the three other camera feeds.
-     for (int i = 1; i < 4; i++) {
-        layout.reset_y();
-        do_textured_rect(&layout, 426, 240, feed[i].gl_texture_id);
+    // Draw the other camera feed.
+	layout.reset_y();
+	gui::do_textured_rect(&layout, 533, 300, feed[1].gl_texture_id);
 
-        layout.advance_x(10);
-    }
+	layout.reset_y();
+	layout.advance_x(10);
 
-    layout.pop();
-    layout.pop();
-    layout.reset_x();
-    layout.advance_y(10);
+	gui::do_solid_rect(&layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
-    // Draw bottom bar.
-    do_solid_rect(&layout, 1880, 50, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+	// Draw the debug overlay.
+	layout = {};
+	gui::debug_console::do_debug(&layout, font);
+}
+
+void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
+	if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+		if (codepoint < 128) {
+			gui::debug_console::handle_input((char) codepoint);
+		}
+	}
+}
+
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+		if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+			gui::debug_console::handle_keypress(key, mods);
+		}
+	}
 }
 
 int main() {
-    // Init just the video subsystem of SDL.
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr, "[!] Failed to init SDL: %s\n", SDL_GetError());
+	// Start the timer.
+	start_time = std::chrono::high_resolution_clock::now();
+
+	// Init GLFW.
+    if (!glfwInit()) {
+        fprintf(stderr, "[!] Failed to init GLFW!\n");
         return 1;
     }
 
@@ -85,18 +115,26 @@ int main() {
     }
 
     // Create a fullscreen window. Title isn't displayed, so doesn't really matter.
-    SDL_Window* window = SDL_CreateWindow("Base Station", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+	GLFWwindow* window = glfwCreateWindow(gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
+
+	// Update the window so everyone can access it.
+	gui::state.window = window;
+
+	// Set sticky keys mode. It makes our input work as intended.
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+
+	glfwSetCharCallback(window, glfw_character_callback);
+	glfwSetKeyCallback(window, glfw_key_callback);
 
     // Create an OpenGL context.
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
+	glfwMakeContextCurrent(window);
 
     // OpenGL Setup.
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glViewport(0, 0, gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0.5);
+    glOrtho(0, gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, 0, 0, 0.5);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -124,43 +162,24 @@ int main() {
     // Keep track of when we last sent movement info.
     unsigned int last_movement_send_time = 0;
 
-    bool debug = false;
-    DebugConsole debug_console("fira-mono.regular.ttf");
+	gui::Font debug_console_font;
+	bool loaded_font = gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
+	if (!loaded_font) {
+		fprintf(stderr, "[!] Failed to load debug console font!\n");
+		return 1;
+	}
 
+	gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
 
-    bool running = true;
-    while (running) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT:
-                running = false;
-                break;
-            case SDL_KEYDOWN:
-                if (debug){
-                    if(event.key.keysym.sym == SDLK_ESCAPE){
-                        debug = false;
-                        break;
-                    }
-                    if(event.key.keysym.sym == SDLK_RETURN){
-                        //Process current command and make a new line
-                        debug_console.history.push_back(debug_console.buffer);
-                        debug_console.process(debug_console.buffer.line.substr(
-                                    debug_console.prompt.size()));
-                        debug_console.buffer = DebugConsole::DebugLine(debug_console.prompt);
-                        break;
-                    }
-                    debug_console.buffer.line += event.key.keysym.sym;
-                }
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    running = false;
-                }
-                if (event.key.keysym.sym == DEBUG_KEY){
-                    debug = true;
-                }
-                break;
-            }
-        }
+    while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+			if (!gui::state.show_debug_console) {
+				gui::state.show_debug_console = true;
+				gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+			}
+		}
 
         // Handle incoming network messages.
         network::poll_incoming(&conn);
@@ -211,8 +230,8 @@ int main() {
                 fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
                 controller_loaded = false;
             } else {
-                if (SDL_GetTicks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
-                    last_movement_send_time = SDL_GetTicks();
+                if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
+                    last_movement_send_time = get_ticks();
 
                     network::Buffer* message_buffer = network::get_outgoing_buffer();
 
@@ -226,26 +245,18 @@ int main() {
             }
         }
 
-        // Early exit if we just decided to quit.
-        if (!running) break;
-
         // Update and draw GUI.
-        do_gui(feeds);
-
-        if(debug){
-            debug_console.do_debug();
-        }
+        do_gui(feeds, &debug_console_font);
 
         // Display our buffer.
-        SDL_GL_SwapWindow(window);
+		glfwSwapBuffers(window);
 
         // Send any messages that we accumulated.
         network::drain_outgoing(&conn);
     }
 
     // Cleanup.
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+	glfwTerminate();
 
     return 0;
 }
