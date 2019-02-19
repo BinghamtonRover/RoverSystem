@@ -1,0 +1,6 @@
+February 18, 2019:
+-Added logging_framework.h
+-Added Logging_framework.cpp
+-Adjusted error statements in main.cpp to be sent to log
+-Adjusted main.cpp to set debug on/off toggle to TAB key
+-***Still needs testing and possible debugging***

@@ -13,6 +13,8 @@
 
 #include <stack>
 
+#include "logging_framework.h"
+
 
 // We know that our base station will have this resolution.
 const int WINDOW_WIDTH = 1920;
@@ -161,9 +163,20 @@ void do_gui(camera_feed::Feed feed[4]) {
 }
 
 int main() {
+    //Creating the logging framework
+    logging_framework* log = new logging_framework();
+    log->adjustLogLevel(INFO_LOG_LEVEL);
+    log->callPrint("Information: This is the BU Mars Rover\n");
+
     // Init just the video subsystem of SDL.
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr, "[!] Failed to init SDL: %s\n", SDL_GetError());
+        char* temp;
+        temp = SDL_GetError();
+        log->adjustLogLevel(ERROR_LOG_LEVEL);
+        log->callPrint("[!] Error: Failed to init SDL: ");
+        log->callPrint(temp);
+        log->callPrint(". Exiting program\n");
+        //fprintf(stderr, "[!] Failed to init SDL: %s\n", SDL_GetError());
         return 1;
     }
 
@@ -172,7 +185,9 @@ int main() {
     if (controller::init("/dev/input/js0") == controller::Error::OK) {
         controller_loaded = true;
     } else {
-        printf("No controller.\n");
+        log->adjustLogLevel(WARN_LOG_LEVEL);
+        log->callPrint("Warning: No controller detected\n");
+        //printf("No controller.\n");
     }
 
     // Create a fullscreen window. Title isn't displayed, so doesn't really matter.
@@ -207,13 +222,18 @@ int main() {
     {
         network::Error err = network::connect(&conn, "127.0.0.1", 45546, 45545);
         if (err != network::Error::OK) {
-            fprintf(stderr, "[!] Failed to connect to rover!\n");
+            //Sending error report to logging framework
+            log->adjustLogLevel(ERROR_LOG_LEVEL);
+            log->callPrint("[!]Error: Failed to connect to rover. Exiting program\n");
+            //fprintf(stderr, "[!] Failed to connect to rover!\n");
             return 1;
         }
     }
 
     // Keep track of when we last sent movement info.
     unsigned int last_movement_send_time = 0;
+
+    log->adjustLogLevel(TRACE_LOG_LEVEL);
 
     bool running = true;
     while (running) {
@@ -227,8 +247,30 @@ int main() {
                 if (event.key.keysym.sym == SDLK_ESCAPE) {
                     running = false;
                 }
+                if(event.key.keysym.sym == SDLK_TAB){
+                    if(log->getDebugStatus() == false){
+                        log->setDebugStatus(true);
+                        log->setDebugMessageStatus(false);
+                    }
+                    if(log->getDebugStatus() == true){
+                        log->setDebugStatus(false);
+                        log->setDebugMessageStatus(false);
+                    }
+                }
                 break;
             }
+        }
+
+        //condition for turning on and off debug mode
+        if(log->getDebugStatus() == true && log->getDebugMessageStatus() == false){
+            log->adjustLogLevel(DEBUG_LOG_LEVEL);
+            log->callPrint("Debug mode has been turned on\n");
+            log->setDebugMessageStatus(true);
+        }
+        if(log->getDebugStatus() == false && log->getDebugMessageStatus() == false){
+            log->callPrint("Debug mode has been turned off\n");
+            log->adjustLogLevel(TRACE_LOG_LEVEL);
+            log->setDebugMessageStatus(true);
         }
 
         // Handle incoming network messages.
@@ -256,7 +298,11 @@ int main() {
 
                     camera_feed::Error err = camera_feed::handle_section(&feeds[camera_message.stream_index], camera_message.data, camera_message.size, camera_message.section_index, camera_message.section_count, camera_message.frame_index);
                     if (err != camera_feed::Error::OK) {
-                        fprintf(stderr, "[!] Failed to handle frame section!\n");
+                        //sending error message to log
+                        log->adjustLogLevel(ERROR_LOG_LEVEL);
+                        log->callPrint("[!] Error: Failed to handle frame section\n");
+                        log->adjustLogLevel(TRACE_LOG_LEVEL);
+                        //fprintf(stderr, "[!] Failed to handle frame section!\n");
                     }
 
                     break;
@@ -277,7 +323,11 @@ int main() {
             while ((err = controller::poll(&event)) == controller::Error::OK) {}
 
             if (err != controller::Error::DONE) {
-                fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
+                //sending info to log
+                log->adjustLogLevel(ERROR_LOG_LEVEL);
+                log->callPrint("[!] Error: Failed to read from the controller. Disabling\n");
+                log->adjustLogLevel(TRACE_LOG_LEVEL);
+                //fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
                 controller_loaded = false;
             } else {
                 if (SDL_GetTicks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
