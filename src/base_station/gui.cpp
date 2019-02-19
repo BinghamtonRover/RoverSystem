@@ -14,9 +14,15 @@
 
 namespace gui {
 
-void load_font(Font* font, const char* file_name, int size) {
+gui::GlobalState state;
+
+bool load_font(Font* font, const char* file_name, int size) {
     // Open the font file for reading.
     FILE* font_file = fopen(file_name, "r");
+
+	if (!font_file) {
+		return false;
+	}
 
     // We need some space to store our font. Let's just try this much.
     // This could be dynamically allocated to be the size of the file, but I'm lazy.
@@ -24,7 +30,9 @@ void load_font(Font* font, const char* file_name, int size) {
     static unsigned char font_buffer[1 << 20];
 
     // Read the whole file.
-    fread(font_buffer, 1, 1 << 20, font_file);
+    if (fread(font_buffer, 1, 1 << 20, font_file) == 0) {
+		return false;
+	}
 
     fclose(font_file);
 
@@ -56,7 +64,7 @@ void load_font(Font* font, const char* file_name, int size) {
     //      8) an array in which information about each character is stored (the location of the character in the bitmap).
     if (stbtt_BakeFontBitmap(font_buffer, 0, size, font_bitmap, 1024, 1024, 32, 127 - 32, font->baked_chars) < 0) {
         fprintf(stderr, "[!] Failed to load font bitmap!\n");
-        exit(1);
+		return false;
     }
 
     // Unfortunately, OpenGL is incapable of rendering the above bitmap (it doesn't recognize the format).
@@ -88,7 +96,7 @@ void load_font(Font* font, const char* file_name, int size) {
 
 	// Last thing: we need to set the max height.
 	int max_height = 0;
-	for (char c = 32; c <= 127; c++) {
+	for (char c = 32; c < 127; c++) {
 		float x = 0, y = 0;
 		stbtt_aligned_quad q;
 		stbtt_GetBakedQuad(font->baked_chars, 1024, 1024, c - 32, &x, &y, &q, 1);
@@ -99,6 +107,8 @@ void load_font(Font* font, const char* file_name, int size) {
 	}
 
 	font->max_height = max_height;
+
+	return true;
 }
 
 // Returns the width of the given string if it were rendered with the given

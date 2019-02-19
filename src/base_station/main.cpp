@@ -1,9 +1,10 @@
-#include "controller.hpp"
-#include "camera_feed.hpp"
-#include "gui.hpp"
-
 #include "../network/network.hpp"
 #include "../shared.hpp"
+
+#include "gui.hpp"
+#include "debug_console.hpp"
+#include "camera_feed.hpp"
+#include "controller.hpp"
 
 #include <GLFW/glfw3.h>
 #include <GL/gl.h>
@@ -13,6 +14,9 @@
 #include <cstdint>
 
 #include <stack>
+#include <string>
+#include <vector>
+#include <iostream>
 #include <chrono>
 
 #include <iostream>
@@ -21,10 +25,6 @@
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
-
-// We know that our base station will have this resolution.
-const int WINDOW_WIDTH = 1920;
-const int WINDOW_HEIGHT = 1080;
 
 // Send movement updates 3x per second.
 const int MOVMENT_SEND_INTERVAL = 1000/3;
@@ -53,7 +53,7 @@ unsigned int get_ticks() {
 	return (unsigned int) std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
 }
 
-void do_gui(camera_feed::Feed feed[4]) {
+void do_gui(camera_feed::Feed feed[4], gui::Font* font) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -93,6 +93,26 @@ void do_gui(camera_feed::Feed feed[4]) {
 	layout.advance_x(10);
 
 	gui::do_solid_rect(&layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+
+	// Draw the debug overlay.
+	layout = {};
+	gui::debug_console::do_debug(&layout, font);
+}
+
+void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
+	if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+		if (codepoint < 128) {
+			gui::debug_console::handle_input((char) codepoint);
+		}
+	}
+}
+
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+		if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+			gui::debug_console::handle_keypress(key, mods);
+		}
+	}
 }
 
 // Represents a font.
@@ -348,20 +368,26 @@ int main() {
 
 
     // Create a fullscreen window. Title isn't displayed, so doesn't really matter.
-	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
+	GLFWwindow* window = glfwCreateWindow(gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
+
+	// Update the window so everyone can access it.
+	gui::state.window = window;
 
 	// Set sticky keys mode. It makes our input work as intended.
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+
+	glfwSetCharCallback(window, glfw_character_callback);
+	glfwSetKeyCallback(window, glfw_key_callback);
 
     // Create an OpenGL context.
 	glfwMakeContextCurrent(window);
 
     // OpenGL Setup.
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glViewport(0, 0, gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0.5);
+    glOrtho(0, gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, 0, 0, 0.5);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -393,11 +419,23 @@ int main() {
     // Keep track of when we last sent movement info.
     unsigned int last_movement_send_time = 0;
 
+	gui::Font debug_console_font;
+	bool loaded_font = gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
+	if (!loaded_font) {
+		fprintf(stderr, "[!] Failed to load debug console font!\n");
+		return 1;
+	}
+
+	gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
+
     while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-			break;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+			if (!gui::state.show_debug_console) {
+				gui::state.show_debug_console = true;
+				gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+			}
 		}
 
         // Handle incoming network messages.
@@ -465,8 +503,7 @@ int main() {
         }
 
         // Update and draw GUI.
-        do_gui(feeds);\
-
+        do_gui(feeds, &debug_console_font);
 	glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
 	//Draw log text now
@@ -477,7 +514,7 @@ int main() {
 	}
 
         // Display our buffer.
-		glfwSwapBuffers(window);
+	glfwSwapBuffers(window);
 
         // Send any messages that we accumulated.
         network::drain_outgoing(&conn);
