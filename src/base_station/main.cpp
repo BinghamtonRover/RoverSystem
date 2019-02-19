@@ -15,6 +15,9 @@
 #include <stack>
 #include <chrono>
 
+#include <sys/types.h>
+#include <unistd.h>
+
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
 
@@ -22,8 +25,14 @@ constexpr float ANGULAR_RES = 10.0f;
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
+
 // Send movement updates 3x per second.
 const int MOVMENT_SEND_INTERVAL = 1000/3;
+// Heartbeat interval
+const int HEARTBEAT_SEND_INTERVAL = 1000/3;
+const int RECONNECT_INTERVAL = 1000/3;
+// Amount of time between heartbeats until disconnection flag is set
+const int DISCONNECT_TIMER = 5000;
 
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
@@ -123,6 +132,8 @@ int main() {
     camera_feed::init_feed(&feeds[2], 1920, 1080);
     camera_feed::init_feed(&feeds[3], 1920, 1080);
 
+    
+    network::Error connection_status = network::Error::DISCONNECT;
     // Initialize network functionality.
     network::Connection conn;
     {
@@ -131,10 +142,17 @@ int main() {
             fprintf(stderr, "[!] Failed to connect to rover!\n");
             return 1;
         }
+        connection_status = network::Error::OK;
     }
 
-    // Keep track of when we last sent movement info.
+    // Keep track of when we last sent movement and heartbeat info.
     unsigned int last_movement_send_time = 0;
+    // Last time heartbeat was sent
+    unsigned int last_heartbeat_send_time = 0;
+    // Last time heartbeat was recieved 
+    unsigned int last_heart_received = 0;
+    // Last time reconection was attempted
+    unsigned int last_reconnect_attempt = 0;
 
     while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -143,15 +161,43 @@ int main() {
 			break;
 		}
 
+        //Check connection status
+        network::Error connection_status = network::connection_status(&conn);
+        if (connection_status != network::Error::OK) {
+            fprintf(stderr, "[!] The socket was closed\n");
+        }
+
+        //Handle network missing heartbeat disconnect 
+        if (get_ticks()-last_heart_received >= DISCONNECT_TIMER){
+            last_heart_received = get_ticks();
+            fprintf(stderr, "[!] Too much time has passed since the last heartbeat\n");
+           
+        }
+
+        if (connection_status == network::Error::DISCONNECT && last_reconnect_attempt > RECONNECT_INTERVAL) {
+           last_reconnect_attempt = get_ticks();
+           network::Error reconnect = network::reconnect(&conn, "127.0.0.1", 45546, 45545);
+            if (reconnect != network::Error::OK) {
+              fprintf(stderr, "[!] Failed to reconnect\n");
+            } else {
+              fprintf(stderr, "[!] Reconnection succeeded\n");
+              connection_status = network::Error::OK;
+            }
+        }
+
+
         // Handle incoming network messages.
         network::poll_incoming(&conn);
         
         network::Message message;
+        //network::Buffer* outgo = network::get_outgoing_buffer();
+        //network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgo);
+
         while (network::dequeue_incoming(&conn, &message)) {
             switch (message.type) {
                 case network::MessageType::HEARTBEAT: {
-                    network::Buffer* outgoing = network::get_outgoing_buffer();
-                    network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+                    printf("Recieved a heartbeat response from rover\n");
+                    last_heart_received = get_ticks();
                     break;
                 }
                 case network::MessageType::CAMERA: {
@@ -177,9 +223,15 @@ int main() {
                     break;
             }
 
-			network::return_incoming_buffer(message.buffer);
+			    network::return_incoming_buffer(message.buffer);
         }
+        // Reset heartbeat send time 
+        if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
+            last_heartbeat_send_time = get_ticks();
+        }
+        
 
+      
         if (controller_loaded) {
             // Process controller input.
             controller::Event event;
@@ -195,16 +247,18 @@ int main() {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
                     last_movement_send_time = get_ticks();
 
-                    network::Buffer* message_buffer = network::get_outgoing_buffer();
 
+                    fprintf(stderr, "[!] Sending controller data\n");
+                    network::Buffer* message_buffer = network::get_outgoing_buffer();
                     network::MovementMessage message;
                     message.left = -controller::get_value(controller::Axis::JS_LEFT_Y);
                     message.right = -controller::get_value(controller::Axis::JS_RIGHT_Y);
                     network::serialize(message_buffer, &message);
 
                     network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
-                }
+                }      
             }
+
         }
 
         // Update and draw GUI.
@@ -214,6 +268,7 @@ int main() {
 		glfwSwapBuffers(window);
 
         // Send any messages that we accumulated.
+        fprintf(stderr, "[!] Draining queue.\n");
         network::drain_outgoing(&conn);
     }
 
