@@ -31,7 +31,6 @@
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
 
-
 // We know that our base station will have this resolution.
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
@@ -186,22 +185,22 @@ void testLog()
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-
-int main() {
-    //Creating the logging framework
-    logging_framework* log = new logging_framework();
+int main()
+{
+    // Creating the logging framework
+    logging_framework *log = new logging_framework();
     log->adjustLogLevel(INFO_LOG_LEVEL);
     log->callPrint("Information: This is the BU Mars Rover\n");
 
     // Init just the video subsystem of SDL.
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        char* temp;
+        char *temp;
         temp = SDL_GetError();
         log->adjustLogLevel(ERROR_LOG_LEVEL);
         log->callPrint("[!] Error: Failed to init SDL: ");
         log->callPrint(temp);
         log->callPrint(". Exiting program\n");
-        //fprintf(stderr, "[!] Failed to init SDL: %s\n", SDL_GetError());
+        // fprintf(stderr, "[!] Failed to init SDL: %s\n", SDL_GetError());
     }
     // Start the timer.
     start_time = std::chrono::high_resolution_clock::now();
@@ -219,7 +218,7 @@ int main() {
     } else {
         log->adjustLogLevel(WARN_LOG_LEVEL);
         log->callPrint("Warning: No controller detected\n");
-        //printf("No controller.\n");
+        // printf("No controller.\n");
     }
 
     // Fill the Log with test messages
@@ -267,10 +266,10 @@ int main() {
     {
         network::Error err = network::connect(&conn, "127.0.0.1", 45546, 45545);
         if (err != network::Error::OK) {
-            //Sending error report to logging framework
+            // Sending error report to logging framework
             log->adjustLogLevel(ERROR_LOG_LEVEL);
             log->callPrint("[!]Error: Failed to connect to rover. Exiting program\n");
-            //fprintf(stderr, "[!] Failed to connect to rover!\n");
+            // fprintf(stderr, "[!] Failed to connect to rover!\n");
             return 1;
         }
         connection_status = network::Error::OK;
@@ -299,178 +298,181 @@ int main() {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
-            case SDL_QUIT:
-                running = false;
-                break;
-            case SDL_KEYDOWN:
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                case SDL_QUIT:
                     running = false;
-                }
-                if(event.key.keysym.sym == SDLK_TAB){
-                    if(log->getDebugStatus() == false){
-                        log->setDebugStatus(true);
-                        log->setDebugMessageStatus(false);
-                    }
-                    if(log->getDebugStatus() == true){
-                        log->setDebugStatus(false);
-                        log->setDebugMessageStatus(false);
-                    }
-                }
-                break;
-
-    gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
-
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            if (!gui::state.show_debug_console) {
-                gui::state.show_debug_console = true;
-                gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
-            }
-        }
-
-        // Check connection status
-        network::Error connection_status = network::check_status(&conn);
-        if (connection_status != network::Error::OK) {
-            fprintf(stderr, "[!] The socket was closed\n");
-        }
-
-        // Handle network missing heartbeat disconnect
-        if (get_ticks() - last_heart_received >= DISCONNECT_TIMER) {
-            last_heart_received = get_ticks();
-            fprintf(stderr, "[!] Too much time has passed since the last heartbeat\n");
-        }
-
-        if (connection_status == network::Error::DISCONNECT && last_reconnect_attempt > RECONNECT_INTERVAL) {
-            last_reconnect_attempt = get_ticks();
-            network::Error reconnect = network::reconnect(&conn, "127.0.0.1", 45546, 45545);
-            if (reconnect != network::Error::OK) {
-                fprintf(stderr, "[!] Failed to reconnect\n");
-            } else {
-                fprintf(stderr, "[!] Reconnection succeeded\n");
-                connection_status = network::Error::OK;
-            }
-        }
-
-        //condition for turning on and off debug mode
-        if(log->getDebugStatus() == true && log->getDebugMessageStatus() == false){
-            log->adjustLogLevel(DEBUG_LOG_LEVEL);
-            log->callPrint("Debug mode has been turned on\n");
-            log->setDebugMessageStatus(true);
-        }
-        if(log->getDebugStatus() == false && log->getDebugMessageStatus() == false){
-            log->callPrint("Debug mode has been turned off\n");
-            log->adjustLogLevel(TRACE_LOG_LEVEL);
-            log->setDebugMessageStatus(true);
-        }
-
-        // Handle incoming network messages.
-        network::poll_incoming(&conn);
-
-        network::Message message;
-        // network::Buffer* outgo = network::get_outgoing_buffer();
-        // network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgo);
-
-        while (network::dequeue_incoming(&conn, &message)) {
-            switch (message.type) {
-                case network::MessageType::HEARTBEAT: {
-                    printf("Recieved a heartbeat response from rover\n");
-                    last_heart_received = get_ticks();
                     break;
-                }
-                case network::MessageType::CAMERA: {
-                    // Static buffer so we don't have to allocate and reallocate every frame.
-                    static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+                case SDL_KEYDOWN:
+                    if (event.key.keysym.sym == SDLK_ESCAPE) {
+                        running = false;
+                    }
+                    if (event.key.keysym.sym == SDLK_TAB) {
+                        if (log->getDebugStatus() == false) {
+                            log->setDebugStatus(true);
+                            log->setDebugMessageStatus(false);
+                        }
+                        if (log->getDebugStatus() == true) {
+                            log->setDebugStatus(false);
+                            log->setDebugMessageStatus(false);
+                        }
+                    }
+                    break;
 
-                    network::CameraMessage camera_message;
-                    camera_message.data = camera_message_buffer;
-                    network::deserialize(message.buffer, &camera_message);
+                    gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
 
-                    if (camera_message.stream_index > 4) {
-                        break;
+                    while (!glfwWindowShouldClose(window)) {
+                        glfwPollEvents();
+
+                        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                            if (!gui::state.show_debug_console) {
+                                gui::state.show_debug_console = true;
+                                gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+                            }
+                        }
+
+                        // Check connection status
+                        network::Error connection_status = network::check_status(&conn);
+                        if (connection_status != network::Error::OK) {
+                            fprintf(stderr, "[!] The socket was closed\n");
+                        }
+
+                        // Handle network missing heartbeat disconnect
+                        if (get_ticks() - last_heart_received >= DISCONNECT_TIMER) {
+                            last_heart_received = get_ticks();
+                            fprintf(stderr, "[!] Too much time has passed since the last heartbeat\n");
+                        }
+
+                        if (connection_status == network::Error::DISCONNECT &&
+                            last_reconnect_attempt > RECONNECT_INTERVAL) {
+                            last_reconnect_attempt = get_ticks();
+                            network::Error reconnect = network::reconnect(&conn, "127.0.0.1", 45546, 45545);
+                            if (reconnect != network::Error::OK) {
+                                fprintf(stderr, "[!] Failed to reconnect\n");
+                            } else {
+                                fprintf(stderr, "[!] Reconnection succeeded\n");
+                                connection_status = network::Error::OK;
+                            }
+                        }
+
+                        // condition for turning on and off debug mode
+                        if (log->getDebugStatus() == true && log->getDebugMessageStatus() == false) {
+                            log->adjustLogLevel(DEBUG_LOG_LEVEL);
+                            log->callPrint("Debug mode has been turned on\n");
+                            log->setDebugMessageStatus(true);
+                        }
+                        if (log->getDebugStatus() == false && log->getDebugMessageStatus() == false) {
+                            log->callPrint("Debug mode has been turned off\n");
+                            log->adjustLogLevel(TRACE_LOG_LEVEL);
+                            log->setDebugMessageStatus(true);
+                        }
+
+                        // Handle incoming network messages.
+                        network::poll_incoming(&conn);
+
+                        network::Message message;
+                        // network::Buffer* outgo = network::get_outgoing_buffer();
+                        // network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgo);
+
+                        while (network::dequeue_incoming(&conn, &message)) {
+                            switch (message.type) {
+                                case network::MessageType::HEARTBEAT: {
+                                    printf("Recieved a heartbeat response from rover\n");
+                                    last_heart_received = get_ticks();
+                                    break;
+                                }
+                                case network::MessageType::CAMERA: {
+                                    // Static buffer so we don't have to allocate and reallocate every frame.
+                                    static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+
+                                    network::CameraMessage camera_message;
+                                    camera_message.data = camera_message_buffer;
+                                    network::deserialize(message.buffer, &camera_message);
+
+                                    if (camera_message.stream_index > 4) {
+                                        break;
+                                    }
+
+                                    camera_feed::Error err = camera_feed::handle_section(
+                                        &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
+                                        camera_message.section_index, camera_message.section_count,
+                                        camera_message.frame_index);
+                                    if (err != camera_feed::Error::OK) {
+                                        // sending error message to log
+                                        log->adjustLogLevel(ERROR_LOG_LEVEL);
+                                        log->callPrint("[!] Error: Failed to handle frame section\n");
+                                        log->adjustLogLevel(TRACE_LOG_LEVEL);
+                                        // fprintf(stderr, "[!] Failed to handle frame section!\n");
+                                    }
+
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+
+                            network::return_incoming_buffer(message.buffer);
+                        }
+                        // Reset heartbeat send time
+                        if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
+                            last_heartbeat_send_time = get_ticks();
+                        }
+
+                        if (controller_loaded) {
+                            // Process controller input.
+                            controller::Event event;
+                            controller::Error err;
+
+                            // Do nothing since we just want to update current values.
+                            while ((err = controller::poll(&event)) == controller::Error::OK) {
+                            }
+
+                            if (err != controller::Error::DONE) {
+                                // sending info to log
+                                log->adjustLogLevel(ERROR_LOG_LEVEL);
+                                log->callPrint("[!] Error: Failed to read from the controller. Disabling\n");
+                                log->adjustLogLevel(TRACE_LOG_LEVEL);
+                                // fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
+                                controller_loaded = false;
+                            } else {
+                                if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
+                                    last_movement_send_time = get_ticks();
+                                    fprintf(stderr, "[!] Sending controller data\n");
+                                    network::Buffer *message_buffer = network::get_outgoing_buffer();
+                                    network::MovementMessage message;
+                                    message.left = -controller::get_value(controller::Axis::JS_LEFT_Y);
+                                    message.right = -controller::get_value(controller::Axis::JS_RIGHT_Y);
+                                    network::serialize(message_buffer, &message);
+
+                                    network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
+                                }
+                            }
+                        }
+
+                        // Update and draw GUI.
+                        do_gui(feeds, &debug_console_font);
+                        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+
+                        // Init the font
+                        gui::Font font;
+                        gui::load_font(&font, "res/F25_Bank_Printer.ttf", 100);
+
+                        // Draw log text now
+                        for (unsigned int i = 0; i < logMessages.size(); i++) {
+                            const char *cstr = logMessages.at(i).c_str();
+                            glColor4f(red.at(i), green.at(i), blue.at(i), alpha.at(i));
+                            gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5, LOG_Y + LOG_THICKNESS + 5 + 30 * i,
+                                           20);
+                        }
+
+                        // Display our buffer.
+                        glfwSwapBuffers(window);
+
+                        // Send any messages that we accumulated.
+                        fprintf(stderr, "[!] Draining queue.\n");
+                        network::drain_outgoing(&conn);
                     }
 
-                    camera_feed::Error err = camera_feed::handle_section(
-                        &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
-                        camera_message.section_index, camera_message.section_count, camera_message.frame_index);
-                    if (err != camera_feed::Error::OK) {
-                        //sending error message to log
-                        log->adjustLogLevel(ERROR_LOG_LEVEL);
-                        log->callPrint("[!] Error: Failed to handle frame section\n");
-                        log->adjustLogLevel(TRACE_LOG_LEVEL);
-                        //fprintf(stderr, "[!] Failed to handle frame section!\n");
-                    }
+                    // Cleanup.
+                    glfwTerminate();
 
-                    break;
-                }
-                default:
-                    break;
+                    return 0;
             }
-
-            network::return_incoming_buffer(message.buffer);
-        }
-        // Reset heartbeat send time
-        if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
-            last_heartbeat_send_time = get_ticks();
-        }
-
-        if (controller_loaded) {
-            // Process controller input.
-            controller::Event event;
-            controller::Error err;
-
-            // Do nothing since we just want to update current values.
-            while ((err = controller::poll(&event)) == controller::Error::OK) {
-            }
-
-            if (err != controller::Error::DONE) {
-                //sending info to log
-                log->adjustLogLevel(ERROR_LOG_LEVEL);
-                log->callPrint("[!] Error: Failed to read from the controller. Disabling\n");
-                log->adjustLogLevel(TRACE_LOG_LEVEL);
-                //fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
-                controller_loaded = false;
-            } else {
-                if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
-                    last_movement_send_time = get_ticks();
-                    fprintf(stderr, "[!] Sending controller data\n");
-                    network::Buffer *message_buffer = network::get_outgoing_buffer();
-                    network::MovementMessage message;
-                    message.left = -controller::get_value(controller::Axis::JS_LEFT_Y);
-                    message.right = -controller::get_value(controller::Axis::JS_RIGHT_Y);
-                    network::serialize(message_buffer, &message);
-
-                    network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
-                }
-            }
-        }
-
-        // Update and draw GUI.
-        do_gui(feeds, &debug_console_font);
-        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-
-        // Init the font
-        gui::Font font;
-        gui::load_font(&font, "res/F25_Bank_Printer.ttf", 100);
-
-        // Draw log text now
-        for (unsigned int i = 0; i < logMessages.size(); i++) {
-            const char *cstr = logMessages.at(i).c_str();
-            glColor4f(red.at(i), green.at(i), blue.at(i), alpha.at(i));
-            gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5, LOG_Y + LOG_THICKNESS + 5 + 30 * i, 20);
-        }
-
-        // Display our buffer.
-        glfwSwapBuffers(window);
-
-        // Send any messages that we accumulated.
-        fprintf(stderr, "[!] Draining queue.\n");
-        network::drain_outgoing(&conn);
-    }
-
-    // Cleanup.
-    glfwTerminate();
-
-    return 0;
-}
