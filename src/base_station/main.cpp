@@ -41,9 +41,6 @@ const int RECONNECT_INTERVAL = 1000 / 3;
 // Amount of time between heartbeats until disconnection flag is set
 const int DISCONNECT_TIMER = 5000;
 
-// Send movement updates 3x per second.
-const int MOVMENT_SEND_INTERVAL = 1000 / 3;
-
 // List of messages the log displays
 std::vector<std::string> logMessages;
 
