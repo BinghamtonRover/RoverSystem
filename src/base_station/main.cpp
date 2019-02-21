@@ -5,6 +5,7 @@
 #include "controller.hpp"
 #include "debug_console.hpp"
 #include "gui.hpp"
+#include "logging_framework.h"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -185,12 +186,21 @@ void testLog()
 
 int main()
 {
+    // Creating the logging framework
+    logging_framework *log = new logging_framework();
+    log->adjustLogLevel(INFO_LOG_LEVEL);
+    log->callPrint("Information: This is the BU Mars Rover\n");
+
     // Start the timer.
     start_time = std::chrono::high_resolution_clock::now();
 
     // Init GLFW.
     if (!glfwInit()) {
-        fprintf(stderr, "[!] Failed to init GLFW!\n");
+        GLenum temp = glGetError();
+        log->adjustLogLevel(ERROR_LOG_LEVEL);
+        log->callPrint("[!] Error: Failed to init GLFW: ");
+        log->callPrint((char *)glGetString(temp));
+        log->callPrint(". Exiting program\n");
         return 1;
     }
 
@@ -199,7 +209,8 @@ int main()
     if (controller::init("/dev/input/js0") == controller::Error::OK) {
         controller_loaded = true;
     } else {
-        printf("No controller.\n");
+        log->adjustLogLevel(WARN_LOG_LEVEL);
+        log->callPrint("Warning: No controller detected\n");
     }
 
     // Fill the Log with test messages
@@ -247,11 +258,15 @@ int main()
     {
         network::Error err = network::connect(&conn, "127.0.0.1", 45546, 45545);
         if (err != network::Error::OK) {
-            fprintf(stderr, "[!] Failed to connect to rover!\n");
+            // Sending error report to logging framework
+            log->adjustLogLevel(ERROR_LOG_LEVEL);
+            log->callPrint("[!]Error: Failed to connect to rover. Exiting program\n");
             return 1;
         }
         connection_status = network::Error::OK;
     }
+
+    log->adjustLogLevel(TRACE_LOG_LEVEL);
 
     // Keep track of when we last sent movement and heartbeat info.
     unsigned int last_movement_send_time = 0;
@@ -279,6 +294,26 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
+        } else if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS) {
+            if (!log->getDebugStatus()) {
+                log->setDebugStatus(true);
+                log->setDebugMessageStatus(false);
+            } else {
+                log->setDebugStatus(false);
+                log->setDebugMessageStatus(false);
+            }
+        }
+
+        // condition for turning on and off debug mode
+        if (log->getDebugStatus() && !log->getDebugMessageStatus()) {
+            log->adjustLogLevel(DEBUG_LOG_LEVEL);
+            log->callPrint("Debug mode has been turned on\n");
+            log->setDebugMessageStatus(true);
+        }
+        if (!log->getDebugStatus() && !log->getDebugMessageStatus()) {
+            log->callPrint("Debug mode has been turned off\n");
+            log->adjustLogLevel(TRACE_LOG_LEVEL);
+            log->setDebugMessageStatus(true);
         }
 
         // Check connection status
@@ -334,7 +369,10 @@ int main()
                         &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
                         camera_message.section_index, camera_message.section_count, camera_message.frame_index);
                     if (err != camera_feed::Error::OK) {
-                        fprintf(stderr, "[!] Failed to handle frame section!\n");
+                        // sending error message to log
+                        log->adjustLogLevel(ERROR_LOG_LEVEL);
+                        log->callPrint("[!] Error: Failed to handle frame section\n");
+                        log->adjustLogLevel(TRACE_LOG_LEVEL);
                     }
 
                     break;
@@ -360,7 +398,9 @@ int main()
             }
 
             if (err != controller::Error::DONE) {
-                fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
+                log->adjustLogLevel(ERROR_LOG_LEVEL);
+                log->callPrint("[!] Error: Failed to read from the controller. Disabling\n");
+                log->adjustLogLevel(TRACE_LOG_LEVEL);
                 controller_loaded = false;
             } else {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
