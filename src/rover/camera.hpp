@@ -1,8 +1,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <stdint.h>
 #include <cstddef>
+#include <stdint.h>
 
 #include <linux/videodev2.h>
 
@@ -44,7 +44,8 @@
     ```
 */
 
-namespace camera {
+namespace camera
+{
 
 // The number of buffers to use while capturing frames.
 // Since each buffer corresponds to a single frame, this value represents
@@ -62,15 +63,17 @@ const uint32_t PIXEL_FORMAT = V4L2_PIX_FMT_MJPEG;
 const int SELECT_TIMEOUT = 2;
 
 // Represents a buffer that has a size.
-struct Buffer {
+struct Buffer
+{
     size_t size;
-    uint8_t* data;
+    uint8_t *data;
 };
 
 // Represents an open capture session for a specific camera.
 // Contains all buffers, file descriptors, and other information
 // corresponding to the session.
-struct CaptureSession {
+struct CaptureSession
+{
     // The file descriptor of the open camera.
     int fd;
 
@@ -84,7 +87,7 @@ struct CaptureSession {
     Buffer buffers[NUM_BUFFERS];
 
     // A buffer to use when capturing frames.
-    uint8_t* frame_buffer;
+    uint8_t *frame_buffer;
 
     // The last buffer we used to capture a frame.
     struct v4l2_buffer last_capture_buffer;
@@ -103,28 +106,17 @@ struct CaptureSession {
     This allows us to define the names only once, and establish an enum
     for the errors as well as string values for easy printing/logging.
 */
-#define ERROR_DEF(X) \
-    X(OK), \
-    X(OPEN), \
-    X(QUERY_CAPABILITIES), \
-    X(NO_VIDEOCAPTURE), \
-    X(NO_STREAMING), \
-    X(QUERY_FORMAT), \
-    X(SET_FORMAT), \
-    X(UNSUPPORTED_FORMAT), \
-    X(UNSUPPORTED_RESOLUTION), \
-    X(REQUEST_BUFFERS), \
-    X(LINK_BUFFERS), \
-    X(START_STREAM), \
-    X(SELECT), \
-    X(READ_FRAME), \
-    X(PREPARE_BUFFER)
+#define ERROR_DEF(X)                                                                                                   \
+    X(OK), X(OPEN), X(QUERY_CAPABILITIES), X(NO_VIDEOCAPTURE), X(NO_STREAMING), X(QUERY_FORMAT), X(SET_FORMAT),        \
+        X(UNSUPPORTED_FORMAT), X(UNSUPPORTED_RESOLUTION), X(REQUEST_BUFFERS), X(LINK_BUFFERS), X(START_STREAM),        \
+        X(SELECT), X(READ_FRAME), X(PREPARE_BUFFER)
 
 /*
     Enum definition for the error values.
 */
 #define X(name) name
-enum class Error {
+enum class Error
+{
     ERROR_DEF(X)
 };
 #undef X
@@ -134,10 +126,10 @@ enum class Error {
 
     Arguments:
         error: The error for which a string is expected.
-    
+
     Returns a string which represents the given error.
 */
-const char* get_error_string(Error error);
+const char *get_error_string(Error error);
 
 /*
     Opens a capture session with the given width and height, using the camera
@@ -150,7 +142,7 @@ const char* get_error_string(Error error);
         session: The session struct used to maintain session state.
         device_filepath: The file path of the camera device (/dev/video<n>, where n = 0, 1, ...).
         width, height: The capture resolution.
-    
+
     Returns:
         Error::OK on success, and a suitable error on failure:
             Error::OPEN: Failed to open the camera device file.
@@ -164,19 +156,19 @@ const char* get_error_string(Error error);
             Error::REQUEST_BUFFERS: Failed to request the ability to use our buffers.
             Error::LINK_BUFFERS: Failed to link our buffers to the device.
 */
-Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height);
+Error open(CaptureSession *session, const char *device_filepath, size_t width, size_t height);
 
 /*
     Starts the capture session. The device will begin to offer frames.
 
     Parameters:
         session: The capture session. This must first be initialized with `open`.
-    
+
     Returns:
         Error::OK on success, and a suitable error on failure:
             Error::START_STREAM: Failed to start the capture stream.
 */
-Error start(CaptureSession* session);
+Error start(CaptureSession *session);
 
 /*
     Grabs the next frame from the camera device.
@@ -185,7 +177,7 @@ Error start(CaptureSession* session);
 
     Parameters:
         session: The capture session. `start` must be called prior to this function.
-    
+
     Return Parameters:
         out_frame: The frame data (on success).
         out_frame_size: The size of the captured frame (on success).
@@ -196,7 +188,7 @@ Error start(CaptureSession* session);
             Error::SELECT: Failed while waiting to read from the device.
             Error::READ_FRAME: Failed to read raw frame data.
 */
-Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame_size);
+Error grab_frame(CaptureSession *session, uint8_t **out_frame, size_t *out_frame_size);
 
 /*
     Returns the frame buffer so that V4L can reuse it. MUST be called after
@@ -204,12 +196,12 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
 
     Parameters:
         session: The capture session.
-    
+
     Returns:
         Error::OK on success and a suitable error on failure:
             Error::PREPARE_BUFFER: Failed to prepare the buffer for another read.
 */
-Error return_buffer(CaptureSession* session);
+Error return_buffer(CaptureSession *session);
 
 /*
     Stops capture and closes the device.
@@ -217,7 +209,7 @@ Error return_buffer(CaptureSession* session);
     Parameters:
         session: The capture session.
 */
-void close(CaptureSession* session);
+void close(CaptureSession *session);
 
 } // namespace camera
 

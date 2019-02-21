@@ -8,9 +8,16 @@ It is assumed that the x86_64 architecture is being targeted.
 
 ## Library Installation
 
-### SDL
+### GLFW
 
-The base station uses SDL to perform window / input management. Install it with `sudo apt install libsdl2-dev`.
+The base station uses GLFW to perform window / input management. Install as follows:
+
+1. Download and extract the source code.
+2. From inside the source dir, run `cmake .`.
+3. Run `make`.
+4. Run `sudo make install`.
+
+That is it. 
 
 ### OpenGL
 

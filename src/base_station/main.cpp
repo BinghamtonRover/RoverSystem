@@ -1,19 +1,35 @@
-#include "controller.hpp"
-#include "camera_feed.hpp"
-
 #include "../network/network.hpp"
 #include "../shared.hpp"
 
-#include <SDL.h>
-#include <GL/gl.h>
+#include "camera_feed.hpp"
+#include "controller.hpp"
+#include "debug_console.hpp"
+#include "gui.hpp"
 
+#include <GL/gl.h>
+#include <GLFW/glfw3.h>
+
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstdint>
 
+#include <chrono>
+#include <iostream>
 #include <stack>
+#include <string>
+#include <vector>
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 #include "logging_framework.h"
+
+#include <sys/types.h>
+#include <unistd.h>
+
+// Default angular resolution (vertices / radian) to use when drawing circles.
+constexpr float ANGULAR_RES = 10.0f;
 
 
 // We know that our base station will have this resolution.
@@ -21,104 +37,45 @@ const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
 // Send movement updates 3x per second.
-const int MOVMENT_SEND_INTERVAL = 1000/3;
+const int MOVMENT_SEND_INTERVAL = 1000 / 3;
+// Heartbeat interval
+const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
+const int RECONNECT_INTERVAL = 1000 / 3;
+// Amount of time between heartbeats until disconnection flag is set
+const int DISCONNECT_TIMER = 5000;
 
-struct LayoutState {
-    int x = 0;
-    int y = 0;
-};
+// List of messages the log displays
+std::vector<std::string> logMessages;
 
-struct Layout {
-    LayoutState state_stack[10];
-    int state_stack_len = 0;
+// Stuff for the box of the log
+const int LOG_X = 20;
+const int LOG_Y = 600;
+const int LOG_WIDTH = 400;
+const int LOG_HEIGHT = 400;
+const int LOG_THICKNESS = 2;
+const unsigned int MAX_CHARS_IN_A_LINE = 32;
+const unsigned int MAX_LINES = 15;
 
-    int current_x;
-    int current_y;
+// Four parallel lists that are also parallel to logMessages
+std::vector<float> red, green, blue, alpha;
 
-    void reset_x() {
-        LayoutState state = state_stack[state_stack_len - 1];
+// Save the start time so we can use get_ticks.
+std::chrono::high_resolution_clock::time_point start_time;
 
-        current_x = state.x;
-    }
+unsigned int get_ticks()
+{
+    auto now = std::chrono::high_resolution_clock::now();
 
-    void reset_y() {
-        LayoutState state = state_stack[state_stack_len - 1];
-
-        current_y = state.y;
-    }
-
-    void push() {
-        state_stack[state_stack_len++] = { current_x, current_y };
-    }
-
-    void pop() {
-        state_stack_len--;
-    }
-
-    void advance_x(int d) {
-        current_x += d;
-    }
-
-    void advance_y(int d) {
-        current_y += d;
-    }
-};
-
-void draw_solid_rect(float x, float y, float w, float h, float r, float g, float b) {
-    glBegin(GL_QUADS);
-
-    glColor4f(r, g, b, 1.0f);
-
-    glVertex2f(x, y);
-    glVertex2f(x + w, y);
-    glVertex2f(x + w, y + h);
-    glVertex2f(x, y + h);
-
-    glEnd();
+    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
 }
 
-void draw_textured_rect(float x, float y, float w, float h, unsigned int texture_id) {
-     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glBegin(GL_QUADS);
-
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-    glTexCoord2f(0, 0); glVertex2f(x, y);
-    glTexCoord2f(1, 0); glVertex2f(x + w, y);
-    glTexCoord2f(1, 1); glVertex2f(x + w, y + h);
-    glTexCoord2f(0, 1); glVertex2f(x, y + h);
-
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-}
-
-void do_solid_rect(Layout* layout, int width, int height, float r, float g, float b) {
-    int x = layout->current_x;
-    int y = layout->current_y;
-
-    draw_solid_rect(x, y, width, height, r, g, b);
-
-    layout->advance_x(width);
-    layout->advance_y(height);
-}
-
-void do_textured_rect(Layout* layout, int width, int height, unsigned int texture_id) {
-    int x = layout->current_x;
-    int y = layout->current_y;
-
-    draw_textured_rect(x, y, width, height, texture_id);
-
-    layout->advance_x(width);
-    layout->advance_y(height);
-}
-
-void do_gui(camera_feed::Feed feed[4]) {
+void do_gui(camera_feed::Feed feed[4], gui::Font *font)
+{
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    Layout layout{};
+    gui::Layout layout{};
 
     // Set margin.
     layout.advance_x(20);
@@ -126,41 +83,109 @@ void do_gui(camera_feed::Feed feed[4]) {
     layout.push();
 
     // Draw the map.
-    do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
+    gui::do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
 
     layout.reset_x();
     layout.advance_y(10);
 
-     // Draw the log.
-    do_solid_rect(&layout, 572, 398, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
-    
+    // Draw the log.
+    gui::do_solid_rect(&layout, 572, 458, 0, 0, 0);
+
     layout.reset_y();
     layout.advance_x(10);
     layout.push();
 
     // Draw the main camera feed.
-    do_textured_rect(&layout, 1298, 730, feed[0].gl_texture_id);
+    gui::do_textured_rect(&layout, 1298, 730, feed[0].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
     layout.push();
 
-    // Draw the three other camera feeds.
-     for (int i = 1; i < 4; i++) {
-        layout.reset_y();
-        do_textured_rect(&layout, 426, 240, feed[i].gl_texture_id);
+    // Draw the other camera feed.
+    layout.reset_y();
+    gui::do_textured_rect(&layout, 533, 300, feed[1].gl_texture_id);
 
-        layout.advance_x(10);
-    }
+    layout.reset_y();
+    layout.advance_x(10);
 
-    layout.pop();
-    layout.pop();
-    layout.reset_x();
-    layout.advance_y(10);
+    gui::do_solid_rect(&layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
-    // Draw bottom bar.
-    do_solid_rect(&layout, 1880, 50, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+    // Draw the debug overlay.
+    layout = {};
+    gui::debug_console::do_debug(&layout, font);
 }
+
+void glfw_character_callback(GLFWwindow *window, unsigned int codepoint)
+{
+    if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+        if (codepoint < 128) {
+            gui::debug_console::handle_input((char)codepoint);
+        }
+    }
+}
+
+void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+            gui::debug_console::handle_keypress(key, mods);
+        }
+    }
+}
+
+// Helper method for addMessage
+void removeOldMessages()
+{
+    while (logMessages.size() > MAX_LINES) {
+        logMessages.erase(logMessages.begin());
+        red.erase(red.begin());
+        green.erase(green.begin());
+        blue.erase(blue.begin());
+        alpha.erase(alpha.begin());
+    }
+}
+
+// addMessage("Message Here", red, green, blue, alpha)
+void addMessage(std::string m, float r, float g, float b, float a)
+{
+    while (m.length() > 0) {
+        if (m.length() <= MAX_CHARS_IN_A_LINE) {
+            logMessages.push_back(m);
+            red.push_back(r);
+            green.push_back(g);
+            blue.push_back(b);
+            alpha.push_back(a);
+            break;
+        } else {
+            logMessages.push_back(m.substr(0, MAX_CHARS_IN_A_LINE));
+            red.push_back(r);
+            green.push_back(g);
+            blue.push_back(b);
+            alpha.push_back(a);
+            m.erase(0, MAX_CHARS_IN_A_LINE);
+        }
+    }
+    removeOldMessages();
+}
+
+// Test method to make sure the log is working properly
+void testLog()
+{
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("I'm BLUE da ba dee da ba die, da ba dee, da ba die, da ba dee da ba die!", 0.0f, 0.0f, 1.0f, 1.0f);
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Error: The rover is literally on fire oh god oh geez oh no", 1.0f, 0.0f, 0.0f, 1.0f);
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Life: Exists", 0.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Greek Philosophers: HmmmmMMMMMMMMmm", 0.0f, 1.0f, 1.0f, 1.0f);
+    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
+}
+
 
 int main() {
     //Creating the logging framework
@@ -177,6 +202,13 @@ int main() {
         log->callPrint(temp);
         log->callPrint(". Exiting program\n");
         //fprintf(stderr, "[!] Failed to init SDL: %s\n", SDL_GetError());
+    }
+    // Start the timer.
+    start_time = std::chrono::high_resolution_clock::now();
+
+    // Init GLFW.
+    if (!glfwInit()) {
+        fprintf(stderr, "[!] Failed to init GLFW!\n");
         return 1;
     }
 
@@ -190,19 +222,31 @@ int main() {
         //printf("No controller.\n");
     }
 
+    // Fill the Log with test messages
+    testLog();
+
     // Create a fullscreen window. Title isn't displayed, so doesn't really matter.
-    SDL_Window* window = SDL_CreateWindow("Base Station", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+    GLFWwindow *window =
+        glfwCreateWindow(gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
+
+    // Update the window so everyone can access it.
+    gui::state.window = window;
+
+    // Set sticky keys mode. It makes our input work as intended.
+    glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+
+    glfwSetCharCallback(window, glfw_character_callback);
+    glfwSetKeyCallback(window, glfw_key_callback);
 
     // Create an OpenGL context.
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
+    glfwMakeContextCurrent(window);
 
     // OpenGL Setup.
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glViewport(0, 0, gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0.5);
+    glOrtho(0, gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, 0, 0, 0.5);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -217,6 +261,7 @@ int main() {
     camera_feed::init_feed(&feeds[2], 1920, 1080);
     camera_feed::init_feed(&feeds[3], 1920, 1080);
 
+    network::Error connection_status = network::Error::DISCONNECT;
     // Initialize network functionality.
     network::Connection conn;
     {
@@ -228,10 +273,24 @@ int main() {
             //fprintf(stderr, "[!] Failed to connect to rover!\n");
             return 1;
         }
+        connection_status = network::Error::OK;
     }
 
-    // Keep track of when we last sent movement info.
+    // Keep track of when we last sent movement and heartbeat info.
     unsigned int last_movement_send_time = 0;
+    // Last time heartbeat was sent
+    unsigned int last_heartbeat_send_time = 0;
+    // Last time heartbeat was recieved
+    unsigned int last_heart_received = 0;
+    // Last time reconection was attempted
+    unsigned int last_reconnect_attempt = 0;
+
+    gui::Font debug_console_font;
+    bool loaded_font = gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
+    if (!loaded_font) {
+        fprintf(stderr, "[!] Failed to load debug console font!\n");
+        return 1;
+    }
 
     log->adjustLogLevel(TRACE_LOG_LEVEL);
 
@@ -258,6 +317,39 @@ int main() {
                     }
                 }
                 break;
+
+    gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
+
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            if (!gui::state.show_debug_console) {
+                gui::state.show_debug_console = true;
+                gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+            }
+        }
+
+        // Check connection status
+        network::Error connection_status = network::check_status(&conn);
+        if (connection_status != network::Error::OK) {
+            fprintf(stderr, "[!] The socket was closed\n");
+        }
+
+        // Handle network missing heartbeat disconnect
+        if (get_ticks() - last_heart_received >= DISCONNECT_TIMER) {
+            last_heart_received = get_ticks();
+            fprintf(stderr, "[!] Too much time has passed since the last heartbeat\n");
+        }
+
+        if (connection_status == network::Error::DISCONNECT && last_reconnect_attempt > RECONNECT_INTERVAL) {
+            last_reconnect_attempt = get_ticks();
+            network::Error reconnect = network::reconnect(&conn, "127.0.0.1", 45546, 45545);
+            if (reconnect != network::Error::OK) {
+                fprintf(stderr, "[!] Failed to reconnect\n");
+            } else {
+                fprintf(stderr, "[!] Reconnection succeeded\n");
+                connection_status = network::Error::OK;
             }
         }
 
@@ -275,13 +367,16 @@ int main() {
 
         // Handle incoming network messages.
         network::poll_incoming(&conn);
-        
+
         network::Message message;
+        // network::Buffer* outgo = network::get_outgoing_buffer();
+        // network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgo);
+
         while (network::dequeue_incoming(&conn, &message)) {
             switch (message.type) {
                 case network::MessageType::HEARTBEAT: {
-                    network::Buffer* outgoing = network::get_outgoing_buffer();
-                    network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+                    printf("Recieved a heartbeat response from rover\n");
+                    last_heart_received = get_ticks();
                     break;
                 }
                 case network::MessageType::CAMERA: {
@@ -296,7 +391,9 @@ int main() {
                         break;
                     }
 
-                    camera_feed::Error err = camera_feed::handle_section(&feeds[camera_message.stream_index], camera_message.data, camera_message.size, camera_message.section_index, camera_message.section_count, camera_message.frame_index);
+                    camera_feed::Error err = camera_feed::handle_section(
+                        &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
+                        camera_message.section_index, camera_message.section_count, camera_message.frame_index);
                     if (err != camera_feed::Error::OK) {
                         //sending error message to log
                         log->adjustLogLevel(ERROR_LOG_LEVEL);
@@ -311,16 +408,21 @@ int main() {
                     break;
             }
 
-			network::return_incoming_buffer(message.buffer);
+            network::return_incoming_buffer(message.buffer);
+        }
+        // Reset heartbeat send time
+        if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
+            last_heartbeat_send_time = get_ticks();
         }
 
         if (controller_loaded) {
             // Process controller input.
             controller::Event event;
             controller::Error err;
-            
+
             // Do nothing since we just want to update current values.
-            while ((err = controller::poll(&event)) == controller::Error::OK) {}
+            while ((err = controller::poll(&event)) == controller::Error::OK) {
+            }
 
             if (err != controller::Error::DONE) {
                 //sending info to log
@@ -330,11 +432,10 @@ int main() {
                 //fprintf(stderr, "[!] Failed to read from the controller! Disabling.\n");
                 controller_loaded = false;
             } else {
-                if (SDL_GetTicks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
-                    last_movement_send_time = SDL_GetTicks();
-
-                    network::Buffer* message_buffer = network::get_outgoing_buffer();
-
+                if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
+                    last_movement_send_time = get_ticks();
+                    fprintf(stderr, "[!] Sending controller data\n");
+                    network::Buffer *message_buffer = network::get_outgoing_buffer();
                     network::MovementMessage message;
                     message.left = -controller::get_value(controller::Axis::JS_LEFT_Y);
                     message.right = -controller::get_value(controller::Axis::JS_RIGHT_Y);
@@ -345,22 +446,31 @@ int main() {
             }
         }
 
-        // Early exit if we just decided to quit.
-        if (!running) break;
-
         // Update and draw GUI.
-        do_gui(feeds);
+        do_gui(feeds, &debug_console_font);
+        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+
+        // Init the font
+        gui::Font font;
+        gui::load_font(&font, "res/F25_Bank_Printer.ttf", 100);
+
+        // Draw log text now
+        for (unsigned int i = 0; i < logMessages.size(); i++) {
+            const char *cstr = logMessages.at(i).c_str();
+            glColor4f(red.at(i), green.at(i), blue.at(i), alpha.at(i));
+            gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5, LOG_Y + LOG_THICKNESS + 5 + 30 * i, 20);
+        }
 
         // Display our buffer.
-        SDL_GL_SwapWindow(window);
+        glfwSwapBuffers(window);
 
         // Send any messages that we accumulated.
+        fprintf(stderr, "[!] Draining queue.\n");
         network::drain_outgoing(&conn);
     }
 
     // Cleanup.
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    glfwTerminate();
 
     return 0;
 }
