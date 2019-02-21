@@ -196,11 +196,10 @@ int main()
 
     // Init GLFW.
     if (!glfwInit()) {
-        char *temp;
-        temp = SDL_GetError();
+        GLenum temp = glGetError();
         log->adjustLogLevel(ERROR_LOG_LEVEL);
         log->callPrint("[!] Error: Failed to init GLFW: ");
-        log->callPrint(temp);
+        log->callPrint((char *)glGetString(temp));
         log->callPrint(". Exiting program\n");
         return 1;
     }
