@@ -222,7 +222,7 @@ constexpr MessageTypeInfo message_type_info[] = {[(uint8_t)MessageType::HEARTBEA
 enum class Error
 {
     OK,
-
+    DISCONNECT,
     OPEN_SOCKET,
     BIND_SOCKET,
     READ_PACKET,
@@ -304,7 +304,11 @@ Error connect(Connection *conn, const char *destination_address, int destination
         type: The type of the message to be sent.
         buffer: A buffer containing the message body. A buffer must be obtained from `get_outgoing_buffer`.
 */
+
+Error reconnect(Connection *conn, const char *destination_address, int destination_port, int local_port);
 void queue_outgoing(Connection *conn, MessageType type, Buffer *buffer);
+
+Error check_status(Connection *conn);
 
 /*
     Dequeues (pops) a message from the incoming buffer and places it in the given pointer.

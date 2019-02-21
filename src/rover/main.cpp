@@ -55,12 +55,12 @@ int main()
     network::Connection conn;
 
     // Open UDP connection
-    {
-        network::Error net_err = network::connect(&conn, "127.0.0.1", 45545, 45546);
-        if (net_err != network::Error::OK) {
-            std::cerr << "[!]Failed to connect to base station!" << std::endl;
-        }
+    //{
+    network::Error net_err = network::connect(&conn, "127.0.0.1", 45545, 45546);
+    if (net_err != network::Error::OK) {
+        std::cerr << "[!]Failed to connect to base station!" << std::endl;
     }
+    //}
 
     /*
             MAIN LOOP
@@ -147,6 +147,7 @@ int main()
                 case network::MessageType::HEARTBEAT: {
                     network::Buffer *outgoing = network::get_outgoing_buffer();
                     network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+                    printf("Recieved a hearbeat from base, sending it back\n");
                     break;
                 }
                 case network::MessageType::MOVEMENT: {
@@ -160,6 +161,8 @@ int main()
                     break;
             }
 
+            network::Buffer *outgoing = network::get_outgoing_buffer();
+            network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
             network::return_incoming_buffer(message.buffer);
         }
 
