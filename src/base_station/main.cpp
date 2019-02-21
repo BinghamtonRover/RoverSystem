@@ -63,6 +63,7 @@ std::vector<float> red, green, blue, alpha;
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
 
+
 unsigned int get_ticks() {
     auto now = std::chrono::high_resolution_clock::now();
 
@@ -72,6 +73,7 @@ unsigned int get_ticks() {
 }
 
 void do_gui(camera_feed::Feed feed[4], gui::Font *font) {
+
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -219,6 +221,7 @@ int main() {
     // Fill the Log with test messages
     testLog();
 
+
     // Create a fullscreen window. Title isn't displayed, so doesn't really
     // matter.
     GLFWwindow *window =
@@ -291,6 +294,7 @@ int main() {
     gui::Font debug_console_font;
     bool loaded_font =
             gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
+
     if (!loaded_font) {
         fprintf(stderr, "[!] Failed to load debug console font!\n");
         return 1;
@@ -337,6 +341,7 @@ int main() {
         // Handle network missing heartbeat disconnect
         if (get_ticks() - last_heart_received >= DISCONNECT_TIMER) {
             last_heart_received = get_ticks();
+
             fprintf(stderr,
                     "[!] Too much time has passed since the last heartbeat\n");
         }
@@ -346,6 +351,7 @@ int main() {
             last_reconnect_attempt = get_ticks();
             network::Error reconnect =
                     network::reconnect(&conn, "127.0.0.1", 45546, 45545);
+
             if (reconnect != network::Error::OK) {
                 fprintf(stderr, "[!] Failed to reconnect\n");
             } else {
@@ -385,9 +391,9 @@ int main() {
                     }
 
                     camera_feed::Error err = camera_feed::handle_section(
-                            &feeds[camera_message.stream_index], camera_message.data,
-                            camera_message.size, camera_message.section_index,
-                            camera_message.section_count, camera_message.frame_index);
+                        &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
+                        camera_message.section_index, camera_message.section_count, camera_message.frame_index);
+
                     if (err != camera_feed::Error::OK) {
                         // sending error message to log
                         log->adjustLogLevel(ERROR_LOG_LEVEL);
@@ -402,6 +408,7 @@ int main() {
             }
 
             network::return_incoming_buffer(message.buffer);
+
             if (get_ticks() - last_bandwidth_send_time > 0) {
                 last_bandwidth_send_time = get_ticks();
                 current_bandwidth =
@@ -410,6 +417,7 @@ int main() {
             }
 
             network::return_incoming_buffer(message.buffer);
+
         }
         // Reset heartbeat send time
         if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
@@ -420,7 +428,9 @@ int main() {
             // Process controller input.
             controller::Event event;
             controller::Error err;
+
             double time_passed;
+
 
             // Do nothing since we just want to update current values.
             while ((err = controller::poll(&event)) == controller::Error::OK) {
@@ -428,15 +438,14 @@ int main() {
 
             if (err != controller::Error::DONE) {
                 log->adjustLogLevel(ERROR_LOG_LEVEL);
-                log->callPrint(
-                        "[!] Error: Failed to read from the controller. Disabling\n");
+                log->callPrint("[!] Error: Failed to read from the controller. Disabling\n");
                 log->adjustLogLevel(TRACE_LOG_LEVEL);
                 controller_loaded = false;
             } else {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
                     bandwidth_time_passed = get_ticks() - last_movement_send_time;
                     round_trip_time = bandwidth_time_passed / 1000;
-
+                    
                     last_movement_send_time = get_ticks();
                     fprintf(stderr, "[!] Sending controller data\n");
                     network::Buffer *message_buffer = network::get_outgoing_buffer();
@@ -467,8 +476,9 @@ int main() {
         for (unsigned int i = 0; i < logMessages.size(); i++) {
             const char *cstr = logMessages.at(i).c_str();
             glColor4f(red.at(i), green.at(i), blue.at(i), alpha.at(i));
-            gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5,
-                           LOG_Y + LOG_THICKNESS + 5 + 30 * i, 20);
+
+            gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5, LOG_Y + LOG_THICKNESS + 5 + 30 * i, 20);
+
         }
 
         // Display our buffer.
