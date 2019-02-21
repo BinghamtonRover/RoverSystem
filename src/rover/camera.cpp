@@ -1,28 +1,29 @@
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/select.h>
 #include <cstddef>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
+#include <unistd.h>
 
 #include "camera.hpp"
 
-namespace camera {
+namespace camera
+{
 
 // List of string names for the error values.
 #define X(name) #name
-const char* error_names[] = {
-    ERROR_DEF(X)
-};
+const char *error_names[] = {ERROR_DEF(X)};
 #undef X
 
-const char* get_error_string(Error error) {
+const char *get_error_string(Error error)
+{
     return error_names[(int)error];
 }
 
-Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height) {
+Error open(CaptureSession *session, const char *device_filepath, size_t width, size_t height)
+{
     // Set the width and height.
     session->width = width;
     session->height = height;
@@ -45,10 +46,10 @@ Error open(CaptureSession* session, const char* device_filepath, size_t width, s
     }
 
     // Keep the camera's name just in case we want this later.
-    strcpy(session->name, (char*) cap.card);
+    strcpy(session->name, (char *)cap.card);
 
     // Also keep the camera's hardware location.
-    strcpy(session->hardware_location, (char*) cap.bus_info);
+    strcpy(session->hardware_location, (char *)cap.bus_info);
 
     // Does the camera support video capture?
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
@@ -97,7 +98,7 @@ Error open(CaptureSession* session, const char* device_filepath, size_t width, s
     }
 
     // Record the frame size (in bytes).
-    session->image_size = (size_t) fmt.fmt.pix.sizeimage;
+    session->image_size = (size_t)fmt.fmt.pix.sizeimage;
 
     //
     // Buffer Initialization.
@@ -139,7 +140,7 @@ Error open(CaptureSession* session, const char* device_filepath, size_t width, s
         // Which buffer is this?
         vbuf.index = i;
         // Pointer to buffer's data.
-        vbuf.m.userptr = (unsigned long) session->buffers[i].data;
+        vbuf.m.userptr = (unsigned long)session->buffers[i].data;
         // How big is the buffer?
         vbuf.length = session->buffers[i].size;
 
@@ -155,7 +156,8 @@ Error open(CaptureSession* session, const char* device_filepath, size_t width, s
     return Error::OK;
 }
 
-Error start(CaptureSession* session) {
+Error start(CaptureSession *session)
+{
     // Set an enum value to let V4L2 know that we want to start video capture.
     enum v4l2_buf_type buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -167,7 +169,8 @@ Error start(CaptureSession* session) {
     return Error::OK;
 }
 
-Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame_size) {
+Error grab_frame(CaptureSession *session, uint8_t **out_frame, size_t *out_frame_size)
+{
     // Set up structs for the select call.
     fd_set fds;
     struct timeval tv;
@@ -188,7 +191,7 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
     // Set up the video4linux "buffer" (which points to our buffer).
     struct v4l2_buffer vbuf;
     memset(&vbuf, 0, sizeof(vbuf));
-    
+
     vbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     vbuf.memory = V4L2_MEMORY_USERPTR;
 
@@ -198,7 +201,7 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
     }
 
     // Get the pointer to our frame data.
-    *out_frame = (uint8_t*) vbuf.m.userptr;
+    *out_frame = (uint8_t *)vbuf.m.userptr;
 
     // Get the actual size of the frame data.
     *out_frame_size = vbuf.bytesused;
@@ -209,7 +212,8 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
     return Error::OK;
 }
 
-Error return_buffer(CaptureSession* session) {
+Error return_buffer(CaptureSession *session)
+{
     // Reset the buffer we just used.
     if (ioctl(session->fd, VIDIOC_QBUF, &session->last_capture_buffer) != 0) {
         return Error::PREPARE_BUFFER;
@@ -218,7 +222,8 @@ Error return_buffer(CaptureSession* session) {
     return Error::OK;
 }
 
-void close(CaptureSession* session) {
+void close(CaptureSession *session)
+{
     ::close(session->fd);
 
     for (int i = 0; i < NUM_BUFFERS; i++) {

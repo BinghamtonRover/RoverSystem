@@ -1,17 +1,18 @@
-#include <cstring>
 #include <cerrno>
+#include <cstring>
 
-#include <endian.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <endian.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "network.hpp"
 
 namespace network
 {
 
-void init_buffer(Buffer* buffer, bool incoming) {
+void init_buffer(Buffer *buffer, bool incoming)
+{
     buffer->size = 0;
     buffer->idx = 0;
     buffer->incoming = incoming;
@@ -21,8 +22,8 @@ void init_buffer(Buffer* buffer, bool incoming) {
 // Primitive serialization functions.
 //
 
-template <>
-void serialize(Buffer* buffer, uint8_t v) {
+template <> void serialize(Buffer *buffer, uint8_t v)
+{
     // See network.hpp for info about the VALUE macro.
     VALUE(buffer->buffer, buffer->idx, uint8_t) = v;
 
@@ -31,92 +32,92 @@ void serialize(Buffer* buffer, uint8_t v) {
     buffer->size += 1;
 }
 
-template <>
-void serialize(Buffer* buffer, int8_t v) {
+template <> void serialize(Buffer *buffer, int8_t v)
+{
     // Interpret the bytes of v as if it were unsigned.
-    serialize(buffer, *reinterpret_cast<uint8_t*>(&v));
+    serialize(buffer, *reinterpret_cast<uint8_t *>(&v));
 }
 
-template <>
-void serialize(Buffer* buffer, uint16_t v) {
+template <> void serialize(Buffer *buffer, uint16_t v)
+{
     // Convert the value to big endian form before sending.
     VALUE(buffer->buffer, buffer->idx, uint16_t) = htobe16(v);
     buffer->idx += 2;
     buffer->size += 2;
 }
 
-template <>
-void serialize(Buffer* buffer, int16_t v) {
-    serialize(buffer, *reinterpret_cast<uint16_t*>(&v));
+template <> void serialize(Buffer *buffer, int16_t v)
+{
+    serialize(buffer, *reinterpret_cast<uint16_t *>(&v));
 }
 
-template <>
-void serialize(Buffer* buffer, uint32_t v) {
+template <> void serialize(Buffer *buffer, uint32_t v)
+{
     VALUE(buffer->buffer, buffer->idx, uint32_t) = htobe32(v);
     buffer->idx += 4;
     buffer->size += 4;
 }
 
-template <>
-void serialize(Buffer* buffer, int32_t v) {
-    serialize(buffer, *reinterpret_cast<uint32_t*>(&v));
+template <> void serialize(Buffer *buffer, int32_t v)
+{
+    serialize(buffer, *reinterpret_cast<uint32_t *>(&v));
 }
 
 //
 // Primitive deserialization functions.
 //
 
-template <>
-void deserialize(Buffer* buffer, uint8_t* v) {
+template <> void deserialize(Buffer *buffer, uint8_t *v)
+{
     *v = VALUE(buffer->buffer, buffer->idx, uint8_t);
     buffer->idx += 1;
 }
 
-template <>
-void deserialize(Buffer* buffer, int8_t* v) {
-    deserialize(buffer, reinterpret_cast<uint8_t*>(v));
+template <> void deserialize(Buffer *buffer, int8_t *v)
+{
+    deserialize(buffer, reinterpret_cast<uint8_t *>(v));
 }
 
-template <>
-void deserialize(Buffer* buffer, uint16_t* v) {
+template <> void deserialize(Buffer *buffer, uint16_t *v)
+{
     *v = be16toh(VALUE(buffer->buffer, buffer->idx, uint16_t));
     buffer->idx += 2;
 }
 
-template <>
-void deserialize(Buffer* buffer, int16_t* v) {
-    deserialize(buffer, reinterpret_cast<uint16_t*>(v));
+template <> void deserialize(Buffer *buffer, int16_t *v)
+{
+    deserialize(buffer, reinterpret_cast<uint16_t *>(v));
 }
 
-template <>
-void deserialize(Buffer* buffer, uint32_t* v) {
+template <> void deserialize(Buffer *buffer, uint32_t *v)
+{
     *v = be32toh(VALUE(buffer->buffer, buffer->idx, uint32_t));
     buffer->idx += 4;
 }
 
-template <>
-void deserialize(Buffer* buffer, int32_t* v) {
-    deserialize(buffer, reinterpret_cast<uint32_t*>(v));
+template <> void deserialize(Buffer *buffer, int32_t *v)
+{
+    deserialize(buffer, reinterpret_cast<uint32_t *>(v));
 }
 
 //
 // Message serialization and deserialization functions.
 //
 
-template <>
-void serialize(Buffer* buffer, MovementMessage* message) {
+template <> void serialize(Buffer *buffer, MovementMessage *message)
+{
     serialize(buffer, message->left);
     serialize(buffer, message->right);
 }
 
-template <>
-void deserialize(Buffer* buffer, MovementMessage* message) {
+template <> void deserialize(Buffer *buffer, MovementMessage *message)
+{
     deserialize(buffer, &message->left);
     deserialize(buffer, &message->right);
 }
 
-template <>
-void serialize(Buffer* buffer, CameraMessage* message) {
+template <> void serialize(Buffer *buffer, CameraMessage *message)
+{
     serialize(buffer, message->stream_index);
     serialize(buffer, message->frame_index);
     serialize(buffer, message->section_index);
@@ -129,14 +130,14 @@ void serialize(Buffer* buffer, CameraMessage* message) {
 }
 
 // See the note in network.hpp regarding memory management.
-template <>
-void deserialize(Buffer* buffer, CameraMessage* message) {
+template <> void deserialize(Buffer *buffer, CameraMessage *message)
+{
     deserialize(buffer, &(message->stream_index));
     deserialize(buffer, &(message->frame_index));
     deserialize(buffer, &(message->section_index));
     deserialize(buffer, &(message->section_count));
     deserialize(buffer, &(message->size));
-    
+
     if (message->data == nullptr) {
         message->data = new uint8_t[message->size];
     }
@@ -144,22 +145,22 @@ void deserialize(Buffer* buffer, CameraMessage* message) {
     memcpy(message->data, buffer->buffer + buffer->idx, message->size);
     buffer->idx += message->size;
 }
-	
-template <>
-void serialize(Buffer* buffer, LogMessage* message) {
-	serialize(buffer, message->size);
 
-	memcpy(buffer->buffer + buffer->idx, message->log_string, message->size);
-	buffer->idx += message->size;
-	buffer->size += message->size;
+template <> void serialize(Buffer *buffer, LogMessage *message)
+{
+    serialize(buffer, message->size);
+
+    memcpy(buffer->buffer + buffer->idx, message->log_string, message->size);
+    buffer->idx += message->size;
+    buffer->size += message->size;
 }
 
-template <>
-void deserialize(Buffer* buffer, LogMessage* message) {
-	deserialize(buffer, &(message->size));
+template <> void deserialize(Buffer *buffer, LogMessage *message)
+{
+    deserialize(buffer, &(message->size));
 
-	memcpy(message->log_string, buffer->buffer + buffer->idx, message->size);
-	buffer->idx += message->size;
+    memcpy(message->log_string, buffer->buffer + buffer->idx, message->size);
+    buffer->idx += message->size;
 }
 
 //
@@ -171,7 +172,8 @@ void deserialize(Buffer* buffer, LogMessage* message) {
 // TODO: This makes the library non-threadsafe! Maybe this should be per-connection.
 static Arena<Buffer> buffer_arena(10);
 
-Error connect(Connection* conn, const char* destination_address, int destination_port, int local_port) {
+Error connect(Connection *conn, const char *destination_address, int destination_port, int local_port)
+{
     // Set the destination information.
     conn->destination_address = destination_address;
     conn->destination_port = destination_port;
@@ -182,12 +184,12 @@ Error connect(Connection* conn, const char* destination_address, int destination
     // Note that this technically implies that idx `0` has already been read for every packet type.
     // For now, comparisons against last_received_idx[i] will take this into account and only count
     // a packet as out-of-order if it is strictly less than last_received_idx[i].
-    // 
+    //
     // This does imply that repeat packets are not dealt with, which could be a problem with
     // ack'ed packets.
     // TODO: Handle duplicate packets?
-    memset(conn->last_received_idx, 0, sizeof(uint16_t)*(int)MessageType::NUM);
-    
+    memset(conn->last_received_idx, 0, sizeof(uint16_t) * (int)MessageType::NUM);
+
     // Open a socket.
     // We specify AF_INET to use IPv4.
     // We specify SOCK_DGRAM to indicate UDP.
@@ -209,8 +211,8 @@ Error connect(Connection* conn, const char* destination_address, int destination
     // AF_INET indicates IPv4.
     bind_address.sin_family = AF_INET;
 
-	// Specify that we can bind to any interface.
-	bind_address.sin_addr.s_addr = INADDR_ANY;
+    // Specify that we can bind to any interface.
+    bind_address.sin_addr.s_addr = INADDR_ANY;
 
     // Set the local port.
     // The bind call below expects this to be in network byte order (big-endian).
@@ -219,18 +221,19 @@ Error connect(Connection* conn, const char* destination_address, int destination
     // Now the socket is bound to the address and port we have specified above.
     // This function takes a generic sockaddr struct, but our sockaddr_in can be
     // cast to a sockaddr struct.
-    if (bind(conn->socket_fd, (struct sockaddr*) &bind_address, sizeof(bind_address)) < 0) {
+    if (bind(conn->socket_fd, (struct sockaddr *)&bind_address, sizeof(bind_address)) < 0) {
         return Error::BIND_SOCKET;
     }
 
     return Error::OK;
 }
 
-void queue_outgoing(Connection* conn, MessageType type, Buffer* buffer) {
+void queue_outgoing(Connection *conn, MessageType type, Buffer *buffer)
+{
     // Create a message and add it to the outgoing queue.
     // Also increment the next outgoing index. Don't worry, this will overflow
     // and wrap as we expect, I promise.
-    conn->outgoing_queue.push({ type, conn->next_outgoing_idx++, buffer });
+    conn->outgoing_queue.push({type, conn->next_outgoing_idx++, buffer});
 
     // Note that the buffer is not returned to the arena here.
     // Yes, I lied in the function header documentation.
@@ -240,14 +243,15 @@ void queue_outgoing(Connection* conn, MessageType type, Buffer* buffer) {
 }
 
 // A convenience function for comparing message indices which takes wraparound into account.
-// Adapted from 
+// Adapted from
 // https://gafferongames.com/post/reliability_ordering_and_congestion_avoidance_over_udp#handling-sequence-number-wrap-around.
-inline bool out_of_order(uint16_t last, uint16_t next) {
-    return  ( ( last > next ) && ( last - next <= 32768 ) ) || 
-            ( ( last < next ) && ( next - last  > 32768 ) );
+inline bool out_of_order(uint16_t last, uint16_t next)
+{
+    return ((last > next) && (last - next <= 32768)) || ((last < next) && (next - last > 32768));
 }
 
-Error poll_incoming(Connection* conn) {
+Error poll_incoming(Connection *conn)
+{
     // General strategy: loop and accumulate messages until EAGAIN.
     // Process those messages (update order & ack state).
     // Place those messages on the incoming queue.
@@ -309,7 +313,7 @@ Error poll_incoming(Connection* conn) {
         // Update the ack table based on what we got back.
         for (uint16_t i = 0; i < 32; i++) {
             // For each entry in the ack diff...
-            
+
             // Calculate the message index.
             // We shift 1 by i to get the ith bit, and then and that with
             // the diff to see if that bit is set.
@@ -322,7 +326,7 @@ Error poll_incoming(Connection* conn) {
                 // However, I don't think this will be a bottleneck, simply
                 // because we will always be IO-bound.
                 for (int j = 0; j < ACK_TABLE_LEN; j++) {
-                    AckTableEntry* entry = conn->ack_table.table + j;
+                    AckTableEntry *entry = conn->ack_table.table + j;
                     if (entry->not_yet_acked && entry->message.index == idx) {
                         // We found our message and it needs to be removed from the table.
                         // Return its buffer and flip not_yet_acked.
@@ -403,7 +407,7 @@ Error poll_incoming(Connection* conn) {
             }
 
             // Grab a buffer for the message.
-            Buffer* message_buffer = buffer_arena.alloc();
+            Buffer *message_buffer = buffer_arena.alloc();
             init_buffer(message_buffer, true);
 
             message_buffer->size = size;
@@ -415,14 +419,15 @@ Error poll_incoming(Connection* conn) {
             buffer.idx += size;
 
             // Create and push a Message for this message!
-            conn->incoming_queue.push({ (MessageType)type, index, message_buffer });
+            conn->incoming_queue.push({(MessageType)type, index, message_buffer});
         }
     }
 
     return Error::OK;
 }
 
-Error drain_outgoing(Connection* conn) {
+Error drain_outgoing(Connection *conn)
+{
     // Take all the messages off of the queue.
     // Try to put them in the next packet to be sent.
     // If there is no space, put it on another queue.
@@ -454,7 +459,7 @@ Error drain_outgoing(Connection* conn) {
             Message m = conn->outgoing_queue.front();
             // This removes it from the queue.
             conn->outgoing_queue.pop();
-            
+
             // Get information about that message type.
             MessageTypeInfo mti = message_type_info[(int)m.type];
 
@@ -467,7 +472,7 @@ Error drain_outgoing(Connection* conn) {
 
             // Put the header in first.
             uint16_t message_index = m.index;
-            uint8_t message_type = (uint8_t) m.type;
+            uint8_t message_type = (uint8_t)m.type;
             uint16_t message_size = m.buffer->size;
             serialize(&packet_buffer, message_index);
             serialize(&packet_buffer, message_type);
@@ -490,7 +495,7 @@ Error drain_outgoing(Connection* conn) {
             if (mti.ack) {
                 // Add this message to the ack table. Don't free its buffer, because
                 // we might need to resend it.
-                conn->ack_table.table[conn->ack_table.next_index] = { true, m };
+                conn->ack_table.table[conn->ack_table.next_index] = {true, m};
                 // Make sure the next index wraps around.
                 conn->ack_table.next_index = (conn->ack_table.next_index + 1) % ACK_TABLE_LEN;
             } else {
@@ -536,7 +541,8 @@ Error drain_outgoing(Connection* conn) {
         // Send the packet!
         // This sends the packet using our socket, using info about our destination as provided by send_addr.
         // sendto returns a negative value on failure.
-        if (sendto(conn->socket_fd, packet_buffer.buffer, packet_buffer.size, 0, (struct sockaddr*) &send_addr, sizeof(send_addr)) < 0) {
+        if (sendto(conn->socket_fd, packet_buffer.buffer, packet_buffer.size, 0, (struct sockaddr *)&send_addr,
+                   sizeof(send_addr)) < 0) {
             return Error::SEND_PACKET;
         }
 
@@ -550,10 +556,12 @@ Error drain_outgoing(Connection* conn) {
     return Error::OK;
 }
 
-bool dequeue_incoming(Connection* conn, Message* message) {
+bool dequeue_incoming(Connection *conn, Message *message)
+{
     // Just take the message off the top of the queue, if one exists.
 
-    if (conn->incoming_queue.empty()) return false;
+    if (conn->incoming_queue.empty())
+        return false;
 
     *message = conn->incoming_queue.front();
     conn->incoming_queue.pop();
@@ -561,15 +569,17 @@ bool dequeue_incoming(Connection* conn, Message* message) {
     return true;
 }
 
-Buffer* get_outgoing_buffer() {
+Buffer *get_outgoing_buffer()
+{
     // Grab a buffer and initialize it, setting the direction to outgoing.
-    Buffer* b = buffer_arena.alloc();
+    Buffer *b = buffer_arena.alloc();
     init_buffer(b, false);
 
     return b;
 }
 
-void return_incoming_buffer(Buffer* buffer) {
+void return_incoming_buffer(Buffer *buffer)
+{
     buffer_arena.free(buffer);
 }
 
