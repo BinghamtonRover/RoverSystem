@@ -34,6 +34,9 @@ constexpr float ANGULAR_RES = 10.0f;
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
+// Send bandwidth updates once per second
+const int BANDWIDTH_SEND_INTERVAL = 1000;
+
 // Send movement updates 3x per second.
 const int MOVMENT_SEND_INTERVAL = 1000 / 3;
 // Heartbeat interval
@@ -69,6 +72,7 @@ unsigned int get_ticks()
 
 void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 {
+
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -174,7 +178,9 @@ void testLog()
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("I'm BLUE da ba dee da ba die, da ba dee, da ba die, da ba dee da ba die!", 0.0f, 0.0f, 1.0f, 1.0f);
+    addMessage("I'm BLUE da ba dee da ba die, da ba dee, da ba die, da ba dee da "
+               "ba die!",
+               0.0f, 0.0f, 1.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
     addMessage("Error: The rover is literally on fire oh god oh geez oh no", 1.0f, 0.0f, 0.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
@@ -216,7 +222,8 @@ int main()
     // Fill the Log with test messages
     testLog();
 
-    // Create a fullscreen window. Title isn't displayed, so doesn't really matter.
+    // Create a fullscreen window. Title isn't displayed, so doesn't really
+    // matter.
     GLFWwindow *window =
         glfwCreateWindow(gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
 
@@ -277,8 +284,15 @@ int main()
     // Last time reconection was attempted
     unsigned int last_reconnect_attempt = 0;
 
+    unsigned int last_bandwidth_send_time = 0;
+    unsigned int total_bytes = 0;
+    double current_bandwidth = 0;
+    unsigned int bandwidth_time_passed = 0;
+    double round_trip_time = 0;
+
     gui::Font debug_console_font;
     bool loaded_font = gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
+
     if (!loaded_font) {
         fprintf(stderr, "[!] Failed to load debug console font!\n");
         return 1;
@@ -325,12 +339,14 @@ int main()
         // Handle network missing heartbeat disconnect
         if (get_ticks() - last_heart_received >= DISCONNECT_TIMER) {
             last_heart_received = get_ticks();
+
             fprintf(stderr, "[!] Too much time has passed since the last heartbeat\n");
         }
 
         if (connection_status == network::Error::DISCONNECT && last_reconnect_attempt > RECONNECT_INTERVAL) {
             last_reconnect_attempt = get_ticks();
             network::Error reconnect = network::reconnect(&conn, "127.0.0.1", 45546, 45545);
+
             if (reconnect != network::Error::OK) {
                 fprintf(stderr, "[!] Failed to reconnect\n");
             } else {
@@ -347,6 +363,8 @@ int main()
         // network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgo);
 
         while (network::dequeue_incoming(&conn, &message)) {
+            total_bytes = sizeof(message);
+            bandwidth_time_passed = get_ticks();
             switch (message.type) {
                 case network::MessageType::HEARTBEAT: {
                     printf("Recieved a heartbeat response from rover\n");
@@ -354,7 +372,8 @@ int main()
                     break;
                 }
                 case network::MessageType::CAMERA: {
-                    // Static buffer so we don't have to allocate and reallocate every frame.
+                    // Static buffer so we don't have to allocate and reallocate every
+                    // frame.
                     static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
 
                     network::CameraMessage camera_message;
@@ -368,6 +387,7 @@ int main()
                     camera_feed::Error err = camera_feed::handle_section(
                         &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
                         camera_message.section_index, camera_message.section_count, camera_message.frame_index);
+
                     if (err != camera_feed::Error::OK) {
                         // sending error message to log
                         log->adjustLogLevel(ERROR_LOG_LEVEL);
@@ -382,6 +402,14 @@ int main()
             }
 
             network::return_incoming_buffer(message.buffer);
+
+            if (get_ticks() - last_bandwidth_send_time > 0) {
+                last_bandwidth_send_time = get_ticks();
+                current_bandwidth = total_bytes / (last_bandwidth_send_time - bandwidth_time_passed);
+                printf("%f bandwidth\n", current_bandwidth);
+            }
+
+            network::return_incoming_buffer(message.buffer);
         }
         // Reset heartbeat send time
         if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
@@ -392,6 +420,8 @@ int main()
             // Process controller input.
             controller::Event event;
             controller::Error err;
+
+            double time_passed;
 
             // Do nothing since we just want to update current values.
             while ((err = controller::poll(&event)) == controller::Error::OK) {
@@ -404,6 +434,9 @@ int main()
                 controller_loaded = false;
             } else {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
+                    bandwidth_time_passed = get_ticks() - last_movement_send_time;
+                    round_trip_time = bandwidth_time_passed / 1000;
+
                     last_movement_send_time = get_ticks();
                     fprintf(stderr, "[!] Sending controller data\n");
                     network::Buffer *message_buffer = network::get_outgoing_buffer();
@@ -413,6 +446,10 @@ int main()
                     network::serialize(message_buffer, &message);
 
                     network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
+                    time_passed = 1000 / bandwidth_time_passed;
+                    current_bandwidth = sizeof(message) * time_passed;
+                    printf("%f bandwidth in bytes per second \n", current_bandwidth);
+                    printf("%f round trip time in ms \n", round_trip_time);
                 }
             }
         }
@@ -429,6 +466,7 @@ int main()
         for (unsigned int i = 0; i < logMessages.size(); i++) {
             const char *cstr = logMessages.at(i).c_str();
             glColor4f(red.at(i), green.at(i), blue.at(i), alpha.at(i));
+
             gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5, LOG_Y + LOG_THICKNESS + 5 + 30 * i, 20);
         }
 

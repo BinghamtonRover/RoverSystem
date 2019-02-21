@@ -361,7 +361,10 @@ Buffer *get_outgoing_buffer();
     Parameters:
         buffer: A buffer obtained from `poll_incoming`.
 */
+
 void return_incoming_buffer(Buffer *buffer);
+
+int get_bandwidth(Buffer *buffer);
 
 } // namespace network
 
