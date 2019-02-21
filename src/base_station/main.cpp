@@ -63,16 +63,15 @@ std::vector<float> red, green, blue, alpha;
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
 
-
-unsigned int get_ticks() {
+unsigned int get_ticks()
+{
     auto now = std::chrono::high_resolution_clock::now();
 
-    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - start_time)
-            .count();
+    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
 }
 
-void do_gui(camera_feed::Feed feed[4], gui::Font *font) {
+void do_gui(camera_feed::Feed feed[4], gui::Font *font)
+{
 
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -86,8 +85,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font) {
     layout.push();
 
     // Draw the map.
-    gui::do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f,
-                       65.0f / 255.0f);
+    gui::do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
 
     layout.reset_x();
     layout.advance_y(10);
@@ -113,15 +111,15 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font) {
     layout.reset_y();
     layout.advance_x(10);
 
-    gui::do_solid_rect(&layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f,
-                       68.0f / 255.0f);
+    gui::do_solid_rect(&layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
     // Draw the debug overlay.
     layout = {};
     gui::debug_console::do_debug(&layout, font);
 }
 
-void glfw_character_callback(GLFWwindow *window, unsigned int codepoint) {
+void glfw_character_callback(GLFWwindow *window, unsigned int codepoint)
+{
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (codepoint < 128) {
             gui::debug_console::handle_input((char)codepoint);
@@ -129,8 +127,8 @@ void glfw_character_callback(GLFWwindow *window, unsigned int codepoint) {
     }
 }
 
-void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action,
-                       int mods) {
+void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             gui::debug_console::handle_keypress(key, mods);
@@ -139,7 +137,8 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action,
 }
 
 // Helper method for addMessage
-void removeOldMessages() {
+void removeOldMessages()
+{
     while (logMessages.size() > MAX_LINES) {
         logMessages.erase(logMessages.begin());
         red.erase(red.begin());
@@ -150,7 +149,8 @@ void removeOldMessages() {
 }
 
 // addMessage("Message Here", red, green, blue, alpha)
-void addMessage(std::string m, float r, float g, float b, float a) {
+void addMessage(std::string m, float r, float g, float b, float a)
+{
     while (m.length() > 0) {
         if (m.length() <= MAX_CHARS_IN_A_LINE) {
             logMessages.push_back(m);
@@ -172,7 +172,8 @@ void addMessage(std::string m, float r, float g, float b, float a) {
 }
 
 // Test method to make sure the log is working properly
-void testLog() {
+void testLog()
+{
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
@@ -181,8 +182,7 @@ void testLog() {
                "ba die!",
                0.0f, 0.0f, 1.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Error: The rover is literally on fire oh god oh geez oh no", 1.0f,
-               0.0f, 0.0f, 1.0f);
+    addMessage("Error: The rover is literally on fire oh god oh geez oh no", 1.0f, 0.0f, 0.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
     addMessage("Life: Exists", 0.0f, 1.0f, 1.0f, 1.0f);
@@ -190,7 +190,8 @@ void testLog() {
     addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-int main() {
+int main()
+{
     // Creating the logging framework
     logging_framework *log = new logging_framework();
     log->adjustLogLevel(INFO_LOG_LEVEL);
@@ -221,12 +222,10 @@ int main() {
     // Fill the Log with test messages
     testLog();
 
-
     // Create a fullscreen window. Title isn't displayed, so doesn't really
     // matter.
     GLFWwindow *window =
-            glfwCreateWindow(gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, "Base Station",
-                             glfwGetPrimaryMonitor(), NULL);
+        glfwCreateWindow(gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
 
     // Update the window so everyone can access it.
     gui::state.window = window;
@@ -292,8 +291,7 @@ int main() {
     double round_trip_time = 0;
 
     gui::Font debug_console_font;
-    bool loaded_font =
-            gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
+    bool loaded_font = gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
 
     if (!loaded_font) {
         fprintf(stderr, "[!] Failed to load debug console font!\n");
@@ -342,15 +340,12 @@ int main() {
         if (get_ticks() - last_heart_received >= DISCONNECT_TIMER) {
             last_heart_received = get_ticks();
 
-            fprintf(stderr,
-                    "[!] Too much time has passed since the last heartbeat\n");
+            fprintf(stderr, "[!] Too much time has passed since the last heartbeat\n");
         }
 
-        if (connection_status == network::Error::DISCONNECT &&
-            last_reconnect_attempt > RECONNECT_INTERVAL) {
+        if (connection_status == network::Error::DISCONNECT && last_reconnect_attempt > RECONNECT_INTERVAL) {
             last_reconnect_attempt = get_ticks();
-            network::Error reconnect =
-                    network::reconnect(&conn, "127.0.0.1", 45546, 45545);
+            network::Error reconnect = network::reconnect(&conn, "127.0.0.1", 45546, 45545);
 
             if (reconnect != network::Error::OK) {
                 fprintf(stderr, "[!] Failed to reconnect\n");
@@ -379,8 +374,7 @@ int main() {
                 case network::MessageType::CAMERA: {
                     // Static buffer so we don't have to allocate and reallocate every
                     // frame.
-                    static uint8_t
-                            camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+                    static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
 
                     network::CameraMessage camera_message;
                     camera_message.data = camera_message_buffer;
@@ -411,13 +405,11 @@ int main() {
 
             if (get_ticks() - last_bandwidth_send_time > 0) {
                 last_bandwidth_send_time = get_ticks();
-                current_bandwidth =
-                        total_bytes / (last_bandwidth_send_time - bandwidth_time_passed);
+                current_bandwidth = total_bytes / (last_bandwidth_send_time - bandwidth_time_passed);
                 printf("%f bandwidth\n", current_bandwidth);
             }
 
             network::return_incoming_buffer(message.buffer);
-
         }
         // Reset heartbeat send time
         if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
@@ -430,7 +422,6 @@ int main() {
             controller::Error err;
 
             double time_passed;
-
 
             // Do nothing since we just want to update current values.
             while ((err = controller::poll(&event)) == controller::Error::OK) {
@@ -445,7 +436,7 @@ int main() {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
                     bandwidth_time_passed = get_ticks() - last_movement_send_time;
                     round_trip_time = bandwidth_time_passed / 1000;
-                    
+
                     last_movement_send_time = get_ticks();
                     fprintf(stderr, "[!] Sending controller data\n");
                     network::Buffer *message_buffer = network::get_outgoing_buffer();
@@ -454,8 +445,7 @@ int main() {
                     message.right = -controller::get_value(controller::Axis::JS_RIGHT_Y);
                     network::serialize(message_buffer, &message);
 
-                    network::queue_outgoing(&conn, network::MessageType::MOVEMENT,
-                                            message_buffer);
+                    network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
                     time_passed = 1000 / bandwidth_time_passed;
                     current_bandwidth = sizeof(message) * time_passed;
                     printf("%f bandwidth in bytes per second \n", current_bandwidth);
@@ -478,7 +468,6 @@ int main() {
             glColor4f(red.at(i), green.at(i), blue.at(i), alpha.at(i));
 
             gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5, LOG_Y + LOG_THICKNESS + 5 + 30 * i, 20);
-
         }
 
         // Display our buffer.

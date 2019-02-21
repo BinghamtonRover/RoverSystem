@@ -362,10 +362,9 @@ Buffer *get_outgoing_buffer();
         buffer: A buffer obtained from `poll_incoming`.
 */
 
-void return_incoming_buffer(Buffer* buffer);
+void return_incoming_buffer(Buffer *buffer);
 
-int get_bandwidth(Buffer* buffer);
-
+int get_bandwidth(Buffer *buffer);
 
 } // namespace network
 
