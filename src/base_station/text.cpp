@@ -1,7 +1,7 @@
 #include "text.hpp"
 
-#include <SDL.h>
 #include <GL/gl.h>
+#include <SDL.h>
 // stb_image provides basic image loading.
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -10,12 +10,11 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-
-
 // Loads a font from a TTF file to our internal font representation.
-void load_font(Font* font, const char* file_name) {
+void load_font(Font *font, const char *file_name)
+{
     // Open the font file for reading.
-    FILE* font_file = fopen(file_name, "r");
+    FILE *font_file = fopen(file_name, "r");
 
     // We need some space to store our font. Let's just try this much.
     // This could be dynamically allocated to be the size of the file, but I'm lazy.
@@ -44,18 +43,21 @@ void load_font(Font* font, const char* file_name) {
     // for anti-aliasing.
     // Explanation of parameters:
     //      0) the raw font file contents.
-    //      1) the index of the font we want within the file (TTF files can contain multiple fonts). We want the first one.
-    //      2) the pixel height of the font. This is hardcoded! We want to pick something reasonably large so that we never
-    //         have to scale it up (that would make the text look pixelated). In order to have perfect rendering at every
-    //         text size, we would have to use something called signed distance fields, which are really cool but would
-    //         require using OpenGL 4, which is overcomplicated for our purposes.
+    //      1) the index of the font we want within the file (TTF files can contain multiple fonts). We want the first
+    //      one. 2) the pixel height of the font. This is hardcoded! We want to pick something reasonably large so that
+    //      we never
+    //         have to scale it up (that would make the text look pixelated). In order to have perfect rendering at
+    //         every text size, we would have to use something called signed distance fields, which are really cool but
+    //         would require using OpenGL 4, which is overcomplicated for our purposes.
     //      3) the memory we allocated for the bitmap.
     //      4) the width of the bitmap.
     //      5) the height of the bitmap.
-    //      6) the character code of the first character we want to support. We want to just render the visible ASCII characters,
+    //      6) the character code of the first character we want to support. We want to just render the visible ASCII
+    //      characters,
     //         which start at 32.
-    //      7) the number of characters we want to support. We want all from 32 until the second to last signed ASCII character.
-    //      8) an array in which information about each character is stored (the location of the character in the bitmap).
+    //      7) the number of characters we want to support. We want all from 32 until the second to last signed ASCII
+    //      character. 8) an array in which information about each character is stored (the location of the character in
+    //      the bitmap).
     if (stbtt_BakeFontBitmap(font_buffer, 0, 100, font_bitmap, 1024, 1024, 32, 127 - 32, font->baked_chars) < 0) {
         fprintf(stderr, "[!] Failed to load font bitmap!\n");
         exit(1);
@@ -66,7 +68,7 @@ void load_font(Font* font, const char* file_name) {
     // We will be converting the bitmap to (luminance, alpha) pixels.
     // Luminance is copied to the R, G, and B channels, and alpha is preserved.
     static unsigned char real_font_bitmap[1024 * 1024 * 2];
-    
+
     // For each pixel in the bitmap, set the luminance to full (255).
     // Then set the alpha to the value of the pixel from font_bitmap.
     // Effectively, font_bitmap tells us what the alpha should be for each pixel in each character.
@@ -83,14 +85,16 @@ void load_font(Font* font, const char* file_name) {
 
     glBindTexture(GL_TEXTURE_2D, font->texture_id);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 1024, 1024, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, real_font_bitmap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 1024, 1024, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE,
+                 real_font_bitmap);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 // Returns the width and height of the given text if it were rendered with the given font.
-void size_text(Font* font, const char* text, int* width, int* height) {
+void size_text(Font *font, const char *text, int *width, int *height)
+{
     // Basic idea: iterate through each character in text, and check its height.
     // Check to see if it has the greatest height of all characters we want to display.
     // Then the rightmost x coordinate of the last character is the width of the whole string.
@@ -99,7 +103,7 @@ void size_text(Font* font, const char* text, int* width, int* height) {
     float total_width = 0;
     {
         float x = 0, y = 0;
-        for (const char* text_ptr = text; *text_ptr; text_ptr++) {
+        for (const char *text_ptr = text; *text_ptr; text_ptr++) {
             stbtt_aligned_quad q;
             stbtt_GetBakedQuad(font->baked_chars, 1024, 1024, *text_ptr - 32, &x, &y, &q, 1);
 
@@ -113,14 +117,15 @@ void size_text(Font* font, const char* text, int* width, int* height) {
         }
     }
 
-    *width = (int) total_width;
-    *height = (int) max_height;
+    *width = (int)total_width;
+    *height = (int)max_height;
 }
 
-void draw_text(Font* font, const char* text, int x, int y, float height) {
-    //Scale the text based on height. removed max height calculation which was causing the
-    //text size to change while typing. right now this uses a magic number, should be changed
-    float scale = height/85;
+void draw_text(Font *font, const char *text, int x, int y, float height)
+{
+    // Scale the text based on height. removed max height calculation which was causing the
+    // text size to change while typing. right now this uses a magic number, should be changed
+    float scale = height / 85;
 
     // Matrix and texture stuff must be called before glBegin()!
 
@@ -132,7 +137,7 @@ void draw_text(Font* font, const char* text, int x, int y, float height) {
     // glPushMatrix() saves whatever the matrix looked like before so we can restore it after.
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-	glTranslatef(x, y + height, 0.0f);
+    glTranslatef(x, y + height, 0.0f);
     glScalef(scale, scale, 1.0f);
 
     glBindTexture(GL_TEXTURE_2D, font->texture_id);
@@ -146,10 +151,14 @@ void draw_text(Font* font, const char* text, int x, int y, float height) {
             stbtt_aligned_quad q;
 
             stbtt_GetBakedQuad(font->baked_chars, 1024, 1024, *text - 32, &tx, &ty, &q, 1);
-            glTexCoord2f(q.s0, q.t0); glVertex2f(q.x0, q.y0);
-            glTexCoord2f(q.s1, q.t0); glVertex2f(q.x1, q.y0);
-            glTexCoord2f(q.s1, q.t1); glVertex2f(q.x1, q.y1);
-            glTexCoord2f(q.s0, q.t1); glVertex2f(q.x0, q.y1);
+            glTexCoord2f(q.s0, q.t0);
+            glVertex2f(q.x0, q.y0);
+            glTexCoord2f(q.s1, q.t0);
+            glVertex2f(q.x1, q.y0);
+            glTexCoord2f(q.s1, q.t1);
+            glVertex2f(q.x1, q.y1);
+            glTexCoord2f(q.s0, q.t1);
+            glVertex2f(q.x0, q.y1);
 
             text++;
         }
