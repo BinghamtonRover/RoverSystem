@@ -3,9 +3,9 @@
 
 #include <arpa/inet.h>
 #include <endian.h>
-#include <unistd.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "network.hpp"
 
@@ -229,20 +229,22 @@ Error connect(Connection *conn, const char *destination_address, int destination
     return Error::OK;
 }
 
-Error reconnect(Connection* conn, const char* destination_address, int destination_port, int local_port) {
+Error reconnect(Connection *conn, const char *destination_address, int destination_port, int local_port)
+{
     close(conn->socket_fd);
-    
+
     while (connect(conn, destination_address, destination_port, local_port) != network::Error::OK) {
-      sleep(4);
+        sleep(4);
     }
 
-        return Error::OK;
+    return Error::OK;
 }
 
-Error check_status(Connection * conn) {
-  //Check if socket is closed or timed out
-  //conn->socket_fd
-  return network::Error::OK;
+Error check_status(Connection *conn)
+{
+    // Check if socket is closed or timed out
+    // conn->socket_fd
+    return network::Error::OK;
 }
 
 void queue_outgoing(Connection *conn, MessageType type, Buffer *buffer)

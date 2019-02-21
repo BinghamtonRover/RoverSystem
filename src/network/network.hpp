@@ -305,10 +305,10 @@ Error connect(Connection *conn, const char *destination_address, int destination
         buffer: A buffer containing the message body. A buffer must be obtained from `get_outgoing_buffer`.
 */
 
-Error reconnect(Connection* conn, const char* destination_address, int destination_port, int local_port);
-void queue_outgoing(Connection* conn, MessageType type, Buffer* buffer);
+Error reconnect(Connection *conn, const char *destination_address, int destination_port, int local_port);
+void queue_outgoing(Connection *conn, MessageType type, Buffer *buffer);
 
-Error check_status(Connection * conn);
+Error check_status(Connection *conn);
 
 /*
     Dequeues (pops) a message from the incoming buffer and places it in the given pointer.
