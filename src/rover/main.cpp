@@ -25,7 +25,7 @@ struct Config
 	char remote_address[16];
 	int remote_port;
 
-	char controller_serial_code[100];
+	char suspension_serial_id[500];
 };
 
 Config load_config(const char* filename) {
@@ -40,8 +40,8 @@ Config load_config(const char* filename) {
 	// First line: local_port remote_address remote_port
 	fscanf(file, "%d %s %d\n", &config.local_port, config.remote_address, &config.remote_port);
 
-	// Second line: USB serial code for the suspension controller.
-	fscanf(file, "%s\n", config.controller_serial_code);
+	// Second line: USB id for the suspension controller.
+	fscanf(file, "%s\n", config.suspension_serial_id);
 
 	fclose(file);
 
@@ -52,7 +52,7 @@ int main()
 {
 	Config config = load_config("res/r_config.txt");
 
-	if (suspension::init(config.controller_serial_code) != suspension::Error::OK) {
+	if (suspension::init(config.suspension_serial_id) != suspension::Error::OK) {
 		fprintf(stderr, "[!] Failed to initialize the suspension!\n");
 		return 1;
 	}
@@ -87,6 +87,7 @@ int main()
         streams.push_back(cs);
     }
 
+	streams.clear();
 
     std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 

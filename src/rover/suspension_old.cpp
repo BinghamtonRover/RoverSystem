@@ -1,26 +1,26 @@
 #include "suspension.hpp"
-#include <serial.hpp>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace suspension {
 
-const char DEVICE_PATH_TEMPLATE[] = "/dev/ttyUSB%d";
-
 int serial_fd = -1;
 
-Error init(const char* device_serial_code) {
-	int device_number = serial::get_device_number(device_serial_code);
-	if (device_number == -1) {
-		return Error::DEVICE_NOT_FOUND;
-	}
+const char DEVICE_SERIAL_BYID_PATH_TEMPLATE[] = "/dev/serial/by-id/%s";
 
-	char device_path[sizeof(DEVICE_PATH_TEMPLATE) + 1];
-	sprintf(device_path, DEVICE_PATH_TEMPLATE, device_number);
+Error init(const char* device_serial_id) {
+	char* device_path = (char*) malloc(sizeof(DEVICE_SERIAL_BYID_PATH_TEMPLATE) + strlen(device_serial_id));
+	sprintf(device_path, DEVICE_SERIAL_BYID_PATH_TEMPLATE, device_serial_id);
 
 	serial_fd = open(device_path, O_RDWR | O_NOCTTY | O_SYNC);
+
+	free(device_path);
+
 	if (serial_fd == -1) {
 		return Error::OPEN_DEVICE;
 	}
@@ -34,7 +34,7 @@ Error update(Side side, Direction direction, uint8_t speed) {
 	uint8_t side_enc = (uint8_t) side;	
 	uint8_t direction_enc = (uint8_t) direction;
 
-	if (dprintf(serial_fd, "%u\n%u\n%u\n", side_enc, direction_enc, speed_enc) < 0) {
+	if (dprintf(serial_fd, "%u\n%u\n%u\n", side_enc, direction_enc, speed) < 0) {
 		return Error::WRITE;
 	}
 

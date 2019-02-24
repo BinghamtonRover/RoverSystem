@@ -27,7 +27,7 @@ enum class Error {
 
 const char* get_error_string(Error e);
 	
-Error init(const char* device_serial_code);
+Error init(const char* device_serial_id);
 
 Error update(Side side, Direction direction, uint8_t speed);
 

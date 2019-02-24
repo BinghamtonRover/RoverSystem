@@ -4,8 +4,7 @@
 
 namespace suspension {
 
-Error init(const char* device_serial_code) {
-	(void) device_serial_code;
+Error init(const char* device_serial_id) {
 	// Ignore the serial code.
 	return Error::OK;
 }

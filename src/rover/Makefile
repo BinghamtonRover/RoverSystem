@@ -1,5 +1,5 @@
-SOURCES = main.cpp camera.cpp serial.cpp
-HEADERS = camera.hpp autonomy.hpp serial.hpp suspension.hpp
+SOURCES = main.cpp camera.cpp 
+HEADERS = camera.hpp autonomy.hpp suspension.hpp
 LIBRARIES = ../../bin/libnetwork.a
 LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
 CFLAGS = -Wall -Wextra -Wpedantic -std=c++11 -g -I/opt/libjpeg-turbo/include
@@ -18,8 +18,9 @@ endif
 ifeq ($(SUSPENSION_BACKEND), dummy)
 	SOURCES += suspension_dummy.cpp
 else 
-ifeq($(SUSPENSION_BACKEND), old)
+ifeq ($(SUSPENSION_BACKEND), old)
 	SOURCES += suspension_old.cpp
+endif
 endif
 
 $(EXECUTABLE): $(SOURCES) $(HEADERS) $(LIBRARIES)

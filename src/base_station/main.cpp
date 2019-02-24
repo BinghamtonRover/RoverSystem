@@ -86,6 +86,8 @@ std::vector<std::string> split_by_spaces(std::string s) {
 	return strings;
 }
 
+network::MovementMessage last_movement_message = { 0, 0 };
+
 void command_callback(std::string command) {
 	auto parts = split_by_spaces(command);
 
@@ -104,24 +106,16 @@ void command_callback(std::string command) {
 		char right_direction_char = parts[2][0];
 		int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
 
-		network::MovementMessage m;
-		m.left = left_speed << 7;
-		m.right = right_speed << 7;
+		last_movement_message.left = left_speed << 7;
+		last_movement_message.right = right_speed << 7;
 
 		if (left_direction_char == 'b') {
-			m.left *= -1;
+			last_movement_message.left *= -1;
 		}
 
 		if (right_direction_char == 'b') {
-			m.right *= -1;
+			last_movement_message.right *= -1;
 		}
-
-		printf("> Sending movement with %d, %d\n", m.left, m.right);
-
-		network::Buffer* buffer = network::get_outgoing_buffer();
-		network::serialize(buffer, &m);
-
-		network::queue_outgoing(&conn, network::MessageType::MOVEMENT, buffer);
 	}
 }
 
@@ -433,17 +427,18 @@ int main()
 				log::log(log::ERROR, "Failed to read from the controller!\n");
             } else {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
-					/*
+					printf("> send\n");
                     last_movement_send_time = get_ticks();
-
-                    network::Buffer *message_buffer = network::get_outgoing_buffer();
+/*
                     network::MovementMessage message;
                     message.left = -controller::get_value(controller::Axis::JS_LEFT_Y);
                     message.right = -controller::get_value(controller::Axis::JS_RIGHT_Y);
                     network::serialize(message_buffer, &message);
-
-                    network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
 					*/
+
+                    network::Buffer *message_buffer = network::get_outgoing_buffer();
+					network::serialize(message_buffer, &last_movement_message);
+                    network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
                 }
             }
         }
