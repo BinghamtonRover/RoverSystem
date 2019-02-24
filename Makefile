@@ -1,4 +1,4 @@
-all: network
+all: network base_station rover
 
 network:
 	make -C src/network

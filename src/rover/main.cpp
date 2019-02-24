@@ -1,6 +1,7 @@
 #include "../network/network.hpp"
 #include "../shared.hpp"
 #include "camera.hpp"
+#include "suspension.hpp"
 
 #include <turbojpeg.h>
 
@@ -13,12 +14,49 @@
 
 // GLOBAL CONSTANTS
 
-const int MAX_STREAMS = 4;
-const unsigned int CAMERA_WIDTH = 1920;
-const unsigned int CAMERA_HEIGHT = 1080;
+const int MAX_STREAMS = 2;
+const unsigned int CAMERA_WIDTH = 1280;
+const unsigned int CAMERA_HEIGHT = 720;
+
+struct Config
+{
+	int local_port;
+
+	char remote_address[16];
+	int remote_port;
+
+	char controller_serial_code[100];
+};
+
+Config load_config(const char* filename) {
+	Config config;
+
+	FILE* file = fopen(filename, "r");
+	if (!file) {
+		fprintf(stderr, "[!] Failed to find config file!\n");
+		exit(1);
+	}
+
+	// First line: local_port remote_address remote_port
+	fscanf(file, "%d %s %d\n", &config.local_port, config.remote_address, &config.remote_port);
+
+	// Second line: USB serial code for the suspension controller.
+	fscanf(file, "%s\n", config.controller_serial_code);
+
+	fclose(file);
+
+	return config;
+}
 
 int main()
 {
+	Config config = load_config("res/r_config.txt");
+
+	if (suspension::init(config.controller_serial_code) != suspension::Error::OK) {
+		fprintf(stderr, "[!] Failed to initialize the suspension!\n");
+		return 1;
+	}
+
     unsigned int frame_counter = 0;
 
     // Camera streams
@@ -49,6 +87,7 @@ int main()
         streams.push_back(cs);
     }
 
+
     std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
     // UDP connection
@@ -56,7 +95,7 @@ int main()
 
     // Open UDP connection
     //{
-    network::Error net_err = network::connect(&conn, "127.0.0.1", 45545, 45546);
+    network::Error net_err = network::connect(&conn, config.remote_address, config.remote_port, config.local_port);
     if (net_err != network::Error::OK) {
         std::cerr << "[!]Failed to connect to base station!" << std::endl;
     }
@@ -73,7 +112,7 @@ int main()
                         - Grabbing frames
         */
 
-        for (int i = 0; i < streams.size(); i++) {
+        for (size_t i = 0; i < streams.size(); i++) {
             camera::CaptureSession *cs = streams[i];
 
             // Grab a frame.
@@ -109,7 +148,7 @@ int main()
             // Calculate how many buffers we will need to send the entire frame
             uint8_t num_buffers = (frame_size / CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE) + 1;
 
-            for (unsigned int j = 0; j < num_buffers; j++) {
+            for (uint8_t j = 0; j < num_buffers; j++) {
                 network::Buffer *camera_buffer = network::get_outgoing_buffer();
 
                 // This accounts for the last buffer that is not completely divisible
@@ -147,14 +186,23 @@ int main()
                 case network::MessageType::HEARTBEAT: {
                     network::Buffer *outgoing = network::get_outgoing_buffer();
                     network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
-                    printf("Recieved a hearbeat from base, sending it back\n");
                     break;
                 }
                 case network::MessageType::MOVEMENT: {
                     network::MovementMessage movement;
                     network::deserialize(message.buffer, &movement);
 
-                    printf("> Current movement: %d, %d\n", movement.left, movement.right);
+					printf("Got movement with %d, %d\n", movement.left, movement.right);
+
+					suspension::Direction left_direction = movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
+					suspension::Direction right_direction = movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD; 
+
+					uint8_t left_speed = movement.left < 0 ? (uint8_t) ((-movement.left) >> 7) : (uint8_t) (movement.left >> 7);
+					uint8_t right_speed = movement.right < 0 ? (uint8_t) ((-movement.right) >> 7) : (uint8_t) (movement.right >> 7);
+
+					suspension::update(suspension::LEFT, left_direction, left_speed);
+					suspension::update(suspension::RIGHT, right_direction, right_speed);
+
                     break;
                 }
                 default:

@@ -39,7 +39,13 @@ struct DebugConsole
 
     DebugLine buffer = {CONSOLE_PROMPT, 0, 1, 0};
     std::vector<DebugLine> history;
+
+	CommandCallback callback;
 } console;
+
+void set_callback(CommandCallback callback) {
+	console.callback = callback;
+}
 
 void do_debug(gui::Layout *layout, gui::Font *font)
 {
@@ -127,12 +133,7 @@ void log(std::string text, float r, float g, float b)
 
 void handle_input(char c)
 {
-    if (c == '\n') {
-        console.history.push_back(console.buffer);
-        console.buffer = {CONSOLE_PROMPT, 0, 1, 0};
-    } else {
-        console.buffer.line.push_back(c);
-    }
+	console.buffer.line.push_back(c);
 }
 
 void handle_keypress(int key, int mods)
@@ -142,6 +143,8 @@ void handle_keypress(int key, int mods)
 
         console.history.push_back(console.buffer);
         console.buffer = {CONSOLE_PROMPT, 0, 1, 0};
+
+		console.callback(command);
 
         if (command == "test") {
             log("This is some red text.", 1, 0, 0);

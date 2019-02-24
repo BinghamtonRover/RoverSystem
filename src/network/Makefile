@@ -1,6 +1,6 @@
 SOURCES = network.cpp
 HEADERS = network.hpp arena.hpp
-CFLAGS  = -std=c++14 -Wall
+CFLAGS  = -std=c++14 -Wall -g
 OUTDIR  = ../../bin
 OFILE   = $(OUTDIR)/network.o
 AFILE   = $(OUTDIR)/libnetwork.a

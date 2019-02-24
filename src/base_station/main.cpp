@@ -5,7 +5,7 @@
 #include "controller.hpp"
 #include "debug_console.hpp"
 #include "gui.hpp"
-#include "logging_framework.h"
+#include "log.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -34,9 +34,6 @@ constexpr float ANGULAR_RES = 10.0f;
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
-// Send bandwidth updates once per second
-const int BANDWIDTH_SEND_INTERVAL = 1000;
-
 // Send movement updates 3x per second.
 const int MOVMENT_SEND_INTERVAL = 1000 / 3;
 // Heartbeat interval
@@ -44,6 +41,9 @@ const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
 const int RECONNECT_INTERVAL = 1000 / 3;
 // Amount of time between heartbeats until disconnection flag is set
 const int DISCONNECT_TIMER = 5000;
+
+// Network connection.
+network::Connection conn;
 
 // List of messages the log displays
 std::vector<std::string> logMessages;
@@ -68,6 +68,90 @@ unsigned int get_ticks()
     auto now = std::chrono::high_resolution_clock::now();
 
     return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+}
+
+std::vector<std::string> split_by_spaces(std::string s) {
+	std::vector<std::string> strings;
+
+	size_t last = 0; 
+	size_t next = 0; 
+
+	while ((next = s.find(" ", last)) != std::string::npos) { 
+		strings.push_back(s.substr(last, next - last));
+		last = next + 1;
+	}
+
+	strings.push_back(s.substr(last));
+
+	return strings;
+}
+
+void command_callback(std::string command) {
+	auto parts = split_by_spaces(command);
+
+	if (parts.size() == 0) {
+		return;
+	}
+
+	if (parts[0] == "move") {
+		if (parts.size() != 3) {
+			return;
+		}
+
+		char left_direction_char = parts[1][0];
+		int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
+
+		char right_direction_char = parts[2][0];
+		int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
+
+		network::MovementMessage m;
+		m.left = left_speed << 7;
+		m.right = right_speed << 7;
+
+		if (left_direction_char == 'b') {
+			m.left *= -1;
+		}
+
+		if (right_direction_char == 'b') {
+			m.right *= -1;
+		}
+
+		printf("> Sending movement with %d, %d\n", m.left, m.right);
+
+		network::Buffer* buffer = network::get_outgoing_buffer();
+		network::serialize(buffer, &m);
+
+		network::queue_outgoing(&conn, network::MessageType::MOVEMENT, buffer);
+	}
+}
+
+void stderr_handler(log::Level level, std::string message) {
+	fprintf(stderr, "%s", message.c_str());
+}
+
+struct Config
+{
+	int local_port;
+
+	char remote_address[16]; // Max length of ipv4 address is 15, plus one for nt.
+	int remote_port;
+};
+
+Config load_config(const char* filename) {
+	Config config;
+
+	FILE* file = fopen(filename, "r");
+	if (!file) {
+		log::log(log::ERROR, "Failed to open config file!\n");
+		exit(1);
+	}
+
+	// First line: local_port remote_address remote_port
+	fscanf(file, "%d %s %d\n", &config.local_port, config.remote_address, &config.remote_port);
+
+	fclose(file);
+
+	return config;
 }
 
 void do_gui(camera_feed::Feed feed[4], gui::Font *font)
@@ -192,21 +276,19 @@ void testLog()
 
 int main()
 {
-    // Creating the logging framework
-    logging_framework *log = new logging_framework();
-    log->adjustLogLevel(INFO_LOG_LEVEL);
-    log->callPrint("Information: This is the BU Mars Rover\n");
+	log::register_handler(stderr_handler);
+
+	gui::debug_console::set_callback(command_callback);
+
+	// Load config.
+	Config config = load_config("res/bs_config.txt");
 
     // Start the timer.
     start_time = std::chrono::high_resolution_clock::now();
 
     // Init GLFW.
     if (!glfwInit()) {
-        GLenum temp = glGetError();
-        log->adjustLogLevel(ERROR_LOG_LEVEL);
-        log->callPrint("[!] Error: Failed to init GLFW: ");
-        log->callPrint((char *)glGetString(temp));
-        log->callPrint(". Exiting program\n");
+		log::log(log::ERROR, "Failed to init GLFW!\n");
         return 1;
     }
 
@@ -215,8 +297,7 @@ int main()
     if (controller::init("/dev/input/js0") == controller::Error::OK) {
         controller_loaded = true;
     } else {
-        log->adjustLogLevel(WARN_LOG_LEVEL);
-        log->callPrint("Warning: No controller detected\n");
+		log::log(log::WARNING, "No controller connected!\n");
     }
 
     // Fill the Log with test messages
@@ -253,48 +334,29 @@ int main()
     camera_feed::init();
 
     // Create the camera streams.
-    camera_feed::Feed feeds[4];
-    camera_feed::init_feed(&feeds[0], 1920, 1080);
-    camera_feed::init_feed(&feeds[1], 1920, 1080);
-    camera_feed::init_feed(&feeds[2], 1920, 1080);
-    camera_feed::init_feed(&feeds[3], 1920, 1080);
+    camera_feed::Feed feeds[2];
+    camera_feed::init_feed(&feeds[0], 1280, 720);
+    camera_feed::init_feed(&feeds[1], 1280, 720);
 
-    network::Error connection_status = network::Error::DISCONNECT;
     // Initialize network functionality.
-    network::Connection conn;
     {
-        network::Error err = network::connect(&conn, "127.0.0.1", 45546, 45545);
+        network::Error err = network::connect(&conn, config.remote_address, config.remote_port, config.local_port);
         if (err != network::Error::OK) {
-            // Sending error report to logging framework
-            log->adjustLogLevel(ERROR_LOG_LEVEL);
-            log->callPrint("[!]Error: Failed to connect to rover. Exiting program\n");
+			log::log(log::ERROR, "Failed to connect to rover!\n");
             return 1;
         }
-        connection_status = network::Error::OK;
     }
-
-    log->adjustLogLevel(TRACE_LOG_LEVEL);
 
     // Keep track of when we last sent movement and heartbeat info.
     unsigned int last_movement_send_time = 0;
     // Last time heartbeat was sent
     unsigned int last_heartbeat_send_time = 0;
-    // Last time heartbeat was recieved
-    unsigned int last_heart_received = 0;
-    // Last time reconection was attempted
-    unsigned int last_reconnect_attempt = 0;
 
-    unsigned int last_bandwidth_send_time = 0;
-    unsigned int total_bytes = 0;
-    double current_bandwidth = 0;
-    unsigned int bandwidth_time_passed = 0;
-    double round_trip_time = 0;
-
-    gui::Font debug_console_font;
-    bool loaded_font = gui::load_font(&debug_console_font, "res/FiraMono-Regular.ttf", 100);
+    gui::Font font;
+    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
 
     if (!loaded_font) {
-        fprintf(stderr, "[!] Failed to load debug console font!\n");
+		log::log(log::ERROR, "Failed to load font!\n");
         return 1;
     }
 
@@ -304,56 +366,11 @@ int main()
         glfwPollEvents();
 
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            if (!gui::state.show_debug_console) {
+            if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-        } else if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS) {
-            if (!log->getDebugStatus()) {
-                log->setDebugStatus(true);
-                log->setDebugMessageStatus(false);
-            } else {
-                log->setDebugStatus(false);
-                log->setDebugMessageStatus(false);
-            }
-        }
-
-        // condition for turning on and off debug mode
-        if (log->getDebugStatus() && !log->getDebugMessageStatus()) {
-            log->adjustLogLevel(DEBUG_LOG_LEVEL);
-            log->callPrint("Debug mode has been turned on\n");
-            log->setDebugMessageStatus(true);
-        }
-        if (!log->getDebugStatus() && !log->getDebugMessageStatus()) {
-            log->callPrint("Debug mode has been turned off\n");
-            log->adjustLogLevel(TRACE_LOG_LEVEL);
-            log->setDebugMessageStatus(true);
-        }
-
-        // Check connection status
-        network::Error connection_status = network::check_status(&conn);
-        if (connection_status != network::Error::OK) {
-            fprintf(stderr, "[!] The socket was closed\n");
-        }
-
-        // Handle network missing heartbeat disconnect
-        if (get_ticks() - last_heart_received >= DISCONNECT_TIMER) {
-            last_heart_received = get_ticks();
-
-            fprintf(stderr, "[!] Too much time has passed since the last heartbeat\n");
-        }
-
-        if (connection_status == network::Error::DISCONNECT && last_reconnect_attempt > RECONNECT_INTERVAL) {
-            last_reconnect_attempt = get_ticks();
-            network::Error reconnect = network::reconnect(&conn, "127.0.0.1", 45546, 45545);
-
-            if (reconnect != network::Error::OK) {
-                fprintf(stderr, "[!] Failed to reconnect\n");
-            } else {
-                fprintf(stderr, "[!] Reconnection succeeded\n");
-                connection_status = network::Error::OK;
-            }
-        }
+        } 
 
         // Handle incoming network messages.
         network::poll_incoming(&conn);
@@ -363,12 +380,8 @@ int main()
         // network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgo);
 
         while (network::dequeue_incoming(&conn, &message)) {
-            total_bytes = sizeof(message);
-            bandwidth_time_passed = get_ticks();
             switch (message.type) {
                 case network::MessageType::HEARTBEAT: {
-                    printf("Recieved a heartbeat response from rover\n");
-                    last_heart_received = get_ticks();
                     break;
                 }
                 case network::MessageType::CAMERA: {
@@ -380,7 +393,7 @@ int main()
                     camera_message.data = camera_message_buffer;
                     network::deserialize(message.buffer, &camera_message);
 
-                    if (camera_message.stream_index > 4) {
+                    if (camera_message.stream_index > 2) {
                         break;
                     }
 
@@ -389,10 +402,7 @@ int main()
                         camera_message.section_index, camera_message.section_count, camera_message.frame_index);
 
                     if (err != camera_feed::Error::OK) {
-                        // sending error message to log
-                        log->adjustLogLevel(ERROR_LOG_LEVEL);
-                        log->callPrint("[!] Error: Failed to handle frame section\n");
-                        log->adjustLogLevel(TRACE_LOG_LEVEL);
+						log::log(log::WARNING, "Failed to handle video frame section!\n");
                     }
 
                     break;
@@ -402,12 +412,6 @@ int main()
             }
 
             network::return_incoming_buffer(message.buffer);
-
-            if (get_ticks() - last_bandwidth_send_time > 0) {
-                last_bandwidth_send_time = get_ticks();
-                current_bandwidth = total_bytes / (last_bandwidth_send_time - bandwidth_time_passed);
-                printf("%f bandwidth\n", current_bandwidth);
-            }
 
             network::return_incoming_buffer(message.buffer);
         }
@@ -421,24 +425,17 @@ int main()
             controller::Event event;
             controller::Error err;
 
-            double time_passed;
-
             // Do nothing since we just want to update current values.
             while ((err = controller::poll(&event)) == controller::Error::OK) {
             }
 
             if (err != controller::Error::DONE) {
-                log->adjustLogLevel(ERROR_LOG_LEVEL);
-                log->callPrint("[!] Error: Failed to read from the controller. Disabling\n");
-                log->adjustLogLevel(TRACE_LOG_LEVEL);
-                controller_loaded = false;
+				log::log(log::ERROR, "Failed to read from the controller!\n");
             } else {
                 if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
-                    bandwidth_time_passed = get_ticks() - last_movement_send_time;
-                    round_trip_time = bandwidth_time_passed / 1000;
-
+					/*
                     last_movement_send_time = get_ticks();
-                    fprintf(stderr, "[!] Sending controller data\n");
+
                     network::Buffer *message_buffer = network::get_outgoing_buffer();
                     network::MovementMessage message;
                     message.left = -controller::get_value(controller::Axis::JS_LEFT_Y);
@@ -446,21 +443,14 @@ int main()
                     network::serialize(message_buffer, &message);
 
                     network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
-                    time_passed = 1000 / bandwidth_time_passed;
-                    current_bandwidth = sizeof(message) * time_passed;
-                    printf("%f bandwidth in bytes per second \n", current_bandwidth);
-                    printf("%f round trip time in ms \n", round_trip_time);
+					*/
                 }
             }
         }
 
         // Update and draw GUI.
-        do_gui(feeds, &debug_console_font);
+        do_gui(feeds, &font);
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-
-        // Init the font
-        gui::Font font;
-        gui::load_font(&font, "res/F25_Bank_Printer.ttf", 100);
 
         // Draw log text now
         for (unsigned int i = 0; i < logMessages.size(); i++) {
@@ -474,7 +464,6 @@ int main()
         glfwSwapBuffers(window);
 
         // Send any messages that we accumulated.
-        fprintf(stderr, "[!] Draining queue.\n");
         network::drain_outgoing(&conn);
     }
 

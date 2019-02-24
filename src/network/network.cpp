@@ -113,8 +113,8 @@ template <> void serialize(Buffer *buffer, MovementMessage *message)
 
 template <> void deserialize(Buffer *buffer, MovementMessage *message)
 {
-    deserialize(buffer, &message->left);
-    deserialize(buffer, &message->right);
+    deserialize(buffer, &(message->left));
+    deserialize(buffer, &(message->right));
 }
 
 template <> void serialize(Buffer *buffer, CameraMessage *message)
@@ -459,7 +459,7 @@ Error drain_outgoing(Connection *conn)
 
         // Allocate a buffer for the outgoing packet.
         // Make sure it is labeled as outgoing.
-        Buffer packet_buffer;
+        static Buffer packet_buffer;
         init_buffer(&packet_buffer, false);
 
         // We need to account for space that the packet header occupies.
