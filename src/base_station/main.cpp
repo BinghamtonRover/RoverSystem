@@ -46,6 +46,8 @@ const int DISCONNECT_TIMER = 5000;
 // Network connection.
 network::Connection conn;
 
+unsigned int map_texture_id;
+
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
 
@@ -167,7 +169,6 @@ Config load_config(const char* filename) {
 
 void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 {
-
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -180,7 +181,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.push();
 
     // Draw the map.
-    gui::do_solid_rect(&layout, 572, 572, 119.0f / 255.0f, 82.0f / 255.0f, 65.0f / 255.0f);
+    gui::do_textured_rect(&layout, 572, 572, map_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
@@ -315,6 +316,8 @@ int main()
 
     gui::Font font;
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
+
+	map_texture_id = gui::load_texture("res/binghamton.jpg");
 
     if (!loaded_font) {
 		log::log(log::ERROR, "Failed to load font!");
