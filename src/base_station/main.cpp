@@ -3,6 +3,7 @@
 
 #include "camera_feed.hpp"
 #include "controller.hpp"
+#include "log_view.hpp"
 #include "debug_console.hpp"
 #include "gui.hpp"
 #include "log.hpp"
@@ -44,21 +45,6 @@ const int DISCONNECT_TIMER = 5000;
 
 // Network connection.
 network::Connection conn;
-
-// List of messages the log displays
-std::vector<std::string> logMessages;
-
-// Stuff for the box of the log
-const int LOG_X = 20;
-const int LOG_Y = 600;
-const int LOG_WIDTH = 400;
-const int LOG_HEIGHT = 400;
-const int LOG_THICKNESS = 2;
-const unsigned int MAX_CHARS_IN_A_LINE = 32;
-const unsigned int MAX_LINES = 15;
-
-// Four parallel lists that are also parallel to logMessages
-std::vector<float> red, green, blue, alpha;
 
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
@@ -117,12 +103,41 @@ void command_callback(std::string command) {
 			last_movement_message.right *= -1;
 		}
 
-		printf("> Update movement to %d, %d\n", last_movement_message.left, last_movement_message.right);
+		log::log(log::DEBUG, "> Update movement to %d, %d", last_movement_message.left, last_movement_message.right);
 	}
 }
 
 void stderr_handler(log::Level level, std::string message) {
-	fprintf(stderr, "%s", message.c_str());
+	fprintf(stderr, "%s\n", message.c_str());
+}
+
+void log_view_handler(log::Level level, std::string message) {
+	float r, g, b, a = 1.0f;
+
+	switch (level) {
+	case log::DEBUG:
+		r = 0.70f;
+		g = 0.70f;
+		b = 0.70f;
+		break;
+	case log::INFO:
+		r = 1.0f;
+		g = 1.0f;
+		b = 1.0f;
+		break;
+	case log::WARNING:
+		r = 1.00f;
+		g = 0.52f;
+		b = 0.01f;
+		break;
+	case log::ERROR:
+		r = 1.0f;
+		g = 0.0f;
+		b = 0.0f;
+		break;
+	}
+
+	gui::log_view::print(message, r, g, b, a);
 }
 
 struct Config
@@ -138,7 +153,7 @@ Config load_config(const char* filename) {
 
 	FILE* file = fopen(filename, "r");
 	if (!file) {
-		log::log(log::ERROR, "Failed to open config file!\n");
+		log::log(log::ERROR, "Failed to open config file!");
 		exit(1);
 	}
 
@@ -171,7 +186,10 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.advance_y(10);
 
     // Draw the log.
-    gui::do_solid_rect(&layout, 572, 458, 0, 0, 0);
+	int lvw = 572;
+	int lvh = 458;
+	gui::log_view::calc_sizing(font, lvw, lvh);
+	gui::log_view::do_log(&layout, lvw, lvh, font);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -216,63 +234,11 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
     }
 }
 
-// Helper method for addMessage
-void removeOldMessages()
-{
-    while (logMessages.size() > MAX_LINES) {
-        logMessages.erase(logMessages.begin());
-        red.erase(red.begin());
-        green.erase(green.begin());
-        blue.erase(blue.begin());
-        alpha.erase(alpha.begin());
-    }
-}
-
-// addMessage("Message Here", red, green, blue, alpha)
-void addMessage(std::string m, float r, float g, float b, float a)
-{
-    while (m.length() > 0) {
-        if (m.length() <= MAX_CHARS_IN_A_LINE) {
-            logMessages.push_back(m);
-            red.push_back(r);
-            green.push_back(g);
-            blue.push_back(b);
-            alpha.push_back(a);
-            break;
-        } else {
-            logMessages.push_back(m.substr(0, MAX_CHARS_IN_A_LINE));
-            red.push_back(r);
-            green.push_back(g);
-            blue.push_back(b);
-            alpha.push_back(a);
-            m.erase(0, MAX_CHARS_IN_A_LINE);
-        }
-    }
-    removeOldMessages();
-}
-
-// Test method to make sure the log is working properly
-void testLog()
-{
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("I'm BLUE da ba dee da ba die, da ba dee, da ba die, da ba dee da "
-               "ba die!",
-               0.0f, 0.0f, 1.0f, 1.0f);
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Error: The rover is literally on fire oh god oh geez oh no", 1.0f, 0.0f, 0.0f, 1.0f);
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Life: Exists", 0.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Greek Philosophers: HmmmmMMMMMMMMmm", 0.0f, 1.0f, 1.0f, 1.0f);
-    addMessage("Hello World!", 1.0f, 1.0f, 1.0f, 1.0f);
-}
 
 int main()
 {
 	log::register_handler(stderr_handler);
+	log::register_handler(log_view_handler);
 
 	gui::debug_console::set_callback(command_callback);
 
@@ -284,7 +250,7 @@ int main()
 
     // Init GLFW.
     if (!glfwInit()) {
-		log::log(log::ERROR, "Failed to init GLFW!\n");
+		log::log(log::ERROR, "Failed to init GLFW!");
         return 1;
     }
 
@@ -293,13 +259,10 @@ int main()
     bool controller_loaded = false;
     if (controller::init("/dev/input/js1") == controller::Error::OK) {
         controller_loaded = true;
-		log::log(log::INFO, "Controller connected.\n");
+		log::log(log::INFO, "Controller connected.");
     } else {
-		log::log(log::WARNING, "No controller connected!\n");
+		log::log(log::WARNING, "No controller connected!");
     }
-
-    // Fill the Log with test messages
-    testLog();
 
     // Create a fullscreen window. Title isn't displayed, so doesn't really
     // matter.
@@ -340,7 +303,7 @@ int main()
     {
         network::Error err = network::connect(&conn, config.local_port, config.remote_address, config.remote_port);
         if (err != network::Error::OK) {
-			log::log(log::ERROR, "Failed to connect to rover!\n");
+			log::log(log::ERROR, "Failed to connect to rover!");
             return 1;
         }
     }
@@ -354,7 +317,7 @@ int main()
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
 
     if (!loaded_font) {
-		log::log(log::ERROR, "Failed to load font!\n");
+		log::log(log::ERROR, "Failed to load font!");
         return 1;
     }
 
@@ -378,7 +341,7 @@ int main()
 				if (neterr == network::Error::NOMORE) {
 					break;
 				} else {
-					log::log(log::WARNING, "Failed to read network packets!\n");
+					log::log(log::WARNING, "Failed to read network packets!");
 					break;
 				}
 			}
@@ -405,7 +368,7 @@ int main()
                         camera_message.section_index, camera_message.section_count, camera_message.frame_index);
 
                     if (err != camera_feed::Error::OK) {
-						log::log(log::WARNING, "Failed to handle video frame section!\n");
+						log::log(log::WARNING, "Failed to handle video frame section!");
                     }
 
                     break;
@@ -433,7 +396,7 @@ int main()
 					bool forward = event.value <= 0;
 					int16_t abs_val = event.value < 0 ? -event.value : event.value;
 
-					printf("Got axis with %d\n", abs_val);
+					log::log(log::DEBUG, "Got axis with %d", abs_val);
 
 					if (event.axis == controller::Axis::JS_LEFT_Y) {
 						last_movement_message.left = abs_val >> 7;
@@ -446,7 +409,8 @@ int main()
 			}
 
 			if (err != controller::Error::DONE) {
-				log::log(log::ERROR, "Failed to read from the controller!\n");
+				log::log(log::ERROR, "Failed to read from the controller! Disabling");
+				controller_loaded = false;
 			}
 		}
 
@@ -461,14 +425,6 @@ int main()
         // Update and draw GUI.
         do_gui(feeds, &font);
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-
-        // Draw log text now
-        for (unsigned int i = 0; i < logMessages.size(); i++) {
-            const char *cstr = logMessages.at(i).c_str();
-            glColor4f(red.at(i), green.at(i), blue.at(i), alpha.at(i));
-
-            gui::draw_text(&font, cstr, LOG_X + LOG_THICKNESS + 5, LOG_Y + LOG_THICKNESS + 5 + 30 * i, 20);
-        }
 
         // Display our buffer.
         glfwSwapBuffers(window);

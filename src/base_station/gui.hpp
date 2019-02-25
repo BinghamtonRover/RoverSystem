@@ -89,6 +89,9 @@ struct Layout
 
     void pop()
     {
+		current_x = state_stack[state_stack_len - 1].x;
+		current_y = state_stack[state_stack_len - 1].y;
+
         state_stack_len--;
     }
 
