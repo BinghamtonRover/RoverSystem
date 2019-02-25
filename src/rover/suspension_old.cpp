@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
 
 namespace suspension {
 
@@ -22,6 +24,7 @@ Error init(const char* device_serial_id) {
 	free(device_path);
 
 	if (serial_fd == -1) {
+		printf("Errno: %d\n", errno);
 		return Error::OPEN_DEVICE;
 	}
 
@@ -37,6 +40,11 @@ Error update(Side side, Direction direction, uint8_t speed) {
 	if (dprintf(serial_fd, "%u\n%u\n%u\n", side_enc, direction_enc, speed) < 0) {
 		return Error::WRITE;
 	}
+
+	char response_buffer[40];
+	ssize_t bread = read(serial_fd, &response_buffer, 40);
+
+	// printf("> Response: %.*s\n", bread, response_buffer);	
 
 	return Error::OK;
 }

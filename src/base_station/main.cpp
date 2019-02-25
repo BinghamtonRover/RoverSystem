@@ -35,7 +35,7 @@ const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
 // Send movement updates 3x per second.
-const int MOVMENT_SEND_INTERVAL = 1000 / 3;
+const int MOVEMENT_SEND_INTERVAL = 1000 / 3;
 // Heartbeat interval
 const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
 const int RECONNECT_INTERVAL = 1000 / 3;
@@ -106,8 +106,8 @@ void command_callback(std::string command) {
 		char right_direction_char = parts[2][0];
 		int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
 
-		last_movement_message.left = left_speed << 7;
-		last_movement_message.right = right_speed << 7;
+		last_movement_message.left = left_speed;
+		last_movement_message.right = right_speed;
 
 		if (left_direction_char == 'b') {
 			last_movement_message.left *= -1;
@@ -116,6 +116,8 @@ void command_callback(std::string command) {
 		if (right_direction_char == 'b') {
 			last_movement_message.right *= -1;
 		}
+
+		printf("> Update movement to %d, %d\n", last_movement_message.left, last_movement_message.right);
 	}
 }
 
@@ -287,9 +289,11 @@ int main()
     }
 
     // Init the controller.
+	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
     bool controller_loaded = false;
-    if (controller::init("/dev/input/js0") == controller::Error::OK) {
+    if (controller::init("/dev/input/js1") == controller::Error::OK) {
         controller_loaded = true;
+		log::log(log::INFO, "Controller connected.\n");
     } else {
 		log::log(log::WARNING, "No controller connected!\n");
     }
@@ -334,7 +338,7 @@ int main()
 
     // Initialize network functionality.
     {
-        network::Error err = network::connect(&conn, config.remote_address, config.remote_port, config.local_port);
+        network::Error err = network::connect(&conn, config.local_port, config.remote_address, config.remote_port);
         if (err != network::Error::OK) {
 			log::log(log::ERROR, "Failed to connect to rover!\n");
             return 1;
@@ -367,13 +371,18 @@ int main()
         } 
 
         // Handle incoming network messages.
-        network::poll_incoming(&conn);
-
         network::Message message;
-        // network::Buffer* outgo = network::get_outgoing_buffer();
-        // network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgo);
+        while (true) {
+			network::Error neterr = network::poll(&conn, &message);
+			if (neterr != network::Error::OK) {
+				if (neterr == network::Error::NOMORE) {
+					break;
+				} else {
+					log::log(log::WARNING, "Failed to read network packets!\n");
+					break;
+				}
+			}
 
-        while (network::dequeue_incoming(&conn, &message)) {
             switch (message.type) {
                 case network::MessageType::HEARTBEAT: {
                     break;
@@ -406,9 +415,8 @@ int main()
             }
 
             network::return_incoming_buffer(message.buffer);
-
-            network::return_incoming_buffer(message.buffer);
         }
+
         // Reset heartbeat send time
         if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
             last_heartbeat_send_time = get_ticks();
@@ -421,27 +429,34 @@ int main()
 
             // Do nothing since we just want to update current values.
             while ((err = controller::poll(&event)) == controller::Error::OK) {
-            }
+				if (event.type == controller::EventType::AXIS) {
+					bool forward = event.value <= 0;
+					int16_t abs_val = event.value < 0 ? -event.value : event.value;
 
-            if (err != controller::Error::DONE) {
+					printf("Got axis with %d\n", abs_val);
+
+					if (event.axis == controller::Axis::JS_LEFT_Y) {
+						last_movement_message.left = abs_val >> 7;
+						if (!forward) last_movement_message.left *= -1;
+					} else if (event.axis == controller::Axis::JS_RIGHT_Y) {
+						last_movement_message.right = abs_val >> 7;
+						if (!forward) last_movement_message.right *= -1;
+					}
+				}
+			}
+
+			if (err != controller::Error::DONE) {
 				log::log(log::ERROR, "Failed to read from the controller!\n");
-            } else {
-                if (get_ticks() - last_movement_send_time >= MOVMENT_SEND_INTERVAL) {
-					printf("> send\n");
-                    last_movement_send_time = get_ticks();
-/*
-                    network::MovementMessage message;
-                    message.left = -controller::get_value(controller::Axis::JS_LEFT_Y);
-                    message.right = -controller::get_value(controller::Axis::JS_RIGHT_Y);
-                    network::serialize(message_buffer, &message);
-					*/
+			}
+		}
 
-                    network::Buffer *message_buffer = network::get_outgoing_buffer();
-					network::serialize(message_buffer, &last_movement_message);
-                    network::queue_outgoing(&conn, network::MessageType::MOVEMENT, message_buffer);
-                }
-            }
-        }
+		if (get_ticks() - last_movement_send_time >= MOVEMENT_SEND_INTERVAL) {
+			last_movement_send_time = get_ticks();
+
+			network::Buffer *message_buffer = network::get_outgoing_buffer();
+			network::serialize(message_buffer, &last_movement_message);
+			network::send(&conn, network::MessageType::MOVEMENT, message_buffer);
+		}
 
         // Update and draw GUI.
         do_gui(feeds, &font);
@@ -457,9 +472,6 @@ int main()
 
         // Display our buffer.
         glfwSwapBuffers(window);
-
-        // Send any messages that we accumulated.
-        network::drain_outgoing(&conn);
     }
 
     // Cleanup.

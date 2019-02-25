@@ -87,8 +87,6 @@ int main()
         streams.push_back(cs);
     }
 
-	streams.clear();
-
     std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
     // UDP connection
@@ -96,7 +94,7 @@ int main()
 
     // Open UDP connection
     //{
-    network::Error net_err = network::connect(&conn, config.remote_address, config.remote_port, config.local_port);
+    network::Error net_err = network::connect(&conn, config.local_port, config.remote_address, config.remote_port);
     if (net_err != network::Error::OK) {
         std::cerr << "[!]Failed to connect to base station!" << std::endl;
     }
@@ -170,7 +168,7 @@ int main()
                 // memcpy(message.data, frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE*j), buffer_size);
                 network::serialize(camera_buffer, &message);
 
-                network::queue_outgoing(&conn, network::MessageType::CAMERA, camera_buffer);
+                network::send(&conn, network::MessageType::CAMERA, camera_buffer);
             }
 
             camera::return_buffer(cs);
@@ -179,14 +177,23 @@ int main()
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
 
-        network::poll_incoming(&conn);
-        network::Message message;
         // Receive incoming messages
-        while (network::dequeue_incoming(&conn, &message)) {
+        network::Message message;
+        while (true) {
+			network::Error neterr = network::poll(&conn, &message);
+			if (neterr != network::Error::OK) {
+				if (neterr == network::Error::NOMORE) {
+					break;
+				}
+
+				fprintf(stderr, "[!] Failed to receive packets!\n");
+				break;
+			}
+
             switch (message.type) {
                 case network::MessageType::HEARTBEAT: {
                     network::Buffer *outgoing = network::get_outgoing_buffer();
-                    network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
+                    network::send(&conn, network::MessageType::HEARTBEAT, outgoing);
                     break;
                 }
                 case network::MessageType::MOVEMENT: {
@@ -198,8 +205,8 @@ int main()
 					suspension::Direction left_direction = movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
 					suspension::Direction right_direction = movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD; 
 
-					uint8_t left_speed = movement.left < 0 ? (uint8_t) ((-movement.left) >> 7) : (uint8_t) (movement.left >> 7);
-					uint8_t right_speed = movement.right < 0 ? (uint8_t) ((-movement.right) >> 7) : (uint8_t) (movement.right >> 7);
+					uint8_t left_speed = movement.left < 0 ? (uint8_t) ((-movement.left)) : (uint8_t) (movement.left);
+					uint8_t right_speed = movement.right < 0 ? (uint8_t) ((-movement.right)) : (uint8_t) (movement.right);
 
 					suspension::update(suspension::LEFT, left_direction, left_speed);
 					suspension::update(suspension::RIGHT, right_direction, right_speed);
@@ -210,11 +217,7 @@ int main()
                     break;
             }
 
-            network::Buffer *outgoing = network::get_outgoing_buffer();
-            network::queue_outgoing(&conn, network::MessageType::HEARTBEAT, outgoing);
             network::return_incoming_buffer(message.buffer);
         }
-
-        network::drain_outgoing(&conn);
     }
 }

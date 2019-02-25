@@ -4,8 +4,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <cstdio>
 
 #include <stack>
+#include <vector>
 
 /*
     This file defines an Arena allocator which is used exclusively within the network library.
@@ -31,12 +33,13 @@ private:
     std::stack<int> indices;
 
 public:
-    Arena(int _segment_size)
+    Arena(int _segment_size) : segments(), indices()
     {
         segment_size = _segment_size;
 
         // Create the first segment.
         segments.push_back(new TContainer<T>[segment_size]);
+
 
         // Update the indices of the first segment
         // and push them so we know they are available.
@@ -65,24 +68,29 @@ public:
 
             // Set the indices of the new segment.
             // Also push those indices to the stack.
-            for (size_t i = 0; i < segments.size(); i++) {
+            for (int i = 0; i < segment_size; i++) {
                 // Convert to a "global" index (from the first segment).
-                indices.push((segments.size() - 1) * segment_size);
+				int idx = (segments.size() - 1) * segment_size + i;
+                indices.push(idx);
 
-                segments[segments.size() - 1][i].index = i;
+                segments[segments.size() - 1][i].index = idx;
             }
         }
 
         index = indices.top();
         indices.pop();
 
+
         // When we get an index, we need to find the segment to which it belongs.
         // The remainder is the offset within that segment.
         int segment = index / segment_size;
         int segment_offset = index % segment_size;
 
+
+		memset(&(segments[segment][segment_offset].t), 0, sizeof(T));
+
         // Return a pointer to the value at that offset of that segment.
-        return &((segments[segment] + segment_offset)->t);
+        return &(segments[segment][segment_offset].t);
     }
 
     void free(T *t)
