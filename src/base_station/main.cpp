@@ -27,6 +27,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -36,12 +37,15 @@ const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
 // Send movement updates 3x per second.
-const int MOVEMENT_SEND_INTERVAL = 1000 / 3;
+const int MOVEMENT_SEND_INTERVAL = 1000 / 30;
 // Heartbeat interval
 const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
 const int RECONNECT_INTERVAL = 1000 / 3;
 // Amount of time between heartbeats until disconnection flag is set
 const int DISCONNECT_TIMER = 5000;
+
+const int LOG_VIEW_WIDTH = 572;
+const int LOG_VIEW_HEIGHT = 458;
 
 // Network connection.
 network::Connection conn;
@@ -139,7 +143,16 @@ void log_view_handler(log::Level level, std::string message) {
 		break;
 	}
 
-	gui::log_view::print(message, r, g, b, a);
+	time_t current_time;
+	time(&current_time);
+	struct tm* time_info = localtime(&current_time);
+
+	char time_string_buffer[200];
+	strftime(time_string_buffer, sizeof(time_string_buffer), "[%H:%M:%S] ", time_info);
+
+	std::string full_string = std::string(time_string_buffer) + message;
+
+	gui::log_view::print(full_string, r, g, b, a);
 }
 
 struct Config
@@ -187,10 +200,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.advance_y(10);
 
     // Draw the log.
-	int lvw = 572;
-	int lvh = 458;
-	gui::log_view::calc_sizing(font, lvw, lvh);
-	gui::log_view::do_log(&layout, lvw, lvh, font);
+	gui::log_view::do_log(&layout, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT, font);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -255,16 +265,6 @@ int main()
         return 1;
     }
 
-    // Init the controller.
-	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
-    bool controller_loaded = false;
-    if (controller::init("/dev/input/js1") == controller::Error::OK) {
-        controller_loaded = true;
-		log::log(log::INFO, "Controller connected.");
-    } else {
-		log::log(log::WARNING, "No controller connected!");
-    }
-
     // Create a fullscreen window. Title isn't displayed, so doesn't really
     // matter.
     GLFWwindow *window =
@@ -314,14 +314,25 @@ int main()
     // Last time heartbeat was sent
     unsigned int last_heartbeat_send_time = 0;
 
-    gui::Font font;
-    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
-
 	map_texture_id = gui::load_texture("res/binghamton.jpg");
 
+    gui::Font font;
+    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
 		log::log(log::ERROR, "Failed to load font!");
         return 1;
+    }
+
+	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
+
+    // Init the controller.
+	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
+    bool controller_loaded = false;
+    if (controller::init("/dev/input/js1") == controller::Error::OK) {
+        controller_loaded = true;
+		log::log(log::INFO, "Controller connected.");
+    } else {
+		log::log(log::WARNING, "No controller connected!");
     }
 
     gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
@@ -334,7 +345,11 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-        } 
+        }  else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+				break;	
+			}
+		}
 
         // Handle incoming network messages.
         network::Message message;

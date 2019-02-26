@@ -64,7 +64,6 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
 
     gui::do_solid_rect(layout, width, height, 0, 0, 0);
 
-
 	for (unsigned int i = 0; i < logMessages.size(); i++) {
 		const char* str = logMessages[i].c_str();
 

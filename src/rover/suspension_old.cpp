@@ -37,12 +37,12 @@ Error update(Side side, Direction direction, uint8_t speed) {
 	uint8_t side_enc = (uint8_t) side;	
 	uint8_t direction_enc = (uint8_t) direction;
 
-	if (dprintf(serial_fd, "%u\n%u\n%u\n", side_enc, direction_enc, speed) < 0) {
+	if (dprintf(serial_fd, "%u %u %u\n", side_enc, direction_enc, speed) < 0) {
 		return Error::WRITE;
 	}
 
-	char response_buffer[40];
-	ssize_t bread = read(serial_fd, &response_buffer, 40);
+	// char response_buffer[40];
+	// ssize_t bread = read(serial_fd, &response_buffer, 40);
 
 	// printf("> Response: %.*s\n", bread, response_buffer);	
 
