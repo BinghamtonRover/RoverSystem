@@ -186,7 +186,7 @@ int main()
 					break;
 				}
 
-				fprintf(stderr, "[!] Failed to receive packets!\n");
+				fprintf(stderr, "[!] Failed to receive packets!: %d\n", neterr);
 				break;
 			}
 

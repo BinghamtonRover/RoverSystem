@@ -220,6 +220,8 @@ Error connect(Connection *conn, int local_port, const char *destination_address,
 
 Error poll(Connection* conn, Message* message) {
 	Buffer* buffer = buffer_arena.alloc();
+	buffer->idx = 0;
+	buffer->size = 0;
 
     // These two fields are updated every loop by recvfrom.
     // They can start uninitialized.

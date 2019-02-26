@@ -37,7 +37,7 @@ const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
 // Send movement updates 3x per second.
-const int MOVEMENT_SEND_INTERVAL = 1000 / 30;
+const int MOVEMENT_SEND_INTERVAL = 1000 / 1;
 // Heartbeat interval
 const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
 const int RECONNECT_INTERVAL = 1000 / 3;
@@ -359,7 +359,7 @@ int main()
 				if (neterr == network::Error::NOMORE) {
 					break;
 				} else {
-					log::log(log::WARNING, "Failed to read network packets!");
+					log::log(log::WARNING, "Failed to read network packets! %d", neterr);
 					break;
 				}
 			}
