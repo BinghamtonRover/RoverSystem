@@ -180,6 +180,19 @@ Config load_config(const char* filename) {
 	return config;
 }
 
+void do_info_panel(gui::Layout* layout, gui::Font* font) {
+	int x = layout->current_x;
+	int y = layout->current_y;
+
+    gui::do_solid_rect(layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+
+	char bandwidth_buffer[50];
+	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", conn.last_bandwidth);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
+}
+
 void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 {
     // Clear the screen to a modern dark gray.
@@ -220,7 +233,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.reset_y();
     layout.advance_x(10);
 
-    gui::do_solid_rect(&layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+	do_info_panel(&layout, font);
 
     // Draw the debug overlay.
     layout = {};
@@ -345,11 +358,13 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-        }  else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 				break;	
 			}
 		}
+
+		network::update_bandwidth(&conn, get_ticks());
 
         // Handle incoming network messages.
         network::Message message;

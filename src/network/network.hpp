@@ -15,6 +15,8 @@ const unsigned int BUFFER_SIZE = 65500;
 
 const unsigned int HEADER_SIZE = 4;
 
+const int BANDWIDTH_SAMPLE_INTERVAL = 1000;
+
 //
 // Buffer Definition
 //
@@ -134,7 +136,9 @@ struct Connection
     int destination_port;
     int local_port;
 
-    // TODO: Statistic information ...
+	double last_bandwidth;
+	int total_bytes;
+	unsigned int last_bandwidth_update_time;
 };
 
 Error connect(Connection *conn, int local_port, const char *destination_address, int destination_port);
@@ -146,6 +150,8 @@ Error poll(Connection* conn, Message* message);
 Buffer *get_outgoing_buffer();
 
 void return_incoming_buffer(Buffer *buffer);
+
+double update_bandwidth(Connection* conn, unsigned int time);
 
 } // namespace network
 

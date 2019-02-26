@@ -180,6 +180,10 @@ Error connect(Connection *conn, int local_port, const char *destination_address,
     // And set our port!
     conn->local_port = local_port;
 
+	conn->last_bandwidth = 0;
+	conn->total_bytes = 0;
+	conn->last_bandwidth_update_time = 0;
+
     // Open a socket.
     // We specify AF_INET to use IPv4.
     // We specify SOCK_DGRAM to indicate UDP.
@@ -254,6 +258,8 @@ Error poll(Connection* conn, Message* message) {
 		return Error::READ_PACKET;
 	}
 
+	conn->total_bytes += res;
+
 	// We need to read the header first.
 	uint8_t version;
 	uint8_t type;
@@ -314,6 +320,8 @@ Error send(Connection* conn, MessageType type, Buffer* buffer) {
 		return Error::SEND_PACKET;
 	}
 
+	conn->total_bytes += buffer->size;
+
 	buffer_arena.free(buffer);
     return Error::OK;
 }
@@ -330,6 +338,21 @@ Buffer *get_outgoing_buffer()
 void return_incoming_buffer(Buffer *buffer)
 {
     buffer_arena.free(buffer);
+}
+
+double update_bandwidth(Connection* conn, unsigned int time) {
+	if (time - conn->last_bandwidth_update_time >= BANDWIDTH_SAMPLE_INTERVAL) {
+		conn->last_bandwidth_update_time = time;
+
+		int total_bytes = conn->total_bytes;
+		conn->total_bytes = 0;
+
+		conn->last_bandwidth = 0.001 * (total_bytes / (double)BANDWIDTH_SAMPLE_INTERVAL);
+
+		return conn->last_bandwidth;
+	}
+
+	return conn->last_bandwidth;
 }
 
 } // namespace network
