@@ -5,9 +5,12 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 
 #include <stack>
 #include <vector>
+
+const int ARENA_NUM_THINGS = 10;
 
 /*
     This file defines an Arena allocator which is used exclusively within the network library.
@@ -26,71 +29,31 @@ template <typename T> struct TContainer
 template <typename T> class Arena
 {
 private:
-    int segment_size;
-    // `segments` is a vector of pointers to segments of memory used for allocation.
-    std::vector<TContainer<T> *> segments;
+	TContainer<T> things[ARENA_NUM_THINGS];
 
     std::stack<int> indices;
 
 public:
-    Arena(int _segment_size) : segments(), indices()
+    Arena(int _segment_size)
     {
-        segment_size = _segment_size;
-
-        // Create the first segment.
-        segments.push_back(new TContainer<T>[segment_size]);
-
-
-        // Update the indices of the first segment
-        // and push them so we know they are available.
-        for (int i = 0; i < segment_size; i++) {
+        for (int i = 0; i < ARENA_NUM_THINGS; i++) {
             indices.push(i);
-            segments[0][i].index = i;
-        }
-    }
-
-    // Destroys the segments.
-    ~Arena()
-    {
-        for (size_t i = 0; i < segments.size(); i++) {
-            delete[] segments[i];
+			things[i].index = i;
         }
     }
 
     // Grabs an available T.
     T *alloc()
     {
-        int index;
-
         if (indices.empty()) {
-            // If there are no free indices, then we must create a new segment.
-            segments.push_back(new TContainer<T>[segment_size]);
-
-            // Set the indices of the new segment.
-            // Also push those indices to the stack.
-            for (int i = 0; i < segment_size; i++) {
-                // Convert to a "global" index (from the first segment).
-				int idx = (segments.size() - 1) * segment_size + i;
-                indices.push(idx);
-
-                segments[segments.size() - 1][i].index = idx;
-            }
+			fprintf(stderr, "[!] [!] [!] OUT OF THINGS!\n");
+			exit(2);
         }
 
-        index = indices.top();
+        int index = indices.top();
         indices.pop();
 
-
-        // When we get an index, we need to find the segment to which it belongs.
-        // The remainder is the offset within that segment.
-        int segment = index / segment_size;
-        int segment_offset = index % segment_size;
-
-
-		memset(&(segments[segment][segment_offset].t), 0, sizeof(T));
-
-        // Return a pointer to the value at that offset of that segment.
-        return &(segments[segment][segment_offset].t);
+        return &(things[index].t);
     }
 
     void free(T *t)

@@ -243,10 +243,12 @@ Error poll(Connection* conn, Message* message) {
 
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			// No packets left.
+			buffer_arena.free(buffer);
 			return Error::NOMORE;
 		}
 
 		// A read error.
+		buffer_arena.free(buffer);
 		return Error::READ_PACKET;
 	}
 
@@ -260,6 +262,7 @@ Error poll(Connection* conn, Message* message) {
 	deserialize(buffer, &size);
 
 	if (version != PROTOCOL_VERSION) {
+		buffer_arena.free(buffer);
 		return Error::WRONG_VERSION;
 	}
 

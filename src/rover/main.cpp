@@ -200,7 +200,7 @@ int main()
                     network::MovementMessage movement;
                     network::deserialize(message.buffer, &movement);
 
-					printf("Got movement with %d, %d\n", movement.left, movement.right);
+					// printf("Got movement with %d, %d\n", movement.left, movement.right);
 
 					suspension::Direction left_direction = movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
 					suspension::Direction right_direction = movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD; 
