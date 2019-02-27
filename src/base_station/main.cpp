@@ -7,6 +7,7 @@
 #include "debug_console.hpp"
 #include "gui.hpp"
 #include "log.hpp"
+#include "math.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -184,13 +185,49 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int x = layout->current_x;
 	int y = layout->current_y;
 
-    gui::do_solid_rect(layout, 755, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+	gui::do_solid_rect(layout, 445, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
 	char bandwidth_buffer[50];
 	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", conn.last_bandwidth);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
+}
+
+std::vector<uint16_t> lidar_points;
+
+void do_lidar(gui::Layout* layout) {
+	int wx = layout->current_x;
+	int wy = layout->current_y;
+
+    gui::do_solid_rect(layout, 300, 300, 0, 0, 0);
+
+	glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+
+	glBegin(GL_QUADS);
+
+	for (size_t i = 0; i < lidar_points.size(); i++) {
+		float angle = (float)i - 45;
+		float theta = angle * math::PI / 180.0f;
+
+		// jtheta -= math::PI;
+
+		uint16_t dist = lidar_points[i];
+
+		float r = dist * 150.0f / 10000.0f;
+
+		float hs = 2.0f;
+
+		float x = wx + 150.0f + r * math::cosf(theta);
+		float y = wy + 150.0f - r * math::sinf(theta);
+
+		glVertex2f(x - hs, y - hs);
+		glVertex2f(x + hs, y - hs);
+		glVertex2f(x + hs, y + hs);
+		glVertex2f(x - hs, y + hs);
+	}
+
+	glEnd();
 }
 
 int primary_feed = 0;
@@ -236,6 +273,13 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.reset_y();
     layout.advance_x(10);
 
+	// Draw the lidar.
+	do_lidar(&layout);
+
+	layout.reset_y();
+	layout.advance_x(10);
+
+	// Draw the info panel.
 	do_info_panel(&layout, font);
 
     // Draw the debug overlay.
@@ -417,6 +461,17 @@ int main()
 
                     break;
                 }
+				case network::MessageType::LIDAR: {
+					lidar_points.clear();
+
+					network::LidarMessage lidar_message;
+					network::deserialize(message.buffer, &lidar_message);
+
+					for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
+						lidar_points.push_back(lidar_message.points[i]);
+					}
+					break;
+				}
                 default:
                     break;
             }
@@ -461,7 +516,7 @@ int main()
 		if (get_ticks() - last_movement_send_time >= MOVEMENT_SEND_INTERVAL) {
 			last_movement_send_time = get_ticks();
 
-			printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
+			// printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
 			network::Buffer *message_buffer = network::get_outgoing_buffer();
 			network::serialize(message_buffer, &last_movement_message);
