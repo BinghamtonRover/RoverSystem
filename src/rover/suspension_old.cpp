@@ -41,10 +41,12 @@ Error update(Side side, Direction direction, uint8_t speed) {
 		return Error::WRITE;
 	}
 
-	// char response_buffer[40];
-	// ssize_t bread = read(serial_fd, &response_buffer, 40);
+/*
+	char response_buffer[40];
+	ssize_t bread = read(serial_fd, &response_buffer, 40);
 
-	// printf("> Response: %.*s\n", bread, response_buffer);	
+	printf("> Response: %.*s\n", bread, response_buffer);	
+	*/
 
 	return Error::OK;
 }

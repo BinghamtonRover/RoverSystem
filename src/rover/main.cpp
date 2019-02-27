@@ -5,6 +5,8 @@
 
 #include <turbojpeg.h>
 
+#include <sl/Camera.hpp>
+
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -66,6 +68,19 @@ int main()
     for (int i = 0; i < MAX_STREAMS; i++) {
         camera::CaptureSession *cs = new camera::CaptureSession;
 
+		char name_filename_buffer[100];
+		sprintf(name_filename_buffer, "/sys/class/video4linux/video%d/name", i);
+
+		FILE* name_file = fopen(name_filename_buffer, "r");
+		if (!name_file) continue;
+
+		fscanf(name_file, "%s\n", name_filename_buffer);
+		printf("> Found camera with name %s\n", name_filename_buffer);
+
+		fclose(name_file);
+
+		if (strcmp("ZED", name_filename_buffer) == 0) continue;
+
         char filename_buffer[13]; // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
         sprintf(filename_buffer, "/dev/video%d", i);
 
@@ -80,7 +95,7 @@ int main()
         if (err != camera::Error::OK) {
             camera::close(cs);
             delete cs;
-            break;
+			continue;
         }
 
         // It was opened and started. Add it to the list of streams.
@@ -88,6 +103,20 @@ int main()
     }
 
     std::cout << "> Using " << streams.size() << " cameras." << std::endl;
+
+	// Open ZED camera.
+
+	sl::Camera zed;
+
+	sl::InitParameters params;
+	params.camera_resolution = sl::RESOLUTION_HD720;
+	params.camera_fps = 20;
+
+	auto zed_res = zed.open(params);
+	if (zed_res != sl::SUCCESS) {
+		fprintf(stderr, "[!] Failed to open ZED camera! Error: %s\n", sl::toString(zed_res).get());
+		// return 1;
+	}
 
     // UDP connection
     network::Connection conn;
@@ -136,7 +165,7 @@ int main()
 
             // Recompress into jpeg buffer.
             tjCompress2(compressor, raw_buffer, CAMERA_WIDTH, 3 * CAMERA_WIDTH, CAMERA_HEIGHT, TJPF_RGB, &frame_buffer,
-                        &frame_size, TJSAMP_422, 25, TJFLAG_NOREALLOC);
+                        &frame_size, TJSAMP_420, 25, TJFLAG_NOREALLOC);
 
             /*
                     2. Send out packets
@@ -173,7 +202,58 @@ int main()
 
             camera::return_buffer(cs);
         }
+#if 1
+		sl::Mat zed_image;
+		if (zed.grab() == sl::SUCCESS) {
+			zed.retrieveImage(zed_image, sl::VIEW_LEFT);
 
+			static tjhandle compressor = tjInitCompress();
+
+			static unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
+			static uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
+
+			auto tj_err = tjCompress2(compressor, zed_image.getPtr<unsigned char>(), 1280, 
+									zed_image.getStepBytes(), 720, TJPF_BGRA, 
+									(unsigned char**)&jpeg_buffer, &jpeg_size, TJSAMP_444, 40, TJFLAG_NOREALLOC);
+
+/*
+			auto tj_err = tjCompressFromYUV(compressor, zed_image.getPtr<unsigned char>(), 1280,
+											zed_image.getStepBytes(), 720, TJSAMP_444, &jpeg_buffer,
+											&jpeg_size, 40, TJFLAG_NOREALLOC);
+*/
+			if (tj_err != 0) {
+				fprintf(stderr, "[!] tjCompress failed: %s\n", tjGetErrorStr2(compressor));
+			}
+
+            // Send the frame.
+            // Calculate how many buffers we will need to send the entire frame
+            uint8_t num_buffers = (jpeg_size / CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE) + 1;
+
+            for (uint8_t j = 0; j < num_buffers; j++) {
+                network::Buffer *camera_buffer = network::get_outgoing_buffer();
+
+                // This accounts for the last buffer that is not completely divisible
+                // by the defined buffer size, by using up the remaining space calculated
+                // with modulus    -yu
+                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE
+                                                              : jpeg_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
+
+                network::CameraMessage message = {
+                    static_cast<uint8_t>(streams.size()),                                // stream_index
+                    static_cast<uint16_t>(frame_counter),                   // frame_index
+                    static_cast<uint8_t>(j),                                // section_index
+                    num_buffers,                                            // section_count
+                    buffer_size,                                            // size
+                    jpeg_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
+                };
+
+                // memcpy(message.data, frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE*j), buffer_size);
+                network::serialize(camera_buffer, &message);
+
+                network::send(&conn, network::MessageType::CAMERA, camera_buffer);
+            }
+		}
+#endif
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
 
@@ -186,7 +266,6 @@ int main()
 					break;
 				}
 
-				fprintf(stderr, "[!] Failed to receive packets!: %d\n", neterr);
 				break;
 			}
 
@@ -200,7 +279,7 @@ int main()
                     network::MovementMessage movement;
                     network::deserialize(message.buffer, &movement);
 
-					// printf("Got movement with %d, %d\n", movement.left, movement.right);
+					printf("Got movement with %d, %d\n", movement.left, movement.right);
 
 					suspension::Direction left_direction = movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
 					suspension::Direction right_direction = movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD; 
