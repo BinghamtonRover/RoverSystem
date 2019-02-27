@@ -37,7 +37,7 @@ const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
 // Send movement updates 3x per second.
-const int MOVEMENT_SEND_INTERVAL = 1000 / 1;
+const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
 // Heartbeat interval
 const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
 const int RECONNECT_INTERVAL = 1000 / 3;
@@ -193,6 +193,9 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
 }
 
+int primary_feed = 0;
+int secondary_feed = 1;
+
 void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 {
     // Clear the screen to a modern dark gray.
@@ -220,7 +223,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.push();
 
     // Draw the main camera feed.
-    gui::do_textured_rect(&layout, 1298, 730, feed[0].gl_texture_id);
+    gui::do_textured_rect(&layout, 1298, 730, feed[primary_feed].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
@@ -228,7 +231,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 
     // Draw the other camera feed.
     layout.reset_y();
-    gui::do_textured_rect(&layout, 533, 300, feed[1].gl_texture_id);
+    gui::do_textured_rect(&layout, 533, 300, feed[secondary_feed].gl_texture_id);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -256,6 +259,14 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
             gui::debug_console::handle_keypress(key, mods);
         }
     }
+
+	if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+		if (action == GLFW_PRESS && key == GLFW_KEY_C) {
+			int temp = primary_feed;
+			primary_feed = secondary_feed;
+			secondary_feed = temp;
+		}
+	}
 }
 
 
@@ -449,6 +460,8 @@ int main()
 
 		if (get_ticks() - last_movement_send_time >= MOVEMENT_SEND_INTERVAL) {
 			last_movement_send_time = get_ticks();
+
+			printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
 			network::Buffer *message_buffer = network::get_outgoing_buffer();
 			network::serialize(message_buffer, &last_movement_message);
