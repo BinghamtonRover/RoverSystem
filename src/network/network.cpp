@@ -129,6 +129,18 @@ template <> void serialize(Buffer *buffer, CameraMessage *message)
     buffer->size += message->size;
 }
 
+template <> void serialize(Buffer *buffer, LidarMessage *message) {
+	for (int i = 0; i < NUM_LIDAR_POINTS; i++) {
+		serialize(buffer, message->points[i]);
+	}
+}
+
+template <> void deserialize(Buffer *buffer, LidarMessage *message) {
+	for (int i = 0; i < NUM_LIDAR_POINTS; i++) {
+		deserialize(buffer, &(message->points[i]));
+	}
+}
+
 // See the note in network.hpp regarding memory management.
 template <> void deserialize(Buffer *buffer, CameraMessage *message)
 {

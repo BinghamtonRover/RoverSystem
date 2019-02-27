@@ -73,6 +73,7 @@ enum class MessageType : uint8_t
     MOVEMENT,
     CAMERA,
     LOG,
+	LIDAR,
 
     NUM
 };
@@ -102,6 +103,12 @@ struct LogMessage
     uint8_t size;
 
     char *log_string;
+};
+
+const int NUM_LIDAR_POINTS = 271;
+
+struct LidarMessage {
+	uint16_t points[NUM_LIDAR_POINTS];
 };
 
 //

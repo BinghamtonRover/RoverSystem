@@ -2,6 +2,7 @@
 #include "../shared.hpp"
 #include "camera.hpp"
 #include "suspension.hpp"
+#include "lidar.hpp"
 
 #include <turbojpeg.h>
 
@@ -13,12 +14,25 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
+#include <chrono>
 
 // GLOBAL CONSTANTS
 
 const int MAX_STREAMS = 2;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
+
+const int LIDAR_SEND_INTERVAL = 1000 / 3;
+
+// Save the start time so we can use get_ticks.
+std::chrono::high_resolution_clock::time_point start_time;
+
+unsigned int get_ticks()
+{
+    auto now = std::chrono::high_resolution_clock::now();
+
+    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+}
 
 struct Config
 {
@@ -52,12 +66,21 @@ Config load_config(const char* filename) {
 
 int main()
 {
+	start_time = std::chrono::high_resolution_clock::now();
+
 	Config config = load_config("res/r_config.txt");
 
 	if (suspension::init(config.suspension_serial_id) != suspension::Error::OK) {
 		fprintf(stderr, "[!] Failed to initialize the suspension!\n");
 		return 1;
 	}
+
+	if (lidar::start("192.168.1.21") != lidar::Error::OK) {
+		fprintf(stderr, "[!] Failed to init field LIDAR!\n");
+		return 1;
+	}
+
+	std::vector<long> lidar_points;
 
     unsigned int frame_counter = 0;
 
@@ -122,24 +145,14 @@ int main()
     network::Connection conn;
 
     // Open UDP connection
-    //{
     network::Error net_err = network::connect(&conn, config.local_port, config.remote_address, config.remote_port);
     if (net_err != network::Error::OK) {
         std::cerr << "[!]Failed to connect to base station!" << std::endl;
     }
-    //}
 
-    /*
-            MAIN LOOP
-                    1. Process Info Locally
-                    2. Send out packets
-    */
+	auto last_lidar_send_time = get_ticks();
+
     while (true) {
-        /*
-                1. Process Info Locally
-                        - Grabbing frames
-        */
-
         for (size_t i = 0; i < streams.size(); i++) {
             camera::CaptureSession *cs = streams[i];
 
@@ -256,6 +269,25 @@ int main()
 #endif
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
+
+		// LIDAR stuff.
+
+		if (get_ticks() - last_lidar_send_time >= LIDAR_SEND_INTERVAL) {
+			lidar_points.clear();
+			if (lidar::scan(lidar_points) != lidar::Error::OK) {
+				fprintf(stderr, "[!] Failed to read LIDAR points!\n");
+			}
+
+			network::Buffer* buffer = network::get_outgoing_buffer();
+
+			network::LidarMessage message;
+			for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
+				message.points[i] = (uint16_t) lidar_points[i];
+			}
+
+			network::serialize(buffer, &message);
+			network::send(&conn, network::MessageType::LIDAR, buffer);
+		}
 
         // Receive incoming messages
         network::Message message;
