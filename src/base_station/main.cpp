@@ -37,6 +37,12 @@ constexpr float ANGULAR_RES = 10.0f;
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
+// For control smoothing.
+const float ALPHA = 30;
+
+// Speed for the DPAD up/down.
+const int16_t JOINT_DRIVE_SPEED = 50;
+
 // Send movement updates 3x per second.
 const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
 // Heartbeat interval
@@ -185,16 +191,33 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int x = layout->current_x;
 	int y = layout->current_y;
 
-	gui::do_solid_rect(layout, 445, 300, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+	int w = 445;
+	int h = 300;
+
+	gui::do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
 	char bandwidth_buffer[50];
 	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", conn.last_bandwidth);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
+
+
+	time_t current_time;
+	time(&current_time);
+	struct tm* time_info = localtime(&current_time);
+
+	char time_string_buffer[200];
+	strftime(time_string_buffer, sizeof(time_string_buffer), "%I:%M:%S", time_info);
+
+	int tw = gui::text_width(font, time_string_buffer, 20);
+
+	gui::draw_text(font, time_string_buffer, x + 5, y + h - 20 - 5, 20);
 }
 
 std::vector<uint16_t> lidar_points;
+
+network::LocationMessage location{};
 
 void do_lidar(gui::Layout* layout) {
 	int wx = layout->current_x;
@@ -202,30 +225,72 @@ void do_lidar(gui::Layout* layout) {
 
     gui::do_solid_rect(layout, 300, 300, 0, 0, 0);
 
+	glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+	glLineWidth(2.0f);
+
+	for (int q = -3; q <= 3; q++) {
+		for (int r = -3; r <= 3; r++) {
+			float x = 1.2f * (3.0f / 2.0f) * q;
+			float y = 1.2f * ((math::sqrtf(3.0f)/2.0f) * q + math::sqrtf(3) * r);
+
+			float ppm = 150.0f / 10.0f;
+
+			float px = ppm * x;
+			float py = ppm * y;
+
+			glBegin(GL_LINE_LOOP);
+
+			for (int i = 0; i < 6; i++) {
+				float angle = math::PI * (float)i / 3.0f;
+
+				float vx = wx + 150.0f + px + ppm * 1.2 * math::cosf(angle);
+				float vy = wy + 150.0f + py + ppm * 1.2 * math::sinf(angle);
+
+//				glVertex2f(vx, vy);
+			}
+
+			glEnd();
+		}
+	}
+
 	glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 
 	glBegin(GL_QUADS);
 
 	for (size_t i = 0; i < lidar_points.size(); i++) {
-		float angle = (float)i - 45;
+		float angle = 225.0f - (float)i;
 		float theta = angle * math::PI / 180.0f;
 
-		// jtheta -= math::PI;
+		theta -= math::PI;
 
 		uint16_t dist = lidar_points[i];
 
 		float r = dist * 150.0f / 10000.0f;
 
-		float hs = 2.0f;
+		float hs = 1.0f;
 
 		float x = wx + 150.0f + r * math::cosf(theta);
-		float y = wy + 150.0f - r * math::sinf(theta);
+		float y = wy + 150.0f + r * math::sinf(theta);
+
+		if (dist < 100) continue;
 
 		glVertex2f(x - hs, y - hs);
 		glVertex2f(x + hs, y - hs);
 		glVertex2f(x + hs, y + hs);
 		glVertex2f(x - hs, y + hs);
 	}
+
+	float hs = 1.2 * 15.0f / 2.0f;
+
+	float x = wx + 150.0f;
+	float y = wy + 150.0f;
+
+	glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+
+	glVertex2f(x - hs, y - hs);
+	glVertex2f(x + hs, y - hs);
+	glVertex2f(x + hs, y + hs);
+	glVertex2f(x - hs, y + hs);
 
 	glEnd();
 }
@@ -313,6 +378,15 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
 	}
 }
 
+// Takes values between 0 and 255 and returns them between 0 and 255.
+float smooth_rover_input(float value) {
+	// We want to exponentially smooth this.
+	// We do that by picking alpha in (1, whatever).
+	// The higher the alpha, the more exponential the thing.
+	// We then make sure that f(0) = 0 and f(1) = 255.
+
+	return (255.0f / (ALPHA - 1)) * (math::powf(1 / ALPHA, -value/255.0f) - 1);
+}
 
 int main()
 {
@@ -472,6 +546,14 @@ int main()
 					}
 					break;
 				}
+				case network::MessageType::LOCATION: {
+					network::LocationMessage location_message;
+					network::deserialize(message.buffer, &location_message);
+
+					printf("%f, %f, %f, %f, %f, %f\n", location_message.x, location_message.y, location_message.z, location_message.pitch, location_message.yaw, location_message.roll);
+
+					break;
+				}
                 default:
                     break;
             }
@@ -495,14 +577,63 @@ int main()
 					bool forward = event.value <= 0;
 					int16_t abs_val = event.value < 0 ? -event.value : event.value;
 
-					log::log(log::DEBUG, "Got axis with %d", abs_val);
-
 					if (event.axis == controller::Axis::JS_LEFT_Y) {
-						last_movement_message.left = abs_val >> 7;
+						if (
+							controller::get_value(controller::Axis::DPAD_X) != 0
+							|| controller::get_value(controller::Axis::DPAD_Y) != 0
+						) {
+							continue;
+						}
+
+						int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
+						log::log(log::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
+
+						last_movement_message.left = smoothed;
 						if (!forward) last_movement_message.left *= -1;
 					} else if (event.axis == controller::Axis::JS_RIGHT_Y) {
-						last_movement_message.right = abs_val >> 7;
+						if (
+							controller::get_value(controller::Axis::DPAD_X) != 0
+							|| controller::get_value(controller::Axis::DPAD_Y) != 0
+						) {
+							continue;
+						}
+
+						int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
+						log::log(log::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
+
+						last_movement_message.right = smoothed;
 						if (!forward) last_movement_message.right *= -1;
+					} else if (event.axis == controller::Axis::DPAD_Y) {
+						int16_t val = -event.value;
+
+						if (val > 0) {
+							last_movement_message.left = JOINT_DRIVE_SPEED;
+							last_movement_message.right = JOINT_DRIVE_SPEED;
+						} else if (val < 0) {
+							last_movement_message.left = -JOINT_DRIVE_SPEED;
+							last_movement_message.right = -JOINT_DRIVE_SPEED;
+						} else {
+							last_movement_message.left = 0;
+							last_movement_message.right = 0;
+						}
+					} else if (event.axis == controller::Axis::DPAD_X) {
+						if (event.value > 0) {
+							last_movement_message.left = JOINT_DRIVE_SPEED;
+							last_movement_message.right = -JOINT_DRIVE_SPEED;
+						} else if (event.value < 0) {
+							last_movement_message.left = -JOINT_DRIVE_SPEED;
+							last_movement_message.right = JOINT_DRIVE_SPEED;
+						} else {
+							last_movement_message.left = 0;
+							last_movement_message.right = 0;
+						}
+					}
+
+				} else if (event.type == controller::EventType::BUTTON) {
+					if (event.button == controller::Button::BACK && event.value != 0) {
+						int temp = primary_feed;
+						primary_feed = secondary_feed;
+						secondary_feed = temp;
 					}
 				}
 			}

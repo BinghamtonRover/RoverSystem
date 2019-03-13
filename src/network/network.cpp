@@ -63,6 +63,13 @@ template <> void serialize(Buffer *buffer, int32_t v)
     serialize(buffer, *reinterpret_cast<uint32_t *>(&v));
 }
 
+template <> void serialize(Buffer *buffer, float v)
+{
+	VALUE(buffer->buffer, buffer->idx, float) = v;
+	buffer->idx += 4;
+	buffer->size += 4;
+}
+
 //
 // Primitive deserialization functions.
 //
@@ -98,6 +105,12 @@ template <> void deserialize(Buffer *buffer, uint32_t *v)
 template <> void deserialize(Buffer *buffer, int32_t *v)
 {
     deserialize(buffer, reinterpret_cast<uint32_t *>(v));
+}
+
+template <> void deserialize(Buffer *buffer, float* v)
+{
+	*v = VALUE(buffer->buffer, buffer->idx, float);
+	buffer->idx += 4;
 }
 
 //
@@ -173,6 +186,26 @@ template <> void deserialize(Buffer *buffer, LogMessage *message)
 
     memcpy(message->log_string, buffer->buffer + buffer->idx, message->size);
     buffer->idx += message->size;
+}
+
+template <> void serialize(Buffer *buffer, LocationMessage *message)
+{
+	serialize(buffer, message->x);
+	serialize(buffer, message->y);
+	serialize(buffer, message->z);
+	serialize(buffer, message->pitch);
+	serialize(buffer, message->yaw);
+	serialize(buffer, message->roll);
+}
+
+template <> void deserialize(Buffer *buffer, LocationMessage *message)
+{
+	deserialize(buffer, &(message->x));
+	deserialize(buffer, &(message->y));
+	deserialize(buffer, &(message->z));
+	deserialize(buffer, &(message->pitch));
+	deserialize(buffer, &(message->yaw));
+	deserialize(buffer, &(message->roll));
 }
 
 //

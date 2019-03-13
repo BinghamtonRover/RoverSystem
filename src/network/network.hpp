@@ -74,6 +74,7 @@ enum class MessageType : uint8_t
     CAMERA,
     LOG,
 	LIDAR,
+	LOCATION,
 
     NUM
 };
@@ -109,6 +110,15 @@ const int NUM_LIDAR_POINTS = 271;
 
 struct LidarMessage {
 	uint16_t points[NUM_LIDAR_POINTS];
+};
+
+struct LocationMessage {
+	float x;
+	float y;
+	float z;
+	float pitch;
+	float yaw;
+	float roll;
 };
 
 //

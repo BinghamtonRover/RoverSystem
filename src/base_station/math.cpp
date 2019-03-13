@@ -10,4 +10,12 @@ namespace math {
 	float sinf(float theta) {
 		return ::sinf(theta);
 	}
+
+	float powf(float value, float exp) {
+		return ::powf(value, exp);
+	}
+
+	float sqrtf(float value) {
+		return ::sqrtf(value);
+	}
 }

@@ -3,4 +3,8 @@ namespace math {
 
 	float cosf(float theta);
 	float sinf(float theta);
+
+	float powf(float value, float exp);
+
+	float sqrtf(float value);
 }
