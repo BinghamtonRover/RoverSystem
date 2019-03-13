@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+#include <termios.h>
 
 namespace suspension {
 
@@ -28,6 +29,19 @@ Error init(const char* device_serial_id) {
 		return Error::OPEN_DEVICE;
 	}
 
+	struct termios tty;
+	memset(&tty, 0, sizeof(tty));
+	if (tcgetattr(serial_fd, &tty) != 0) {
+		return Error::GET_ATTR;
+	}
+
+	cfsetospeed(&tty, B19200);
+	cfsetispeed(&tty, B19200);
+
+	if (tcsetattr(serial_fd, TCSANOW, &tty) != 0) {
+		return Error::SET_ATTR;
+	}
+
 	return Error::OK;
 }
 
@@ -38,6 +52,7 @@ Error update(Side side, Direction direction, uint8_t speed) {
 	uint8_t direction_enc = (uint8_t) direction;
 
 	if (dprintf(serial_fd, "%u %u %u\n", side_enc, direction_enc, speed) < 0) {
+		printf("error\n");
 		return Error::WRITE;
 	}
 

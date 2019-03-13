@@ -17,7 +17,9 @@ enum Direction : uint8_t {
 	X(DEVICE_NOT_FOUND), \
 	X(OPEN_DEVICE), \
 	X(INVALID_STATE), \
-	X(WRITE)
+	X(WRITE), \
+	X(GET_ATTR), \
+	X(SET_ATTR)
 
 #define X(error) error
 enum class Error {

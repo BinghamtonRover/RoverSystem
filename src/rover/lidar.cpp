@@ -45,7 +45,7 @@ void print_command(const char* command) {
 
 void parse_and_print_data(const char* command, std::vector<long>& out) {
 	// Advance past start code.
-	assert(command[0] == '\x02');
+	//assert(command[0] == '\x02');
 	
 	std::vector<std::string> parts;		
 	
