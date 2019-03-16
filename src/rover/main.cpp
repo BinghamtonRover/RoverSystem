@@ -5,10 +5,10 @@
 #include "lidar.hpp"
 #include "imu.hpp"
 #include "autonomy.hpp"
+#include "zed.hpp"
 
 #include <turbojpeg.h>
 
-#include <sl/Camera.hpp>
 
 #include <cstddef>
 #include <cstdio>
@@ -107,17 +107,6 @@ int main()
 
     unsigned int frame_counter = 0;
 
-	FILE* lidar_file = fopen("/home/ubuntu/roverdata/lidar_output", "w");
-	FILE* zed_file = fopen("/home/ubuntu/roverdata/zed_output", "w");
-
-	uint32_t time_slice = LIDAR_SEND_INTERVAL;
-	uint32_t num_points = 271;
-
-	fprintf(zed_file, "%u\n", ZED_INTERVAL);
-	fprintf(lidar_file, "%u\n", time_slice);
-
-	fprintf(lidar_file, "%u\n", num_points);
-
     // Camera streams
     std::vector<camera::CaptureSession *> streams;
 
@@ -161,29 +150,7 @@ int main()
 
     std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
-	// Open ZED camera.
-
-	sl::Camera zed;
-
-	sl::InitParameters params;
-	params.camera_resolution = sl::RESOLUTION_HD720;
-	params.camera_fps = 30;
-	params.coordinate_system = sl::COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-	params.coordinate_units = sl::UNIT_METER; // Set units in meters
-
-	auto zed_res = zed.open(params);
-	if (zed_res != sl::SUCCESS) {
-		fprintf(stderr, "[!] Failed to open ZED camera! Error: %s\n", sl::toString(zed_res).get());
-		// return 1;
-	}
-
-	////zed.enableRecording("/home/ubuntu/roverdata/zed_capture.svo", sl::SVO_COMPRESSION_MODE_LOSSLESS);
-
-	sl::TrackingParameters tracking_parameters;
-	zed_res = zed.enableTracking(tracking_parameters);
-	if (zed_res != sl::SUCCESS) {
-		fprintf(stderr, "[!] Failed to start ZED tracking! Error: %s\n", sl::toString(zed_res).get());
-	}
+    zed::open();
 
     // UDP connection
     network::Connection conn;
@@ -286,26 +253,19 @@ int main()
 
 			for (auto point : lidar_points) {
 				int64_t point_enc = point;
-
-				fprintf(lidar_file, "%d,", point_enc);
 			}
-
-			fprintf(lidar_file, "\n");
 
 			last_lidar_send_time = get_ticks();
 		}
 
-#if 1
-		sl::Mat zed_image;
-		if (zed.grab() == sl::SUCCESS) {
-			zed.retrieveImage(zed_image, sl::VIEW_LEFT);
-
-			// zed.record();
-
+        unsigned char* zed_image;
+        int zed_stride;
+        zed::Pose zed_pose;
+        if (zed::grab(&zed_image, &zed_stride, &zed_pose) == zed::Error::OK) {
 			jpeg_size = tjBufSize(1280, 720, TJSAMP_422);
 
-			auto tj_err = tjCompress2(compressor, zed_image.getPtr<unsigned char>(), 1280, 
-									zed_image.getStepBytes(), 720, TJPF_BGRA, 
+			auto tj_err = tjCompress2(compressor, zed_image, 1280, 
+									zed_stride, 720, TJPF_BGRA, 
 									(unsigned char**)&jpeg_buffer, &jpeg_size, TJSAMP_422, 40, TJFLAG_NOREALLOC);
 
 /*
@@ -345,45 +305,12 @@ int main()
                 network::send(&conn, network::MessageType::CAMERA, camera_buffer);
             }
 
+            if (get_ticks() - last_zed_time > ZED_INTERVAL) {
+                last_zed_time = get_ticks();
 
-			// ZED positional tracking.
-			sl::Pose pose;
-			sl::TRACKING_STATE state = zed.getPosition(pose, sl::REFERENCE_FRAME_WORLD);
-			if (state == sl::TRACKING_STATE_OK) {
-				auto trans = pose.getTranslation();
-				auto angles = pose.getEulerAngles(false);
-				// printf("> Position: %f, %f, %f, Rotation: %f, %f, %f\n", pose.getTranslation().x, pose.getTranslation().y, pose.getTranslation().z, angles[0], angles[1], angles[2]);
-
-				if (get_ticks() - last_zed_time >= ZED_INTERVAL) {
-					float x = trans.x, y = trans.y, z = trans.z;
-					float pitch = angles[0], yaw = angles[1], roll = angles[2];
-
-					fprintf(zed_file, "%f,%f,%f,%f,%f,%f\n", x, y, z, pitch, yaw, roll);
-					fflush(zed_file);
-
-					network::LocationMessage message = { x, y, z, pitch, yaw, roll };
-					network::Buffer* buffer = network::get_outgoing_buffer();
-
-					network::serialize(buffer, &message);
-					network::send(&conn, network::MessageType::LOCATION, buffer);
-
-					last_zed_time = get_ticks();
-				}
-
-				if (do_autonomy && get_ticks() - last_autonomy_time >= AUTONOMY_INTERVAL) {
-					autonomy::update(get_ticks(), trans.x, trans.y, trans.z, angles[0], angles[1], angles[2], lidar_points);
-
-					float x = trans.x, y = trans.y, z = trans.z;
-					float pitch = angles[0], yaw = angles[1], roll = angles[2];
-
-					fprintf(zed_file, "%f,%f,%f,%f,%f,%f\n", x, y, z, pitch, yaw, roll);
-					fflush(zed_file);
-
-					last_autonomy_time = get_ticks();
-				}
-			}
+                // TODO: SEND NETWORK UPDATES AND UPDATE AUTONOMY.
+            }
 		}
-#endif
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
 
