@@ -15,6 +15,8 @@ typedef void (*Handler)(Level, std::string);
 
 void register_handler(Handler handler);
 
+bool toggleDebugMode();
+
 void log(Level level, const char* format, ...);
 
 } // namespace log

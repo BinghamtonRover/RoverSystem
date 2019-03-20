@@ -1,5 +1,6 @@
 #include "debug_console.hpp"
 #include "gui.hpp"
+#include "log.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -31,6 +32,12 @@ struct DebugLine
 
     float r = 0.0f, g = 1.0f, b = 0.0f;
 };
+
+struct Waypoints
+{
+	//Each element is a vector with two elements: [Latitude, Longitude]
+	std::vector<std::vector<double>> wpList;
+} waypoints;
 
 struct DebugConsole
 {
@@ -112,23 +119,23 @@ void do_debug(gui::Layout *layout, gui::Font *font)
 
 void log(std::string text, float r, float g, float b)
 {
-    if (text.size() < 200) {
-        DebugLine line{text, r, g, b};
-        console.history.push_back(line);
-        return;
-    }
+	if (text.size() < 200) {
+		DebugLine line{text, r, g, b};
+		console.history.push_back(line);
+	return;
+	}
 
-    while (text.size() >= 200) {
-        for (int i = 200; i > 0; i--) {
-            if (text[i] == ' ') {
-                std::string l = text.substr(0, i);
-                DebugLine line{l, r, g, b};
-                console.history.push_back(line);
-                text = text.substr(i, text.size());
-                break;
-            }
+	while (text.size() >= 200) {
+		for (int i = 200; i > 0; i--) {
+		    if (text[i] == ' ') {
+		        std::string l = text.substr(0, i);
+		        DebugLine line{l, r, g, b};
+		        console.history.push_back(line);
+		        text = text.substr(i, text.size());
+		        break;
+		    }
+		}
         }
-    }
 }
 
 void handle_input(char c)
@@ -140,15 +147,63 @@ void handle_keypress(int key, int mods)
 {
     if (key == GLFW_KEY_ENTER) {
         std::string command = console.buffer.line.substr(CONSOLE_PROMPT.size());
-
+	
         console.history.push_back(console.buffer);
         console.buffer = {CONSOLE_PROMPT, 0, 1, 0};
 
 		console.callback(command);
 
         if (command == "test") {
-            log("This is some red text.", 1, 0, 0);
-        }
+		log("Command \"test\" invoked.", 1, 1, 0);
+        	log("This is some red text.", 1, 0, 0);
+        } else if (command == "tdl") {
+		log("Command \"tdl\" invoked.", 1, 1, 0);
+		bool mode = log::toggleDebugMode();
+		if(mode) {
+			log("DebugMode turned on", 1, 0, 1);
+		} else {
+			log("DebugMode turned off", 1, 0, 1);
+		}
+	} else if (command.substr(0, 3) == "aw ") {
+		std::vector<double> wps;
+		int space = 0;
+		space = command.substr(3).find(" ");
+		if(space <= 3) {
+			log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
+		} else {
+			log("Command \"aw\" invoked.", 1, 1, 0);
+			double lat = atof(command.substr(3, space).c_str());
+			double lon = atof(command.substr(space+4).c_str());
+			std::vector<double> wps;
+			wps.push_back(lat);
+			wps.push_back(lon);
+			waypoints.wpList.push_back(wps);
+			log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
+		}
+	} else if (command == "lw") {
+		log("Command \"lw\" invoked.", 1, 1, 0);
+		log("Waypoints: ", 1, 0, 1);
+		for(unsigned int i = 0; i < waypoints.wpList.size(); i++) {
+			std::string latStr = std::to_string(waypoints.wpList.at(i).at(0));
+			std::string lonStr = std::to_string(waypoints.wpList.at(i).at(1));
+			log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
+		}
+	} else if (command == "list") {
+		log("Command \"list\" invoked.", 1, 1, 0);
+		log("------------------", 1, 1, 1);
+		log("Command List: ", 1, 1, 1);
+		log("------------------", 1, 1, 1);
+		log("aw = Add Waypoint", 1, 1, 1);
+		log("list = List Debug Menu Commands", 1, 1, 1);
+		log("lw = List Waypoints", 1, 1, 1);
+		log("tdl = Toggle Debug Log", 1, 1, 1);
+		log("test = Test Debug Menu", 1, 1, 1);
+	} else if (command == "") {
+		log("No command entered.", 1, 0, 0);
+	} else {
+		log("Invalid command.", 1, 0, 0);
+	}
+
     } else if (key == GLFW_KEY_BACKSPACE) {
         if (mods & GLFW_MOD_CONTROL) {
             console.buffer = {CONSOLE_PROMPT, 0, 1, 0};
