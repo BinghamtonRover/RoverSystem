@@ -14,6 +14,8 @@ unsigned int num_lines = 15;
 unsigned int total_lines = 1000;
 unsigned int view_index = 0;
 
+bool lockBottom = true;
+
 // List of messages the log displays
 std::vector<std::string> logMessages;
 // Four parallel lists that are also parallel to logMessages
@@ -57,11 +59,7 @@ void print(std::string m, float r, float g, float b, float a)
             m.erase(0, num_lines);
         }
     }
-    
-    if(logMessages.size() >= num_lines) {
-	view_index++;
-    }
-
+   
     removeOldMessages();
 }
 
@@ -69,11 +67,15 @@ void moveUpOne() {
 	if(logMessages.size() >= num_lines and view_index > 0) {
 		view_index--;
 	}
+	lockBottom = false;
 }
 
 void moveDownOne() {
 	if(logMessages.size() >= num_lines and view_index < logMessages.size() - num_lines) {
 		view_index++;
+	}
+	if(view_index == logMessages.size() - num_lines) {
+		lockBottom = true;
 	}
 }
 
@@ -81,12 +83,14 @@ void moveTop() {
 	if(logMessages.size() >= num_lines) {
 		view_index = 0;
 	}
+	lockBottom = false;
 }
 
 void moveBottom() {
 	if(logMessages.size() >= num_lines) {
 		view_index = logMessages.size() - num_lines;
 	}
+	lockBottom = true;
 }
 
 void testLog(unsigned int num) {
@@ -114,6 +118,11 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
 	if(logMessages.size() < num_lines + view_index) {
 		view_index = 0;
 	}	
+
+	// Lock Bottom
+	if(lockBottom) {
+		moveBottom();
+    	}
 
 	for (unsigned int i = view_index; i < nick_pellegrino_is_cool + view_index; i++) {
 		const char* str = logMessages[i].c_str();
