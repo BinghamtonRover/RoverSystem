@@ -1,6 +1,7 @@
 #include "debug_console.hpp"
 #include "gui.hpp"
 #include "log.hpp"
+#include "log_view.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -180,6 +181,12 @@ void handle_keypress(int key, int mods)
 			waypoints.wpList.push_back(wps);
 			log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
 		}
+	} else if (command.substr(0, 8) == "testLog ") {
+		unsigned int npelleg = atof(command.substr(8).c_str());
+		log("Command \"testLog\" invoked " + std::to_string(npelleg) + " times.", 1, 1, 0);
+		gui::log_view::testLog(npelleg);
+	} else if (command == "testLog") {
+		log("Invalid Input: \"testLog\" takes one int, for example: \"testLog 30\"", 1, 0, 0);
 	} else if (command == "lw") {
 		log("Command \"lw\" invoked.", 1, 1, 0);
 		log("Waypoints: ", 1, 0, 1);
@@ -198,6 +205,7 @@ void handle_keypress(int key, int mods)
 		log("lw = List Waypoints", 1, 1, 1);
 		log("tdl = Toggle Debug Log", 1, 1, 1);
 		log("test = Test Debug Menu", 1, 1, 1);
+		log("testLog = Test Log", 1, 1, 1);
 	} else if (command == "") {
 		log("No command entered.", 1, 0, 0);
 	} else {
