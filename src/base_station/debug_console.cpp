@@ -34,10 +34,15 @@ struct DebugLine
     float r = 0.0f, g = 1.0f, b = 0.0f;
 };
 
-struct Waypoints
+struct Waypoint
 {
-	//Each element is a vector with two elements: [Latitude, Longitude]
-	std::vector<std::vector<double>> wpList;
+	float Latitude;
+	float Longitude;
+};
+
+struct wayPointList
+{
+	std::vector<Waypoint> wpList;
 } waypoints;
 
 struct DebugConsole
@@ -173,39 +178,32 @@ void handle_keypress(int key, int mods)
 			log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
 		} else {
 			log("Command \"aw\" invoked.", 1, 1, 0);
-			double lat = atof(command.substr(3, space).c_str());
-			double lon = atof(command.substr(space+4).c_str());
-			std::vector<double> wps;
-			wps.push_back(lat);
-			wps.push_back(lon);
-			waypoints.wpList.push_back(wps);
+			float lat = atof(command.substr(3, space).c_str());
+			float lon = atof(command.substr(space+4).c_str());
+			Waypoint wp{lat, lon};
+			waypoints.wpList.push_back(wp);
 			log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
 		}
-	} else if (command.substr(0, 8) == "testLog ") {
-		unsigned int npelleg = atof(command.substr(8).c_str());
-		log("Command \"testLog\" invoked " + std::to_string(npelleg) + " times.", 1, 1, 0);
-		gui::log_view::testLog(npelleg);
-	} else if (command == "testLog") {
-		log("Invalid Input: \"testLog\" takes one int, for example: \"testLog 30\"", 1, 0, 0);
+	} else if (command == "aw") {
+		log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
 	} else if (command == "lw") {
 		log("Command \"lw\" invoked.", 1, 1, 0);
 		log("Waypoints: ", 1, 0, 1);
 		for(unsigned int i = 0; i < waypoints.wpList.size(); i++) {
-			std::string latStr = std::to_string(waypoints.wpList.at(i).at(0));
-			std::string lonStr = std::to_string(waypoints.wpList.at(i).at(1));
+			std::string latStr = std::to_string(waypoints.wpList.at(i).Latitude);
+			std::string lonStr = std::to_string(waypoints.wpList.at(i).Longitude);
 			log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
 		}
-	} else if (command == "list") {
-		log("Command \"list\" invoked.", 1, 1, 0);
+	} else if (command == "help") {
+		log("Command \"help\" invoked.", 1, 1, 0);
 		log("------------------", 1, 1, 1);
 		log("Command List: ", 1, 1, 1);
 		log("------------------", 1, 1, 1);
 		log("aw = Add Waypoint", 1, 1, 1);
-		log("list = List Debug Menu Commands", 1, 1, 1);
+		log("help = List Debug Menu Commands", 1, 1, 1);
 		log("lw = List Waypoints", 1, 1, 1);
 		log("tdl = Toggle Debug Log", 1, 1, 1);
 		log("test = Test Debug Menu", 1, 1, 1);
-		log("testLog = Test Log", 1, 1, 1);
 	} else if (command == "") {
 		log("No command entered.", 1, 0, 0);
 	} else {

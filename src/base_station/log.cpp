@@ -24,7 +24,7 @@ bool toggleDebugMode() {
 }
 
 void log(Level level, const char* format, ...) {
-	if(debugMode) {
+	if(debugMode || level != Level::DEBUG) {
 		va_list list;
 		va_start(list, format);
 

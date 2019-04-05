@@ -14,8 +14,6 @@ void moveDownOne();
 void moveTop();
 void moveBottom();
 
-void testLog(unsigned int num);
-
 void do_log(gui::Layout* layout, int width, int height, gui::Font* font);
 
 } } // namespace gui::log_view

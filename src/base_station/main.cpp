@@ -62,9 +62,6 @@ unsigned int map_texture_id;
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
 
-// Bools to prevent holding down some buttons
-bool upScroll, downScroll, shiftScroll;
-
 unsigned int get_ticks()
 {
     auto now = std::chrono::high_resolution_clock::now();
@@ -490,34 +487,18 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-	} else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS and !gui::state.show_debug_console and !upScroll) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS and !shiftScroll) {
+	} else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 			gui::log_view::moveTop();
-			upScroll = true;
-			shiftScroll = true;
 		} else {
-			upScroll = true;
-			if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) != GLFW_PRESS) {
-				shiftScroll = false;	
-			}
 			gui::log_view::moveUpOne();
 		}
-	} else if (!(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) and upScroll) {
-		upScroll = false;
-	} else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS and !gui::state.show_debug_console and !downScroll) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS and !shiftScroll) {
+	} else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 			gui::log_view::moveBottom();
-			downScroll = true;
-			shiftScroll = true;
-		} else {		
-			downScroll = true;
-			if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) != GLFW_PRESS) {
-				shiftScroll = false;	
-			}
+		} else {
 			gui::log_view::moveDownOne();
 		}
-	} else if (!(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) and downScroll) {
-		downScroll = false;
         } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 				break;	

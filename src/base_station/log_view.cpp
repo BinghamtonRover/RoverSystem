@@ -12,8 +12,11 @@ const int FONT_SIZE = 15;
 unsigned int chars_per_line = 32;
 unsigned int num_lines = 15;
 unsigned int total_lines = 1000;
+
+// Holds where in the logMessages you are looking, with 0 being the top line
 unsigned int view_index = 0;
 
+// True when user is at the bottom of the messages
 bool lockBottom = true;
 
 // List of messages the log displays
@@ -64,14 +67,14 @@ void print(std::string m, float r, float g, float b, float a)
 }
 
 void moveUpOne() {
-	if(logMessages.size() >= num_lines and view_index > 0) {
+	if(logMessages.size() >= num_lines && view_index > 0) {
 		view_index--;
+		lockBottom = false;
 	}
-	lockBottom = false;
 }
 
 void moveDownOne() {
-	if(logMessages.size() >= num_lines and view_index < logMessages.size() - num_lines) {
+	if(logMessages.size() >= num_lines && view_index < logMessages.size() - num_lines) {
 		view_index++;
 	}
 	if(view_index == logMessages.size() - num_lines) {
@@ -82,23 +85,14 @@ void moveDownOne() {
 void moveTop() {
 	if(logMessages.size() >= num_lines) {
 		view_index = 0;
+		lockBottom = false;
 	}
-	lockBottom = false;
 }
 
 void moveBottom() {
 	if(logMessages.size() >= num_lines) {
 		view_index = logMessages.size() - num_lines;
-	}
-	lockBottom = true;
-}
-
-void testLog(unsigned int num) {
-	for(unsigned int i = 0; i < num; i++) {
-		print("This is a test message. #" + std::to_string(i+1), 255, 255, 255, 255);
-		if(logMessages.size() >= num_lines) {
-			view_index++;
-    		}
+		lockBottom = true;
 	}
 }
 
@@ -109,9 +103,9 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
         gui::do_solid_rect(layout, width, height, 0, 0, 0);
 
 	// We want to print a num_lines amount of times *unless* logMessages is too small
-	unsigned int nick_pellegrino_is_cool = logMessages.size();
+	unsigned int tempSize = logMessages.size();
 	if(logMessages.size() >= num_lines) {
-		nick_pellegrino_is_cool = num_lines;
+		tempSize = num_lines;
 	}
 
 	// Extra Failsafe
@@ -124,7 +118,7 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
 		moveBottom();
     	}
 
-	for (unsigned int i = view_index; i < nick_pellegrino_is_cool + view_index; i++) {
+	for (unsigned int i = view_index; i < tempSize + view_index; i++) {
 		const char* str = logMessages[i].c_str();
 
 		glColor4f(red[i], green[i], blue[i], alpha[i]);
