@@ -187,6 +187,7 @@ Config load_config(const char* filename) {
 	return config;
 }
 
+
 void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int x = layout->current_x;
 	int y = layout->current_y;
@@ -213,6 +214,70 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int tw = gui::text_width(font, time_string_buffer, 20);
 
 	gui::draw_text(font, time_string_buffer, x + 5, y + h - 20 - 5, 20);
+}
+
+void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vector<const char *> debug_commands){
+
+	//Texts have a fixed height and spacing
+	int height = 20;
+	int spacing = height + 10; 
+
+	int debug_title_height = 20;
+	const char * debug_title = "Debug Commands";
+	int debug_title_width = gui::text_width(font,debug_title,debug_title_height);
+	const char * exit_prompt = "Press 'escape' to exit menu";
+
+	int max_width = debug_title_width;
+	for(int i = 0; i < commands.size(); i++){
+		int current_width = gui::text_width(font,commands[i],height);
+		if(current_width > max_width)
+			max_width = current_width;
+	}
+	for(int i = 0; i < debug_commands.size(); i++){
+		int current_width = gui::text_width(font,debug_commands[i],height);
+		if(current_width > max_width)
+			max_width = current_width;
+	}
+
+	int right_padding = 150;
+	int bottom_padding = spacing + 15; // to account for the exit prompt
+	int top_padding = 20;
+	int menu_width = max_width + right_padding;
+	int menu_height = (spacing * commands.size()) + (spacing * debug_commands.size()) + debug_title_height + top_padding + bottom_padding;
+
+	gui::Layout help_layout{};
+	
+	help_layout.advance_x( (WINDOW_WIDTH/2) - (menu_width/2) );
+	help_layout.advance_y( (WINDOW_HEIGHT/2) - (menu_height/2) );
+	help_layout.push();
+
+	int x = help_layout.current_x;
+	int y = help_layout.current_y;
+
+	gui::do_solid_rect(&help_layout, menu_width, menu_height, 0.2, 0.2f, 0.2);
+
+
+	glColor4f(1.0f,1.0f,1.0f,1.0f);
+	int left_margin = 5;
+	
+	for(int i = 0; i < commands.size(); i++){
+		gui::draw_text(font,commands[i],x+left_margin, y + (spacing * i ) + top_padding ,height);
+	}
+	
+	glColor4f(1.0f,0.0f,0.0f,1.0f);
+	int debug_commands_x = x + (menu_width/2) - (debug_title_width/2);
+	int debug_commands_y = y + (spacing * commands.size()) + top_padding; 
+	gui::draw_text(font,debug_title,debug_commands_x, debug_commands_y, debug_title_height); 
+
+	for(int i = 0; i < debug_commands.size(); i++){
+		gui::draw_text(font,debug_commands[i],x+left_margin, debug_commands_y + (spacing * (i + 1) ),height);
+	}
+
+	glColor4f(1.0f,1.0f,1.0f,1.0f);
+	int exit_prompt_width = gui::text_width(font,exit_prompt,15);
+	gui::draw_text(font,exit_prompt,x + menu_width - exit_prompt_width - 10, y + menu_height - 20, 15);
+
+	help_layout.pop();	
 }
 
 std::vector<uint16_t> lidar_points;
@@ -347,6 +412,10 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 	// Draw the info panel.
 	do_info_panel(&layout, font);
 
+	int help_text_width = gui::text_width(font,"Press 'h' for help",15);
+	glColor4f(0.0f,0.5f,0.0f,1.0f);
+	gui::draw_text(font,"Press 'h' for help",WINDOW_WIDTH-help_text_width-2,WINDOW_HEIGHT-18,15);
+
     // Draw the debug overlay.
     layout = {};
     gui::debug_console::do_debug(&layout, font);
@@ -479,6 +548,15 @@ int main()
 
     gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
 
+	bool help_menu_up = false;
+	//Add the help menu commands here
+	std::vector<const char *> commands;
+	std::vector<const char *> debug_commands;
+	commands.push_back("d: Show debug console");
+	commands.push_back("ctrl + q: Exit");
+	commands.push_back("c: Switch camera feeds");
+	debug_commands.push_back("'test': displays red text");
+	
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -491,6 +569,12 @@ int main()
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 				break;	
 			}
+		}
+		else if ( (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) ) {
+			help_menu_up = true;
+		}
+		else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+			help_menu_up = false;
 		}
 
 		network::update_bandwidth(&conn, get_ticks());
@@ -656,6 +740,10 @@ int main()
 
         // Update and draw GUI.
         do_gui(feeds, &font);
+	
+		if(help_menu_up)
+			do_help_menu(&font,commands,debug_commands);
+
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
         // Display our buffer.
