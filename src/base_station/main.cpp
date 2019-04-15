@@ -222,28 +222,31 @@ void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vect
 	int height = 20;
 	int spacing = height + 10; 
 
-	int debug_title_height = 20;
+	const char * title = "Help Menu";
+	int title_height = 25;
+	int title_width = gui::text_width(font,title,title_height);
+	int debug_title_height = 25;
 	const char * debug_title = "Debug Commands";
 	int debug_title_width = gui::text_width(font,debug_title,debug_title_height);
 	const char * exit_prompt = "Press 'escape' to exit menu";
 
 	int max_width = debug_title_width;
-	for(int i = 0; i < commands.size(); i++){
+	for(unsigned int i = 0; i < commands.size(); i++){
 		int current_width = gui::text_width(font,commands[i],height);
 		if(current_width > max_width)
 			max_width = current_width;
 	}
-	for(int i = 0; i < debug_commands.size(); i++){
+	for(unsigned int i = 0; i < debug_commands.size(); i++){
 		int current_width = gui::text_width(font,debug_commands[i],height);
 		if(current_width > max_width)
 			max_width = current_width;
 	}
 
 	int right_padding = 150;
-	int bottom_padding = spacing + 15; // to account for the exit prompt
+	int bottom_padding = (spacing * 1.5) + 15; // The +15 is to account for the exit prompt
 	int top_padding = 20;
 	int menu_width = max_width + right_padding;
-	int menu_height = (spacing * commands.size()) + (spacing * debug_commands.size()) + debug_title_height + top_padding + bottom_padding;
+	int menu_height = (spacing * commands.size()) + (spacing * debug_commands.size()) + title_height + debug_title_height + top_padding + bottom_padding;
 
 	gui::Layout help_layout{};
 	
@@ -259,23 +262,47 @@ void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vect
 
 	glColor4f(1.0f,1.0f,1.0f,1.0f);
 	int left_margin = 5;
+
+	gui::draw_text(font,title,x + (menu_width/2) - (title_width/2),y,title_height);
 	
-	for(int i = 0; i < commands.size(); i++){
-		gui::draw_text(font,commands[i],x+left_margin, y + (spacing * i ) + top_padding ,height);
+	for(unsigned int i = 0; i < commands.size(); i++){
+		gui::draw_text(font,commands[i],x+left_margin, y + (spacing * i ) + top_padding + title_height,height);
 	}
 	
 	glColor4f(1.0f,0.0f,0.0f,1.0f);
 	int debug_commands_x = x + (menu_width/2) - (debug_title_width/2);
-	int debug_commands_y = y + (spacing * commands.size()) + top_padding; 
+	int debug_commands_y = y + (spacing * commands.size()) + top_padding + title_height; 
 	gui::draw_text(font,debug_title,debug_commands_x, debug_commands_y, debug_title_height); 
+	debug_commands_y += 10; //To give extra room for the commands after the debug title
 
-	for(int i = 0; i < debug_commands.size(); i++){
-		gui::draw_text(font,debug_commands[i],x+left_margin, debug_commands_y + (spacing * (i + 1) ),height);
+	for(unsigned int i = 0; i < debug_commands.size(); i++){
+		gui::draw_text(font,debug_commands[i],x+left_margin, debug_commands_y + (spacing * (i+1) ) ,height);
 	}
 
 	glColor4f(1.0f,1.0f,1.0f,1.0f);
 	int exit_prompt_width = gui::text_width(font,exit_prompt,15);
-	gui::draw_text(font,exit_prompt,x + menu_width - exit_prompt_width - 10, y + menu_height - 20, 15);
+	gui::draw_text(font,exit_prompt,x + (menu_width/2) - (exit_prompt_width/2) , y + menu_height - 20, 15);
+	
+	glColor4f(0.0f,0.0f,0.0f,1.0f);
+	glLineWidth(4.0f);
+	glBegin(GL_LINES);
+		//Footer
+		glVertex2f(x,y + menu_height - 20);
+		glVertex2f(x + menu_width, y + menu_height - 20);
+
+		//Title Line
+		glVertex2f(x,y + title_height + 10);
+		glVertex2f(x + menu_width, y + title_height + 10);
+
+		//Before debug title
+		glVertex2f(x, debug_commands_y - 8);
+		glVertex2f(x + menu_width , debug_commands_y - 8);
+
+		//After debug title
+		glVertex2f(x, debug_commands_y + debug_title_height + 2);
+		glVertex2f(x + menu_width , debug_commands_y + debug_title_height + 2);
+
+	glEnd();
 
 	help_layout.pop();	
 }
@@ -556,7 +583,7 @@ int main()
 	commands.push_back("ctrl + q: Exit");
 	commands.push_back("c: Switch camera feeds");
 	debug_commands.push_back("'test': displays red text");
-	
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
