@@ -36,14 +36,11 @@ struct DebugLine
 
 struct Waypoint
 {
-	float Latitude;
-	float Longitude;
+	float latitude;
+	float longitude;
 };
 
-struct wayPointList
-{
-	std::vector<Waypoint> wpList;
-} waypoints;
+std::vector<Waypoint> wpList;
 
 struct DebugConsole
 {
@@ -180,8 +177,7 @@ void handle_keypress(int key, int mods)
 			log("Command \"aw\" invoked.", 1, 1, 0);
 			float lat = atof(command.substr(3, space).c_str());
 			float lon = atof(command.substr(space+4).c_str());
-			Waypoint wp{lat, lon};
-			waypoints.wpList.push_back(wp);
+			wpList.push_back({lat, lon});
 			log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
 		}
 	} else if (command == "aw") {
@@ -189,9 +185,9 @@ void handle_keypress(int key, int mods)
 	} else if (command == "lw") {
 		log("Command \"lw\" invoked.", 1, 1, 0);
 		log("Waypoints: ", 1, 0, 1);
-		for(unsigned int i = 0; i < waypoints.wpList.size(); i++) {
-			std::string latStr = std::to_string(waypoints.wpList.at(i).Latitude);
-			std::string lonStr = std::to_string(waypoints.wpList.at(i).Longitude);
+		for(unsigned int i = 0; i < wpList.size(); i++) {
+			std::string latStr = std::to_string(wpList.at(i).latitude);
+			std::string lonStr = std::to_string(wpList.at(i).longitude);
 			log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
 		}
 	} else if (command == "help") {
