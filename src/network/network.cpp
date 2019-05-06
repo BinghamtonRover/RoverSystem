@@ -162,6 +162,23 @@ void deserialize(Buffer* buffer, LogMessage* message) {
 	buffer->idx += message->size;
 }
 
+template<>
+void serialize(Buffer* buffer, SensorMessage* message){
+	serialize(buffer, message->pressure);
+	serialize(buffer, message->co2);
+	serialize(buffer, message->temperature);
+	serialize(buffer, message->humidity);
+}
+
+template<>
+void deserialize(Buffer* buffer, SensorMessage* message){
+	deserialize(buffer, &(pressure));
+	deserialize(buffer, &(co2));
+	deserialize(buffer, &(temperature));
+	deserialize(buffer, &(humidity));
+}
+
+
 //
 // Core functionality.
 //

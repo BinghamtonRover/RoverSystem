@@ -204,6 +204,14 @@ struct LogMessage {
 	char* log_string;
 };
 
+struct SensorMessage{
+	uint8_t pressure;
+	uint8_t co2;
+	uint8_t temperature;
+	uint8_t humidity;
+};
+
+
 struct MessageTypeInfo {
     bool order, ack;
 };
