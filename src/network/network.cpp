@@ -218,10 +218,10 @@ void serialize(Buffer* buffer, SensorMessage* message){
 
 template<>
 void deserialize(Buffer* buffer, SensorMessage* message){
-	deserialize(buffer, &(moisture));
-	deserialize(buffer, &(pressure));
-	deserialize(buffer, &(altitude));
-	deserialize(buffer, &(temperature));
+	deserialize(buffer, &(message->moisture));
+	deserialize(buffer, &(message->pressure));
+	deserialize(buffer, &(message->altitude));
+	deserialize(buffer, &(message->temperature));
 }
 
 
