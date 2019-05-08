@@ -42,16 +42,15 @@ Error init(const char* device_serial_id){
 	return Error::OK;
 }
 
-Error update(float Altitude, float Moisture, float Humidity, float Temperature, float Heat_Index){
+Error update(uint16_t moisture, float pressure, float altitude, float temperature){
 	if (serial_fd == -1) return Error::INVALID_STATE;
 
-	float Altitude_enc = (float) Altitude;
-	float Humidity_enc = (float) Humidity;
-	float Moisture_enc = (float) Moisture;
-	float Temperature_enc = (float) Temperature;
-	float Heat_Index_enc = (float) Heat_Index;
+	uint16_t altitude_enc = (uint16_t) altitude;
+	float pressure_enc = (float) pressure;
+	float altitude_enc = (float) altitude;
+	float temperature_enc = (float) temperature;
 
-	if(dprintf(serial_fd, "%f %f %f %f %f\n", Altitude_enc, Moisture_enc, Humidity_enc, Temperature_enc, Heat_Index_enc) < 0){
+	if(dprintf(serial_fd, "%d %f %f %f\n", moisture_enc, pressure_enc, altitude_enc, temperature_enc) < 0){
 		printf("error\n");
 		return Error::WRITE;
 	}

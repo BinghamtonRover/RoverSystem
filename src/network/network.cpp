@@ -208,6 +208,23 @@ template <> void deserialize(Buffer *buffer, LocationMessage *message)
 	deserialize(buffer, &(message->roll));
 }
 
+template<>
+void serialize(Buffer* buffer, SensorMessage* message){
+	serialize(buffer, message->moisture);
+	serialize(buffer, message->pressure);
+	serialize(buffer, message->altitude);
+	serialize(buffer, message->temperature);
+}
+
+template<>
+void deserialize(Buffer* buffer, SensorMessage* message){
+	deserialize(buffer, &(moisture));
+	deserialize(buffer, &(pressure));
+	deserialize(buffer, &(altitude));
+	deserialize(buffer, &(temperature));
+}
+
+
 //
 // Core functionality.
 //

@@ -1,3 +1,5 @@
+#include <cstdint>
+
 namespace science {
 
 
@@ -19,5 +21,5 @@ const char* get_error_string(Error e);
 
 Error init(const char* device_serial_id);
 
-Error update(float Altitude, float Moisture, float Humidity, float Temperature, float Heat_Index);
+Error update(uint16_t moisture, float pressure, float altitude, float temperature);
 }

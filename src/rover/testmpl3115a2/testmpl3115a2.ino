@@ -62,7 +62,6 @@ void loop() {
   float tempC = baro.getTemperature();
   Serial.print(tempC); Serial.println("*C");
 
-  delay(250);
   delay(1000);
    
   // read the value from the sensor:
@@ -89,7 +88,7 @@ void loop() {
   float hif = dht.computeHeatIndex(f, h);
   // Compute heat index in Celsius (isFahreheit = false)
   float hic = dht.computeHeatIndex(t, h, false);
-
+/* Not sure this sensor works
   Serial.print("Humidity: ");
   Serial.print(h);
   Serial.print(" %\t");
@@ -102,5 +101,5 @@ void loop() {
   Serial.print(hic);
   Serial.print(" *C ");
   Serial.print(hif);
-  Serial.println(" *F");
+  Serial.println(" *F");*/
 }

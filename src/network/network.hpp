@@ -75,6 +75,7 @@ enum class MessageType : uint8_t
     LOG,
 	LIDAR,
 	LOCATION,
+	SENSOR,
 
     NUM
 };
@@ -120,6 +121,14 @@ struct LocationMessage {
 	float yaw;
 	float roll;
 };
+
+struct SensorMessage{
+	uint8_t moisture;
+	float pressure;
+	float altitude;
+	float temperature;
+};
+
 
 //
 // Core API Definitions

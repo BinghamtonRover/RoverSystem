@@ -508,55 +508,60 @@ int main()
 				}
 			}
 
-            switch (message.type) {
-                case network::MessageType::HEARTBEAT: {
-                    break;
-                }
-                case network::MessageType::CAMERA: {
-                    // Static buffer so we don't have to allocate and reallocate every
-                    // frame.
-                    static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+			switch (message.type) {
+				case network::MessageType::HEARTBEAT: {
+									      break;
+								      }
+				case network::MessageType::CAMERA: {
+									   // Static buffer so we don't have to allocate and reallocate every
+									   // frame.
+									   static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
 
-                    network::CameraMessage camera_message;
-                    camera_message.data = camera_message_buffer;
-                    network::deserialize(message.buffer, &camera_message);
+									   network::CameraMessage camera_message;
+									   camera_message.data = camera_message_buffer;
+									   network::deserialize(message.buffer, &camera_message);
 
-                    if (camera_message.stream_index > 2) {
-                        break;
-                    }
+									   if (camera_message.stream_index > 2) {
+										   break;
+									   }
 
-                    camera_feed::Error err = camera_feed::handle_section(
-                        &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
-                        camera_message.section_index, camera_message.section_count, camera_message.frame_index);
+									   camera_feed::Error err = camera_feed::handle_section(
+											   &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
+											   camera_message.section_index, camera_message.section_count, camera_message.frame_index);
 
-                    if (err != camera_feed::Error::OK) {
-						log::log(log::WARNING, "Failed to handle video frame section!");
-                    }
+									   if (err != camera_feed::Error::OK) {
+										   log::log(log::WARNING, "Failed to handle video frame section!");
+									   }
 
-                    break;
-                }
+									   break;
+								   }
 				case network::MessageType::LIDAR: {
-					lidar_points.clear();
+									  lidar_points.clear();
 
-					network::LidarMessage lidar_message;
-					network::deserialize(message.buffer, &lidar_message);
+									  network::LidarMessage lidar_message;
+									  network::deserialize(message.buffer, &lidar_message);
 
-					for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
-						lidar_points.push_back(lidar_message.points[i]);
-					}
-					break;
-				}
+									  for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
+										  lidar_points.push_back(lidar_message.points[i]);
+									  }
+									  break;
+								  }
 				case network::MessageType::LOCATION: {
-					network::LocationMessage location_message;
-					network::deserialize(message.buffer, &location_message);
+									     network::LocationMessage location_message;
+									     network::deserialize(message.buffer, &location_message);
 
-					printf("%f, %f, %f, %f, %f, %f\n", location_message.x, location_message.y, location_message.z, location_message.pitch, location_message.yaw, location_message.roll);
+									     printf("%f, %f, %f, %f, %f, %f\n", location_message.x, location_message.y, location_message.z, location_message.pitch, location_message.yaw, location_message.roll);
 
-					break;
-				}
-                default:
-                    break;
-            }
+									     break;
+								     }
+				case network::MessageType::SENSOR: {
+									   network::SensorMessage sensor_message;
+									   network::deserialize(message.buffer, &sensor_message);
+									   printf("%d %f %f %f\n",sensor_message.moisture, sensor_message.pressure, sensor_message.altitude, sensor_message.temperature); 
+								   }
+				default:
+								     break;
+			}
 
             network::return_incoming_buffer(message.buffer);
         }
