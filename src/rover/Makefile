@@ -5,7 +5,7 @@ LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
 CFLAGS = -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include
 EXECUTABLE = ../../bin/rover
 
-P = D # Platform. d is dummy, r is rover.
+P = R # Platform. d is dummy, r is rover.
 
 ifeq ($(P), r)
 	# Sensors

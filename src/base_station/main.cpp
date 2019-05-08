@@ -198,10 +198,25 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
 	char bandwidth_buffer[50];
 	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", conn.last_bandwidth);
+	
+	char moisture_buffer[200];
+	sprintf(moisture_buffer,"Moisture : %d\n ", conn.sensor.moisture);
+
+	char pressure_buffer[200];
+	sprintf(pressure_buffer,"Pressure : %.3f\n", conn.sensor.pressure);
+
+	char altitude_buffer[200];
+	sprintf(altitude_buffer,"Altitude : %.3f\n", conn.sensor.altitude );
+	
+	char temperature_buffer[200];
+	sprintf(temperature_buffer,"Temperature (C) : %.3f \n", conn.sensor.temperature );
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
-
+	gui::draw_text(font, moisture_buffer,x + 5, y+25, 20);
+	gui::draw_text(font, pressure_buffer, x + 5, y + 45, 20);
+	gui::draw_text(font, altitude_buffer, x + 5, y + 65, 20);
+	gui::draw_text(font, temperature_buffer, x + 5, y + 85, 20);
 
 	time_t current_time;
 	time(&current_time);

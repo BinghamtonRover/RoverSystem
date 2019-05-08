@@ -123,7 +123,7 @@ struct LocationMessage {
 };
 
 struct SensorMessage{
-	uint8_t moisture;
+	uint16_t moisture;
 	float pressure;
 	float altitude;
 	float temperature;
@@ -165,6 +165,8 @@ struct Connection
 	double last_bandwidth;
 	int total_bytes;
 	unsigned int last_bandwidth_update_time;
+
+	SensorMessage sensor;
 };
 
 Error connect(Connection *conn, int local_port, const char *destination_address, int destination_port);
@@ -178,6 +180,9 @@ Buffer *get_outgoing_buffer();
 void return_incoming_buffer(Buffer *buffer);
 
 double update_bandwidth(Connection* conn, unsigned int time);
+
+//Function to update sensor, not sure how to write it though -Jon
+//void update_sensor();
 
 } // namespace network
 
