@@ -597,11 +597,11 @@ int main()
 				break;	
 			}
 		}
-		else if ( (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) ) {
-			help_menu_up = true;
+		else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+			if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
 		}
 		else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-			help_menu_up = false;
+			if (help_menu_up) help_menu_up = false;
 		}
 
 		network::update_bandwidth(&conn, get_ticks());
