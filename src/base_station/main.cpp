@@ -566,7 +566,7 @@ int main()
     // Init the controller.
 	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
     bool controller_loaded = false;
-    if (controller::init("/dev/input/js1") == controller::Error::OK) {
+    if (controller::init("/dev/input/js0") == controller::Error::OK) {
         controller_loaded = true;
 		log::log(log::INFO, "Controller connected.");
     } else {
@@ -582,7 +582,15 @@ int main()
 	commands.push_back("d: Show debug console");
 	commands.push_back("ctrl + q: Exit");
 	commands.push_back("c: Switch camera feeds");
-	debug_commands.push_back("'test': displays red text");
+    commands.push_back("up: scroll log up");
+    commands.push_back("down: scroll log down");
+    commands.push_back("ctl + up: scroll log to top");
+    commands.push_back("ctl + down: scroll log to bottom");
+	debug_commands.push_back("'help': display debug menu help");
+	debug_commands.push_back("'test': test debug menu");
+	debug_commands.push_back("'tdl': toggle debug log");
+    debug_commands.push_back("'lw': list waypoints");
+	debug_commands.push_back("'aw': add a GPS waypoint");
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -592,18 +600,18 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-	} else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveTop();
-		} else {
-			gui::log_view::moveUpOne();
-		}
-	} else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveBottom();
-		} else {
-			gui::log_view::moveDownOne();
-		}
+        } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveTop();
+            } else {
+                gui::log_view::moveUpOne();
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveBottom();
+            } else {
+                gui::log_view::moveDownOne();
+            }
         } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 				break;	
