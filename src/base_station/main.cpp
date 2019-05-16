@@ -592,6 +592,18 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
+	} else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+			gui::log_view::moveTop();
+		} else {
+			gui::log_view::moveUpOne();
+		}
+	} else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+			gui::log_view::moveBottom();
+		} else {
+			gui::log_view::moveDownOne();
+		}
         } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 				break;	
