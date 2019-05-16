@@ -157,10 +157,8 @@ void handle_keypress(int key, int mods)
 		console.callback(command);
 
         if (command == "test") {
-		log("Command \"test\" invoked.", 1, 1, 0);
         	log("This is some red text.", 1, 0, 0);
         } else if (command == "tdl") {
-		log("Command \"tdl\" invoked.", 1, 1, 0);
 		bool mode = log::toggleDebugMode();
 		if(mode) {
 			log("DebugMode turned on", 1, 0, 1);
@@ -174,7 +172,6 @@ void handle_keypress(int key, int mods)
 		if(space <= 3) {
 			log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
 		} else {
-			log("Command \"aw\" invoked.", 1, 1, 0);
 			float lat = atof(command.substr(3, space).c_str());
 			float lon = atof(command.substr(space+4).c_str());
 			wpList.push_back({lat, lon});
@@ -183,7 +180,6 @@ void handle_keypress(int key, int mods)
 	} else if (command == "aw") {
 		log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
 	} else if (command == "lw") {
-		log("Command \"lw\" invoked.", 1, 1, 0);
 		log("Waypoints: ", 1, 0, 1);
 		for(unsigned int i = 0; i < wpList.size(); i++) {
 			std::string latStr = std::to_string(wpList.at(i).latitude);
@@ -191,7 +187,6 @@ void handle_keypress(int key, int mods)
 			log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
 		}
 	} else if (command == "help") {
-		log("Command \"help\" invoked.", 1, 1, 0);
 		log("------------------", 1, 1, 1);
 		log("Command List: ", 1, 1, 1);
 		log("------------------", 1, 1, 1);
