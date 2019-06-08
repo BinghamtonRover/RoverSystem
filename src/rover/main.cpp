@@ -5,6 +5,7 @@
 #include "lidar.hpp"
 #include "imu.hpp"
 #include "autonomy.hpp"
+#include "gps.hpp"
 #include "zed.hpp"
 
 #include <turbojpeg.h>
@@ -23,6 +24,8 @@
 const int MAX_STREAMS = 2;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
+
+const int LOCATION_SEND_INTERVAL = 1000 / 3;
 
 const int LIDAR_SEND_INTERVAL = 1000 / 15;
 
@@ -55,6 +58,7 @@ struct Config
 
 	char suspension_serial_id[500];
 	char imu_serial_id[500];
+    char gps_serial_id[500];
 };
 
 Config load_config(const char* filename) {
@@ -74,6 +78,9 @@ Config load_config(const char* filename) {
 
 	// Third line: serial id for the IMU.
 	fscanf(file, "%s\n", config.imu_serial_id);
+
+    // Fourth line: serial id for the GPS.
+    fscanf(file, "%s\n", config.gps_serial_id);
 
 	fclose(file);
 
@@ -95,6 +102,11 @@ int main()
 		fprintf(stderr, "[!] Failed to init field LIDAR!\n");
 		return 1;
 	}
+
+    if (gps::init(config.gps_serial_id) != gps::Error::OK) {
+        fprintf(stderr, "[!] Failed to init GPS!\n");
+        return 1;
+    }
 
 #if 0
 	if (imu::start(config.imu_serial_id) != imu::Error::OK) {
@@ -162,6 +174,7 @@ int main()
     }
 
 	auto last_lidar_send_time = get_ticks();
+    auto last_location_send_time = get_ticks();
 	auto last_imu_read_time = get_ticks();
 	auto last_suspension_update_time = get_ticks();
 	auto last_autonomy_time = get_ticks();
@@ -258,6 +271,8 @@ int main()
 			last_lidar_send_time = get_ticks();
 		}
 
+        
+
         unsigned char* zed_image;
         int zed_stride;
         zed::Pose zed_pose;
@@ -324,6 +339,23 @@ int main()
 		}
 #endif
 
+        // Location stuff.
+        if (get_ticks() - last_location_send_time >= LOCATION_SEND_INTERVAL) {
+            network::LocationMessage location;
+
+            location.heading = imu::get_heading();
+
+            auto gps_pos = gps::get_position();
+            location.lat = gps_pos.latitude;
+            location.lon = gps_pos.longitude;
+
+            auto buffer = network::get_outgoing_buffer();
+            network::serialize(buffer, &location);
+            network::send(&conn, network::MessageType::LOCATION, buffer);
+
+            last_location_send_time = get_ticks();
+        }
+    
         // Receive incoming messages
         network::Message message;
         while (true) {

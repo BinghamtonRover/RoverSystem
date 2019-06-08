@@ -190,22 +190,16 @@ template <> void deserialize(Buffer *buffer, LogMessage *message)
 
 template <> void serialize(Buffer *buffer, LocationMessage *message)
 {
-	serialize(buffer, message->x);
-	serialize(buffer, message->y);
-	serialize(buffer, message->z);
-	serialize(buffer, message->pitch);
-	serialize(buffer, message->yaw);
-	serialize(buffer, message->roll);
+	serialize(buffer, message->lat);
+	serialize(buffer, message->lon);
+	serialize(buffer, message->heading);
 }
 
 template <> void deserialize(Buffer *buffer, LocationMessage *message)
 {
-	deserialize(buffer, &(message->x));
-	deserialize(buffer, &(message->y));
-	deserialize(buffer, &(message->z));
-	deserialize(buffer, &(message->pitch));
-	deserialize(buffer, &(message->yaw));
-	deserialize(buffer, &(message->roll));
+	deserialize(buffer, &(message->lat));
+	deserialize(buffer, &(message->lon));
+	deserialize(buffer, &(message->heading));
 }
 
 //

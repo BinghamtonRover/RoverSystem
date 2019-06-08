@@ -14,4 +14,8 @@ Velocity get_velocity() {
     return {30, 25, 0.554};
 }
 
+float get_heading() {
+    return -40.0f;
+}
+
 }

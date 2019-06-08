@@ -113,12 +113,9 @@ struct LidarMessage {
 };
 
 struct LocationMessage {
-	float x;
-	float y;
-	float z;
-	float pitch;
-	float yaw;
-	float roll;
+    float lat;
+    float lon;
+    float heading;
 };
 
 //

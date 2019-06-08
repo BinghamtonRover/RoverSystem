@@ -163,6 +163,8 @@ Error start(const char* device_serial_id) {
 	m.len = 0;
 	send_message(sfd, &m);
 
+    // TODO: Send config message.
+
 	sleep(2);
 	ioctl(sfd, TCFLSH, 2);
 

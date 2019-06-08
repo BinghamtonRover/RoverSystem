@@ -57,6 +57,9 @@ const int LOG_VIEW_HEIGHT = 458;
 // Network connection.
 network::Connection conn;
 
+// Last recieved location.
+network::LocationMessage current_location{0, 0};
+
 unsigned int map_texture_id;
 
 // Save the start time so we can use get_ticks.
@@ -203,6 +206,9 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
 
+    char location_buffer[50];
+    sprintf(location_buffer, "Location: %.4f, %.4f", current_location.lat, current_location.lon);
+    gui::draw_text(font, location_buffer, x + 5, y + 5 + 20 + 5, 20);
 
 	time_t current_time;
 	time(&current_time);
@@ -309,7 +315,6 @@ void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vect
 
 std::vector<uint16_t> lidar_points;
 
-network::LocationMessage location{};
 
 void do_lidar(gui::Layout* layout) {
 	int wx = layout->current_x;
@@ -681,7 +686,9 @@ int main()
 					network::LocationMessage location_message;
 					network::deserialize(message.buffer, &location_message);
 
-					printf("%f, %f, %f, %f, %f, %f\n", location_message.x, location_message.y, location_message.z, location_message.pitch, location_message.yaw, location_message.roll);
+                    current_location = location_message;
+
+                    log::log(log::DEBUG, "Location: %f, %f, heading: %f", location_message.lat, location_message.lon, location_message.heading);
 
 					break;
 				}
