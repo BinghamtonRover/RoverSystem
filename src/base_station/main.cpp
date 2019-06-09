@@ -58,7 +58,7 @@ const int LOG_VIEW_HEIGHT = 458;
 network::Connection conn;
 
 // Last recieved location.
-network::LocationMessage current_location{0, 0};
+network::LocationMessage current_location{0, 0, 0};
 
 unsigned int map_texture_id;
 
@@ -209,6 +209,9 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
     char location_buffer[50];
     sprintf(location_buffer, "Location: %.4f, %.4f", current_location.lat, current_location.lon);
     gui::draw_text(font, location_buffer, x + 5, y + 5 + 20 + 5, 20);
+
+    sprintf(location_buffer, "Heading: %.2f deg CCW of North", current_location.heading);
+    gui::draw_text(font, location_buffer, x + 5, y + 5 + 20*2 + 5, 20);
 
 	time_t current_time;
 	time(&current_time);

@@ -343,7 +343,7 @@ int main()
         if (get_ticks() - last_location_send_time >= LOCATION_SEND_INTERVAL) {
             network::LocationMessage location;
 
-            location.heading = imu::get_heading();
+            location.heading = gps::get_heading();
 
             auto gps_pos = gps::get_position();
             location.lat = gps_pos.latitude;

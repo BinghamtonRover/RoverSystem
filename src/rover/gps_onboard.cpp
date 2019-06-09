@@ -17,6 +17,7 @@ namespace gps {
 
 static bool fix;
 static Position last_position;
+static float last_heading;
 
 static const char DEVICE_SERIAL_BYID_PATH_TEMPLATE[] = "/dev/serial/by-id/%s";
 
@@ -165,6 +166,10 @@ Error init(const char* device_id) {
 
 Position get_position() {
     return last_position;
+}
+
+float get_heading() {
+    return last_heading;
 }
 
 bool has_fix() {
