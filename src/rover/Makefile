@@ -1,5 +1,5 @@
 SOURCES = main.cpp camera.cpp 
-HEADERS = camera.hpp autonomy.hpp suspension.hpp lidar.hpp imu.hpp gps.hpp
+HEADERS = camera.hpp autonomy.hpp suspension.hpp lidar.hpp gps.hpp
 LIBRARIES = ../../bin/libnetwork.a
 LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
 CFLAGS = -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include
@@ -10,7 +10,6 @@ P = d # Platform. d is dummy, r is rover.
 ifeq ($(P), r)
 	# Sensors
 	SOURCES += lidar_onboard.cpp
-	SOURCES += imu_onboard.cpp
 	SOURCES += zed_onboard.cpp
 	SOURCES += gps_onboard.cpp
 
@@ -26,7 +25,6 @@ ifeq ($(P), r)
 else
 	# Sensors
 	SOURCES += lidar_dummy.cpp
-	SOURCES += imu_dummy.cpp
 	SOURCES += zed_dummy.cpp
 	SOURCES += gps_dummy.cpp
 
