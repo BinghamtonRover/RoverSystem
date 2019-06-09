@@ -11,6 +11,14 @@ namespace math {
 		return ::sinf(theta);
 	}
 
+    float tanf(float theta) {
+        return ::tanf(theta);
+    }
+    
+    float dtor(float deg) {
+        return deg * PI / 180.0f;
+    }
+
 	float powf(float value, float exp) {
 		return ::powf(value, exp);
 	}

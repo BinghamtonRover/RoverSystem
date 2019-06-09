@@ -250,6 +250,7 @@ void fill_rectangle(int x, int y, int w, int h)
     glPopMatrix();
 }
 
+
 void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id)
 {
     glMatrixMode(GL_MODELVIEW);
@@ -291,6 +292,18 @@ void do_solid_rect(Layout *layout, int width, int height, float r, float g, floa
 
     layout->advance_x(width);
     layout->advance_y(height);
+}
+
+void fill_triangle(float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b) {
+    glBegin(GL_TRIANGLES);
+
+    glColor4f(r, g, b, 1.0f);
+
+    glVertex2f(x0, y0);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y2);
+
+    glEnd();
 }
 
 void do_textured_rect(Layout *layout, int width, int height, unsigned int texture_id)

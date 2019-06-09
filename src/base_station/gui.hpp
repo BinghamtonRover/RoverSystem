@@ -110,6 +110,10 @@ struct Layout
 // filled with the given color.
 void do_solid_rect(Layout *layout, int width, int height, float r, float g, float b);
 
+// Renders a solid triangle at the position determined by the given vertices,
+// filled with the given color.
+void fill_triangle(float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b);
+
 // Renders a rectangle at the position determined by the given layout,
 // with the given texture.
 void do_textured_rect(Layout *layout, int width, int height, unsigned int texture_id);

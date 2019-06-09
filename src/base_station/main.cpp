@@ -395,6 +395,27 @@ void do_lidar(gui::Layout* layout) {
 	glEnd();
 }
 
+void do_map(gui::Layout* layout, gui::Font* font) {
+    // gui::do_textured_rect(layout, 572, 572, map_texture_id);
+
+    float ox = layout->current_x + 572/2;
+    float oy = layout->current_y + 572/2;
+
+    float ts = 8;
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    glTranslatef(ox, oy, 0);
+    glRotatef(current_location.heading, 0, 0, 1);
+    gui::fill_triangle(0, -ts*math::tanf(math::dtor(60))*1.5f, ts, 0, -ts, 0, 1, 0, 0);
+
+    glPopMatrix();
+
+    layout->advance_x(572);
+    layout->advance_y(572);
+}
+
 int primary_feed = 0;
 int secondary_feed = 1;
 
@@ -412,7 +433,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.push();
 
     // Draw the map.
-    gui::do_textured_rect(&layout, 572, 572, map_texture_id);
+    do_map(&layout, font);
 
     layout.reset_x();
     layout.advance_y(10);
