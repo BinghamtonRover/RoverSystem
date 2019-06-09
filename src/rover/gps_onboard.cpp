@@ -122,6 +122,18 @@ static void update_position(int sfd) {
                     last_position.latitude = lat;
                     last_position.longitude = lon;
 
+                    temp_buffer_offset = 0;
+                } else if (comma_count == 8) {
+                    // Heading.
+
+                    temp_buffer[temp_buffer_offset++] = line_buffer[offset];
+                } else if (comma_count == 9) {
+                    // This is the date, but I dont care.
+                    // This is just used to finish the heading.
+
+                    temp_buffer[temp_buffer_offset] = 0;
+
+                    last_heading = atof(temp_buffer);
                     break;
                 }
 

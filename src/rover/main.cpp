@@ -3,7 +3,6 @@
 #include "camera.hpp"
 #include "suspension.hpp"
 #include "lidar.hpp"
-#include "imu.hpp"
 #include "autonomy.hpp"
 #include "gps.hpp"
 #include "zed.hpp"
@@ -57,7 +56,6 @@ struct Config
 	int remote_port;
 
 	char suspension_serial_id[500];
-	char imu_serial_id[500];
     char gps_serial_id[500];
 };
 
@@ -76,10 +74,7 @@ Config load_config(const char* filename) {
 	// Second line: serial id for the suspension controller.
 	fscanf(file, "%s\n", config.suspension_serial_id);
 
-	// Third line: serial id for the IMU.
-	fscanf(file, "%s\n", config.imu_serial_id);
-
-    // Fourth line: serial id for the GPS.
+    // Third line: serial id for the GPS.
     fscanf(file, "%s\n", config.gps_serial_id);
 
 	fclose(file);
@@ -107,13 +102,6 @@ int main()
         fprintf(stderr, "[!] Failed to init GPS!\n");
         return 1;
     }
-
-#if 0
-	if (imu::start(config.imu_serial_id) != imu::Error::OK) {
-		fprintf(stderr, "[!] Failed to start IMU!\n");
-		return 1;
-	}
-#endif
 
 	std::vector<long> lidar_points;
 
@@ -175,7 +163,6 @@ int main()
 
 	auto last_lidar_send_time = get_ticks();
     auto last_location_send_time = get_ticks();
-	auto last_imu_read_time = get_ticks();
 	auto last_suspension_update_time = get_ticks();
 	auto last_autonomy_time = get_ticks();
 	auto last_zed_time = get_ticks();
@@ -328,16 +315,6 @@ int main()
 		}
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
-
-#if 0
-		// IMU stuff.
-		if (get_ticks() - last_imu_read_time >= IMU_READ_INTERVAL) {
-			imu::Rotation rotation = imu::get_rotation();
-			printf("> Rotation: %f, %f, %f\n", rotation.pitch, rotation.yaw, rotation.roll);
-
-			last_imu_read_time = get_ticks();
-		}
-#endif
 
         // Location stuff.
         if (get_ticks() - last_location_send_time >= LOCATION_SEND_INTERVAL) {
