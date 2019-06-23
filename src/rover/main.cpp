@@ -9,6 +9,7 @@
 
 #include <turbojpeg.h>
 
+#include <simpleconfig.h>
 
 #include <cstddef>
 #include <cstdio>
@@ -59,34 +60,56 @@ struct Config
     char gps_serial_id[500];
 };
 
-Config load_config(const char* filename) {
-	Config config;
+static char* try_get_key(struct SimpleConfig* sc, const char* key) {
+    char* value = (char*) sc_get(sc, (uint8_t*) key);
+    if (!value) {
+        fprintf(stderr, "[!] failed to load config value for key %s: %s\n", key, sc_get_error_string());
+        sc_free(sc);
+    }
 
-	FILE* file = fopen(filename, "r");
-	if (!file) {
-		fprintf(stderr, "[!] Failed to find config file!\n");
-		exit(1);
-	}
+    return value;
+}
 
-	// First line: local_port remote_address remote_port
-	fscanf(file, "%d %s %d\n", &config.local_port, config.remote_address, &config.remote_port);
+bool load_config(const char* filename, Config* out_config) {
+    auto sc = sc_parse((uint8_t*) filename);
+    if (!sc) {
+        fprintf(stderr, "[!] failed to load config: %s\n", sc_get_error_string());
+        sc_free(sc);
+        return false;
+    }
 
-	// Second line: serial id for the suspension controller.
-	fscanf(file, "%s\n", config.suspension_serial_id);
+    char* local_port = try_get_key(sc, "local_port");
+    if (!local_port) return false;
+    out_config->local_port = atoi(local_port);
 
-    // Third line: serial id for the GPS.
-    fscanf(file, "%s\n", config.gps_serial_id);
+    char* remote_address = try_get_key(sc, "remote_address");
+    if (!remote_address) return false;
+    strncpy(out_config->remote_address, remote_address, 16);
 
-	fclose(file);
+    char* remote_port = try_get_key(sc, "remote_port");
+    if (!remote_port) return false;
+    out_config->remote_port = atoi(remote_port);
 
-	return config;
+    char* suspension_serial_id = try_get_key(sc, "suspension_serial_id");
+    if (!suspension_serial_id) return false;
+    strncpy(out_config->suspension_serial_id, suspension_serial_id, 500);
+
+    char* gps_serial_id = try_get_key(sc, "gps_serial_id");
+    if (!gps_serial_id) return false;
+    strncpy(out_config->gps_serial_id, gps_serial_id, 500);
+
+    sc_free(sc);
+    return true;
 }
 
 int main()
 {
 	start_time = std::chrono::high_resolution_clock::now();
 
-	Config config = load_config("res/r_config.txt");
+    Config config;
+	if (!load_config("res/rover.sconfig", &config)) {
+        return -1;
+    }
 
 	if (suspension::init(config.suspension_serial_id) != suspension::Error::OK) {
 		fprintf(stderr, "[!] Failed to initialize the suspension!\n");

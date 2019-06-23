@@ -1,0 +1,12 @@
+# Rover address.
+local_port = 45566 
+
+# Base station address.
+remote_address = 127.0.0.1
+# Base station port.
+remote_port = 45565
+
+# Serial Ids. You can find them by connecting the USB UART connector and looking at the entries
+# in /dev/serial/by-id.
+suspension_serial_id = usb-Arduino__www.arduino.cc__0043_75735303032351407042-if00
+gps_serial_id = usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0

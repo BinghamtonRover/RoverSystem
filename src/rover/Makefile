@@ -3,7 +3,7 @@ SOURCES = main.cpp camera.cpp
 HEADERS = camera.hpp autonomy.hpp suspension.hpp lidar.hpp gps.hpp
 LIBRARIES = $(ROOT)/bin/libnetwork.a
 LFLAGS = -L$(ROOT)/bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
-CFLAGS = -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include -I$(ROOT)/vendor
+CFLAGS = -no-pie -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include -I$(ROOT)/vendor
 EXECUTABLE = $(ROOT)/bin/rover
 
 P = d # Platform. d is dummy, r is rover.

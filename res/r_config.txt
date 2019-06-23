@@ -1,3 +1,0 @@
-45566 127.0.0.1 45565
-usb-Arduino__www.arduino.cc__0043_75735303032351407042-if00
-usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
