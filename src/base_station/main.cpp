@@ -9,6 +9,8 @@
 #include "log.hpp"
 #include "math.hpp"
 
+#include <simpleconfig.h>
+
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
 
@@ -173,21 +175,40 @@ struct Config
 	int remote_port;
 };
 
-Config load_config(const char* filename) {
-	Config config;
+#define LOAD_CONFIG_FAIL(sc) log::log(log::ERROR, "failed to load config: %s\n", sc_get_error_string()); sc_free(sc)
 
-	FILE* file = fopen(filename, "r");
-	if (!file) {
-		log::log(log::ERROR, "Failed to open config file!");
-		exit(1);
-	}
+static char* try_get_key(struct SimpleConfig* sc, const char* key) {
+    char* value = (char*) sc_get(sc, (uint8_t*) key);
+    if (!value) {
+        log::log(log::ERROR, "failed to load config value for key %s: %s\n", key, sc_get_error_string());
+        sc_free(sc);
+    }
 
-	// First line: local_port remote_address remote_port
-	fscanf(file, "%d %s %d\n", &config.local_port, config.remote_address, &config.remote_port);
+    return value;
+}
 
-	fclose(file);
+bool load_config(const char* filename, Config* out_config) {
+    struct SimpleConfig* sc = sc_parse((uint8_t*) filename);
+    if (!sc) {
+        log::log(log::ERROR, "failed to load config: %s\n", sc_get_error_string());
+        sc_free(sc);
+        return false;
+    }
 
-	return config;
+    char* local_port = try_get_key(sc, "local_port");
+    if (!local_port) return false;
+    out_config->local_port = atoi(local_port);
+
+    char* remote_address = try_get_key(sc, "remote_address");
+    if (!remote_address) return false;
+    strncpy(out_config->remote_address, remote_address, 16);
+
+    char* remote_port = try_get_key(sc, "remote_port");
+    if (!remote_port) return false;
+    out_config->remote_port = atoi(remote_port);
+
+    sc_free(sc);
+    return true;
 }
 
 
@@ -521,7 +542,12 @@ int main()
 	gui::debug_console::set_callback(command_callback);
 
 	// Load config.
-	Config config = load_config("res/bs_config.txt");
+    Config config;
+	if (!load_config("res/base_station.sconfig", &config)) {
+        return 1;
+    }
+
+    log::log(log::INFO, "Network information: local port %d, remote address %s:%d\n", config.local_port, config.remote_address, config.remote_port);
 
     // Start the timer.
     start_time = std::chrono::high_resolution_clock::now();
@@ -539,6 +565,9 @@ int main()
 
     // Update the window so everyone can access it.
     gui::state.window = window;
+
+    // We don't want the mouse to even exist.
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // Set sticky keys mode. It makes our input work as intended.
     glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);

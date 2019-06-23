@@ -1,13 +1,20 @@
+ROOT = ../..
 SOURCES = main.cpp camera.cpp 
 HEADERS = camera.hpp autonomy.hpp suspension.hpp lidar.hpp gps.hpp
-LIBRARIES = ../../bin/libnetwork.a
-LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
-CFLAGS = -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include
-EXECUTABLE = ../../bin/rover
+LIBRARIES = $(ROOT)/bin/libnetwork.a
+LFLAGS = -L$(ROOT)/bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
+CFLAGS = -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include -I$(ROOT)/vendor
+EXECUTABLE = $(ROOT)/bin/rover
 
 P = d # Platform. d is dummy, r is rover.
 
 ifeq ($(P), r)
+	# Vendored libs.
+	LFLAGS += -L$(ROOT)/vendor/arm
+
+	# Simpleconfig.
+	LFLAGS += -l:libsimpleconfig.a
+
 	# Sensors
 	SOURCES += lidar_onboard.cpp
 	SOURCES += zed_onboard.cpp
@@ -23,6 +30,12 @@ ifeq ($(P), r)
 	# Autonomy
 	SOURCES += autonomy_onboard.cpp
 else
+	# Vendored libs.
+	LFLAGS += -L$(ROOT)/vendor/x86_64
+
+	# Simpleconfig.
+	LFLAGS += -l:libsimpleconfig.a
+
 	# Sensors
 	SOURCES += lidar_dummy.cpp
 	SOURCES += zed_dummy.cpp

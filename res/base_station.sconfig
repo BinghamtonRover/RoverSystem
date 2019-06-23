@@ -1,0 +1,6 @@
+# Base station port.
+local_port = 45565
+
+# Rover address and port.
+remote_address = 127.0.0.1
+remote_port = 45566
