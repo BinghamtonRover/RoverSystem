@@ -175,8 +175,6 @@ struct Config
 	int remote_port;
 };
 
-#define LOAD_CONFIG_FAIL(sc) log::log(log::ERROR, "failed to load config: %s\n", sc_get_error_string()); sc_free(sc)
-
 static char* try_get_key(struct SimpleConfig* sc, const char* key) {
     char* value = (char*) sc_get(sc, (uint8_t*) key);
     if (!value) {
@@ -188,7 +186,7 @@ static char* try_get_key(struct SimpleConfig* sc, const char* key) {
 }
 
 bool load_config(const char* filename, Config* out_config) {
-    struct SimpleConfig* sc = sc_parse((uint8_t*) filename);
+    auto sc = sc_parse((uint8_t*) filename);
     if (!sc) {
         log::log(log::ERROR, "failed to load config: %s\n", sc_get_error_string());
         sc_free(sc);
