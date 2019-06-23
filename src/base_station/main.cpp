@@ -537,7 +537,6 @@ float smooth_rover_input(float value) {
 int main()
 {
 	log::register_handler(stderr_handler);
-	log::register_handler(log_view_handler);
 
 	gui::debug_console::set_callback(command_callback);
 
@@ -547,7 +546,7 @@ int main()
         return 1;
     }
 
-    log::log(log::INFO, "Network information: local port %d, remote address %s:%d\n", config.local_port, config.remote_address, config.remote_port);
+    log::log(log::INFO, "Network information: local port %d, remote address %s:%d", config.local_port, config.remote_address, config.remote_port);
 
     // Start the timer.
     start_time = std::chrono::high_resolution_clock::now();
@@ -591,6 +590,23 @@ int main()
     // Initialize camera stuff.
     camera_feed::init();
 
+    // Load initial GUI stuff.
+	map_texture_id = gui::load_texture("res/binghamton.jpg");
+
+    gui::Font font;
+
+    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
+    if (!loaded_font) {
+		log::log(log::ERROR, "Failed to load font!");
+        return 1;
+    }
+
+	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
+
+    // Load this down here so that sizing is correct.
+	log::register_handler(log_view_handler);
+
+
     // Create the camera streams.
     camera_feed::Feed feeds[2];
     camera_feed::init_feed(&feeds[0], 1280, 720);
@@ -610,16 +626,7 @@ int main()
     // Last time heartbeat was sent
     unsigned int last_heartbeat_send_time = 0;
 
-	map_texture_id = gui::load_texture("res/binghamton.jpg");
 
-    gui::Font font;
-    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
-    if (!loaded_font) {
-		log::log(log::ERROR, "Failed to load font!");
-        return 1;
-    }
-
-	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
 
     // Init the controller.
 	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
