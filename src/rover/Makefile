@@ -3,7 +3,7 @@ SOURCES = main.cpp camera.cpp
 HEADERS = camera.hpp autonomy.hpp suspension.hpp lidar.hpp gps.hpp
 LIBRARIES = $(ROOT)/bin/libnetwork.a
 LFLAGS = -L$(ROOT)/bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
-CFLAGS = -no-pie -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include -I$(ROOT)/vendor
+CFLAGS = -no-pie -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include
 EXECUTABLE = $(ROOT)/bin/rover
 
 P = d # Platform. d is dummy, r is rover.
@@ -11,6 +11,7 @@ P = d # Platform. d is dummy, r is rover.
 ifeq ($(P), r)
 	# Vendored libs.
 	LFLAGS += -L$(ROOT)/vendor/arm
+	CFLAGS += -I$(ROOT)/vendor/arm
 
 	# Simpleconfig.
 	LFLAGS += -l:libsimpleconfig.a
@@ -32,6 +33,7 @@ ifeq ($(P), r)
 else
 	# Vendored libs.
 	LFLAGS += -L$(ROOT)/vendor/x86_64
+	CFLAGS += -I$(ROOT)/vendor/x86_64
 
 	# Simpleconfig.
 	LFLAGS += -l:libsimpleconfig.a
