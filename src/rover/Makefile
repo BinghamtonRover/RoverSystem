@@ -17,7 +17,8 @@ ifeq ($(P), r)
 	LFLAGS += -l:libsimpleconfig.a
 
 	# Sensors
-	SOURCES += lidar_onboard.cpp
+	# SOURCES += lidar_onboard.cpp
+	SOURCES += lidar_dummy.cpp
 	SOURCES += zed_onboard.cpp
 	SOURCES += gps_onboard.cpp
 
