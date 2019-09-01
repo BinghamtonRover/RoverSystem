@@ -1,7 +1,7 @@
 SOURCES = main.cpp camera.cpp 
 HEADERS = camera.hpp autonomy.hpp suspension.hpp lidar.hpp imu.hpp gps.hpp
-LIBRARIES = ../../bin/libnetwork.a
-LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a
+LIBRARIES = ../../bin/libnetwork.a ../../bin/libsimpleconfig.a
+LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a -lsimpleconfig
 CFLAGS = -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include
 EXECUTABLE = ../../bin/rover
 

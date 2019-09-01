@@ -1,10 +1,13 @@
-all: network base_station rover
+all: network simple_config base_station rover
 
 network:
 	make -C src/network
 
 network_clean:
 	make -C src/network clean
+
+simple_config:
+	make -C src/simple_config
 
 base_station:
 	make -C src/base_station
@@ -15,4 +18,4 @@ rover:
 clean:
 	rm bin/*
 
-.PHONY: network, network_clean, base_station, rover, clean
+.PHONY: network, network_clean, base_station, rover, clean, simple_config

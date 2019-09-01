@@ -1,0 +1,5 @@
+local_port = 45566
+remote_address = 127.0.0.1
+remote_port = 45565
+suspension_serial_id = <put serial ID here>
+imu_serial_id = <put serial ID here>

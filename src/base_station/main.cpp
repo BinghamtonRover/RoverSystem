@@ -1,5 +1,6 @@
 #include "../network/network.hpp"
 #include "../shared.hpp"
+#include "../simple_config/simpleconfig.h"
 
 #include "camera_feed.hpp"
 #include "controller.hpp"
@@ -173,16 +174,39 @@ struct Config
 Config load_config(const char* filename) {
 	Config config;
 
-	FILE* file = fopen(filename, "r");
-	if (!file) {
-		log::log(log::ERROR, "Failed to open config file!");
-		exit(1);
-	}
+    sc::SimpleConfig* sc_config;
 
-	// First line: local_port remote_address remote_port
-	fscanf(file, "%d %s %d\n", &config.local_port, config.remote_address, &config.remote_port);
+    auto err = sc::parse(filename, &sc_config);
+    if (err != sc::Error::OK) {
+        log::log(log::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
+        exit(1);
+    }
 
-	fclose(file);
+    char* local_port = sc::get(sc_config, "local_port");
+    if (!local_port) {
+        log::log(log::ERROR, "Config missing 'local_port'!");
+        exit(1);
+    }
+
+    config.local_port = atoi(local_port);
+
+    char* remote_address = sc::get(sc_config, "remote_address");
+    if (!remote_address) {
+        log::log(log::ERROR, "Config missing 'remote_address'!");
+        exit(1);
+    }
+
+    strncpy(config.remote_address, remote_address, 16);
+
+    char* remote_port = sc::get(sc_config, "remote_port");
+    if (!remote_port) {
+        log::log(log::ERROR, "Config missing 'remote_port'!");
+        exit(1);
+    }
+
+    config.remote_port = atoi(remote_port);
+
+    sc::free(sc_config);
 
 	return config;
 }
@@ -487,12 +511,11 @@ float smooth_rover_input(float value) {
 int main()
 {
 	log::register_handler(stderr_handler);
-	log::register_handler(log_view_handler);
 
 	gui::debug_console::set_callback(command_callback);
 
 	// Load config.
-	Config config = load_config("res/bs_config.txt");
+	Config config = load_config("res/bs.sconfig");
 
     // Start the timer.
     start_time = std::chrono::high_resolution_clock::now();
@@ -530,6 +553,21 @@ int main()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Initial setup for GUI here so that network errors are printed to log view.
+	map_texture_id = gui::load_texture("res/binghamton.jpg");
+
+    gui::Font font;
+    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
+    if (!loaded_font) {
+		log::log(log::ERROR, "Failed to load font!");
+        return 1;
+    }
+
+	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
+
+    // Load this down here so that sizing is correct.
+	log::register_handler(log_view_handler);
+
     // Initialize camera stuff.
     camera_feed::init();
 
@@ -545,6 +583,8 @@ int main()
 			log::log(log::ERROR, "Failed to connect to rover!");
             return 1;
         }
+
+        log::log(log::INFO, "Network connected from %d to %s:%d", config.local_port, config.remote_address, config.remote_port);
     }
 
     // Keep track of when we last sent movement and heartbeat info.
@@ -552,16 +592,6 @@ int main()
     // Last time heartbeat was sent
     unsigned int last_heartbeat_send_time = 0;
 
-	map_texture_id = gui::load_texture("res/binghamton.jpg");
-
-    gui::Font font;
-    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
-    if (!loaded_font) {
-		log::log(log::ERROR, "Failed to load font!");
-        return 1;
-    }
-
-	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
 
     // Init the controller.
 	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.

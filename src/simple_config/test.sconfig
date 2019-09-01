@@ -1,0 +1,9 @@
+# comment at start of line.
+           # Space before comment.
+# Next line is empty.
+
+# Next lines have some starting spaces.
+    
+        
+a_key      = a_value
+      b_key =      b_value 

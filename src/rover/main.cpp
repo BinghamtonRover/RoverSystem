@@ -1,4 +1,5 @@
 #include "../network/network.hpp"
+#include "../simple_config/simpleconfig.h"
 #include "../shared.hpp"
 #include "camera.hpp"
 #include "suspension.hpp"
@@ -60,22 +61,51 @@ struct Config
 Config load_config(const char* filename) {
 	Config config;
 
-	FILE* file = fopen(filename, "r");
-	if (!file) {
-		fprintf(stderr, "[!] Failed to find config file!\n");
-		exit(1);
-	}
+    sc::SimpleConfig* sc_config;
 
-	// First line: local_port remote_address remote_port
-	fscanf(file, "%d %s %d\n", &config.local_port, config.remote_address, &config.remote_port);
+    auto err = sc::parse(filename, &sc_config);
+    if (err != sc::Error::OK) {
+        printf("Failed to parse config file: %s\n", sc::get_error_string(sc_config, err));
+        exit(1);
+    }
 
-	// Second line: serial id for the suspension controller.
-	fscanf(file, "%s\n", config.suspension_serial_id);
+    char* local_port = sc::get(sc_config, "local_port");
+    if (!local_port) {
+        printf("Config file missing 'local_port'!\n");
+        exit(1);
+    }
+    config.local_port = atoi(local_port);
 
-	// Third line: serial id for the IMU.
-	fscanf(file, "%s\n", config.imu_serial_id);
+    char* remote_address = sc::get(sc_config, "remote_address");
+    if (!remote_address) {
+        printf("Config file missing 'remote_address'!\n");
+        exit(1);
+    }
+    strncpy(config.remote_address, remote_address, 16);
 
-	fclose(file);
+    char* remote_port = sc::get(sc_config, "remote_port");
+    if (!remote_port) {
+        printf("Config file missing 'remote_port'!\n");
+        exit(1);
+    }
+    config.remote_port = atoi(remote_port);
+
+    char* suspension_serial_id = sc::get(sc_config, "suspension_serial_id");
+    if (!suspension_serial_id) {
+        printf("Config file missing 'suspension_serial_id'!\n");
+        exit(1);
+    }
+    strncpy(config.suspension_serial_id, suspension_serial_id, 500);
+
+
+    char* imu_serial_id = sc::get(sc_config, "imu_serial_id");
+    if (!imu_serial_id) {
+        printf("Config file missing 'imu_serial_id'!\n");
+        exit(1);
+    }
+    strncpy(config.imu_serial_id, imu_serial_id, 500);
+
+    sc::free(sc_config);
 
 	return config;
 }
@@ -84,7 +114,7 @@ int main()
 {
 	start_time = std::chrono::high_resolution_clock::now();
 
-	Config config = load_config("res/r_config.txt");
+	Config config = load_config("res/r.sconfig");
 
 	if (suspension::init(config.suspension_serial_id) != suspension::Error::OK) {
 		fprintf(stderr, "[!] Failed to initialize the suspension!\n");
