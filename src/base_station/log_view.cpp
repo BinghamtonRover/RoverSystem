@@ -59,7 +59,7 @@ void print(std::string m, float r, float g, float b, float a)
             blue.push_back(b);
             alpha.push_back(a);
 	
-            m.erase(0, num_lines);
+            m.erase(0, chars_per_line);
         }
     }
    
@@ -100,7 +100,7 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
 	int x = layout->current_x;
 	int y = layout->current_y;
 
-        gui::do_solid_rect(layout, width, height, 0, 0, 0);
+    gui::do_solid_rect(layout, width, height, 0, 0, 0);
 
 	// We want to print a num_lines amount of times *unless* logMessages is too small
 	unsigned int tempSize = logMessages.size();
@@ -116,7 +116,7 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
 	// Lock Bottom
 	if(lockBottom) {
 		moveBottom();
-    	}
+    }
 
 	for (unsigned int i = view_index; i < tempSize + view_index; i++) {
 		const char* str = logMessages[i].c_str();
