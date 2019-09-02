@@ -537,6 +537,9 @@ int main()
     // Set sticky keys mode. It makes our input work as intended.
     glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
+    // Disable mouse.
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
     glfwSetCharCallback(window, glfw_character_callback);
     glfwSetKeyCallback(window, glfw_key_callback);
 
