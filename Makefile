@@ -1,4 +1,7 @@
-all: network simple_config base_station rover
+all: bin network simple_config base_station rover
+
+bin:
+	mkdir bin
 
 network:
 	make -C src/network
