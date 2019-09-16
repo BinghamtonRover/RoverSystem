@@ -8,21 +8,29 @@ namespace network {
 // Definitions
 //
 
+const uint8_t PROTOCOL_VERSION = 1;
+
 const int MAX_RAW_PACKET_SIZE = 1500; // Use Ethernet MTU.
 // Header:
 //     u8  protocol_version
 //     u8  message_type
 //     u16 message_size
-const int HEADER_SIZE = 1 + 1 + 2;
-const int MAX_MESSAGE_SIZE = MAX_RAW_PACKET_SIZE - HEADER_SIZE;
+const int HEADER_SIZE = 1 + 1 + 2; const int MAX_MESSAGE_SIZE = MAX_RAW_PACKET_SIZE - HEADER_SIZE;
 
 const int MAX_IDLE_TIME = 2000; // In ms.
 const int MAX_HEARTBEAT_WAIT_TIME = 1000; // In ms.
 
 enum class Error {
     OK,
+    NOMORE,
 
-    NOMORE
+    SOCKET,
+    BIND,
+    MULTICAST_JOIN,
+    CONNECT,
+    SEND,
+    RECEIVE,
+    VERSION
 };
 
 //
@@ -33,25 +41,16 @@ enum class Error {
 // Feed Management
 //
 
-struct InFeed {
-   int port; 
+struct Feed {
    int socket_fd;
 
    MemoryPool memory_pool;
 };
 
-struct OutFeed {
-    int port;
-    int socket_fd;
+Error init_publisher(const char* group, uint16_t port, Feed* out_feed);
+Error init_subscriber(const char* group, uint16_t port, Feed* out_feed);
 
-    MemoryPool memory_pool;
-};
-
-Error init(int port, InFeed* out_feed);
-Error init(int port, OutFeed* out_feed);
-
-void close(InFeed* feed);
-void close(OutFeed* feed);
+void close(Feed* feed);
 
 //
 // End Feed Management
@@ -95,7 +94,7 @@ void deserialize(Buffer* buffer, uint64_t* value);
 void serialize(Buffer* buffer, int64_t value);
 void deserialize(Buffer* buffer, int64_t* value);
 
-Buffer* get_outgoing_buffer(OutFeed* feed);
+Buffer get_outgoing_buffer(Feed* feed);
 
 //
 // End Buffer Stuff
@@ -106,7 +105,8 @@ Buffer* get_outgoing_buffer(OutFeed* feed);
 //
 
 enum class MessageType {
-    HEARTBEAT
+    HEARTBEAT,
+    TEST
 };
 
 struct HeartbeatMessage {
@@ -114,6 +114,26 @@ struct HeartbeatMessage {
 
     void serialize(Buffer* buffer) {}
     void deserialize(Buffer* buffer) {}
+};
+
+struct TestMessage {
+    static const auto TYPE = MessageType::TEST;
+
+    uint16_t message_size;
+    char message[MAX_MESSAGE_SIZE];
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->message_size);
+        memcpy(buffer->data + buffer->index, this->message, this->message_size);
+        buffer->index += this->message_size;
+        buffer->size += this->message_size;
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->message_size));
+        memcpy(this->message, buffer->data + buffer->index, this->message_size);
+        buffer->index += this->message_size;
+    }
 };
 
 //
@@ -126,18 +146,18 @@ struct HeartbeatMessage {
 
 struct IncomingMessage {
     MessageType type;
-    Buffer* buffer;
+    Buffer buffer;
 };
 
-Error receive(InFeed* feed, IncomingMessage* out_message);
-Error send(OutFeed* feed, MessageType type, Buffer* buffer);
+Error receive(Feed* feed, IncomingMessage* out_message);
+Error send(Feed* feed, MessageType type, Buffer buffer);
 
 template<typename T>
-Error publish(OutFeed* feed, T* thing) {
+Error publish(Feed* feed, T* thing) {
     auto buffer = get_outgoing_buffer(feed);
     auto message_type = T::TYPE;
 
-    thing->serialize(buffer);
+    thing->serialize(&buffer);
 
     return send(feed, message_type, buffer);
 }

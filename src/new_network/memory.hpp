@@ -15,6 +15,8 @@ struct MemoryPool {
     uint8_t* buckets[64];
 
     void init(int element_size, int elements_per_bucket);
+    void close();
+
     uint8_t* alloc();
     void free(uint8_t* element);
 };

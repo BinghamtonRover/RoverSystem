@@ -27,6 +27,12 @@ void MemoryPool::init(int element_size, int elements_per_bucket) {
     this->buckets[0] = (uint8_t*) malloc(this->segment_size * this->elements_per_bucket);
 }
 
+void MemoryPool::close() {
+    for (int i = 0; i < this->num_buckets; i++) {
+        free(this->buckets[i]);
+    }
+}
+
 static int rightmost_bit(uint64_t n) {
   return (int) (n & ~ (n -1)) - 1;
 }
