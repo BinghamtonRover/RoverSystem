@@ -1,16 +1,16 @@
-SOURCES = network.cpp
-HEADERS = network.hpp arena.hpp
+SOURCES = network.cpp memory.cpp
+HEADERS = network.hpp memory.hpp
 CFLAGS  = -std=c++14 -Wall -g
 OUTDIR  = ../../bin
-OFILE   = $(OUTDIR)/network.o
 AFILE   = $(OUTDIR)/libnetwork.a
+OFILES  = $(SOURCES:%.cpp=$(OUTDIR)/%.o)
 
-$(AFILE): $(OFILE)
+$(AFILE): $(OFILES)
 	ar rcs $@ $^
-	rm $(OFILE)
+	rm $^
 
-$(OFILE): $(SOURCES) $(HEADERS) Makefile
-	g++ $(CFLAGS) -c $(SOURCES) -o $@
+$(OUTDIR)/%.o: %.cpp $(HEADERS)
+	g++ $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:

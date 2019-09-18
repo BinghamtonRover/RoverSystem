@@ -120,7 +120,6 @@ enum class Error
     ERROR_DEF(X)
 };
 #undef X
-
 /*
     Returns a string representation of the given error.
 
