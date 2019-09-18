@@ -1,5 +1,4 @@
 #include "../network/network.hpp"
-#include "../shared.hpp"
 #include "../simple_config/simpleconfig.h"
 
 #include "camera_feed.hpp"
@@ -7,15 +6,16 @@
 #include "log_view.hpp"
 #include "debug_console.hpp"
 #include "gui.hpp"
-#include "log.hpp"
-#include "math.hpp"
+#include "logger.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
 
 #include <cstdint>
+#include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <cmath>
 
 #include <chrono>
 #include <iostream>
@@ -55,8 +55,8 @@ const int DISCONNECT_TIMER = 5000;
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
 
-// Network connection.
-network::Connection conn;
+// Network feeds.
+network::Feed r_feed, bs_feed;
 
 unsigned int map_texture_id;
 
@@ -117,34 +117,34 @@ void command_callback(std::string command) {
 			last_movement_message.right *= -1;
 		}
 
-		log::log(log::DEBUG, "> Update movement to %d, %d", last_movement_message.left, last_movement_message.right);
+		logger::log(logger::DEBUG, "> Update movement to %d, %d", last_movement_message.left, last_movement_message.right);
 	}
 }
 
-void stderr_handler(log::Level level, std::string message) {
+void stderr_handler(logger::Level level, std::string message) {
 	fprintf(stderr, "%s\n", message.c_str());
 }
 
-void log_view_handler(log::Level level, std::string message) {
+void log_view_handler(logger::Level level, std::string message) {
 	float r, g, b, a = 1.0f;
 
 	switch (level) {
-	case log::DEBUG:
+	case logger::DEBUG:
 		r = 0.70f;
 		g = 0.70f;
 		b = 0.70f;
 		break;
-	case log::INFO:
+	case logger::INFO:
 		r = 1.0f;
 		g = 1.0f;
 		b = 1.0f;
 		break;
-	case log::WARNING:
+	case logger::WARNING:
 		r = 1.00f;
 		g = 0.52f;
 		b = 0.01f;
 		break;
-	case log::ERROR:
+	case logger::ERROR:
 		r = 1.0f;
 		g = 0.0f;
 		b = 0.0f;
@@ -165,10 +165,11 @@ void log_view_handler(log::Level level, std::string message) {
 
 struct Config
 {
-	int local_port;
+	int rover_port;
+    int base_station_port;
 
-	char remote_address[16]; // Max length of ipv4 address is 15, plus one for nt.
-	int remote_port;
+    char rover_multicast_group[16]; // Max length of string ipv4 addr is 15, plus one for nt.
+    char base_station_multicast_group[16];
 };
 
 Config load_config(const char* filename) {
@@ -178,33 +179,37 @@ Config load_config(const char* filename) {
 
     auto err = sc::parse(filename, &sc_config);
     if (err != sc::Error::OK) {
-        log::log(log::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
+        logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
         exit(1);
     }
 
-    char* local_port = sc::get(sc_config, "local_port");
-    if (!local_port) {
-        log::log(log::ERROR, "Config missing 'local_port'!");
+    char* rover_port = sc::get(sc_config, "rover_port");
+    if (!rover_port) {
+        logger::log(logger::ERROR, "Config missing 'rover_port'!");
         exit(1);
     }
+    config.rover_port = atoi(rover_port);
 
-    config.local_port = atoi(local_port);
-
-    char* remote_address = sc::get(sc_config, "remote_address");
-    if (!remote_address) {
-        log::log(log::ERROR, "Config missing 'remote_address'!");
+    char* base_station_port = sc::get(sc_config, "base_station_port");
+    if (!base_station_port) {
+        logger::log(logger::ERROR, "Config missing 'base_station_port'!");
         exit(1);
     }
+    config.base_station_port = atoi(base_station_port);
 
-    strncpy(config.remote_address, remote_address, 16);
-
-    char* remote_port = sc::get(sc_config, "remote_port");
-    if (!remote_port) {
-        log::log(log::ERROR, "Config missing 'remote_port'!");
+    char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
+    if (!rover_multicast_group) {
+        logger::log(logger::ERROR, "Config missing 'rover_multicast_group'!");
         exit(1);
     }
+    strncpy(config.rover_multicast_group, rover_multicast_group, 16);
 
-    config.remote_port = atoi(remote_port);
+    char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
+    if (!base_station_multicast_group) {
+        logger::log(logger::ERROR, "Config missing 'base_station_multicast_group'!");
+        exit(1);
+    }
+    strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
 
     sc::free(sc_config);
 
@@ -222,7 +227,8 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	gui::do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
 	char bandwidth_buffer[50];
-	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", conn.last_bandwidth);
+    //TODO: Update this with "bandwidth" (maybe call it network usage?
+	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", 69.0f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
@@ -333,8 +339,6 @@ void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vect
 
 std::vector<uint16_t> lidar_points;
 
-network::LocationMessage location{};
-
 void do_lidar(gui::Layout* layout) {
 	int wx = layout->current_x;
 	int wy = layout->current_y;
@@ -347,7 +351,7 @@ void do_lidar(gui::Layout* layout) {
 	for (int q = -3; q <= 3; q++) {
 		for (int r = -3; r <= 3; r++) {
 			float x = 1.2f * (3.0f / 2.0f) * q;
-			float y = 1.2f * ((math::sqrtf(3.0f)/2.0f) * q + math::sqrtf(3) * r);
+			float y = 1.2f * ((sqrtf(3.0f)/2.0f) * q + sqrtf(3) * r);
 
 			float ppm = 150.0f / 10.0f;
 
@@ -357,10 +361,10 @@ void do_lidar(gui::Layout* layout) {
 			glBegin(GL_LINE_LOOP);
 
 			for (int i = 0; i < 6; i++) {
-				float angle = math::PI * (float)i / 3.0f;
+				float angle = M_PI * (float)i / 3.0f;
 
-				float vx = wx + 150.0f + px + ppm * 1.2 * math::cosf(angle);
-				float vy = wy + 150.0f + py + ppm * 1.2 * math::sinf(angle);
+				float vx = wx + 150.0f + px + ppm * 1.2 * cosf(angle);
+				float vy = wy + 150.0f + py + ppm * 1.2 * sinf(angle);
 
 //				glVertex2f(vx, vy);
 			}
@@ -375,9 +379,9 @@ void do_lidar(gui::Layout* layout) {
 
 	for (size_t i = 0; i < lidar_points.size(); i++) {
 		float angle = 225.0f - (float)i;
-		float theta = angle * math::PI / 180.0f;
+		float theta = angle * M_PI / 180.0f;
 
-		theta -= math::PI;
+		theta -= M_PI;
 
 		uint16_t dist = lidar_points[i];
 
@@ -385,8 +389,8 @@ void do_lidar(gui::Layout* layout) {
 
 		float hs = 1.0f;
 
-		float x = wx + 150.0f + r * math::cosf(theta);
-		float y = wy + 150.0f + r * math::sinf(theta);
+		float x = wx + 150.0f + r * cosf(theta);
+		float y = wy + 150.0f + r * sinf(theta);
 
 		if (dist < 100) continue;
 
@@ -505,12 +509,12 @@ float smooth_rover_input(float value) {
 	// The higher the alpha, the more exponential the thing.
 	// We then make sure that f(0) = 0 and f(1) = 255.
 
-	return (255.0f / (ALPHA - 1)) * (math::powf(1 / ALPHA, -value/255.0f) - 1);
+	return (255.0f / (ALPHA - 1)) * (powf(1 / ALPHA, -value/255.0f) - 1);
 }
 
 int main()
 {
-	log::register_handler(stderr_handler);
+	logger::register_handler(stderr_handler);
 
 	gui::debug_console::set_callback(command_callback);
 
@@ -522,7 +526,7 @@ int main()
 
     // Init GLFW.
     if (!glfwInit()) {
-		log::log(log::ERROR, "Failed to init GLFW!");
+		logger::log(logger::ERROR, "Failed to init GLFW!");
         return 1;
     }
 
@@ -562,14 +566,15 @@ int main()
     gui::Font font;
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
-		log::log(log::ERROR, "Failed to load font!");
+		logger::log(logger::ERROR, "Failed to load font!");
         return 1;
     }
 
 	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
 
     // Load this down here so that sizing is correct.
-	log::register_handler(log_view_handler);
+    // TODO: The sizing is not correct... lines are going off the right side!
+	logger::register_handler(log_view_handler);
 
     // Initialize camera stuff.
     camera_feed::init();
@@ -581,13 +586,23 @@ int main()
 
     // Initialize network functionality.
     {
-        network::Error err = network::connect(&conn, config.local_port, config.remote_address, config.remote_port);
+        auto err = network::init_publisher(config.base_station_multicast_group, config.base_station_port, &bs_feed);
         if (err != network::Error::OK) {
-			log::log(log::ERROR, "Failed to connect to rover!");
+			logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
         }
 
-        log::log(log::INFO, "Network connected from %d to %s:%d", config.local_port, config.remote_address, config.remote_port);
+        logger::log(logger::INFO, "Network: publishing base station feed on %s:%d", config.base_station_multicast_group, config.base_station_port);
+    }
+
+    {
+        auto err = network::init_subscriber(config.rover_multicast_group, config.rover_port, &r_feed);
+        if (err != network::Error::OK) {
+			logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
+            return 1;
+        }
+
+        logger::log(logger::INFO, "Network: subscribed to rover feed on %s:%d", config.rover_multicast_group, config.rover_port);
     }
 
     // Keep track of when we last sent movement and heartbeat info.
@@ -595,15 +610,14 @@ int main()
     // Last time heartbeat was sent
     unsigned int last_heartbeat_send_time = 0;
 
-
     // Init the controller.
 	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
     bool controller_loaded = false;
     if (controller::init("/dev/input/js1") == controller::Error::OK) {
         controller_loaded = true;
-		log::log(log::INFO, "Controller connected.");
+		logger::log(logger::INFO, "Controller connected.");
     } else {
-		log::log(log::WARNING, "No controller connected!");
+		logger::log(logger::WARNING, "No controller connected!");
     }
 
     gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
@@ -649,44 +663,41 @@ int main()
 			if (help_menu_up) help_menu_up = false;
 		}
 
-		network::update_bandwidth(&conn, get_ticks());
+        // TODO: Do network usage update here!
 
-        // Handle incoming network messages.
-        network::Message message;
+        // Handle incoming network messages from the rover feed.
+        network::IncomingMessage message;
         while (true) {
-			network::Error neterr = network::poll(&conn, &message);
+			auto neterr = network::receive(&r_feed, &message);
 			if (neterr != network::Error::OK) {
 				if (neterr == network::Error::NOMORE) {
 					break;
 				} else {
-					log::log(log::WARNING, "Failed to read network packets! %d", neterr);
+					logger::log(logger::WARNING, "Failed to read network packets: %s", network::get_error_string(neterr));
 					break;
 				}
 			}
 
             switch (message.type) {
-                case network::MessageType::HEARTBEAT: {
-                    break;
-                }
                 case network::MessageType::CAMERA: {
                     // Static buffer so we don't have to allocate and reallocate every
                     // frame.
-                    static uint8_t camera_message_buffer[CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+                    static uint8_t camera_message_buffer[camera_feed::CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
 
                     network::CameraMessage camera_message;
                     camera_message.data = camera_message_buffer;
-                    network::deserialize(message.buffer, &camera_message);
+                    network::deserialize(&message.buffer, &camera_message);
 
                     if (camera_message.stream_index > 2) {
                         break;
                     }
 
-                    camera_feed::Error err = camera_feed::handle_section(
+                    auto camerr = camera_feed::handle_section(
                         &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
                         camera_message.section_index, camera_message.section_count, camera_message.frame_index);
 
-                    if (err != camera_feed::Error::OK) {
-						log::log(log::WARNING, "Failed to handle video frame section!");
+                    if (camerr != camera_feed::Error::OK) {
+						logger::log(logger::WARNING, "Failed to handle video frame section!");
                     }
 
                     break;
@@ -695,26 +706,16 @@ int main()
 					lidar_points.clear();
 
 					network::LidarMessage lidar_message;
-					network::deserialize(message.buffer, &lidar_message);
+					network::deserialize(&message.buffer, &lidar_message);
 
 					for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
 						lidar_points.push_back(lidar_message.points[i]);
 					}
 					break;
 				}
-				case network::MessageType::LOCATION: {
-					network::LocationMessage location_message;
-					network::deserialize(message.buffer, &location_message);
-
-					printf("%f, %f, %f, %f, %f, %f\n", location_message.x, location_message.y, location_message.z, location_message.pitch, location_message.yaw, location_message.roll);
-
-					break;
-				}
                 default:
                     break;
             }
-
-            network::return_incoming_buffer(message.buffer);
         }
 
         // Reset heartbeat send time
@@ -742,7 +743,7 @@ int main()
 						}
 
 						int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-						log::log(log::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
+						logger::log(logger::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
 
 						last_movement_message.left = smoothed;
 						if (!forward) last_movement_message.left *= -1;
@@ -755,7 +756,7 @@ int main()
 						}
 
 						int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-						log::log(log::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
+						logger::log(logger::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
 
 						last_movement_message.right = smoothed;
 						if (!forward) last_movement_message.right *= -1;
@@ -795,7 +796,7 @@ int main()
 			}
 
 			if (err != controller::Error::DONE) {
-				log::log(log::ERROR, "Failed to read from the controller! Disabling");
+				logger::log(logger::ERROR, "Failed to read from the controller! Disabling");
 				controller_loaded = false;
 			}
 		}
@@ -805,9 +806,7 @@ int main()
 
 			// printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
-			network::Buffer *message_buffer = network::get_outgoing_buffer();
-			network::serialize(message_buffer, &last_movement_message);
-			network::send(&conn, network::MessageType::MOVEMENT, message_buffer);
+            network::publish(&bs_feed, &last_movement_message);
 		}
 
         // Update and draw GUI.

@@ -1,7 +1,11 @@
 #include <cstdint>
 
+#include "../network/network.hpp"
+
 namespace camera_feed
 {
+
+const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
 
 const int CAMERA_FRAME_BUFFER_SIZE = 6220800;
 const int CAMERA_FRAME_BUFFER_COUNT = 5;

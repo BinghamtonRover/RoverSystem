@@ -1,6 +1,5 @@
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
-#include "../shared.hpp"
 #include "camera.hpp"
 #include "suspension.hpp"
 #include "lidar.hpp"
@@ -35,6 +34,8 @@ const int AUTONOMY_INTERVAL = 500;
 
 const int ZED_INTERVAL = 1000 / 15;
 
+const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
+
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
 
@@ -49,13 +50,14 @@ unsigned int get_ticks()
 
 struct Config
 {
-	int local_port;
-
-	char remote_address[16];
-	int remote_port;
-
 	char suspension_serial_id[500];
 	char imu_serial_id[500];
+
+    int base_station_port;
+    int rover_port;
+
+    char base_station_multicast_group[16];
+    char rover_multicast_group[16];
 };
 
 Config load_config(const char* filename) {
@@ -69,26 +71,19 @@ Config load_config(const char* filename) {
         exit(1);
     }
 
-    char* local_port = sc::get(sc_config, "local_port");
-    if (!local_port) {
-        printf("Config file missing 'local_port'!\n");
+    char* rover_port = sc::get(sc_config, "rover_port");
+    if (!rover_port) {
+        printf("Config file missing 'rover_port'!\n");
         exit(1);
     }
-    config.local_port = atoi(local_port);
+    config.rover_port = atoi(rover_port);
 
-    char* remote_address = sc::get(sc_config, "remote_address");
-    if (!remote_address) {
-        printf("Config file missing 'remote_address'!\n");
+    char* base_station_port = sc::get(sc_config, "base_station_port");
+    if (!base_station_port) {
+        printf("Config file missing 'base_station_port'!\n");
         exit(1);
     }
-    strncpy(config.remote_address, remote_address, 16);
-
-    char* remote_port = sc::get(sc_config, "remote_port");
-    if (!remote_port) {
-        printf("Config file missing 'remote_port'!\n");
-        exit(1);
-    }
-    config.remote_port = atoi(remote_port);
+    config.base_station_port = atoi(base_station_port);
 
     char* suspension_serial_id = sc::get(sc_config, "suspension_serial_id");
     if (!suspension_serial_id) {
@@ -104,6 +99,20 @@ Config load_config(const char* filename) {
         exit(1);
     }
     strncpy(config.imu_serial_id, imu_serial_id, 500);
+
+    char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
+    if (!base_station_multicast_group) {
+        printf("Config file missing 'base_station_multicast_group'!\n");
+        exit(1);
+    }
+    strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
+
+    char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
+    if (!rover_multicast_group) {
+        printf("Config file missing 'rover_multicast_group'!\n");
+        exit(1);
+    }
+    strncpy(config.rover_multicast_group, rover_multicast_group, 16);
 
     sc::free(sc_config);
 
@@ -182,13 +191,24 @@ int main()
 
     zed::open();
 
-    // UDP connection
-    network::Connection conn;
+    // Two feeds: incoming base station and outgoing rover.
+    network::Feed r_feed, bs_feed;
 
-    // Open UDP connection
-    network::Error net_err = network::connect(&conn, config.local_port, config.remote_address, config.remote_port);
-    if (net_err != network::Error::OK) {
-        std::cerr << "[!]Failed to connect to base station!" << std::endl;
+    {
+        auto err = network::init_publisher(config.rover_multicast_group, config.rover_port, &r_feed);
+        if (err != network::Error::OK) {
+            printf("[!] Failed to start rover feed: %s\n", network::get_error_string(err));
+            exit(1);
+        }
+    }
+
+    {
+        auto err = network::init_subscriber(config.base_station_multicast_group, config.base_station_port, &bs_feed);
+        if (err != network::Error::OK) {
+            printf("[!] Failed to subscribe to base station feed: %s\n", network::get_error_string(err));
+            printf("errno %d\n", errno);
+            exit(1);
+        }
     }
 
 	auto last_lidar_send_time = get_ticks();
@@ -238,8 +258,6 @@ int main()
             uint8_t num_buffers = (frame_size / CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE) + 1;
 
             for (uint8_t j = 0; j < num_buffers; j++) {
-                network::Buffer *camera_buffer = network::get_outgoing_buffer();
-
                 // This accounts for the last buffer that is not completely divisible
                 // by the defined buffer size, by using up the remaining space calculated
                 // with modulus    -yu
@@ -255,10 +273,7 @@ int main()
                     frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
 
-                // memcpy(message.data, frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE*j), buffer_size);
-                network::serialize(camera_buffer, &message);
-
-                network::send(&conn, network::MessageType::CAMERA, camera_buffer);
+                network::publish(&r_feed, &message);
             }
 
             camera::return_buffer(cs);
@@ -271,15 +286,12 @@ int main()
 				fprintf(stderr, "[!] Failed to read LIDAR points!\n");
 			}
 
-			network::Buffer* buffer = network::get_outgoing_buffer();
-
 			network::LidarMessage message;
 			for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
 				message.points[i] = (uint16_t) lidar_points[i];
 			}
 
-			network::serialize(buffer, &message);
-			network::send(&conn, network::MessageType::LIDAR, buffer);
+            network::publish(&r_feed, &message);
 
 			for (auto point : lidar_points) {
 				int64_t point_enc = point;
@@ -312,8 +324,6 @@ int main()
             uint8_t num_buffers = (jpeg_size / CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE) + 1;
 
             for (uint8_t j = 0; j < num_buffers; j++) {
-                network::Buffer *camera_buffer = network::get_outgoing_buffer();
-
                 // This accounts for the last buffer that is not completely divisible
                 // by the defined buffer size, by using up the remaining space calculated
                 // with modulus    -yu
@@ -329,10 +339,7 @@ int main()
                     jpeg_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
 
-                // memcpy(message.data, frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE*j), buffer_size);
-                network::serialize(camera_buffer, &message);
-
-                network::send(&conn, network::MessageType::CAMERA, camera_buffer);
+                network::publish(&r_feed, &message);
             }
 
             if (get_ticks() - last_zed_time > ZED_INTERVAL) {
@@ -355,28 +362,25 @@ int main()
 #endif
 
         // Receive incoming messages
-        network::Message message;
+        network::IncomingMessage message;
         while (true) {
-			network::Error neterr = network::poll(&conn, &message);
+			auto neterr = network::receive(&r_feed, &message);
 			if (neterr != network::Error::OK) {
 				if (neterr == network::Error::NOMORE) {
 					break;
 				}
 
+                printf("[!] Network error on receive!\n");
+
 				break;
 			}
 
             switch (message.type) {
-                case network::MessageType::HEARTBEAT: {
-                    network::Buffer *outgoing = network::get_outgoing_buffer();
-                    network::send(&conn, network::MessageType::HEARTBEAT, outgoing);
-                    break;
-                }
                 case network::MessageType::MOVEMENT: {
 					if (do_autonomy) break;
 
                     network::MovementMessage movement;
-                    network::deserialize(message.buffer, &movement);
+                    network::deserialize(&message.buffer, &movement);
 
 					// printf("Got movement with %d, %d\n", movement.left, movement.right);
 
@@ -398,8 +402,6 @@ int main()
                 default:
                     break;
             }
-
-            network::return_incoming_buffer(message.buffer);
         }
     }
 }

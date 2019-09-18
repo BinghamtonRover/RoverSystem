@@ -1,5 +1,4 @@
 #include "camera_feed.hpp"
-#include "../shared.hpp"
 
 #include <cstdio>
 #include <cstring>

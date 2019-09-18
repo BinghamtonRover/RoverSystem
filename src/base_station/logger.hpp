@@ -1,6 +1,6 @@
 #include <string>
 
-namespace log {
+namespace logger {
 
 constexpr int MAX_HANDLERS = 10;
 

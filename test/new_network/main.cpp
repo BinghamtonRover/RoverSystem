@@ -4,7 +4,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../../src/new_network/network.hpp"
+#include "../../src/network/network.hpp"
 
 void fail() {
     printf("[!] Failed.\n");

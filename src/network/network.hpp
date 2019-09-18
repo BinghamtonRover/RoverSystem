@@ -1,174 +1,288 @@
-#ifndef NETWORK_HPP
-#define NETWORK_HPP
+#ifndef NETWORK_H
+#define NETWORK_H
 
-#include <cstdint>
+#include <stdint.h>
+#include <stddef.h>
 
-#include "arena.hpp"
+#include "memory.hpp"
 
-namespace network
-{
-
-const int PROTOCOL_VERSION = 5;
-
-// Maximum size of any single UDP packet sent by this protocol.
-const unsigned int BUFFER_SIZE = 65500;
-
-const unsigned int HEADER_SIZE = 4;
-
-const int BANDWIDTH_SAMPLE_INTERVAL = 1000;
+namespace network {
 
 //
-// Buffer Definition
+// Definitions
 //
 
-struct Buffer
-{
-    int size;
-    int idx;
-    uint8_t buffer[HEADER_SIZE + BUFFER_SIZE];
+const uint8_t PROTOCOL_VERSION = 1;
+
+const int MAX_RAW_PACKET_SIZE = 1500; // Use Ethernet MTU.
+// Header:
+//     u8  protocol_version
+//     u8  message_type
+//     u16 message_size
+const int HEADER_SIZE = 1 + 1 + 2; 
+const int MAX_MESSAGE_SIZE = MAX_RAW_PACKET_SIZE - HEADER_SIZE;
+
+const int MAX_IDLE_TIME = 2000; // In ms.
+const int MAX_HEARTBEAT_WAIT_TIME = 1000; // In ms.
+
+#define NETWORK_ERROR_DEF(X) \
+    X(OK), \
+    X(NOMORE), \
+    \
+    X(SOCKET), \
+    X(BIND), \
+    X(MULTICAST_JOIN), \
+    X(CONNECT), \
+    X(SEND), \
+    X(RECEIVE), \
+    X(VERSION)
+
+#define X_IDENTITY(name) name
+enum class Error {
+    NETWORK_ERROR_DEF(X_IDENTITY)
+};
+#undef X_IDENTITY
+
+const char* get_error_string(Error error);
+
+//
+// End Definitions
+//
+
+//
+// Feed Management
+//
+
+struct Feed {
+   int socket_fd;
+
+   MemoryPool memory_pool;
 };
 
-void init_buffer(Buffer *buffer);
+Error init_publisher(const char* group, uint16_t port, Feed* out_feed);
+Error init_subscriber(const char* group, uint16_t port, Feed* out_feed);
 
-/*
-    This macro gives us the ability to:
-        (a) Put a value of an arbitrary type within a byte buffer at an arbitrary location;
-        (b) Interpret bytes at an arbitrary location of a byte buffer as an arbitrary type.
-    Parameters:
-        thing: the byte buffer. Always a uint8_t* for our purposes.
-        idx: the byte index into the buffer.
-        type: the type being inserted or removed.
-    Examples:
-        (a) Placing a 32-bit integer into a byte buffer at byte position 7:
-            VALUE(buffer, 7, int32_t) = -12344454;
-        (b) Interpreting two bytes at byte buffer position 3 as an unsigned 16-bit integer:
-            uint16_t my_int = VALUE(buffer, 3, uint16_t);
-*/
-#define VALUE(thing, idx, type) *((type *)&(thing[idx]))
-
-// Handles serialization of all types.
-// All definitions are in network.cpp.
-// If something you want to send isn't overloaded, do it there.
-template <typename T> void serialize(Buffer *buffer, T t);
-
-// Handles deserialization of all types.
-// All definitions are in network.cpp.
-// If something you want to receive isn't overloaded, do it there.
-template <typename T> void deserialize(Buffer *buffer, T *t);
+void close(Feed* feed);
 
 //
-// Message Type Definitions
+// End Feed Management
 //
 
-/*
-    To add a message type:
-        1. Add a value for it to MessageType;
-        2. Add a struct to contain its deserialized values;
-        3. Define serialize and deserialize overloads here and implement them in network.cpp;
-*/
+//
+// Buffer Stuff
+//
 
-enum class MessageType : uint8_t
-{
+struct Buffer {
+    uint16_t index;
+    uint16_t size;
+    uint16_t cap;
+
+    uint8_t* data;
+};
+
+template<typename T>
+void deserialize(Buffer* buffer, T* t) {
+    t->deserialize(buffer);
+}
+
+void serialize(Buffer* buffer, uint8_t value);
+void deserialize(Buffer* buffer, uint8_t* value);
+
+void serialize(Buffer* buffer, uint16_t value);
+void deserialize(Buffer* buffer, uint16_t* value);
+
+void serialize(Buffer* buffer, int16_t value);
+void deserialize(Buffer* buffer, int16_t* value);
+
+void serialize(Buffer* buffer, uint32_t value);
+void deserialize(Buffer* buffer, uint32_t* value);
+
+void serialize(Buffer* buffer, int32_t value);
+void deserialize(Buffer* buffer, int32_t* value);
+
+void serialize(Buffer* buffer, uint64_t value);
+void deserialize(Buffer* buffer, uint64_t* value);
+
+void serialize(Buffer* buffer, int64_t value);
+void deserialize(Buffer* buffer, int64_t* value);
+
+void serialize(Buffer* buffer, bool value);
+void deserialize(Buffer* buffer, bool* value); 
+
+void serialize(Buffer* buffer, float value);
+void deserialize(Buffer* buffer, float* value);
+
+void serialize(Buffer* buffer, double value);
+void deserialize(Buffer* buffer, double* value);
+
+void serialize(Buffer* buffer, uint8_t* memory, size_t size);
+void deserialize(Buffer* buffer, uint8_t* memory, size_t out_size);
+
+Buffer get_outgoing_buffer(Feed* feed);
+
+//
+// End Buffer Stuff
+//
+
+//
+// Message Definitions
+//
+
+enum class MessageType {
     HEARTBEAT,
+    TEST,
+
     MOVEMENT,
     CAMERA,
     LOG,
-	LIDAR,
-	LOCATION,
-
-    NUM
+    LIDAR,
+    LOCATION
 };
 
-struct MovementMessage
-{
+struct HeartbeatMessage {
+    static const auto TYPE = MessageType::HEARTBEAT;
+
+    void serialize(Buffer* buffer) {}
+    void deserialize(Buffer* buffer) {}
+};
+
+struct TestMessage {
+    static const auto TYPE = MessageType::TEST;
+
+    uint16_t message_size;
+    uint8_t message[MAX_MESSAGE_SIZE];
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->message_size);
+        network::serialize(buffer, this->message, this->message_size);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->message_size));
+        network::deserialize(buffer, this->message, this->message_size);
+    }
+};
+
+struct MovementMessage {
+    static const auto TYPE = MessageType::MOVEMENT;
+
     int16_t left, right;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->left);
+        network::serialize(buffer, this->right);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->left));
+        network::deserialize(buffer, &(this->right));
+    }
 };
 
-// When deserializing a CameraMessage, providing data == nullptr will cause a new buffer to be allocated.
-// If data != nullptr, the frame data will be written to the memory to which data points. In this case,
-// be sure that the size of that block is at least CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE bytes!
-// In either case, be sure to free the memory with delete[] once you are finished with that buffer!
-struct CameraMessage
-{
+struct CameraMessage {
+    static const auto TYPE = MessageType::CAMERA;
+
+    static const int HEADER_SIZE = 7;
+
     uint8_t stream_index;
     uint16_t frame_index;
     uint8_t section_index;
     uint8_t section_count;
     uint16_t size;
 
-    uint8_t *data;
+    uint8_t* data;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->stream_index);
+        network::serialize(buffer, this->frame_index);
+        network::serialize(buffer, this->section_index);
+        network::serialize(buffer, this->section_count);
+        network::serialize(buffer, this->size);
+        network::serialize(buffer, this->data, this->size);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->stream_index));
+        network::deserialize(buffer, &(this->frame_index));
+        network::deserialize(buffer, &(this->section_index));
+        network::deserialize(buffer, &(this->section_count));
+        network::deserialize(buffer, &(this->size));
+        network::deserialize(buffer, this->data, this->size);
+    }
 };
 
-struct LogMessage
-{
-    uint8_t size;
+struct LogMessage {
+    static const auto TYPE = MessageType::LOG;
 
-    char *log_string;
+    uint8_t size;
+    uint8_t* log_string;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->size);
+        network::serialize(buffer, this->log_string, this->size);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->size));
+        network::deserialize(buffer, this->log_string, this->size);
+    }
 };
 
 const int NUM_LIDAR_POINTS = 271;
 
 struct LidarMessage {
-	uint16_t points[NUM_LIDAR_POINTS];
+    static const auto TYPE = MessageType::LIDAR;
+
+    uint16_t points[NUM_LIDAR_POINTS];
+
+    void serialize(Buffer* buffer) {
+        for (int i = 0; i < NUM_LIDAR_POINTS; i++) {
+            network::serialize(buffer, points[i]);
+        }
+    }
+
+    void deserialize(Buffer* buffer) {
+        for (int i = 0; i < NUM_LIDAR_POINTS; i++) {
+            network::deserialize(buffer, this->points + i);
+        }
+    }
 };
 
 struct LocationMessage {
-	float x;
-	float y;
-	float z;
-	float pitch;
-	float yaw;
-	float roll;
+    bool has_fix;
+    float latitude;
+    float longitude;
 };
 
 //
-// Core API Definitions
+// End Message Definitions
 //
 
-enum class Error
-{
-    OK,
-	NOMORE,
+//
+// Sending and Receiving
+//
 
-    DISCONNECT,
-    OPEN_SOCKET,
-    BIND_SOCKET,
-    READ_PACKET,
-    WRONG_VERSION,
-    SEND_PACKET
-};
-
-struct Message
-{
+struct IncomingMessage {
     MessageType type;
-    uint16_t index;
-    Buffer *buffer;
+    Buffer buffer;
 };
 
-struct Connection
-{
-    int socket_fd;
+Error receive(Feed* feed, IncomingMessage* out_message);
+Error send(Feed* feed, MessageType type, Buffer buffer);
 
-    const char *destination_address;
-    int destination_port;
-    int local_port;
+template<typename T>
+Error publish(Feed* feed, T* thing) {
+    auto buffer = get_outgoing_buffer(feed);
+    auto message_type = T::TYPE;
 
-	double last_bandwidth;
-	int total_bytes;
-	unsigned int last_bandwidth_update_time;
-};
+    thing->serialize(&buffer);
 
-Error connect(Connection *conn, int local_port, const char *destination_address, int destination_port);
+    return send(feed, message_type, buffer);
+}
 
-Error send(Connection* conn, MessageType type, Buffer* buffer);
-
-Error poll(Connection* conn, Message* message);
-
-Buffer *get_outgoing_buffer();
-
-void return_incoming_buffer(Buffer *buffer);
-
-double update_bandwidth(Connection* conn, unsigned int time);
+//
+// End Sending and Receiving
+//
 
 } // namespace network
 

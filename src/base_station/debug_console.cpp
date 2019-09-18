@@ -1,6 +1,6 @@
 #include "debug_console.hpp"
 #include "gui.hpp"
-#include "log.hpp"
+#include "logger.hpp"
 #include "log_view.hpp"
 
 #include <GLFW/glfw3.h>
@@ -159,7 +159,7 @@ void handle_keypress(int key, int mods)
         if (command == "test") {
         	log("This is some red text.", 1, 0, 0);
         } else if (command == "tdl") {
-		bool mode = log::toggleDebugMode();
+		bool mode = logger::toggleDebugMode();
 		if(mode) {
 			log("DebugMode turned on", 1, 0, 1);
 		} else {

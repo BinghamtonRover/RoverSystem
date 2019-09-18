@@ -1,10 +1,10 @@
-#include "log.hpp"
+#include "logger.hpp"
 
 #include <stdarg.h>
 
 #include <cassert>
 
-namespace log {
+namespace logger {
 
 constexpr int LOG_BUFFER_SIZE = 1024 * 1024;
 
