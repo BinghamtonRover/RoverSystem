@@ -208,6 +208,9 @@ Error init_subscriber(const char* group, uint16_t port, Feed* out_feed) {
     }
     out_feed->socket_fd = sock_fd;
 
+    uint8_t ttl = MULTICAST_TTL;
+	setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+
     // Bind to the correct port.
     struct sockaddr_in bind_addr{};
     bind_addr.sin_family = AF_INET;
@@ -239,6 +242,9 @@ Error init_publisher(const char* group, uint16_t port, Feed* out_feed) {
     if (sock_fd == -1) {
         return Error::SOCKET;
     }
+
+    uint8_t ttl = MULTICAST_TTL;
+	setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
 
     out_feed->socket_fd = sock_fd;
     struct sockaddr_in connect_addr{};

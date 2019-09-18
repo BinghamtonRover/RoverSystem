@@ -23,7 +23,10 @@ const int HEADER_SIZE = 1 + 1 + 2;
 const int MAX_MESSAGE_SIZE = MAX_RAW_PACKET_SIZE - HEADER_SIZE;
 
 const int MAX_IDLE_TIME = 2000; // In ms.
-const int MAX_HEARTBEAT_WAIT_TIME = 1000; // In ms.
+const int MAX_HEARTBEAT_WAIT_TIME = 1000;
+
+// TODO: If things aren't getting through, increase this number to 32.
+const uint8_t MULTICAST_TTL = 1;
 
 #define NETWORK_ERROR_DEF(X) \
     X(OK), \
