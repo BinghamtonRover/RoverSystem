@@ -9,9 +9,9 @@
 
 #include "mutils.h"
 #include "program.h"
+#include "cell_model.h"
 #include "grid_program.h"
 #include "fill_program.h"
-#include "hex_model.h"
 #include "rover_model.h"
 #include "rover_program.h"
 #include "obstacle.h"
@@ -19,11 +19,12 @@
 #include "lidar.h"
 #include "lidar_point_model.h"
 #include "occupancy_grid.h"
+#include "autonomy.h"
 
 #define WW 1280
 #define WH 720
 
-void report_error(const char* fmt, ...) {
+static void report_error(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -34,9 +35,11 @@ void report_error(const char* fmt, ...) {
     va_end(args);
 }
 
-#define HEX_SIZE 1
+#define WINDOW_TITLE_BUFFER_SIZE 1000
+
 #define GRID_SIZE 50
-#define BORDER_WIDTH 0.08
+#define CELL_SIZE 0.25
+#define BORDER_WIDTH 0.04
 #define ROVER_SIZE 0.9
 
 #define MIN_PPM 20.0f
@@ -125,46 +128,17 @@ static void cursor_position_callback(GLFWwindow* window, double x, double y) {
     last_cursor_y = y;
 }
 
-void hex_to_world(int q, int r, float* out_gcx, float* out_gcy) {
-    *out_gcx = HEX_SIZE * (3.0f/2.0f)*q;
-    *out_gcy = HEX_SIZE * ((sqrtf(3.0f)/2.0f)*q + sqrtf(3.0f)*r);
+static void world_to_cell(float wx, float wy, int* out_cx, int* out_cy) {
+    *out_cx = roundf(wx / (float)CELL_SIZE);
+    *out_cy = roundf(wy / (float)CELL_SIZE);
 }
 
-void world_to_hex(float x, float y, int* out_q, int* out_r) {
-    float fq = (2.0f/3.0f)*x / HEX_SIZE;
-    float fr = ((-1.0f/3.0f)*x + (sqrtf(3.0f)/3.0f)*y) / HEX_SIZE;
-
-    // get me some cx, cy, cz cube coordinates.
-    float cx = fq;
-    float cz = fr;
-    float cy = -cx - cz;
-
-    float rx = roundf(cx);
-    float ry = roundf(cy);
-    float rz = roundf(cz);
-
-    float x_diff = fabsf(rx - cx);
-    float y_diff = fabsf(ry - cy);
-    float z_diff = fabsf(rz - cz);
-
-    if (x_diff > y_diff && x_diff > z_diff) {
-        rx = -ry - rz;
-    } else if (y_diff > z_diff) {
-        ry = -rx - rz;
-    } else {
-        rz = -rx - ry;
-    }
-
-    // get me some axial bois.
-    *out_q = (int) rx;
-    *out_r = (int) rz;
-
-    // The old way that isn't correct (see redblobgames).
-    // *out_q = (int) roundf(fq);
-    // *out_r = (int) roundf(fr);
+static void cell_to_world(int cx, int cy, float* out_wx, float* out_wy) {
+    *out_wx = (float)cx * (float)CELL_SIZE;
+    *out_wy = (float)cy * (float)CELL_SIZE;
 }
 
-void render_obstacle(FillProgram* fill_program, Obstacle* obstacle) {
+static void render_obstacle(FillProgram* fill_program, Obstacle* obstacle) {
     Mat3f model = mat3f_transformation_copy(1, 0, 0, 0);
     fill_program_set_model(fill_program, model);
 
@@ -175,7 +149,7 @@ void render_obstacle(FillProgram* fill_program, Obstacle* obstacle) {
     glDrawArrays(GL_TRIANGLE_FAN, 0, obstacle->num_vertices + 2);
 }
 
-void render_rover(RoverProgram* rover_program, RoverModel* rover_model) {
+static void render_rover(RoverProgram* rover_program, RoverModel* rover_model) {
     Mat3f model = mat3f_transformation_copy(1, rover_angle, rover_x, rover_y);
     rover_program_set_model(rover_program, model);
 
@@ -184,7 +158,7 @@ void render_rover(RoverProgram* rover_program, RoverModel* rover_model) {
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void render_lidar_point(FillProgram* fill_program, LidarPointModel* point_model, float x, float y) {
+static void render_lidar_point(FillProgram* fill_program, LidarPointModel* point_model, float x, float y) {
     Mat3f model = mat3f_transformation_copy(2, 0, x, y);
     fill_program_set_model(fill_program, model);
 
@@ -195,68 +169,75 @@ void render_lidar_point(FillProgram* fill_program, LidarPointModel* point_model,
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void fill_origin(FillProgram* fill_program, HexModel* fill_model) {
+static void fill_origin(FillProgram* fill_program, CellModel* fill_model) {
     Mat3f model;
 
     float gcx, gcy;
-    hex_to_world(0, 0, &gcx, &gcy);
+    cell_to_world(0, 0, &gcx, &gcy);
 
-    mat3f_transformation_inplace(&model, HEX_SIZE, 0, gcx, gcy);
+    mat3f_transformation_inplace(&model, CELL_SIZE, 0, gcx, gcy);
     fill_program_set_model(fill_program, model);
 
     fill_program_set_color(fill_program, 0, 1, 0);
 
     glUseProgram(fill_program->prog.id);
     glBindVertexArray(fill_model->model.vao);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 8);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
 }
 
-void render_grid(GridProgram* grid_program, HexModel* hex_model) {
+static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     Mat3f model;
 
-    // Figure out which hexes are in view.
-    // We start out with an estimate of the center hex.
+    // Figure out which cells are in view.
+    // We start out with an estimate of the center cell.
     float wcx = (WW/2 - x_offset) / pixels_per_meter;
     float wcy = (y_offset - WH/2) / pixels_per_meter;
 
     int cq, cr;
-    world_to_hex(wcx, wcy, &cq, &cr);
+    world_to_cell(wcx, wcy, &cq, &cr);
 
-    float hwp = 3 * HEX_SIZE * pixels_per_meter;
-    float hhp = sqrtf(3.0f) * HEX_SIZE * pixels_per_meter;
+    // How many cells fit on the screen?
+    int screen_cells_x = (int)((WW/pixels_per_meter) / GRID_SIZE);
+    int screen_cells_y = (int)((WH/pixels_per_meter) / GRID_SIZE);
 
-    int q_on_screen = (int) (WW/hwp);
-    int r_on_screen = (int) (WH/hhp);
+    // Add some for a buffer.
+    screen_cells_x += 2;
+    screen_cells_y += 2;
 
-    int q_offset = 2 + q_on_screen;
-    int r_offset = 2 + r_on_screen;
+    int q_offset = screen_cells_x / 2;
+    int r_offset = screen_cells_y / 2;
 
     int r_start = cr - r_offset < -GRID_SIZE/2 ? -GRID_SIZE/2 : cr - r_offset;
     int r_end = cr + r_offset > GRID_SIZE/2 ? GRID_SIZE/2 - 1 : cr + r_offset;
     int q_start = cq - q_offset < -GRID_SIZE/2 ? -GRID_SIZE/2 : cq - q_offset;
     int q_end = cq + q_offset > GRID_SIZE/2 ? GRID_SIZE/2 - 1 : cq + q_offset;
 
-    for (int r = r_start; r <= r_end; r++) {
-        for (int q = q_start; q <= q_end; q++) {
+    // TODO: Only draw some!
+
+    //for (int r = r_start; r <= r_end; r++) {
+        //for (int q = q_start; q <= q_end; q++) {
+    for (int r = -GRID_SIZE/2; r <= GRID_SIZE/2 - 1; r++) {
+        for (int q = -GRID_SIZE/2; q <= GRID_SIZE/2 - 1; q++) {
             int occupancy = occupancy_grid_get(&occupancy_grid, q, r);
             grid_program_set_background_alpha(grid_program, (float)occupancy/(float)occupancy_grid.max);
 
             float gcx, gcy;
-            hex_to_world(q, r, &gcx, &gcy);
+            cell_to_world(q, r, &gcx, &gcy);
 
-            grid_program_set_hex_center(grid_program, gcx, gcy);
+            grid_program_set_cell_center(grid_program, gcx, gcy);
 
-            mat3f_transformation_inplace(&model, HEX_SIZE, 0, gcx, gcy);
+            mat3f_transformation_inplace(&model, CELL_SIZE, 0, gcx, gcy);
             grid_program_set_model(grid_program, model);
 
             glUseProgram(grid_program->prog.id);
-            glBindVertexArray(hex_model->model.vao);
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 8);
+            glBindVertexArray(cell_model->model.vao);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
         }
     }
 }
 
 int main(int argc, char** argv) {
+    printf("%f\n", roundf(-0.6));
     if (argc > 1) {
         printf("> Loading map from '%s'\n", argv[1]);
         MapError err = map_load_from_file(&map, argv[1]);
@@ -281,7 +262,12 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-    GLFWwindow* window = glfwCreateWindow(WW, WH, "l i d a r v i s", NULL, NULL);
+    static char window_title_buffer[WINDOW_TITLE_BUFFER_SIZE];
+
+    snprintf(window_title_buffer, WINDOW_TITLE_BUFFER_SIZE, "BURT Autonomy Simulator (%s) [%s]", autonomy_get_name(), 
+        argc > 1 ? argv[1] : "NO FILE LOADED");
+
+    GLFWwindow* window = glfwCreateWindow(WW, WH, window_title_buffer, NULL, NULL);
     if (!window) {
         report_error("failed to create window");
         return 1;
@@ -301,13 +287,13 @@ int main(int argc, char** argv) {
     glEnable(GL_MULTISAMPLE);
 
     GridProgram grid_program = grid_program_create();
-    HexModel hex_model = hex_model_create(&grid_program.prog);
+    CellModel cell_model = cell_model_create(&grid_program.prog);
 
-    grid_program_set_hex_size(&grid_program, HEX_SIZE);
+    grid_program_set_cell_size(&grid_program, CELL_SIZE);
     grid_program_set_border_width(&grid_program, BORDER_WIDTH);
 
     FillProgram fill_program = fill_program_create();
-    HexModel fill_model = hex_model_create(&fill_program.prog);
+    CellModel fill_model = cell_model_create(&fill_program.prog);
 
     RoverProgram rover_program = rover_program_create();
     RoverModel rover_model = rover_model_create(&rover_program.prog, ROVER_SIZE);
@@ -331,10 +317,8 @@ int main(int argc, char** argv) {
     }
 
     // Start with the origin at the center.
-    float gcx, gcy;
-    hex_to_world(0, 0, &gcx, &gcy);
-    x_offset = -gcx * pixels_per_meter + WW/2;
-    y_offset = -gcy * pixels_per_meter + WH/2;
+    x_offset = WW/2;
+    y_offset = WH/2;
 
     // Start with the rover at the center.
     rover_x = 0;
@@ -355,6 +339,7 @@ int main(int argc, char** argv) {
             float wy = (y_offset - (float)y) / pixels_per_meter;
 
             printf("%.2f, %.2f\n", wx, wy);
+            printf("Rover: %.2f, %.2f\n", rover_x, rover_y);
         }
 
         rover_x += cvector_move * CONTROL_MOVEMENT_SPEED * cosf(rover_angle * M_PI / 180.0f);
@@ -370,7 +355,7 @@ int main(int argc, char** argv) {
         rover_program_set_view(&rover_program, camera);
 
         fill_origin(&fill_program, &fill_model);
-        render_grid(&grid_program, &hex_model);
+        render_grid(&grid_program, &cell_model);
         render_rover(&rover_program, &rover_model);
 
         for (size_t i = 0; i < map.num_obstacles; i++) {
@@ -388,7 +373,7 @@ int main(int argc, char** argv) {
                 float y = rover_y + lidar_points[i] * sinf(theta * M_PI / 180.0f);
 
                 int q, r; 
-                world_to_hex(x, y, &q, &r);
+                world_to_cell(x, y, &q, &r);
                 
                 occupancy_grid_inc(&frame_occupancy_grid, q, r);
 
@@ -397,6 +382,8 @@ int main(int argc, char** argv) {
         }
 
         occupancy_grid_copy_if_max(&frame_occupancy_grid, &occupancy_grid);
+
+        // TODO: Update autonomy with occupancy_grid.
 
         glfwSwapBuffers(window);
     }

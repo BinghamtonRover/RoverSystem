@@ -10,9 +10,9 @@ GridProgram grid_program_create() {
     gp.u_model_loc = glGetUniformLocation(gp.prog.id, "u_model");
     gp.u_view_loc = glGetUniformLocation(gp.prog.id, "u_view");
     gp.u_projection_loc = glGetUniformLocation(gp.prog.id, "u_projection");
-    gp.u_hex_center_loc = glGetUniformLocation(gp.prog.id, "u_hex_center");
+    gp.u_cell_center_loc = glGetUniformLocation(gp.prog.id, "u_cell_center");
     gp.u_border_width_loc = glGetUniformLocation(gp.prog.id, "u_border_width");
-    gp.u_hex_size_loc = glGetUniformLocation(gp.prog.id, "u_hex_size");
+    gp.u_cell_size_loc = glGetUniformLocation(gp.prog.id, "u_cell_size");
     gp.u_background_alpha_loc = glGetUniformLocation(gp.prog.id, "u_background_alpha");
 
     return gp;
@@ -30,12 +30,12 @@ void grid_program_set_projection(GridProgram* gp, Mat3f projection) {
     program_set_uniform_mat3(&(gp->prog), gp->u_projection_loc, projection);
 }
 
-void grid_program_set_hex_center(GridProgram* gp, float x, float y) {
-    program_set_uniform_vec2(&(gp->prog), gp->u_hex_center_loc, x, y);
+void grid_program_set_cell_center(GridProgram* gp, float x, float y) {
+    program_set_uniform_vec2(&(gp->prog), gp->u_cell_center_loc, x, y);
 }
 
-void grid_program_set_hex_size(GridProgram* gp, float gs) {
-    program_set_uniform_float(&(gp->prog), gp->u_hex_size_loc, gs);
+void grid_program_set_cell_size(GridProgram* gp, float gs) {
+    program_set_uniform_float(&(gp->prog), gp->u_cell_size_loc, gs);
 }
 
 void grid_program_set_border_width(GridProgram* gp, float bw) {
