@@ -21,6 +21,7 @@
 #include "lidar_point_model.h"
 #include "occupancy_grid.h"
 #include "autonomy.h"
+#include "world.h"
 
 #define WW 1280
 #define WH 720
@@ -56,12 +57,12 @@ Mat3f projection;
 Mat3f camera;
 
 Map map;
+World world;
 
 // For control.
 float cvector_rotate = 0.0f;
 float cvector_move = 0.0f;
 
-OccupancyGrid occupancy_grid;
 OccupancyGrid frame_occupancy_grid;
 
 float pixels_per_meter = MAX_PPM; // This is also the camera scale.
@@ -151,14 +152,12 @@ static void cursor_position_callback(GLFWwindow* window, double x, double y) {
     last_cursor_y = y;
 }
 
-static void world_to_cell(float wx, float wy, int* out_cx, int* out_cy) {
-    *out_cx = roundf(wx / (float)CELL_SIZE);
-    *out_cy = roundf(wy / (float)CELL_SIZE);
+static void wtc(float wx, float wy, int* out_cx, int* out_cy) {
+    world_to_cell(&world, wx, wy, out_cx, out_cy);
 }
 
-static void cell_to_world(int cx, int cy, float* out_wx, float* out_wy) {
-    *out_wx = (float)cx * (float)CELL_SIZE;
-    *out_wy = (float)cy * (float)CELL_SIZE;
+static void ctw(int cx, int cy, float* out_wx, float* out_wy) {
+    cell_to_world(&world, cx, cy, out_wx, out_wy);
 }
 
 static void render_obstacle(FillProgram* fill_program, Obstacle* obstacle) {
@@ -196,9 +195,9 @@ static void fill_origin(FillProgram* fill_program, CellModel* fill_model) {
     Mat3f model;
 
     float gcx, gcy;
-    cell_to_world(0, 0, &gcx, &gcy);
+    ctw(0, 0, &gcx, &gcy);
 
-    mat3f_transformation_inplace(&model, CELL_SIZE, 0, gcx, gcy);
+    mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
     fill_program_set_model(fill_program, model);
 
     fill_program_set_color(fill_program, 0, 1, 0);
@@ -217,11 +216,11 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     float wcy = (y_offset - WH/2) / pixels_per_meter;
 
     int cq, cr;
-    world_to_cell(wcx, wcy, &cq, &cr);
+    wtc(wcx, wcy, &cq, &cr);
 
     // How many cells fit on the screen?
-    int screen_cells_x = (int)(((float)WW/pixels_per_meter) / CELL_SIZE);
-    int screen_cells_y = (int)(((float)WH/pixels_per_meter) / CELL_SIZE);
+    int screen_cells_x = (int)(((float)WW/pixels_per_meter) / world.cell_size);
+    int screen_cells_y = (int)(((float)WH/pixels_per_meter) / world.cell_size);
 
     // Add some for a buffer.
     screen_cells_x += 2;
@@ -230,22 +229,22 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     int q_offset = screen_cells_x / 2;
     int r_offset = screen_cells_y / 2;
 
-    int r_start = cr - r_offset < -GRID_SIZE/2 ? -GRID_SIZE/2 : cr - r_offset;
-    int r_end = cr + r_offset > GRID_SIZE/2 ? GRID_SIZE/2 - 1 : cr + r_offset;
-    int q_start = cq - q_offset < -GRID_SIZE/2 ? -GRID_SIZE/2 : cq - q_offset;
-    int q_end = cq + q_offset > GRID_SIZE/2 ? GRID_SIZE/2 - 1 : cq + q_offset;
+    int r_start = cr - r_offset < -world.grid_size/2 ? -world.grid_size/2 : cr - r_offset;
+    int r_end = cr + r_offset > world.grid_size/2 ? world.grid_size/2 - 1 : cr + r_offset;
+    int q_start = cq - q_offset < -world.grid_size/2 ? -world.grid_size/2 : cq - q_offset;
+    int q_end = cq + q_offset > world.grid_size/2 ? world.grid_size/2 - 1 : cq + q_offset;
 
     for (int r = r_start; r <= r_end; r++) {
         for (int q = q_start; q <= q_end; q++) {
-            int occupancy = occupancy_grid_get(&occupancy_grid, q, r);
-            grid_program_set_background_alpha(grid_program, (float)occupancy/(float)occupancy_grid.max);
+            int occupancy = occupancy_grid_get(&world.occupancy_grid, q, r);
+            grid_program_set_background_alpha(grid_program, (float)occupancy/(float)world.occupancy_grid.max);
 
             float gcx, gcy;
-            cell_to_world(q, r, &gcx, &gcy);
+            ctw(q, r, &gcx, &gcy);
 
             grid_program_set_cell_center(grid_program, gcx, gcy);
 
-            mat3f_transformation_inplace(&model, CELL_SIZE, 0, gcx, gcy);
+            mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
             grid_program_set_model(grid_program, model);
 
             glUseProgram(grid_program->prog.id);
@@ -269,6 +268,12 @@ int main(int argc, char** argv) {
         map.obstacles = NULL;
         map.num_obstacles = 0;
     }
+
+    world = (World) {
+        .grid_size = GRID_SIZE,
+        .cell_size = CELL_SIZE,
+        .occupancy_grid = occupancy_grid_create(GRID_SIZE)
+    };
 
     if (!glfwInit()) {
         report_error("failed to init GLFW");
@@ -309,7 +314,7 @@ int main(int argc, char** argv) {
     GridProgram grid_program = grid_program_create();
     CellModel cell_model = cell_model_create(&grid_program.prog);
 
-    grid_program_set_cell_size(&grid_program, CELL_SIZE);
+    grid_program_set_cell_size(&grid_program, world.cell_size);
     grid_program_set_border_width(&grid_program, BORDER_WIDTH);
 
     FillProgram fill_program = fill_program_create();
@@ -348,8 +353,7 @@ int main(int argc, char** argv) {
     // Start with the rover moving forward.
     cvector_move = 1.0f;
 
-    occupancy_grid = occupancy_grid_create(GRID_SIZE);
-    frame_occupancy_grid = occupancy_grid_create(GRID_SIZE);
+    frame_occupancy_grid = occupancy_grid_create(world.grid_size);
 
     // Timing for autonomy.
     long autonomy_last_tick = get_tick();
@@ -399,7 +403,7 @@ int main(int argc, char** argv) {
                 float y = rover_y + lidar_points[i] * sinf(theta * M_PI / 180.0f);
 
                 int q, r; 
-                world_to_cell(x, y, &q, &r);
+                wtc(x, y, &q, &r);
                 
                 occupancy_grid_inc(&frame_occupancy_grid, q, r);
 
@@ -407,13 +411,13 @@ int main(int argc, char** argv) {
             }
         }
 
-        occupancy_grid_copy_if_max(&frame_occupancy_grid, &occupancy_grid);
+        occupancy_grid_copy_if_max(&frame_occupancy_grid, &world.occupancy_grid);
 
         // Update autonomy with occupancy_grid.
         long tick = get_tick();
         if (tick - autonomy_last_tick >= AUTONOMY_TICK_INTERVAL) {
             float target_offset_x, target_offset_y;
-            AutonomyStatus autonomy_status = autonomy_step(rover_x, rover_y, rover_angle, occupancy_grid, &target_offset_x, &target_offset_y);
+            AutonomyStatus autonomy_status = autonomy_step(&world, rover_x, rover_y, rover_angle, &target_offset_x, &target_offset_y);
 
             rover_angle +=  atan2f(target_offset_y, target_offset_x) * 180 / M_PI;
 

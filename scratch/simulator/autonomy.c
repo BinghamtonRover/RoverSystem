@@ -3,7 +3,7 @@
 */
 #include "autonomy.h"
 
-AutonomyStatus autonomy_step(float rover_x, float rover_y, float rover_angle, OccupancyGrid grid, float* out_offset_x, float* out_offset_y) {
+AutonomyStatus autonomy_step(World* world, float rover_x, float rover_y, float rover_angle, float* out_offset_x, float* out_offset_y) {
     *out_offset_x = 0.5;
     *out_offset_y = 0.5;
 

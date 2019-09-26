@@ -18,12 +18,18 @@ void occupancy_grid_set(OccupancyGrid* grid, int q, int r, int val) {
     q += grid->grid_size / 2;
     r += grid->grid_size / 2;
 
+    if (q < 0 || q >= grid->grid_size) return;
+    if (r < 0 || r >= grid->grid_size) return;
+
     grid->grid[q * grid->grid_size + r] = val;
 }
 
 int occupancy_grid_get(OccupancyGrid* grid, int q, int r) {
     q += grid->grid_size / 2;
     r += grid->grid_size / 2;
+
+    if (q < 0 || q >= grid->grid_size) return 0;
+    if (r < 0 || r >= grid->grid_size) return 0;
 
     return grid->grid[q * grid->grid_size + r];
 }
