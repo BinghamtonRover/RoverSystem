@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -37,7 +38,10 @@ static void report_error(const char* fmt, ...) {
 
 #define WINDOW_TITLE_BUFFER_SIZE 1000
 
-#define GRID_SIZE 50
+// In milliseconds.
+#define AUTONOMY_TICK_INTERVAL 500
+
+#define GRID_SIZE 400
 #define CELL_SIZE 0.25
 #define BORDER_WIDTH 0.04
 #define ROVER_SIZE 0.9
@@ -69,7 +73,25 @@ float last_cursor_y = 0;
 float rover_x = 0, rover_y = 0;
 float rover_angle = 0;
 
+// For timing.
+struct timespec start_time;
+
+static void init_clock() {
+    clock_gettime(CLOCK_REALTIME, &start_time);
+}
+
+static long get_tick() {
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+
+    long diff_sec = now.tv_sec - start_time.tv_sec;
+    long diff_ns  = now.tv_nsec - start_time.tv_nsec;
+
+    return diff_sec * 1000 + diff_ns / 1000000;
+}
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    /*
     if (key == GLFW_KEY_W) {
         if (action == GLFW_PRESS) cvector_move += 1.0f;
         else if (action == GLFW_RELEASE) cvector_move -= 1.0f;
@@ -82,7 +104,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     } else if (key == GLFW_KEY_D) {
         if (action == GLFW_PRESS) cvector_rotate -= 1.0f;
         else if (action == GLFW_RELEASE) cvector_rotate += 1.0f;
-    } else if (key == GLFW_KEY_ESCAPE) {
+    } */ 
+    if (key == GLFW_KEY_ESCAPE) {
         exit(0);
     }
 }
@@ -197,8 +220,8 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     world_to_cell(wcx, wcy, &cq, &cr);
 
     // How many cells fit on the screen?
-    int screen_cells_x = (int)((WW/pixels_per_meter) / GRID_SIZE);
-    int screen_cells_y = (int)((WH/pixels_per_meter) / GRID_SIZE);
+    int screen_cells_x = (int)(((float)WW/pixels_per_meter) / CELL_SIZE);
+    int screen_cells_y = (int)(((float)WH/pixels_per_meter) / CELL_SIZE);
 
     // Add some for a buffer.
     screen_cells_x += 2;
@@ -212,12 +235,8 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     int q_start = cq - q_offset < -GRID_SIZE/2 ? -GRID_SIZE/2 : cq - q_offset;
     int q_end = cq + q_offset > GRID_SIZE/2 ? GRID_SIZE/2 - 1 : cq + q_offset;
 
-    // TODO: Only draw some!
-
-    //for (int r = r_start; r <= r_end; r++) {
-        //for (int q = q_start; q <= q_end; q++) {
-    for (int r = -GRID_SIZE/2; r <= GRID_SIZE/2 - 1; r++) {
-        for (int q = -GRID_SIZE/2; q <= GRID_SIZE/2 - 1; q++) {
+    for (int r = r_start; r <= r_end; r++) {
+        for (int q = q_start; q <= q_end; q++) {
             int occupancy = occupancy_grid_get(&occupancy_grid, q, r);
             grid_program_set_background_alpha(grid_program, (float)occupancy/(float)occupancy_grid.max);
 
@@ -237,7 +256,8 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
 }
 
 int main(int argc, char** argv) {
-    printf("%f\n", roundf(-0.6));
+    init_clock();
+
     if (argc > 1) {
         printf("> Loading map from '%s'\n", argv[1]);
         MapError err = map_load_from_file(&map, argv[1]);
@@ -325,8 +345,14 @@ int main(int argc, char** argv) {
     rover_y = 0;
     rover_angle = 90.0f;
 
+    // Start with the rover moving forward.
+    cvector_move = 1.0f;
+
     occupancy_grid = occupancy_grid_create(GRID_SIZE);
     frame_occupancy_grid = occupancy_grid_create(GRID_SIZE);
+
+    // Timing for autonomy.
+    long autonomy_last_tick = get_tick();
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -383,7 +409,16 @@ int main(int argc, char** argv) {
 
         occupancy_grid_copy_if_max(&frame_occupancy_grid, &occupancy_grid);
 
-        // TODO: Update autonomy with occupancy_grid.
+        // Update autonomy with occupancy_grid.
+        long tick = get_tick();
+        if (tick - autonomy_last_tick >= AUTONOMY_TICK_INTERVAL) {
+            float target_offset_x, target_offset_y;
+            AutonomyStatus autonomy_status = autonomy_step(rover_x, rover_y, rover_angle, occupancy_grid, &target_offset_x, &target_offset_y);
+
+            rover_angle +=  atan2f(target_offset_y, target_offset_x) * 180 / M_PI;
+
+            autonomy_last_tick = tick;
+        }
 
         glfwSwapBuffers(window);
     }
