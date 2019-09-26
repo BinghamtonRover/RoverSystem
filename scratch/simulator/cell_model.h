@@ -1,5 +1,5 @@
-#ifndef HEX_MODEL_H
-#define HEX_MODEL_H
+#ifndef CELL_MODEL_H
+#define CELL_MODEL_H
 
 #include "model.h"
 #include "program.h"
@@ -8,8 +8,8 @@ typedef struct {
     Model model;
 
     int i_pos_loc;
-} HexModel;
+} CellModel;
 
-HexModel hex_model_create(Program* prog);
+CellModel cell_model_create(Program* prog);
 
 #endif
