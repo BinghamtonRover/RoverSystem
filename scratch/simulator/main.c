@@ -51,7 +51,7 @@ static void report_error(const char* fmt, ...) {
 #define MAX_PPM 120.0f
 
 #define CONTROL_ROTATION_SPEED 1.1f
-#define CONTROL_MOVEMENT_SPEED 0.01f
+#define CONTROL_MOVEMENT_SPEED 0.005f
 
 Mat3f projection;
 Mat3f camera;
