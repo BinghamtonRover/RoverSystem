@@ -233,6 +233,7 @@ Error init_subscriber(const char* group, uint16_t port, Feed* out_feed) {
     }
 
     out_feed->memory_pool.init(MAX_RAW_PACKET_SIZE, 64);
+    out_feed->bytes_transferred = 0;
 
     return Error::OK;
 }
@@ -258,6 +259,7 @@ Error init_publisher(const char* group, uint16_t port, Feed* out_feed) {
     }
 
     out_feed->memory_pool.init(MAX_RAW_PACKET_SIZE, 64);
+    out_feed->bytes_transferred = 0;
 
     return Error::OK;
 }
@@ -282,15 +284,17 @@ Error receive(Feed* feed, IncomingMessage* out_message) {
     buffer.data = receive_buffer;
 
     auto res = recv(feed->socket_fd, buffer.data, buffer.cap, MSG_DONTWAIT);
-    buffer.size = (uint16_t) res;
-
     if (res == -1) {
-        if (errno == EAGAIN && errno == EWOULDBLOCK) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return Error::NOMORE;
         }
 
         return Error::RECEIVE;
     }
+
+    buffer.size = (uint16_t) res;
+
+    feed->bytes_transferred += buffer.size;
 
     uint8_t version;
     uint8_t message_type;
@@ -324,6 +328,8 @@ Error send(Feed* feed, MessageType type, Buffer buffer) {
     serialize(&buffer, (uint8_t) PROTOCOL_VERSION);
     serialize(&buffer, (uint8_t) type);
     serialize(&buffer, message_size);
+
+    feed->bytes_transferred += buffer.size;
 
     if (::send(feed->socket_fd, buffer.data, buffer.size, 0) == -1) {
         return Error::SEND;

@@ -60,6 +60,8 @@ struct Feed {
    int socket_fd;
 
    MemoryPool memory_pool;
+
+   int bytes_transferred;
 };
 
 Error init_publisher(const char* group, uint16_t port, Feed* out_feed);
