@@ -740,6 +740,7 @@ int main()
 	commands.push_back("d: Show debug console");
 	commands.push_back("ctrl + q: Exit");
 	commands.push_back("c: Switch camera feeds");
+	commands.push_back("s: Open stopwatch menu");
 	debug_commands.push_back("'test': displays red text");
 
     bool stopwatch_menu_up = false;
