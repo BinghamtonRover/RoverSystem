@@ -250,7 +250,7 @@ void fill_rectangle(int x, int y, int w, int h)
     glPopMatrix();
 }
 
-void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id)
+void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int texture_id)
 {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -260,8 +260,6 @@ void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id)
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
 
@@ -279,6 +277,11 @@ void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id)
     glDisable(GL_TEXTURE_2D);
 
     glPopMatrix();
+}
+
+void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id) {
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    fill_textured_rect_mix_color(x, y, w, h, texture_id);
 }
 
 void do_solid_rect(Layout *layout, int width, int height, float r, float g, float b)
@@ -350,6 +353,56 @@ unsigned int load_texture(const char *file_name)
     // the encoding of our texture data. Then we specify that each color channel is encoded in an unsigned byte.
     // stbi_load() dictates these values. Finally, we pass the raw texture data.
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_w, texture_h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data);
+
+    stbi_image_free(texture_data);
+
+    return tex_id;
+}
+
+// Loads a texture, but also loads a fourth alpha channel (for PNG images).
+unsigned int load_texture_alpha(const char *file_name)
+{
+    int texture_w, texture_h, texture_channels;
+    // This loads a PNG file into memory as an array of RGBA pixels.
+    // We specify that we do care about the alpha channel, by asking for 4 channels.
+    // This function gives us the texture's size and how many channels it actually loaded.
+    unsigned char *texture_data = stbi_load(file_name, &texture_w, &texture_h, &texture_channels, 4);
+
+    // We need to register this texture with OpenGL.
+    // Once we do that, we need a way to refer to the texture when we want to draw it.
+    // OpenGL does this with an unsigned int id.
+    // The weird signature for glGenTextures() comes from the fact that it works with arrays.
+    // For example, this would be valid:
+    //     unsigned int texture_ids[15];
+    //     glGenTextures(15, texture_ids);
+    // In this case, we have one texture id, so we pretend its pointer is an array of size one.
+    // This is C++, so a pointer to an int is indeed an array of size one.
+    unsigned int tex_id;
+    glGenTextures(1, &tex_id);
+
+    // OpenGL has any functions which modify or draw a texture.
+    // Before using them, we have to specify which texture should be modified.
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+
+    // Textures have many adjustable parameters. These two must be set, otherwise the texture won't render.
+    // This tells OpenGL how to scale the texture. The min filter specifies how to scale the texture
+    // if it needs to be shrunk in order to be rendered. The mag filter specifies how to scale the texture
+    // if it needs to be expanded in order to be rendered. The filter we use for both is the linear filter,
+    // which does bilinear interpolation across the pixels of the texture. There is also GL_NEAREST, which
+    // just finds the nearest texture pixel, which is faster but looks worse.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // This uploads the texture data to OpenGL's internal memory.
+    // The first zero specifies the mipmap level we want to modify.
+    // Mipmaps are a way to simplify textures when they are very small, in order to more efficiently render far-away
+    // objects. If you've ever played a 3D video game, its related to Level of Detail (LOD). We haven't enabled
+    // mipmapping (it can be enabled via glTexParameter(), but we don't need it for 2D), so 0 specifies the default
+    // mipmap level. The first GL_RGB specifies how we want OpenGL to represent the texture internally. If we needed
+    // alpha, we could use GL_RGBA here. That second zero is required to be zero. Don't ask. The second GL_RGBA specifies
+    // the encoding of our texture data. Then we specify that each color channel is encoded in an unsigned byte.
+    // stbi_load() dictates these values. Finally, we pass the raw texture data.
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_w, texture_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data);
 
     stbi_image_free(texture_data);
 

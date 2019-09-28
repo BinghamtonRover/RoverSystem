@@ -14,7 +14,8 @@ const int WINDOW_HEIGHT = 1080;
 enum class InputState
 {
     KEY_COMMAND,
-    DEBUG_CONSOLE
+    DEBUG_CONSOLE,
+    STOPWATCH_MENU
 };
 
 // Stores the global GUI state.
@@ -116,6 +117,20 @@ void do_textured_rect(Layout *layout, int width, int height, unsigned int textur
 
 // Loads a png or jpeg image into memory, and returns an OpenGL texture id.
 unsigned int load_texture(const char *file_name);
+
+// Loads a png image into memory, specifically with an alpha channel.
+unsigned int load_texture_alpha(const char *file_name);
+
+// Renders a rectangle with the given texture at the given screen coords.
+void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id);
+
+// Renders a rectangle with the given texture at the given screen coords.
+// The texture will be blended with the current OpenGL color.
+void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int texture_id);
+
+// Fills the specified rectangle with the currently-set OpenGL color.
+void fill_rectangle(int x, int y, int w, int h);
+
 } // namespace gui
 
 #endif

@@ -58,7 +58,21 @@ const int LOG_VIEW_HEIGHT = 458;
 // Network feeds.
 network::Feed r_feed, bs_feed;
 
+// TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
 unsigned int map_texture_id;
+unsigned int stopwatch_texture_id;
+
+enum class StopwatchState {
+    STOPPED,
+    PAUSED,
+    RUNNING
+};
+
+struct {
+    StopwatchState state;
+    unsigned int start_time;
+    unsigned int pause_time;
+} stopwatch;
 
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
@@ -216,6 +230,49 @@ Config load_config(const char* filename) {
 	return config;
 }
 
+void set_stopwatch_icon_color() {
+    switch (stopwatch.state) {
+    case StopwatchState::RUNNING:
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+        break;
+    case StopwatchState::PAUSED:
+        glColor4f(1.0f, 0.67f, 0.0f, 1.0f);
+        break;
+    default:
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        break;
+    }
+}
+
+const char* get_stopwatch_text() {
+    static char buffer[50];
+
+    if (stopwatch.state == StopwatchState::STOPPED) {
+        sprintf(buffer, "00:00:00");
+
+        return buffer;
+    }
+
+    unsigned int time_to_use;
+
+    if (stopwatch.state == StopwatchState::PAUSED) {
+        time_to_use = stopwatch.pause_time;
+    } else {
+        time_to_use = get_ticks();
+    }
+
+    unsigned int millis = time_to_use - stopwatch.start_time;
+
+    unsigned int seconds = millis / 1000;
+    unsigned int minutes = seconds / 60;
+    seconds = seconds % 60;
+    unsigned int hours = minutes / 60;
+    minutes = minutes % 60;
+
+    sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
+
+    return buffer;
+}
 
 void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int x = layout->current_x;
@@ -244,6 +301,54 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int tw = gui::text_width(font, time_string_buffer, 20);
 
 	gui::draw_text(font, time_string_buffer, x + 5, y + h - 20 - 5, 20);
+
+    auto stopwatch_buffer = get_stopwatch_text();
+
+    int stopwatch_text_width = gui::text_width(font, stopwatch_buffer, 20);
+
+    gui::draw_text(font, stopwatch_buffer, x + w - 5 - stopwatch_text_width, y + h - 20 - 5, 20);
+
+    set_stopwatch_icon_color();
+    gui::fill_textured_rect_mix_color(x + w - 5 - stopwatch_text_width - 3 - 20, y + h - 20 - 5, 20, 20, stopwatch_texture_id);
+}
+
+void do_stopwatch_menu(gui::Font* font) {
+    const int w = 150;
+    const int h = 110;
+
+    const int x = WINDOW_WIDTH - 20 - w;
+    const int y = WINDOW_HEIGHT - 20 - h;
+
+    glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
+    gui::fill_rectangle(x, y, w, h);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    gui::draw_text(font, "Stopwatch", x + 5, y + 5, 20);
+
+    const char* space_help_text;
+    switch (stopwatch.state) {
+    case StopwatchState::STOPPED:
+        space_help_text = "<space> : start";
+        break;
+    case StopwatchState::PAUSED:
+        space_help_text = "<space> : resume";
+        break;
+    case StopwatchState::RUNNING:
+        space_help_text = "<space> : pause";
+        break;
+    }
+
+    gui::draw_text(font, space_help_text, x + 5, y + 5 + 20 + 15, 15);
+    gui::draw_text(font, "r       : reset", x + 5, y + 5 + 20 + 15 + 5 + 15, 15);
+
+    // Draw the actual stopwatch.
+
+    auto stopwatch_buffer = get_stopwatch_text();
+    int stopwatch_text_width = gui::text_width(font, stopwatch_buffer, 20);
+    gui::draw_text(font, stopwatch_buffer, WINDOW_WIDTH - 20 - stopwatch_text_width - 5, WINDOW_HEIGHT - 20 - 5 - 20, 20);
+
+    set_stopwatch_icon_color();
+    gui::fill_textured_rect_mix_color(WINDOW_WIDTH - 20 - 5 - stopwatch_text_width - 3 - 20, WINDOW_HEIGHT - 20 - 5 - 20, 20, 20, stopwatch_texture_id);
 }
 
 void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vector<const char *> debug_commands){
@@ -524,6 +629,11 @@ int main()
     // Start the timer.
     start_time = std::chrono::high_resolution_clock::now();
 
+    // Clear the stopwatch.
+    stopwatch.state = StopwatchState::STOPPED;
+    stopwatch.start_time = 0;
+    stopwatch.pause_time = 0;
+
     // Init GLFW.
     if (!glfwInit()) {
 		logger::log(logger::ERROR, "Failed to init GLFW!");
@@ -539,7 +649,7 @@ int main()
     gui::state.window = window;
 
     // Set sticky keys mode. It makes our input work as intended.
-    glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+    // glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
     // Disable mouse.
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -562,6 +672,7 @@ int main()
 
     // Initial setup for GUI here so that network errors are printed to log view.
 	map_texture_id = gui::load_texture("res/binghamton.jpg");
+    stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
     gui::Font font;
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
@@ -631,6 +742,8 @@ int main()
 	commands.push_back("c: Switch camera feeds");
 	debug_commands.push_back("'test': displays red text");
 
+    bool stopwatch_menu_up = false;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -639,29 +752,70 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-	} else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveTop();
-		} else {
-			gui::log_view::moveUpOne();
-		}
-	} else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveBottom();
-		} else {
-			gui::log_view::moveDownOne();
-		}
+        } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveTop();
+            } else {
+                gui::log_view::moveUpOne();
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveBottom();
+            } else {
+                gui::log_view::moveDownOne();
+            }
         } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-				break;	
-			}
-		}
-		else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-			if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
-		}
-		else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-			if (help_menu_up) help_menu_up = false;
-		}
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                break;	
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+            if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
+        } else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            if (help_menu_up) help_menu_up = false;
+            if (stopwatch_menu_up) {
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
+            stopwatch_menu_up = true;
+            gui::state.input_state = gui::InputState::STOPWATCH_MENU;
+        }
+
+        if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
+            if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+                switch (stopwatch.state) {
+                case StopwatchState::RUNNING:
+                    stopwatch.state = StopwatchState::PAUSED;
+                    stopwatch.pause_time = get_ticks();
+                    break;
+                case StopwatchState::PAUSED:
+                    stopwatch.state = StopwatchState::RUNNING;
+                    stopwatch.start_time = get_ticks() - (stopwatch.pause_time - stopwatch.start_time);
+                    break;
+                case StopwatchState::STOPPED:
+                    stopwatch.state = StopwatchState::RUNNING;
+                    stopwatch.start_time = get_ticks();
+                    break;
+                }
+
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+                switch (stopwatch.state) {
+                case StopwatchState::RUNNING:
+                    stopwatch.start_time = get_ticks();
+                    break;
+                case StopwatchState::PAUSED:
+                    stopwatch.state = StopwatchState::STOPPED;
+                    break;
+                case StopwatchState::STOPPED:
+                    break;
+                }
+
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            }
+        }
 
         // TODO: Do network usage update here!
 
@@ -814,6 +968,10 @@ int main()
 	
 		if(help_menu_up)
 			do_help_menu(&font,commands,debug_commands);
+
+        if (stopwatch_menu_up) {
+            do_stopwatch_menu(&font);
+        }
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
