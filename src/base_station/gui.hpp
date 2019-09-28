@@ -52,6 +52,9 @@ bool load_font(Font *font, const char *file_name, int size);
 // font at the given height.
 int text_width(Font *font, const char *text, int height);
 
+// Returns the index of the last character that can fit on a line of the given width.
+int text_last_index_that_can_fit(Font* font, const char* text, float width, int height);
+
 void draw_text(Font *font, const char *text, int x, int y, float height);
 
 struct LayoutState

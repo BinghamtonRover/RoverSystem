@@ -5,9 +5,7 @@
 namespace gui {
 namespace log_view {
 
-void print(std::string m, float r, float g, float b, float a);
-
-void calc_sizing(gui::Font* font, int width, int height);
+void print(gui::Font* font, int width, std::string m, float r, float g, float b, float a);
 
 void moveUpOne();
 void moveDownOne();

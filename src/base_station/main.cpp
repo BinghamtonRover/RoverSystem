@@ -59,6 +59,7 @@ const int LOG_VIEW_HEIGHT = 458;
 network::Feed r_feed, bs_feed;
 
 unsigned int map_texture_id;
+gui::Font global_font;
 
 // Save the start time so we can use get_ticks.
 std::chrono::high_resolution_clock::time_point start_time;
@@ -66,7 +67,6 @@ std::chrono::high_resolution_clock::time_point start_time;
 unsigned int get_ticks()
 {
     auto now = std::chrono::high_resolution_clock::now();
-
     return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
 }
 
@@ -160,7 +160,7 @@ void log_view_handler(logger::Level level, std::string message) {
 
 	std::string full_string = std::string(time_string_buffer) + message;
 
-	gui::log_view::print(full_string, r, g, b, a);
+	gui::log_view::print(&global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
 }
 
 struct Config
@@ -563,17 +563,16 @@ int main()
     // Initial setup for GUI here so that network errors are printed to log view.
 	map_texture_id = gui::load_texture("res/binghamton.jpg");
 
+    // Load this down here so that sizing is correct.
     gui::Font font;
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
 		logger::log(logger::ERROR, "Failed to load font!");
         return 1;
     }
+    // TODO: Fix this hack (for the log view handler) and clean up globals in general.
+    global_font = font;
 
-	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
-
-    // Load this down here so that sizing is correct.
-    // TODO: The sizing is not correct... lines are going off the right side!
 	logger::register_handler(log_view_handler);
 
     // Initialize camera stuff.
