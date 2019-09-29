@@ -1,3 +1,5 @@
+target = [15, 15]
+
 [[obstacle]]
 vertices = [
     -0.6, 1.7,
