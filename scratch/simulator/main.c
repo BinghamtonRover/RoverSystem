@@ -51,7 +51,9 @@ static void report_error(const char* fmt, ...) {
 #define MAX_PPM 120.0f
 
 #define CONTROL_ROTATION_SPEED 1.1f
-#define CONTROL_MOVEMENT_SPEED 0.005f
+
+// In meters/sec.
+#define CONTROL_MOVEMENT_SPEED 0.25f
 
 Mat3f projection;
 Mat3f camera;
@@ -204,6 +206,22 @@ static void fill_origin(FillProgram* fill_program, CellModel* fill_model) {
     mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
     fill_program_set_model(fill_program, model);
 
+    fill_program_set_color(fill_program, 0, 1, 1);
+
+    glUseProgram(fill_program->prog.id);
+    glBindVertexArray(fill_model->model.vao);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
+}
+
+static void fill_target(FillProgram* fill_program, CellModel* fill_model) {
+    Mat3f model;
+
+    float gcx, gcy;
+    ctw(world.target_x, world.target_y, &gcx, &gcy);
+
+    mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
+    fill_program_set_model(fill_program, model);
+
     fill_program_set_color(fill_program, 0, 1, 0);
 
     glUseProgram(fill_program->prog.id);
@@ -271,12 +289,18 @@ int main(int argc, char** argv) {
     } else {
         map.obstacles = NULL;
         map.num_obstacles = 0;
+
+        map.target_x = 50;
+        map.target_y = 50;
     }
 
     world = (World) {
         .grid_size = GRID_SIZE,
         .cell_size = CELL_SIZE,
-        .occupancy_grid = occupancy_grid_create(GRID_SIZE)
+        .occupancy_grid = occupancy_grid_create(GRID_SIZE),
+
+        .target_x = map.target_x,
+        .target_y = map.target_y
     };
 
     if (!glfwInit()) {
@@ -362,6 +386,9 @@ int main(int argc, char** argv) {
     // Timing for autonomy.
     long autonomy_last_tick = get_tick();
 
+    // Timing for movement.
+    long last_tick = get_tick();
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -376,9 +403,17 @@ int main(int argc, char** argv) {
             printf("Rover: %.2f, %.2f\n", rover_x, rover_y);
         }
 
-        rover_x += cvector_move * CONTROL_MOVEMENT_SPEED * cosf(rover_angle * M_PI / 180.0f);
-        rover_y += cvector_move * CONTROL_MOVEMENT_SPEED * sinf(rover_angle * M_PI / 180.0f);
-        rover_angle += cvector_rotate * CONTROL_ROTATION_SPEED;
+        long now = get_tick();
+        long time_diff = now - last_tick;
+        last_tick = now;
+
+        if (time_diff == 0) time_diff = 1;
+
+        float delta = (float)time_diff / 1000.0f;
+
+        rover_x += delta * cvector_move * CONTROL_MOVEMENT_SPEED * cosf(rover_angle * M_PI / 180.0f);
+        rover_y += delta * cvector_move * CONTROL_MOVEMENT_SPEED * sinf(rover_angle * M_PI / 180.0f);
+        // rover_angle += cvector_rotate * CONTROL_ROTATION_SPEED;
 
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -389,6 +424,7 @@ int main(int argc, char** argv) {
         rover_program_set_view(&rover_program, camera);
 
         fill_origin(&fill_program, &fill_model);
+        fill_target(&fill_program, &fill_model);
         render_grid(&grid_program, &cell_model);
         render_rover(&rover_program, &rover_model);
 

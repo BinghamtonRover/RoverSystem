@@ -66,12 +66,38 @@ MapError map_load_from_file(Map* map, const char* file_path) {
                 map->obstacles[i].vertices[j] = (float) vertex;
             }
         }
-
-        toml_free(conf);
     } else {
         map->obstacles = NULL;
         map->num_obstacles = 0;
     }
+
+    toml_array_t* target_array = toml_array_in(conf, "target");
+    if (target_array) {
+        int target_array_len = toml_array_nelem(target_array);
+        if (target_array_len != 2) {
+            return MAP_ERROR_FORMAT;
+        }
+
+        const char* target_x_raw = toml_raw_at(target_array, 0);
+        double target_x;
+        if (toml_rtod(target_x_raw, &target_x) != 0) {
+            return MAP_ERROR_FORMAT;
+        }
+
+        const char* target_y_raw = toml_raw_at(target_array, 1);
+        double target_y;
+        if (toml_rtod(target_y_raw, &target_y) != 0) {
+            return MAP_ERROR_FORMAT;
+        }
+
+        map->target_x = (float) target_x;
+        map->target_y = (float) target_y;
+    } else {
+        map->target_x = 50;
+        map->target_y = 50;
+    }
+
+    toml_free(conf);
 
     fclose(file);
     return MAP_ERROR_OK;
