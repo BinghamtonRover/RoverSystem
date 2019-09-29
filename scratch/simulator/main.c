@@ -75,20 +75,24 @@ float rover_x = 0, rover_y = 0;
 float rover_angle = 0;
 
 // For timing.
-struct timespec start_time;
+long start_time;
+
+static long timespec_to_millis(struct timespec* t) {
+    return t->tv_sec * 1000 + t->tv_nsec / 1000000;
+}
 
 static void init_clock() {
-    clock_gettime(CLOCK_REALTIME, &start_time);
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    start_time = timespec_to_millis(&now);
 }
 
 static long get_tick() {
     struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
+    clock_gettime(CLOCK_MONOTONIC, &now);
 
-    long diff_sec = now.tv_sec - start_time.tv_sec;
-    long diff_ns  = now.tv_nsec - start_time.tv_nsec;
-
-    return diff_sec * 1000 + diff_ns / 1000000;
+    return timespec_to_millis(&now) - start_time;
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
