@@ -305,7 +305,7 @@ int main()
 
 			last_lidar_send_time = get_ticks();
 		}
-/*
+
 	//Temporary code to test waypoint functionality
 	if (get_ticks() - last_location_send_time >= LOCATION_SEND_INTERVAL) {
 	    network::LocationMessage message;
@@ -313,11 +313,11 @@ int main()
 	    message.latitude = position->latitude;
 	    message.longitude = position->longitude;
 	    network::publish(&r_feed,&message);
-	    position->latitude += 0.1;
-	    position->longitude += 0.1;
+	    position->latitude += 1;
+	    position->longitude += 1;
 	    last_location_send_time = get_ticks();
 	}
-*/
+
         unsigned char* zed_image;
         int zed_stride;
         zed::Pose zed_pose;
