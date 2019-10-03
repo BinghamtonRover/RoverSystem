@@ -1,0 +1,56 @@
+#include "aruco.h"
+#include<iostream>
+#include<opencv2/highgui/highgui.hpp>
+#include<cmath>
+#include<vector>
+#include<opencv/core.hpp>
+#include"aruco/markerdetector.h"
+using namespace std;
+using namespace cv;
+
+//Main for Fiducial Marker Detection 
+//Simple Code to start Using Aruco
+//No Camera Calibration
+//Option #1 to detect markers
+
+//Marker Creation
+/* This fucntion iterated from the entire Aruco Dictionary
+This code allow us to compare the maker that the computer
+detgects in the camera with the ones that we have in the
+aruco dictionary
+*/
+void createArucoMarkers(){
+Mat outputMarker;
+
+Ptr<aruco::Dictionary>markerDisctionary= aruco::getpredefinedDictionary(aruco::PREDEFINED_DICTIONARY::DICT_4X4_50);
+for(int i =0; i<50; i++){
+aruco::drawMarker(markerDictionary,i,500,outMarker,1);
+ostringstream convert;
+ string imageName = "4x4Marker_";
+ convert<<imageName<<i<<".png";
+ imwrite(convert.str(), outputMarker);
+}
+
+ int main(int argc,char **argv){
+   //read the input image
+   cv::mat InImage=cv::imread(argv[1]);
+   aruco::MarkerDetector MDetector;
+   
+   //Detection
+   vector<aruco::Marker> Markers = MDetector.detect(InImage);
+   //For each marker this draws the binary info and boundaries of the image
+   for(unsigned int i =0; i<Markers.size(); i++)
+   {
+		cout<<Markers[i] <<endl;
+		//This code print the ID# of the Marker and the coordinates of Of each one of the corners
+		Markers[i].draw(InImage, cv::Scalar(0,0,255),2);
+   }
+   //Draw a red square around marker for successful detection
+
+   cv::namedWindow("in",1);
+   cv::imshow("in",InImage);
+   while(char(cv::waitkey(0)!=27)
+       ;   
+	   //wait for esc to be pressed
+   return 0;
+}
