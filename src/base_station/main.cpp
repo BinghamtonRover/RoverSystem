@@ -22,6 +22,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <utility> //std::pair
 
 #include <iostream>
 #include <string>
@@ -415,10 +416,68 @@ void do_lidar(gui::Layout* layout) {
 	glEnd();
 }
 
+void do_waypoint_map(gui::Layout * layout, int w, int h, float rover_latitude, float rover_longitude,std::vector<std::pair<float,float>> waypoints){
+    int x = layout->current_x;
+    int y = layout->current_y;
+    gui::do_solid_rect(layout,w,h,0,0,0);
+    glColor4f(0.0,1.0,0.0,0.5);
+
+    glBegin(GL_LINES);
+    glLineWidth(1.0f);
+    int dimensions = 10;
+    for(int xOffset = w/dimensions; xOffset < w; xOffset+= w/dimensions){
+    	glVertex2f(xOffset + x,y);
+    	glVertex2f(xOffset + x,y + h);
+    }
+    for(int yOffset = h/dimensions; yOffset < h; yOffset+= h/dimensions){
+    	glVertex2f(x,y + yOffset);
+    	glVertex2f(x + w,y + yOffset);
+    }
+    glEnd();
+    
+    if (rover_latitude && rover_longitude){
+    	//Handle drawing the rover in the middle of the map
+    
+	    float xMiddle = w/2;
+	    float yMiddle = h/2;
+	    float triangleBottomLength = (w/dimensions)/2;
+	    glColor4f(1.0,0.0,0.0,1.0);
+	    glBegin(GL_TRIANGLE_STRIP);
+	    glVertex2f((x + xMiddle) - (triangleBottomLength/2),y + yMiddle + (h/dimensions)/2);
+	    glVertex2f((x + xMiddle) + (triangleBottomLength/2), y + yMiddle + (h/dimensions)/2);
+	    glVertex2f(x + xMiddle,y + yMiddle - (h/dimensions)/2);
+	    glEnd();
+	    
+	    float waypoint_width = (w/dimensions)/2;
+	    float waypoint_height = (h/dimensions)/2;
+	    while(waypoints.size() > 0){
+	    	std::pair<float,float> curWaypoint = waypoints.front();
+	    	float waypointX = (curWaypoint.first - rover_longitude);
+	    	float waypointY = (rover_latitude - curWaypoint.second);
+	    	waypoints.erase(waypoints.begin());
+	    	if (abs(waypointX) <= (w/2) && waypointY <= (h/2)){
+
+	    		glBegin(GL_QUADS);
+	    	    glVertex2f((x + xMiddle) + waypointX - (waypoint_width/2),(y + yMiddle) + waypointY + (waypoint_height/2));
+	    	    glVertex2f((x + xMiddle) + waypointX + (waypoint_width/2),(y + yMiddle) + waypointY + (waypoint_height/2));
+	    	    glVertex2f((x + xMiddle) + waypointX + (waypoint_width/2),(y + yMiddle) + waypointY - (waypoint_height/2));
+	    	    glVertex2f((x + xMiddle) + waypointX - (waypoint_width/2),(y + yMiddle) + waypointY - (waypoint_height/2));
+	    	    glEnd();
+	    	}
+	    	
+
+	    }
+    }
+
+    
+    
+
+}
+
 int primary_feed = 0;
 int secondary_feed = 1;
 
-void do_gui(camera_feed::Feed feed[4], gui::Font *font)
+void do_gui(camera_feed::Feed feed[4], gui::Font *font, float rover_latitude, float rover_longitude, std::vector<std::pair<float,float>> waypoints)
 {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -459,7 +518,10 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.advance_x(10);
 
 	// Draw the lidar.
-	do_lidar(&layout);
+	//do_lidar(&layout);
+
+	// Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
+    do_waypoint_map(&layout,300,300,rover_latitude,rover_longitude, waypoints);
 
 	layout.reset_y();
 	layout.advance_x(10);
@@ -473,7 +535,9 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 
     // Draw the debug overlay.
     layout = {};
-    gui::debug_console::do_debug(&layout, font);
+    gui::debug_console::do_debug(&layout,font);
+
+    
 }
 
 void glfw_character_callback(GLFWwindow *window, unsigned int codepoint)
@@ -569,6 +633,10 @@ int main()
 		logger::log(logger::ERROR, "Failed to load font!");
         return 1;
     }
+
+    //rover's coordinates
+    float rover_latitude = NULL;
+    float rover_longitude = NULL;
 
 	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
 
@@ -713,6 +781,16 @@ int main()
 					}
 					break;
 				}
+				case network::MessageType::LOCATION: {
+					network::LocationMessage location_message;
+					network::deserialize(&message.buffer,&location_message);
+
+					rover_latitude = location_message.latitude;
+					rover_longitude = location_message.longitude;
+
+					break;
+
+				}
                 default:
                     break;
             }
@@ -808,9 +886,13 @@ int main()
 
             network::publish(&bs_feed, &last_movement_message);
 		}
+		//Testing waypoints
 
+		std::vector<std::pair<float,float>> waypoints;
+		waypoints.push_back(std::make_pair(10.0,10.0));
+		//waypoints.push_back(std::make_pair(10.0,110.0));
         // Update and draw GUI.
-        do_gui(feeds, &font);
+        do_gui(feeds, &font, rover_latitude, rover_longitude, waypoints);
 	
 		if(help_menu_up)
 			do_help_menu(&font,commands,debug_commands);

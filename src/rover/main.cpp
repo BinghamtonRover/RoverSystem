@@ -6,6 +6,7 @@
 #include "imu.hpp"
 #include "autonomy.hpp"
 #include "zed.hpp"
+#include "gps.hpp"
 
 #include <turbojpeg.h>
 
@@ -25,6 +26,8 @@ const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
 
 const int LIDAR_SEND_INTERVAL = 1000 / 15;
+
+const int LOCATION_SEND_INTERVAL = 1000/10;
 
 const int IMU_READ_INTERVAL = 1000 / 15;
 
@@ -135,6 +138,9 @@ int main()
 		return 1;
 	}
 
+	//Create rover position dummy
+	auto position = new gps::Position();
+
 #if 0
 	if (imu::start(config.imu_serial_id) != imu::Error::OK) {
 		fprintf(stderr, "[!] Failed to start IMU!\n");
@@ -210,7 +216,7 @@ int main()
             exit(1);
         }
     }
-
+	auto last_location_send_time = get_ticks();
 	auto last_lidar_send_time = get_ticks();
 	auto last_imu_read_time = get_ticks();
 	auto last_suspension_update_time = get_ticks();
@@ -299,7 +305,19 @@ int main()
 
 			last_lidar_send_time = get_ticks();
 		}
-
+/*
+	//Temporary code to test waypoint functionality
+	if (get_ticks() - last_location_send_time >= LOCATION_SEND_INTERVAL) {
+	    network::LocationMessage message;
+	    message.has_fix = true;
+	    message.latitude = position->latitude;
+	    message.longitude = position->longitude;
+	    network::publish(&r_feed,&message);
+	    position->latitude += 0.1;
+	    position->longitude += 0.1;
+	    last_location_send_time = get_ticks();
+	}
+*/
         unsigned char* zed_image;
         int zed_stride;
         zed::Pose zed_pose;

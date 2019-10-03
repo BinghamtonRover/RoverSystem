@@ -116,6 +116,9 @@ void do_textured_rect(Layout *layout, int width, int height, unsigned int textur
 
 // Loads a png or jpeg image into memory, and returns an OpenGL texture id.
 unsigned int load_texture(const char *file_name);
+
+
+
 } // namespace gui
 
 #endif

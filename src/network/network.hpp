@@ -255,6 +255,21 @@ struct LocationMessage {
     bool has_fix;
     float latitude;
     float longitude;
+
+    static const auto TYPE = MessageType::LOCATION;
+    
+    void serialize(Buffer * buffer){
+	network::serialize(buffer,this->has_fix);
+	network::serialize(buffer,this->latitude);
+	network::serialize(buffer,this->longitude);
+    }
+
+    void deserialize(Buffer * buffer){
+	network::deserialize(buffer,&(this->has_fix));
+	network::deserialize(buffer,&(this->latitude));
+	network::deserialize(buffer,&(this->longitude));
+    }
+
 };
 
 //
