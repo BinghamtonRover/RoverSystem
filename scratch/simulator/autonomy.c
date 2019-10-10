@@ -4,6 +4,14 @@
     VFH Algorithm:
     http://www-personal.umich.edu/~johannb/Papers/paper16.pdf
 */
+
+/* useful online implimentations of VFH algorithm
+    https://clearpathrobotics.com/blog/2014/05/vector-field-histogram/
+    https://github.com/agarie/vector-field-histogram/blob/master/src/histogram_grid.c
+    https://robotics.stackexchange.com/questions/9925/vfh-vector-field-histogram-obtaining-the-primary-polar-histogram
+    http://www-personal.umich.edu/~johannb/vff&vfh.htm
+    
+*/
 #include "autonomy.h"
 #include <math.h>
 
