@@ -1,3 +1,5 @@
+#include "../util/util.hpp"
+
 namespace zed {
 
 enum class Error {
@@ -8,7 +10,7 @@ enum class Error {
     GRAB
 };
 
-Error open();
+Error open(util::Clock* clock);
 
 struct Pose {
     float x, y, z, pitch, yaw, roll;

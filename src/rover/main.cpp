@@ -178,7 +178,7 @@ int main()
 
     std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
-    zed::open();
+    zed::open(&global_clock);
 
     // Two feeds: incoming base station and outgoing rover.
     network::Feed r_feed, bs_feed;
