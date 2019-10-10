@@ -22,6 +22,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <tuple>
 #include <utility> //std::pair
 
 #include <iostream>
@@ -55,6 +56,8 @@ const int DISCONNECT_TIMER = 5000;
 
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
+
+std::vector<std::pair<float,float>> waypoints;
 
 // Network feeds.
 network::Feed r_feed, bs_feed;
@@ -416,7 +419,28 @@ void do_lidar(gui::Layout* layout) {
 	glEnd();
 }
 
-void do_waypoint_map(gui::Layout * layout, int w, int h, float rover_latitude, float rover_longitude,std::vector<std::pair<float,float>> waypoints){
+float angleInDegrees(float lat1, float long1, float lat2, float long2){
+	float angle = atan2(sin(long2 - long1)*cos(lat2),cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(long2-long1));
+	angle = angle * (180/M_PI);
+    return (int)(angle + 360) % 360;
+}
+
+float distanceInMeters(float lat1, float long1, float lat2, float long2){
+	//Note: haversine formula uses kilometers, so dividing by 1000 gets m to km
+	float lat1_rad = (lat1/1000) * (M_PI/180);
+	float lat2_rad = (lat2/1000) * (M_PI/180);
+	float long1_rad = (long1/1000) * (M_PI/180);
+	float long2_rad = (long2/1000) * (M_PI/180);
+	float lat_distance = lat2_rad - lat1_rad;
+	float long_distance = long2_rad - long1_rad;
+	float a = asin(sqrt(sin(lat_distance / 2) * sin(lat_distance / 2) + cos(lat1_rad) * cos(lat2_rad) * sin(long_distance / 2) * sin(long_distance / 2)));
+	float bearing = atan2(sin(long2-long1)*cos(lat2), cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(long2-long1));
+	float radius = 6372.8;
+	float distance = 2 * radius * a;
+	return distance;  
+}
+
+void do_waypoint_map(gui::Layout * layout, int w, int h, float rover_latitude, float rover_longitude){
     int x = layout->current_x;
     int y = layout->current_y;
     gui::do_solid_rect(layout,w,h,0,0,0);
@@ -434,50 +458,53 @@ void do_waypoint_map(gui::Layout * layout, int w, int h, float rover_latitude, f
     	glVertex2f(x + w,y + yOffset);
     }
     glEnd();
-    
-    if (rover_latitude && rover_longitude){
+    glColor4f(1.0,0.0,0.0,1.0);
+    float xMiddle = w/2;
+	float yMiddle = h/2;
+    if (rover_latitude != NULL && rover_longitude != NULL){
     	//Handle drawing the rover in the middle of the map
-    
-	    float xMiddle = w/2;
-	    float yMiddle = h/2;
 	    float triangleBottomLength = (w/dimensions)/2;
 	    glColor4f(1.0,0.0,0.0,1.0);
 	    glBegin(GL_TRIANGLE_STRIP);
 	    glVertex2f((x + xMiddle) - (triangleBottomLength/2),y + yMiddle + (h/dimensions)/2);
 	    glVertex2f((x + xMiddle) + (triangleBottomLength/2), y + yMiddle + (h/dimensions)/2);
 	    glVertex2f(x + xMiddle,y + yMiddle - (h/dimensions)/2);
-	    glEnd();
-	    
-	    float waypoint_width = (w/dimensions)/2;
-	    float waypoint_height = (h/dimensions)/2;
-	    while(waypoints.size() > 0){
-	    	std::pair<float,float> curWaypoint = waypoints.front();
-	    	float waypointX = (curWaypoint.first - rover_longitude);
-	    	float waypointY = (rover_latitude - curWaypoint.second);
-	    	waypoints.erase(waypoints.begin());
-	    	if (abs(waypointX) <= (w/2) && waypointY <= (h/2)){
+	    glEnd();   
+	}
+	float waypoint_width = (w/dimensions)/2;
+	float waypoint_height = (h/dimensions)/2;
+	glColor4f(0.0,0.0,1.0,0.7);
+	auto temp = waypoints;
+    while(temp.size() > 0){
+    	std::pair<float,float> curWaypoint = temp.front();
+    	float waypointX = (curWaypoint.first - rover_longitude);
+    	float waypointY = (rover_latitude - curWaypoint.second);
+    	temp.erase(temp.begin());
+    	float distance = distanceInMeters(waypointY,waypointX,rover_latitude,rover_longitude);
+    	float angle = angleInDegrees(waypointY,waypointX,rover_latitude,rover_longitude);
+    	//std::cout << distance << std::endl;
+    	float distance_x = distance * cos(angle);
+    	float distance_y = (distance * sin(angle)) * -1;
+    	//std::cout << distance_x << "," << distance_y << std::endl;
+    	if (abs(distance_x) <= (w/2) && abs(distance_y) <= (h/2)){
 
-	    		glBegin(GL_QUADS);
-	    	    glVertex2f((x + xMiddle) + waypointX - (waypoint_width/2),(y + yMiddle) + waypointY + (waypoint_height/2));
-	    	    glVertex2f((x + xMiddle) + waypointX + (waypoint_width/2),(y + yMiddle) + waypointY + (waypoint_height/2));
-	    	    glVertex2f((x + xMiddle) + waypointX + (waypoint_width/2),(y + yMiddle) + waypointY - (waypoint_height/2));
-	    	    glVertex2f((x + xMiddle) + waypointX - (waypoint_width/2),(y + yMiddle) + waypointY - (waypoint_height/2));
-	    	    glEnd();
-	    	}
-	    	
+    		glBegin(GL_QUADS);
+    	    glVertex2f((x + xMiddle) + distance_x - (waypoint_width/2),(y + yMiddle) + distance_y + (waypoint_height/2));
+    	    glVertex2f((x + xMiddle) + distance_x + (waypoint_width/2),(y + yMiddle) + distance_y + (waypoint_height/2));
+    	    glVertex2f((x + xMiddle) + distance_x + (waypoint_width/2),(y + yMiddle) + distance_y - (waypoint_height/2));
+    	    glVertex2f((x + xMiddle) + distance_x - (waypoint_width/2),(y + yMiddle) + distance_y - (waypoint_height/2));
+    	    glEnd();
+    	}
+    	
 
-	    }
-    }
-
-    
-    
+    }   
 
 }
 
 int primary_feed = 0;
 int secondary_feed = 1;
 
-void do_gui(camera_feed::Feed feed[4], gui::Font *font, float rover_latitude, float rover_longitude, std::vector<std::pair<float,float>> waypoints)
+void do_gui(camera_feed::Feed feed[4], gui::Font *font, float rover_latitude, float rover_longitude)
 {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -521,7 +548,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font, float rover_latitude, fl
 	//do_lidar(&layout);
 
 	// Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
-    do_waypoint_map(&layout,300,300,rover_latitude,rover_longitude, waypoints);
+    do_waypoint_map(&layout,300,300,rover_latitude,rover_longitude);
 
 	layout.reset_y();
 	layout.advance_x(10);
@@ -553,7 +580,14 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
 {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-            gui::debug_console::handle_keypress(key, mods);
+            auto new_waypoints = gui::debug_console::handle_keypress(key, mods);
+            std::cout << waypoints.size() << std::endl;
+            if (new_waypoints.size() > waypoints.size()){
+            	for(int i = new_waypoints.size(); i > waypoints.size(); i--){
+            		auto cur_waypoint = new_waypoints[i - 1];
+            		waypoints.push_back(std::make_pair(cur_waypoint.latitude,cur_waypoint.longitude));
+            	}
+            }
         }
     }
 
@@ -698,7 +732,7 @@ int main()
 	commands.push_back("ctrl + q: Exit");
 	commands.push_back("c: Switch camera feeds");
 	debug_commands.push_back("'test': displays red text");
-
+	waypoints.push_back(std::make_pair(0.0,0.0));
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -888,11 +922,9 @@ int main()
 		}
 		//Testing waypoints
 
-		std::vector<std::pair<float,float>> waypoints;
-		waypoints.push_back(std::make_pair(10.0,10.0));
-		//waypoints.push_back(std::make_pair(10.0,110.0));
+		
         // Update and draw GUI.
-        do_gui(feeds, &font, rover_latitude, rover_longitude, waypoints);
+        do_gui(feeds, &font, rover_latitude, rover_longitude);
 	
 		if(help_menu_up)
 			do_help_menu(&font,commands,debug_commands);

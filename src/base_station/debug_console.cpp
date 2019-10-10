@@ -34,12 +34,6 @@ struct DebugLine
     float r = 0.0f, g = 1.0f, b = 0.0f;
 };
 
-struct Waypoint
-{
-	float latitude;
-	float longitude;
-};
-
 std::vector<Waypoint> wpList;
 
 struct DebugConsole
@@ -146,7 +140,7 @@ void handle_input(char c)
 	console.buffer.line.push_back(c);
 }
 
-void handle_keypress(int key, int mods)
+std::vector<Waypoint> handle_keypress(int key, int mods)
 {
     if (key == GLFW_KEY_ENTER) {
         std::string command = console.buffer.line.substr(CONSOLE_PROMPT.size());
@@ -214,6 +208,7 @@ void handle_keypress(int key, int mods)
         gui::state.input_state = gui::InputState::KEY_COMMAND;
         gui::state.show_debug_console = false;
     }
+    return wpList;
 }
 
 } // namespace debug_console

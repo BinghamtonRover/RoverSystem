@@ -27,7 +27,7 @@ const unsigned int CAMERA_HEIGHT = 720;
 
 const int LIDAR_SEND_INTERVAL = 1000 / 15;
 
-const int LOCATION_SEND_INTERVAL = 1000/10;
+const int LOCATION_SEND_INTERVAL = 1000/ 15;
 
 const int IMU_READ_INTERVAL = 1000 / 15;
 
@@ -228,7 +228,6 @@ int main()
 
 	unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
 	uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
-
     while (true) {
         for (size_t i = 0; i < streams.size(); i++) {
             camera::CaptureSession *cs = streams[i];
@@ -305,7 +304,7 @@ int main()
 
 			last_lidar_send_time = get_ticks();
 		}
-
+    
 	//Temporary code to test waypoint functionality
 	if (get_ticks() - last_location_send_time >= LOCATION_SEND_INTERVAL) {
 	    network::LocationMessage message;
@@ -313,11 +312,11 @@ int main()
 	    message.latitude = position->latitude;
 	    message.longitude = position->longitude;
 	    network::publish(&r_feed,&message);
-	    position->latitude += 1;
-	    position->longitude += 1;
+	    position->latitude = 0;
+	    position->longitude += 1.1;
 	    last_location_send_time = get_ticks();
 	}
-
+    
         unsigned char* zed_image;
         int zed_stride;
         zed::Pose zed_pose;
