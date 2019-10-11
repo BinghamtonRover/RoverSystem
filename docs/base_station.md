@@ -8,12 +8,12 @@ It is assumed that the base OS is freshly installed Ubuntu 18.04.
 
 The base station uses GLFW to perform window / input management. Install as follows:
 
-1. Download and extract the source code.
-2. From inside the source dir, run `cmake .`.
+1. Download and extract the source code (found here: https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip).
+2. From inside the extracted dir, run `cmake .` (you might need to install cmake with `sudo apt install cmake`).
 3. Run `make`.
 4. Run `sudo make install`.
 
-Then install OpenGL and Log4CPP with `sudo apt install liblog4cplus-1.1-9 libgl1-mesa-dev`.
+Then install OpenGL with `sudo apt install libgl1-mesa-dev`.
 
 You must also install TurboJPEG:
 1. Download the package file from https://sourceforge.net/projects/libjpeg-turbo/files/2.0.0/libjpeg-turbo-official_2.0.0_amd64.deb/download.

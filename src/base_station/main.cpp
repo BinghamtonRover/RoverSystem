@@ -1,5 +1,6 @@
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
+#include "../util/util.hpp"
 
 #include "camera_feed.hpp"
 #include "controller.hpp"
@@ -17,19 +18,13 @@
 #include <cstdlib>
 #include <cmath>
 
-#include <chrono>
 #include <iostream>
 #include <stack>
 #include <string>
 #include <vector>
 
-#include <iostream>
-#include <string>
-#include <vector>
-
 #include <sys/types.h>
 #include <unistd.h>
-#include <time.h>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -46,11 +41,9 @@ const int16_t JOINT_DRIVE_SPEED = 50;
 
 // Send movement updates 3x per second.
 const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
-// Heartbeat interval
-const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
-const int RECONNECT_INTERVAL = 1000 / 3;
-// Amount of time between heartbeats until disconnection flag is set
-const int DISCONNECT_TIMER = 5000;
+
+// Update network statistics once per second.
+const int NETWORK_STATS_INTERVAL = 1000;
 
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
@@ -58,17 +51,32 @@ const int LOG_VIEW_HEIGHT = 458;
 // Network feeds.
 network::Feed r_feed, bs_feed;
 
-unsigned int map_texture_id;
+// TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
 gui::Font global_font;
 
-// Save the start time so we can use get_ticks.
-std::chrono::high_resolution_clock::time_point start_time;
+unsigned int map_texture_id;
+unsigned int stopwatch_texture_id;
 
-unsigned int get_ticks()
-{
-    auto now = std::chrono::high_resolution_clock::now();
-    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
-}
+enum class StopwatchState {
+    STOPPED,
+    PAUSED,
+    RUNNING
+};
+
+struct {
+    StopwatchState state;
+    unsigned int start_time;
+    unsigned int pause_time;
+} stopwatch;
+
+struct {
+    float r_tp = 0;
+    float bs_tp = 0;
+    float t_tp = 0;
+} last_network_stats;
+
+// Clock!
+util::Clock global_clock;
 
 std::vector<std::string> split_by_spaces(std::string s) {
 	std::vector<std::string> strings;
@@ -216,6 +224,49 @@ Config load_config(const char* filename) {
 	return config;
 }
 
+void set_stopwatch_icon_color() {
+    switch (stopwatch.state) {
+    case StopwatchState::RUNNING:
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+        break;
+    case StopwatchState::PAUSED:
+        glColor4f(1.0f, 0.67f, 0.0f, 1.0f);
+        break;
+    default:
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        break;
+    }
+}
+
+const char* get_stopwatch_text() {
+    static char buffer[50];
+
+    if (stopwatch.state == StopwatchState::STOPPED) {
+        sprintf(buffer, "00:00:00");
+
+        return buffer;
+    }
+
+    unsigned int time_to_use;
+
+    if (stopwatch.state == StopwatchState::PAUSED) {
+        time_to_use = stopwatch.pause_time;
+    } else {
+        time_to_use = global_clock.get_millis();
+    }
+
+    unsigned int millis = time_to_use - stopwatch.start_time;
+
+    unsigned int seconds = millis / 1000;
+    unsigned int minutes = seconds / 60;
+    seconds = seconds % 60;
+    unsigned int hours = minutes / 60;
+    minutes = minutes % 60;
+
+    sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
+
+    return buffer;
+}
 
 void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int x = layout->current_x;
@@ -226,13 +277,25 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
 	gui::do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
-	char bandwidth_buffer[50];
-    //TODO: Update this with "bandwidth" (maybe call it network usage?
-	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", 69.0f);
+    char rover_network_status_buffer[50];
+    sprintf(rover_network_status_buffer, "Rover net status: %s",
+        r_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
+
+	if (r_feed.status == network::FeedStatus::ALIVE) {
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+    } else {
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    }
+	gui::draw_text(font, rover_network_status_buffer, x + 5, y + 5, 15);
+
+	char bandwidth_buffer[100];
+	sprintf(bandwidth_buffer, "Net thpt (r/bs/t): %.2f/%.2f/%.2f MiB/s", 
+        last_network_stats.r_tp,
+        last_network_stats.bs_tp,
+        last_network_stats.t_tp);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
-
+	gui::draw_text(font, bandwidth_buffer, x + 5, y + 20 + 5, 15);
 
 	time_t current_time;
 	time(&current_time);
@@ -244,6 +307,54 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int tw = gui::text_width(font, time_string_buffer, 20);
 
 	gui::draw_text(font, time_string_buffer, x + 5, y + h - 20 - 5, 20);
+
+    auto stopwatch_buffer = get_stopwatch_text();
+
+    int stopwatch_text_width = gui::text_width(font, stopwatch_buffer, 20);
+
+    gui::draw_text(font, stopwatch_buffer, x + w - 5 - stopwatch_text_width, y + h - 20 - 5, 20);
+
+    set_stopwatch_icon_color();
+    gui::fill_textured_rect_mix_color(x + w - 5 - stopwatch_text_width - 3 - 20, y + h - 20 - 5, 20, 20, stopwatch_texture_id);
+}
+
+void do_stopwatch_menu(gui::Font* font) {
+    const int w = 150;
+    const int h = 110;
+
+    const int x = WINDOW_WIDTH - 20 - w;
+    const int y = WINDOW_HEIGHT - 20 - h;
+
+    glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
+    gui::fill_rectangle(x, y, w, h);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    gui::draw_text(font, "Stopwatch", x + 5, y + 5, 20);
+
+    const char* space_help_text;
+    switch (stopwatch.state) {
+    case StopwatchState::STOPPED:
+        space_help_text = "<space> : start";
+        break;
+    case StopwatchState::PAUSED:
+        space_help_text = "<space> : resume";
+        break;
+    case StopwatchState::RUNNING:
+        space_help_text = "<space> : pause";
+        break;
+    }
+
+    gui::draw_text(font, space_help_text, x + 5, y + 5 + 20 + 15, 15);
+    gui::draw_text(font, "r       : reset", x + 5, y + 5 + 20 + 15 + 5 + 15, 15);
+
+    // Draw the actual stopwatch.
+
+    auto stopwatch_buffer = get_stopwatch_text();
+    int stopwatch_text_width = gui::text_width(font, stopwatch_buffer, 20);
+    gui::draw_text(font, stopwatch_buffer, WINDOW_WIDTH - 20 - stopwatch_text_width - 5, WINDOW_HEIGHT - 20 - 5 - 20, 20);
+
+    set_stopwatch_icon_color();
+    gui::fill_textured_rect_mix_color(WINDOW_WIDTH - 20 - 5 - stopwatch_text_width - 3 - 20, WINDOW_HEIGHT - 20 - 5 - 20, 20, 20, stopwatch_texture_id);
 }
 
 void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vector<const char *> debug_commands){
@@ -514,6 +625,8 @@ float smooth_rover_input(float value) {
 
 int main()
 {
+    util::Clock::init(&global_clock);
+
 	logger::register_handler(stderr_handler);
 
 	gui::debug_console::set_callback(command_callback);
@@ -521,8 +634,10 @@ int main()
 	// Load config.
 	Config config = load_config("res/bs.sconfig");
 
-    // Start the timer.
-    start_time = std::chrono::high_resolution_clock::now();
+    // Clear the stopwatch.
+    stopwatch.state = StopwatchState::STOPPED;
+    stopwatch.start_time = 0;
+    stopwatch.pause_time = 0;
 
     // Init GLFW.
     if (!glfwInit()) {
@@ -539,7 +654,7 @@ int main()
     gui::state.window = window;
 
     // Set sticky keys mode. It makes our input work as intended.
-    glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+    // glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
     // Disable mouse.
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -562,6 +677,7 @@ int main()
 
     // Initial setup for GUI here so that network errors are printed to log view.
 	map_texture_id = gui::load_texture("res/binghamton.jpg");
+    stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
     // Load this down here so that sizing is correct.
     gui::Font font;
@@ -585,7 +701,7 @@ int main()
 
     // Initialize network functionality.
     {
-        auto err = network::init_publisher(config.base_station_multicast_group, config.base_station_port, &bs_feed);
+        auto err = network::init(&bs_feed, network::FeedType::OUT, config.base_station_multicast_group, config.base_station_port, &global_clock);
         if (err != network::Error::OK) {
 			logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
@@ -595,7 +711,7 @@ int main()
     }
 
     {
-        auto err = network::init_subscriber(config.rover_multicast_group, config.rover_port, &r_feed);
+        auto err = network::init(&r_feed, network::FeedType::IN, config.rover_multicast_group, config.rover_port, &global_clock);
         if (err != network::Error::OK) {
 			logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
             return 1;
@@ -604,10 +720,13 @@ int main()
         logger::log(logger::INFO, "Network: subscribed to rover feed on %s:%d", config.rover_multicast_group, config.rover_port);
     }
 
-    // Keep track of when we last sent movement and heartbeat info.
-    unsigned int last_movement_send_time = 0;
-    // Last time heartbeat was sent
-    unsigned int last_heartbeat_send_time = 0;
+    // Keep track of when we last sent movement info.
+    util::Timer movement_send_timer;
+    util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &global_clock);
+
+    // Grab network stats every second.
+    util::Timer network_stats_timer;
+    util::Timer::init(&network_stats_timer, NETWORK_STATS_INTERVAL, &global_clock);
 
     // Init the controller.
 	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
@@ -628,7 +747,10 @@ int main()
 	commands.push_back("d: Show debug console");
 	commands.push_back("ctrl + q: Exit");
 	commands.push_back("c: Switch camera feeds");
+	commands.push_back("s: Open stopwatch menu");
 	debug_commands.push_back("'test': displays red text");
+
+    bool stopwatch_menu_up = false;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -638,31 +760,70 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-	} else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveTop();
-		} else {
-			gui::log_view::moveUpOne();
-		}
-	} else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveBottom();
-		} else {
-			gui::log_view::moveDownOne();
-		}
+        } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveTop();
+            } else {
+                gui::log_view::moveUpOne();
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveBottom();
+            } else {
+                gui::log_view::moveDownOne();
+            }
         } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-				break;	
-			}
-		}
-		else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-			if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
-		}
-		else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-			if (help_menu_up) help_menu_up = false;
-		}
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                break;	
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+            if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
+        } else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            if (help_menu_up) help_menu_up = false;
+            if (stopwatch_menu_up) {
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
+            stopwatch_menu_up = true;
+            gui::state.input_state = gui::InputState::STOPWATCH_MENU;
+        }
 
-        // TODO: Do network usage update here!
+        if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
+            if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+                switch (stopwatch.state) {
+                case StopwatchState::RUNNING:
+                    stopwatch.state = StopwatchState::PAUSED;
+                    stopwatch.pause_time = global_clock.get_millis();
+                    break;
+                case StopwatchState::PAUSED:
+                    stopwatch.state = StopwatchState::RUNNING;
+                    stopwatch.start_time = global_clock.get_millis() - (stopwatch.pause_time - stopwatch.start_time);
+                    break;
+                case StopwatchState::STOPPED:
+                    stopwatch.state = StopwatchState::RUNNING;
+                    stopwatch.start_time = global_clock.get_millis();
+                    break;
+                }
+
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+                switch (stopwatch.state) {
+                case StopwatchState::RUNNING:
+                    stopwatch.start_time = global_clock.get_millis();
+                    break;
+                case StopwatchState::PAUSED:
+                    stopwatch.state = StopwatchState::STOPPED;
+                    break;
+                case StopwatchState::STOPPED:
+                    break;
+                }
+
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            }
+        }
 
         // Handle incoming network messages from the rover feed.
         network::IncomingMessage message;
@@ -717,9 +878,17 @@ int main()
             }
         }
 
-        // Reset heartbeat send time
-        if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
-            last_heartbeat_send_time = get_ticks();
+        // Update network stuff.
+        network::update_status(&r_feed);
+        network::update_status(&bs_feed);
+
+        if (network_stats_timer.ready()) {
+            last_network_stats.r_tp = (float)r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            last_network_stats.bs_tp = (float)bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            last_network_stats.t_tp = last_network_stats.r_tp + last_network_stats.bs_tp;
+
+            r_feed.bytes_transferred = 0;
+            bs_feed.bytes_transferred = 0;
         }
 
         if (controller_loaded) {
@@ -800,9 +969,7 @@ int main()
 			}
 		}
 
-		if (get_ticks() - last_movement_send_time >= MOVEMENT_SEND_INTERVAL) {
-			last_movement_send_time = get_ticks();
-
+		if (movement_send_timer.ready()) {
 			// printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
             network::publish(&bs_feed, &last_movement_message);
@@ -813,6 +980,10 @@ int main()
 	
 		if(help_menu_up)
 			do_help_menu(&font,commands,debug_commands);
+
+        if (stopwatch_menu_up) {
+            do_stopwatch_menu(&font);
+        }
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
