@@ -52,6 +52,8 @@ const int LOG_VIEW_HEIGHT = 458;
 network::Feed r_feed, bs_feed;
 
 // TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
+gui::Font global_font;
+
 unsigned int map_texture_id;
 unsigned int stopwatch_texture_id;
 
@@ -75,8 +77,6 @@ struct {
 
 // Clock!
 util::Clock global_clock;
-
-unsigned int map_texture_id;
 
 std::vector<std::string> split_by_spaces(std::string s) {
 	std::vector<std::string> strings;
@@ -168,7 +168,7 @@ void log_view_handler(logger::Level level, std::string message) {
 
 	std::string full_string = std::string(time_string_buffer) + message;
 
-	gui::log_view::print(full_string, r, g, b, a);
+	gui::log_view::print(&global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
 }
 
 struct Config
@@ -252,7 +252,7 @@ const char* get_stopwatch_text() {
     if (stopwatch.state == StopwatchState::PAUSED) {
         time_to_use = stopwatch.pause_time;
     } else {
-        time_to_use = get_ticks();
+        time_to_use = global_clock.get_millis();
     }
 
     unsigned int millis = time_to_use - stopwatch.start_time;
@@ -634,9 +634,6 @@ int main()
 	// Load config.
 	Config config = load_config("res/bs.sconfig");
 
-    // Start the timer.
-    start_time = std::chrono::high_resolution_clock::now();
-
     // Clear the stopwatch.
     stopwatch.state = StopwatchState::STOPPED;
     stopwatch.start_time = 0;
@@ -682,17 +679,16 @@ int main()
 	map_texture_id = gui::load_texture("res/binghamton.jpg");
     stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
+    // Load this down here so that sizing is correct.
     gui::Font font;
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
 		logger::log(logger::ERROR, "Failed to load font!");
         return 1;
     }
+    // TODO: Fix this hack (for the log view handler) and clean up globals in general.
+    global_font = font;
 
-	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
-
-    // Load this down here so that sizing is correct.
-    // TODO: The sizing is not correct... lines are going off the right side!
 	logger::register_handler(log_view_handler);
 
     // Initialize camera stuff.
@@ -798,15 +794,15 @@ int main()
                 switch (stopwatch.state) {
                 case StopwatchState::RUNNING:
                     stopwatch.state = StopwatchState::PAUSED;
-                    stopwatch.pause_time = get_ticks();
+                    stopwatch.pause_time = global_clock.get_millis();
                     break;
                 case StopwatchState::PAUSED:
                     stopwatch.state = StopwatchState::RUNNING;
-                    stopwatch.start_time = get_ticks() - (stopwatch.pause_time - stopwatch.start_time);
+                    stopwatch.start_time = global_clock.get_millis() - (stopwatch.pause_time - stopwatch.start_time);
                     break;
                 case StopwatchState::STOPPED:
                     stopwatch.state = StopwatchState::RUNNING;
-                    stopwatch.start_time = get_ticks();
+                    stopwatch.start_time = global_clock.get_millis();
                     break;
                 }
 
@@ -815,7 +811,7 @@ int main()
             } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
                 switch (stopwatch.state) {
                 case StopwatchState::RUNNING:
-                    stopwatch.start_time = get_ticks();
+                    stopwatch.start_time = global_clock.get_millis();
                     break;
                 case StopwatchState::PAUSED:
                     stopwatch.state = StopwatchState::STOPPED;

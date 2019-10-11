@@ -36,31 +36,18 @@ static void removeOldMessages()
     }
 }
 
-void calc_sizing(gui::Font* font, int width, int height) {
-	chars_per_line = width / gui::text_width(font, "m", FONT_SIZE);
-	num_lines = (height + PADDING) / (FONT_SIZE + PADDING);
-}
-
-void print(std::string m, float r, float g, float b, float a)
+void print(gui::Font* font, int width, std::string m, float r, float g, float b, float a)
 {
     while (m.length() > 0) {
-        if (m.length() <= chars_per_line) {
-            logMessages.push_back(m);
-            red.push_back(r);
-            green.push_back(g);
-            blue.push_back(b);
-            alpha.push_back(a);
+        int idx = gui::text_last_index_that_can_fit(font, m.c_str(), width, FONT_SIZE);
 
-            break;
-        } else {
-            logMessages.push_back(m.substr(0, chars_per_line));
-            red.push_back(r);
-            green.push_back(g);
-            blue.push_back(b);
-            alpha.push_back(a);
-	
-            m.erase(0, chars_per_line);
-        }
+        logMessages.push_back(m.substr(0, idx + 1));
+        red.push_back(r);
+        green.push_back(g);
+        blue.push_back(b);
+        alpha.push_back(a);
+
+        m.erase(0, idx + 1);
     }
    
     removeOldMessages();

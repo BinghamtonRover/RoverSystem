@@ -139,6 +139,24 @@ int text_width(Font *font, const char *text, int height)
     return (int)((float)total_width * scale);
 }
 
+// Returns the index of the last character that can fit on a line of the given width.
+int text_last_index_that_can_fit(Font* font, const char* text, float width, int height) {
+    // We want to make sure our width is correctly reported.
+    float scale = (float)height / (float)font->max_height;
+
+    float x = 0, y = 0;
+    int i;
+    for (i = 0; text[i]; i++) {
+        stbtt_aligned_quad q;
+        stbtt_GetBakedQuad(font->baked_chars, 1024, 1024, text[i] - 32, &x, &y, &q, 1);
+
+        float line_width = q.x1 * scale;
+        if (line_width > width) return i - 1;
+    }
+
+    return i - 1;
+}
+
 // Draws the string with the given font at the given height.
 void draw_text(Font *font, const char *text, int x, int y, float height)
 {
