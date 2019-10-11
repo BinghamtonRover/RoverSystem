@@ -1,5 +1,6 @@
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
+#include "../util/util.hpp"
 
 #include "camera_feed.hpp"
 #include "controller.hpp"
@@ -17,19 +18,13 @@
 #include <cstdlib>
 #include <cmath>
 
-#include <chrono>
 #include <iostream>
 #include <stack>
 #include <string>
 #include <vector>
 
-#include <iostream>
-#include <string>
-#include <vector>
-
 #include <sys/types.h>
 #include <unistd.h>
-#include <time.h>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -46,11 +41,9 @@ const int16_t JOINT_DRIVE_SPEED = 50;
 
 // Send movement updates 3x per second.
 const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
-// Heartbeat interval
-const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
-const int RECONNECT_INTERVAL = 1000 / 3;
-// Amount of time between heartbeats until disconnection flag is set
-const int DISCONNECT_TIMER = 5000;
+
+// Update network statistics once per second.
+const int NETWORK_STATS_INTERVAL = 1000;
 
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
@@ -74,15 +67,16 @@ struct {
     unsigned int pause_time;
 } stopwatch;
 
-// Save the start time so we can use get_ticks.
-std::chrono::high_resolution_clock::time_point start_time;
+struct {
+    float r_tp = 0;
+    float bs_tp = 0;
+    float t_tp = 0;
+} last_network_stats;
 
-unsigned int get_ticks()
-{
-    auto now = std::chrono::high_resolution_clock::now();
+// Clock!
+util::Clock global_clock;
 
-    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
-}
+unsigned int map_texture_id;
 
 std::vector<std::string> split_by_spaces(std::string s) {
 	std::vector<std::string> strings;
@@ -283,13 +277,25 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
 	gui::do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
-	char bandwidth_buffer[50];
-    //TODO: Update this with "bandwidth" (maybe call it network usage?
-	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", 69.0f);
+    char rover_network_status_buffer[50];
+    sprintf(rover_network_status_buffer, "Rover net status: %s",
+        r_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
+
+	if (r_feed.status == network::FeedStatus::ALIVE) {
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+    } else {
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    }
+	gui::draw_text(font, rover_network_status_buffer, x + 5, y + 5, 15);
+
+	char bandwidth_buffer[100];
+	sprintf(bandwidth_buffer, "Net thpt (r/bs/t): %.2f/%.2f/%.2f MiB/s", 
+        last_network_stats.r_tp,
+        last_network_stats.bs_tp,
+        last_network_stats.t_tp);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
-
+	gui::draw_text(font, bandwidth_buffer, x + 5, y + 20 + 5, 15);
 
 	time_t current_time;
 	time(&current_time);
@@ -619,6 +625,8 @@ float smooth_rover_input(float value) {
 
 int main()
 {
+    util::Clock::init(&global_clock);
+
 	logger::register_handler(stderr_handler);
 
 	gui::debug_console::set_callback(command_callback);
@@ -697,7 +705,7 @@ int main()
 
     // Initialize network functionality.
     {
-        auto err = network::init_publisher(config.base_station_multicast_group, config.base_station_port, &bs_feed);
+        auto err = network::init(&bs_feed, network::FeedType::OUT, config.base_station_multicast_group, config.base_station_port, &global_clock);
         if (err != network::Error::OK) {
 			logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
@@ -707,7 +715,7 @@ int main()
     }
 
     {
-        auto err = network::init_subscriber(config.rover_multicast_group, config.rover_port, &r_feed);
+        auto err = network::init(&r_feed, network::FeedType::IN, config.rover_multicast_group, config.rover_port, &global_clock);
         if (err != network::Error::OK) {
 			logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
             return 1;
@@ -716,10 +724,13 @@ int main()
         logger::log(logger::INFO, "Network: subscribed to rover feed on %s:%d", config.rover_multicast_group, config.rover_port);
     }
 
-    // Keep track of when we last sent movement and heartbeat info.
-    unsigned int last_movement_send_time = 0;
-    // Last time heartbeat was sent
-    unsigned int last_heartbeat_send_time = 0;
+    // Keep track of when we last sent movement info.
+    util::Timer movement_send_timer;
+    util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &global_clock);
+
+    // Grab network stats every second.
+    util::Timer network_stats_timer;
+    util::Timer::init(&network_stats_timer, NETWORK_STATS_INTERVAL, &global_clock);
 
     // Init the controller.
 	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
@@ -818,8 +829,6 @@ int main()
             }
         }
 
-        // TODO: Do network usage update here!
-
         // Handle incoming network messages from the rover feed.
         network::IncomingMessage message;
         while (true) {
@@ -873,9 +882,17 @@ int main()
             }
         }
 
-        // Reset heartbeat send time
-        if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
-            last_heartbeat_send_time = get_ticks();
+        // Update network stuff.
+        network::update_status(&r_feed);
+        network::update_status(&bs_feed);
+
+        if (network_stats_timer.ready()) {
+            last_network_stats.r_tp = (float)r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            last_network_stats.bs_tp = (float)bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            last_network_stats.t_tp = last_network_stats.r_tp + last_network_stats.bs_tp;
+
+            r_feed.bytes_transferred = 0;
+            bs_feed.bytes_transferred = 0;
         }
 
         if (controller_loaded) {
@@ -956,9 +973,7 @@ int main()
 			}
 		}
 
-		if (get_ticks() - last_movement_send_time >= MOVEMENT_SEND_INTERVAL) {
-			last_movement_send_time = get_ticks();
-
+		if (movement_send_timer.ready()) {
 			// printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
             network::publish(&bs_feed, &last_movement_message);

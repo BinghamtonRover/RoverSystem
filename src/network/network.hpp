@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "../util/util.hpp"
+
 #include "memory.hpp"
 
 namespace network {
@@ -22,8 +24,11 @@ const int MAX_RAW_PACKET_SIZE = 1500; // Use Ethernet MTU.
 const int HEADER_SIZE = 1 + 1 + 2; 
 const int MAX_MESSAGE_SIZE = MAX_RAW_PACKET_SIZE - HEADER_SIZE;
 
-const int MAX_IDLE_TIME = 2000; // In ms.
-const int MAX_HEARTBEAT_WAIT_TIME = 1000;
+// The time a sending feed will wait with no sending before sending a heartbeat.
+const int MAX_IDLE_TIME = 1000; // In ms.
+// The max time a receiving feed will wait for incoming packets before declaring
+// a feed to be DEAD.
+const int MAX_HEARTBEAT_WAIT_TIME = 2000;
 
 // TODO: If things aren't getting through, increase this number to 32.
 const uint8_t MULTICAST_TTL = 1;
@@ -56,14 +61,32 @@ const char* get_error_string(Error error);
 // Feed Management
 //
 
-struct Feed {
-   int socket_fd;
-
-   MemoryPool memory_pool;
+enum class FeedStatus {
+    ALIVE,
+    DEAD
 };
 
-Error init_publisher(const char* group, uint16_t port, Feed* out_feed);
-Error init_subscriber(const char* group, uint16_t port, Feed* out_feed);
+enum class FeedType {
+    IN,
+    OUT
+};
+
+struct Feed {
+    FeedType type;    
+    int socket_fd;
+
+    MemoryPool memory_pool;
+
+    util::Clock* clock;
+
+    int bytes_transferred;
+    FeedStatus status;
+    uint32_t last_active_time;
+};
+
+Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util::Clock* clock);
+
+Error update_status(Feed* feed);
 
 void close(Feed* feed);
 
@@ -255,6 +278,18 @@ struct LocationMessage {
     bool has_fix;
     float latitude;
     float longitude;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->has_fix);
+        network::serialize(buffer, this->latitude);
+        network::serialize(buffer, this->longitude);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->has_fix));
+        network::deserialize(buffer, &(this->latitude));
+        network::deserialize(buffer, &(this->longitude));
+    }
 };
 
 //

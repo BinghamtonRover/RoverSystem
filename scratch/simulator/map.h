@@ -9,6 +9,8 @@ typedef struct {
 typedef struct {
     MapObstacle* obstacles;
     size_t num_obstacles;
+
+    float target_x, target_y;
 } Map;
 
 #define MAP_ERROR_DEF(X) \

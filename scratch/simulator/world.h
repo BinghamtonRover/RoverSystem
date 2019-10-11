@@ -7,6 +7,8 @@ typedef struct {
     int grid_size;
     float cell_size;
 
+    float target_x, target_y;
+
     OccupancyGrid occupancy_grid;
 } World;
 
