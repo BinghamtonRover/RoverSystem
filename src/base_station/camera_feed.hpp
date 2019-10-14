@@ -18,8 +18,12 @@ struct BufferItem
     unsigned char *data_sections;
 };
 
+const int FEED_NAME_MAX_LEN = 16;
+
 struct Feed
 {
+    char name[FEED_NAME_MAX_LEN + 1];
+
     int width, height;
 
     unsigned int gl_texture_id;
@@ -32,12 +36,12 @@ enum class Error
     OK,
 
     TURBO_JPEG_INIT,
-    DECOMPRESS
+    DECOMPRESS,
 };
 
 Error init();
 
-Error init_feed(Feed *feed, int width, int height);
+Error init_feed(Feed *feed, const char* name, int width, int height);
 
 Error handle_section(Feed *feed,
                      unsigned char *data,
@@ -47,4 +51,5 @@ Error handle_section(Feed *feed,
                      int frame_index);
 
 void destroy_feed(Feed *feed);
+
 } // namespace camera_feed

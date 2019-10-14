@@ -42,8 +42,9 @@ Error init()
     return Error::OK;
 }
 
-Error init_feed(Feed *feed, int width, int height)
+Error init_feed(Feed *feed, const char* name, int width, int height)
 {
+    strncpy(feed->name, name, FEED_NAME_MAX_LEN + 1);
     feed->width = width;
     feed->height = height;
     feed->buffers = new BufferItem[CAMERA_FRAME_BUFFER_COUNT];
@@ -135,6 +136,8 @@ void destroy_feed(Feed *feed)
     }
 
     delete[] feed->buffers;
+
+    glDeleteTextures(1, &(feed->gl_texture_id));
 }
 
 } // namespace camera_feed

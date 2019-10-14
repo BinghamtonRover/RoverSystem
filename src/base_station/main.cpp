@@ -526,10 +526,14 @@ void do_lidar(gui::Layout* layout) {
 	glEnd();
 }
 
+// These get initialized off-the-bat.
 int primary_feed = 0;
 int secondary_feed = 1;
 
-void do_gui(camera_feed::Feed feed[4], gui::Font *font)
+const int MAX_FEEDS = 9;
+camera_feed::Feed camera_feeds[MAX_FEEDS];
+
+void do_gui(gui::Font *font)
 {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -556,7 +560,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.push();
 
     // Draw the main camera feed.
-    gui::do_textured_rect(&layout, 1298, 730, feed[primary_feed].gl_texture_id);
+    gui::do_textured_rect(&layout, 1298, 730, camera_feeds[primary_feed].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
@@ -564,7 +568,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 
     // Draw the other camera feed.
     layout.reset_y();
-    gui::do_textured_rect(&layout, 533, 300, feed[secondary_feed].gl_texture_id);
+    gui::do_textured_rect(&layout, 533, 300, camera_feeds[secondary_feed].gl_texture_id);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -695,9 +699,12 @@ int main()
     camera_feed::init();
 
     // Create the camera streams.
-    camera_feed::Feed feeds[2];
-    camera_feed::init_feed(&feeds[0], 1280, 720);
-    camera_feed::init_feed(&feeds[1], 1280, 720);
+    for (int i = 0; i < MAX_FEEDS; i++) {
+        static char init_feed_name_buffer[camera_feed::FEED_NAME_MAX_LEN + 1];
+        snprintf(init_feed_name_buffer, sizeof(init_feed_name_buffer), "UNKNOWN-%d", i);
+
+        camera_feed::init_feed(camera_feeds + i, init_feed_name_buffer, 1280, 720);
+    }
 
     // Initialize network functionality.
     {
@@ -848,12 +855,8 @@ int main()
                     camera_message.data = camera_message_buffer;
                     network::deserialize(&message.buffer, &camera_message);
 
-                    if (camera_message.stream_index > 2) {
-                        break;
-                    }
-
                     auto camerr = camera_feed::handle_section(
-                        &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
+                        camera_feeds + camera_message.stream_index, camera_message.data, camera_message.size,
                         camera_message.section_index, camera_message.section_count, camera_message.frame_index);
 
                     if (camerr != camera_feed::Error::OK) {
@@ -976,7 +979,7 @@ int main()
 		}
 
         // Update and draw GUI.
-        do_gui(feeds, &font);
+        do_gui(&font);
 	
 		if(help_menu_up)
 			do_help_menu(&font,commands,debug_commands);
