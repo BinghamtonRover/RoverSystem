@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <cassert>
 
 #include <iostream>
 #include <stack>
@@ -47,6 +48,12 @@ const int NETWORK_STATS_INTERVAL = 1000;
 
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
+
+const int PRIMARY_FEED_WIDTH = 1298;
+const int PRIMARY_FEED_HEIGHT = 730;
+
+const int SECONDARY_FEED_WIDTH = 533;
+const int SECONDARY_FEED_HEIGHT = 300;
 
 // Network feeds.
 network::Feed r_feed, bs_feed;
@@ -526,14 +533,166 @@ void do_lidar(gui::Layout* layout) {
 	glEnd();
 }
 
+// Camera stuff.
 // These get initialized off-the-bat.
 int primary_feed = 0;
 int secondary_feed = 1;
 
+// We only care about this value when we are in camera move mode.
+int feed_to_move = -1;
+
 const int MAX_FEEDS = 9;
 camera_feed::Feed camera_feeds[MAX_FEEDS];
 
-void do_gui(gui::Font *font)
+void do_camera_move_target(gui::Font* font) {
+    const float COVER_ALPHA = 0.5f;
+    glColor4f(1.0f, 1.0f, 1.0f, COVER_ALPHA);
+    gui::fill_rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    const int PRIMARY_TEXT_SIZE = 50;
+    const int SECONDARY_TEXT_SIZE = 30;
+
+    const char* primary_text = "Press '0' to move feed here";
+    const char* secondary_text = "Press '1' to move feed here";
+
+    // TODO: These are hardcoded from the do_gui layout stuff.
+    // Maybe calculate the positions of everything at runtime start?
+    const int X = 20 + 572 + 10;
+
+    const int Y_PRIMARY = 20;
+    const int Y_SECONDARY = Y_PRIMARY + PRIMARY_FEED_HEIGHT + 10;
+
+    int primary_text_width = gui::text_width(font, primary_text, PRIMARY_TEXT_SIZE);
+    int secondary_text_width = gui::text_width(font, secondary_text, SECONDARY_TEXT_SIZE);
+
+    int ptx = X + (PRIMARY_FEED_WIDTH/2) - (primary_text_width/2);
+    int pty = Y_PRIMARY + (PRIMARY_FEED_HEIGHT/2);
+
+    int stx = X + (SECONDARY_FEED_WIDTH/2) - (secondary_text_width/2);
+    int sty = Y_SECONDARY + (SECONDARY_FEED_HEIGHT/2);
+
+    const int BG_PADDING = 10;
+
+    glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+    gui::fill_rectangle(ptx - BG_PADDING, pty - BG_PADDING, primary_text_width + 2*BG_PADDING, PRIMARY_TEXT_SIZE + 2*BG_PADDING);
+    gui::fill_rectangle(stx - BG_PADDING, sty - BG_PADDING, secondary_text_width + 2*BG_PADDING, SECONDARY_TEXT_SIZE + 2*BG_PADDING);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    gui::draw_text(
+        font, 
+        primary_text,
+        ptx,
+        pty,
+        PRIMARY_TEXT_SIZE);
+    gui::draw_text(
+        font, 
+        secondary_text, 
+        stx,
+        sty,
+        SECONDARY_TEXT_SIZE);
+}
+
+void do_camera_matrix(gui::Font* font) {
+    switch (gui::state.input_state) {
+        case gui::InputState::CAMERA_MATRIX:
+        case gui::InputState::CAMERA_MOVE:
+            break;
+        case gui::InputState::CAMERA_MOVE_TARGET:
+            do_camera_move_target(font);
+            return;
+        default:
+            return;
+    }
+
+    const int SIDE_MARGIN = 50;
+    const int TOP_MARGIN = 50;
+
+    const int BACKGROUND_SHADE = 40;
+
+    const int MATRIX_WIDTH = WINDOW_WIDTH - 2*SIDE_MARGIN;
+    const int MATRIX_HEIGHT = WINDOW_HEIGHT - 2*SIDE_MARGIN;
+
+    const int MATRIX_PADDING = 25;
+
+    glColor4f(BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, 1.0f);
+	gui::fill_rectangle(SIDE_MARGIN, TOP_MARGIN, MATRIX_WIDTH, MATRIX_HEIGHT);
+
+    const int VIEW_WIDTH = 500;
+    const int VIEW_HEIGHT = VIEW_WIDTH * 9 / 16;
+    const int NUM_VIEWS_PER_ROW = (MATRIX_WIDTH + MATRIX_PADDING) / (VIEW_WIDTH + MATRIX_PADDING);
+    const int NUM_ROWS = (MAX_FEEDS + NUM_VIEWS_PER_ROW - 1) / NUM_VIEWS_PER_ROW;
+    const int WIDTH_OF_ROW = NUM_VIEWS_PER_ROW * (VIEW_WIDTH + MATRIX_PADDING) + MATRIX_PADDING;
+    const int EXTRA_SIDE_PADDING = (MATRIX_WIDTH - WIDTH_OF_ROW) / 2;
+
+    const int TEXT_PADDING = 5;
+    const int TEXT_SIZE = 20;
+
+    // Stuff will overflow if we go over one digit!
+    // Plus 2 for ": ".
+    const int TEXT_MAX_LEN = camera_feed::FEED_NAME_MAX_LEN + 1 + 2;
+    // Can be equal since ids are 0-9.
+    assert(MAX_FEEDS <= 10);
+
+    int feed_idx = 0;
+    for (int r = 0; r < NUM_ROWS; r++) {
+        for (int c = 0; c < NUM_VIEWS_PER_ROW; c++) {
+            if (feed_idx >= MAX_FEEDS) break;
+
+            int view_x = SIDE_MARGIN + MATRIX_PADDING + EXTRA_SIDE_PADDING + c * (VIEW_WIDTH + MATRIX_PADDING);
+            int view_y = TOP_MARGIN + MATRIX_PADDING + r * (VIEW_HEIGHT + MATRIX_PADDING);
+            
+            gui::fill_textured_rect(
+                view_x,
+                view_y,
+                VIEW_WIDTH,
+                VIEW_HEIGHT,
+                camera_feeds[feed_idx].gl_texture_id);
+
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+            static char feed_display_buffer[TEXT_MAX_LEN + 1];
+            snprintf(feed_display_buffer, sizeof(feed_display_buffer), "%d: %s", feed_idx, camera_feeds[feed_idx].name);
+
+            draw_text(font, feed_display_buffer, view_x + TEXT_PADDING, view_y + VIEW_HEIGHT - TEXT_SIZE - TEXT_PADDING, TEXT_SIZE);
+
+            feed_idx++;
+        }
+    }
+
+    const int HELP_TEXT_SIZE = 15;
+
+    const char* help_text;
+    if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+        help_text = "m: move camera | escape: exit matrix";
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        help_text = "escape: cancel move";
+    } else {
+        help_text = "?";
+    }
+
+    int help_text_width = text_width(font, help_text, HELP_TEXT_SIZE);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(
+        font, 
+        help_text, 
+        WINDOW_WIDTH - SIDE_MARGIN - TEXT_PADDING - help_text_width, 
+        WINDOW_HEIGHT - TOP_MARGIN - TEXT_PADDING - HELP_TEXT_SIZE,
+        HELP_TEXT_SIZE);
+
+    if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        glColor4f(255.0f/255.0f, 199.0f/255.0f, 0.0f, 1.0f);
+        draw_text(
+            font,
+            "Press key '0'-'9' to select feed to move",
+            SIDE_MARGIN + TEXT_PADDING,
+            WINDOW_HEIGHT - TOP_MARGIN - TEXT_PADDING - HELP_TEXT_SIZE,
+            HELP_TEXT_SIZE);
+    }
+}
+
+
+void do_gui(gui::Font* font)
 {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -560,7 +719,7 @@ void do_gui(gui::Font *font)
     layout.push();
 
     // Draw the main camera feed.
-    gui::do_textured_rect(&layout, 1298, 730, camera_feeds[primary_feed].gl_texture_id);
+    gui::do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, camera_feeds[primary_feed].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
@@ -568,7 +727,7 @@ void do_gui(gui::Font *font)
 
     // Draw the other camera feed.
     layout.reset_y();
-    gui::do_textured_rect(&layout, 533, 300, camera_feeds[secondary_feed].gl_texture_id);
+    gui::do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, camera_feeds[secondary_feed].gl_texture_id);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -589,6 +748,11 @@ void do_gui(gui::Font *font)
     // Draw the debug overlay.
     layout = {};
     gui::debug_console::do_debug(&layout, font);
+
+    // Draw the camera matrix.
+    // Note: this currently needs to be called last here in order for the camera movement
+    // effects to work properly!
+    do_camera_matrix(font);
 }
 
 void glfw_character_callback(GLFWwindow *window, unsigned int codepoint)
@@ -606,15 +770,76 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             gui::debug_console::handle_keypress(key, mods);
         }
-    }
-
-	if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+    } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
 		if (action == GLFW_PRESS && key == GLFW_KEY_C) {
-			int temp = primary_feed;
-			primary_feed = secondary_feed;
-			secondary_feed = temp;
+            if (mods & GLFW_MOD_SHIFT) {
+                gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+            } else {
+                int temp = primary_feed;
+                primary_feed = secondary_feed;
+                secondary_feed = temp;
+            }
 		}
-	}
+	} else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+            gui::state.input_state = gui::InputState::CAMERA_MOVE;
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS) {
+            int selected_feed_idx = -1;
+            switch (key) {
+                case GLFW_KEY_0:
+                   selected_feed_idx = 0; 
+                   break;
+                case GLFW_KEY_1:
+                    selected_feed_idx = 1;
+                    break;
+                case GLFW_KEY_2:
+                    selected_feed_idx = 2;
+                    break;
+                case GLFW_KEY_3:
+                    selected_feed_idx = 3;
+                    break;
+                case GLFW_KEY_4:
+                    selected_feed_idx = 4;
+                    break;
+                case GLFW_KEY_5:
+                    selected_feed_idx = 5;
+                    break;
+                case GLFW_KEY_6:
+                    selected_feed_idx = 6;
+                    break;
+                case GLFW_KEY_7:
+                    selected_feed_idx = 7;
+                    break;
+                case GLFW_KEY_8:
+                    selected_feed_idx = 8;
+                    break;
+                case GLFW_KEY_9:
+                    selected_feed_idx = 9;
+                    break;
+            }
+
+            if (selected_feed_idx >= 0 && selected_feed_idx < MAX_FEEDS) {
+                feed_to_move = selected_feed_idx;
+                gui::state.input_state = gui::InputState::CAMERA_MOVE_TARGET;
+            }
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE_TARGET) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
+            primary_feed = feed_to_move;
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+            secondary_feed = feed_to_move;
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        }
+    }
 }
 
 // Takes values between 0 and 255 and returns them between 0 and 255.
@@ -753,7 +978,8 @@ int main()
 	std::vector<const char *> debug_commands;
 	commands.push_back("d: Show debug console");
 	commands.push_back("ctrl + q: Exit");
-	commands.push_back("c: Switch camera feeds");
+    commands.push_back("<shift>c: Open camera matrix");
+    commands.push_back("c: Swap camera feeds");
 	commands.push_back("s: Open stopwatch menu");
 	debug_commands.push_back("'test': displays red text");
 
