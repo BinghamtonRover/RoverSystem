@@ -14,7 +14,12 @@ const int WINDOW_HEIGHT = 1080;
 enum class InputState
 {
     KEY_COMMAND,
-    DEBUG_CONSOLE
+    DEBUG_CONSOLE,
+    STOPWATCH_MENU,
+
+    CAMERA_MATRIX,
+    CAMERA_MOVE,
+    CAMERA_MOVE_TARGET
 };
 
 // Stores the global GUI state.
@@ -51,6 +56,9 @@ bool load_font(Font *font, const char *file_name, int size);
 // Returns the width of the given string if it were rendered with the given
 // font at the given height.
 int text_width(Font *font, const char *text, int height);
+
+// Returns the index of the last character that can fit on a line of the given width.
+int text_last_index_that_can_fit(Font* font, const char* text, float width, int height);
 
 void draw_text(Font *font, const char *text, int x, int y, float height);
 
@@ -116,6 +124,20 @@ void do_textured_rect(Layout *layout, int width, int height, unsigned int textur
 
 // Loads a png or jpeg image into memory, and returns an OpenGL texture id.
 unsigned int load_texture(const char *file_name);
+
+// Loads a png image into memory, specifically with an alpha channel.
+unsigned int load_texture_alpha(const char *file_name);
+
+// Renders a rectangle with the given texture at the given screen coords.
+void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id);
+
+// Renders a rectangle with the given texture at the given screen coords.
+// The texture will be blended with the current OpenGL color.
+void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int texture_id);
+
+// Fills the specified rectangle with the currently-set OpenGL color.
+void fill_rectangle(int x, int y, int w, int h);
+
 } // namespace gui
 
 #endif

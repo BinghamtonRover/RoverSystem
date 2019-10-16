@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <cassert>
 
 #include <iostream>
 #include <stack>
@@ -48,8 +49,32 @@ const int NETWORK_STATS_INTERVAL = 1000;
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
 
+const int PRIMARY_FEED_WIDTH = 1298;
+const int PRIMARY_FEED_HEIGHT = 730;
+
+const int SECONDARY_FEED_WIDTH = 533;
+const int SECONDARY_FEED_HEIGHT = 300;
+
 // Network feeds.
 network::Feed r_feed, bs_feed;
+
+// TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
+gui::Font global_font;
+
+unsigned int map_texture_id;
+unsigned int stopwatch_texture_id;
+
+enum class StopwatchState {
+    STOPPED,
+    PAUSED,
+    RUNNING
+};
+
+struct {
+    StopwatchState state;
+    unsigned int start_time;
+    unsigned int pause_time;
+} stopwatch;
 
 struct {
     float r_tp = 0;
@@ -59,8 +84,6 @@ struct {
 
 // Clock!
 util::Clock global_clock;
-
-unsigned int map_texture_id;
 
 std::vector<std::string> split_by_spaces(std::string s) {
 	std::vector<std::string> strings;
@@ -152,7 +175,7 @@ void log_view_handler(logger::Level level, std::string message) {
 
 	std::string full_string = std::string(time_string_buffer) + message;
 
-	gui::log_view::print(full_string, r, g, b, a);
+	gui::log_view::print(&global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
 }
 
 struct Config
@@ -208,6 +231,49 @@ Config load_config(const char* filename) {
 	return config;
 }
 
+void set_stopwatch_icon_color() {
+    switch (stopwatch.state) {
+    case StopwatchState::RUNNING:
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+        break;
+    case StopwatchState::PAUSED:
+        glColor4f(1.0f, 0.67f, 0.0f, 1.0f);
+        break;
+    default:
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        break;
+    }
+}
+
+const char* get_stopwatch_text() {
+    static char buffer[50];
+
+    if (stopwatch.state == StopwatchState::STOPPED) {
+        sprintf(buffer, "00:00:00");
+
+        return buffer;
+    }
+
+    unsigned int time_to_use;
+
+    if (stopwatch.state == StopwatchState::PAUSED) {
+        time_to_use = stopwatch.pause_time;
+    } else {
+        time_to_use = global_clock.get_millis();
+    }
+
+    unsigned int millis = time_to_use - stopwatch.start_time;
+
+    unsigned int seconds = millis / 1000;
+    unsigned int minutes = seconds / 60;
+    seconds = seconds % 60;
+    unsigned int hours = minutes / 60;
+    minutes = minutes % 60;
+
+    sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
+
+    return buffer;
+}
 
 void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int x = layout->current_x;
@@ -248,6 +314,54 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 	int tw = gui::text_width(font, time_string_buffer, 20);
 
 	gui::draw_text(font, time_string_buffer, x + 5, y + h - 20 - 5, 20);
+
+    auto stopwatch_buffer = get_stopwatch_text();
+
+    int stopwatch_text_width = gui::text_width(font, stopwatch_buffer, 20);
+
+    gui::draw_text(font, stopwatch_buffer, x + w - 5 - stopwatch_text_width, y + h - 20 - 5, 20);
+
+    set_stopwatch_icon_color();
+    gui::fill_textured_rect_mix_color(x + w - 5 - stopwatch_text_width - 3 - 20, y + h - 20 - 5, 20, 20, stopwatch_texture_id);
+}
+
+void do_stopwatch_menu(gui::Font* font) {
+    const int w = 150;
+    const int h = 110;
+
+    const int x = WINDOW_WIDTH - 20 - w;
+    const int y = WINDOW_HEIGHT - 20 - h;
+
+    glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
+    gui::fill_rectangle(x, y, w, h);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    gui::draw_text(font, "Stopwatch", x + 5, y + 5, 20);
+
+    const char* space_help_text;
+    switch (stopwatch.state) {
+    case StopwatchState::STOPPED:
+        space_help_text = "<space> : start";
+        break;
+    case StopwatchState::PAUSED:
+        space_help_text = "<space> : resume";
+        break;
+    case StopwatchState::RUNNING:
+        space_help_text = "<space> : pause";
+        break;
+    }
+
+    gui::draw_text(font, space_help_text, x + 5, y + 5 + 20 + 15, 15);
+    gui::draw_text(font, "r       : reset", x + 5, y + 5 + 20 + 15 + 5 + 15, 15);
+
+    // Draw the actual stopwatch.
+
+    auto stopwatch_buffer = get_stopwatch_text();
+    int stopwatch_text_width = gui::text_width(font, stopwatch_buffer, 20);
+    gui::draw_text(font, stopwatch_buffer, WINDOW_WIDTH - 20 - stopwatch_text_width - 5, WINDOW_HEIGHT - 20 - 5 - 20, 20);
+
+    set_stopwatch_icon_color();
+    gui::fill_textured_rect_mix_color(WINDOW_WIDTH - 20 - 5 - stopwatch_text_width - 3 - 20, WINDOW_HEIGHT - 20 - 5 - 20, 20, 20, stopwatch_texture_id);
 }
 
 void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vector<const char *> debug_commands){
@@ -419,10 +533,166 @@ void do_lidar(gui::Layout* layout) {
 	glEnd();
 }
 
+// Camera stuff.
+// These get initialized off-the-bat.
 int primary_feed = 0;
 int secondary_feed = 1;
 
-void do_gui(camera_feed::Feed feed[4], gui::Font *font)
+// We only care about this value when we are in camera move mode.
+int feed_to_move = -1;
+
+const int MAX_FEEDS = 9;
+camera_feed::Feed camera_feeds[MAX_FEEDS];
+
+void do_camera_move_target(gui::Font* font) {
+    const float COVER_ALPHA = 0.5f;
+    glColor4f(1.0f, 1.0f, 1.0f, COVER_ALPHA);
+    gui::fill_rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    const int PRIMARY_TEXT_SIZE = 50;
+    const int SECONDARY_TEXT_SIZE = 30;
+
+    const char* primary_text = "Press '0' to move feed here";
+    const char* secondary_text = "Press '1' to move feed here";
+
+    // TODO: These are hardcoded from the do_gui layout stuff.
+    // Maybe calculate the positions of everything at runtime start?
+    const int X = 20 + 572 + 10;
+
+    const int Y_PRIMARY = 20;
+    const int Y_SECONDARY = Y_PRIMARY + PRIMARY_FEED_HEIGHT + 10;
+
+    int primary_text_width = gui::text_width(font, primary_text, PRIMARY_TEXT_SIZE);
+    int secondary_text_width = gui::text_width(font, secondary_text, SECONDARY_TEXT_SIZE);
+
+    int ptx = X + (PRIMARY_FEED_WIDTH/2) - (primary_text_width/2);
+    int pty = Y_PRIMARY + (PRIMARY_FEED_HEIGHT/2);
+
+    int stx = X + (SECONDARY_FEED_WIDTH/2) - (secondary_text_width/2);
+    int sty = Y_SECONDARY + (SECONDARY_FEED_HEIGHT/2);
+
+    const int BG_PADDING = 10;
+
+    glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+    gui::fill_rectangle(ptx - BG_PADDING, pty - BG_PADDING, primary_text_width + 2*BG_PADDING, PRIMARY_TEXT_SIZE + 2*BG_PADDING);
+    gui::fill_rectangle(stx - BG_PADDING, sty - BG_PADDING, secondary_text_width + 2*BG_PADDING, SECONDARY_TEXT_SIZE + 2*BG_PADDING);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    gui::draw_text(
+        font, 
+        primary_text,
+        ptx,
+        pty,
+        PRIMARY_TEXT_SIZE);
+    gui::draw_text(
+        font, 
+        secondary_text, 
+        stx,
+        sty,
+        SECONDARY_TEXT_SIZE);
+}
+
+void do_camera_matrix(gui::Font* font) {
+    switch (gui::state.input_state) {
+        case gui::InputState::CAMERA_MATRIX:
+        case gui::InputState::CAMERA_MOVE:
+            break;
+        case gui::InputState::CAMERA_MOVE_TARGET:
+            do_camera_move_target(font);
+            return;
+        default:
+            return;
+    }
+
+    const int SIDE_MARGIN = 50;
+    const int TOP_MARGIN = 50;
+
+    const int BACKGROUND_SHADE = 40;
+
+    const int MATRIX_WIDTH = WINDOW_WIDTH - 2*SIDE_MARGIN;
+    const int MATRIX_HEIGHT = WINDOW_HEIGHT - 2*SIDE_MARGIN;
+
+    const int MATRIX_PADDING = 25;
+
+    glColor4f(BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, 1.0f);
+	gui::fill_rectangle(SIDE_MARGIN, TOP_MARGIN, MATRIX_WIDTH, MATRIX_HEIGHT);
+
+    const int VIEW_WIDTH = 500;
+    const int VIEW_HEIGHT = VIEW_WIDTH * 9 / 16;
+    const int NUM_VIEWS_PER_ROW = (MATRIX_WIDTH + MATRIX_PADDING) / (VIEW_WIDTH + MATRIX_PADDING);
+    const int NUM_ROWS = (MAX_FEEDS + NUM_VIEWS_PER_ROW - 1) / NUM_VIEWS_PER_ROW;
+    const int WIDTH_OF_ROW = NUM_VIEWS_PER_ROW * (VIEW_WIDTH + MATRIX_PADDING) + MATRIX_PADDING;
+    const int EXTRA_SIDE_PADDING = (MATRIX_WIDTH - WIDTH_OF_ROW) / 2;
+
+    const int TEXT_PADDING = 5;
+    const int TEXT_SIZE = 20;
+
+    // Stuff will overflow if we go over one digit!
+    // Plus 2 for ": ".
+    const int TEXT_MAX_LEN = camera_feed::FEED_NAME_MAX_LEN + 1 + 2;
+    // Can be equal since ids are 0-9.
+    assert(MAX_FEEDS <= 10);
+
+    int feed_idx = 0;
+    for (int r = 0; r < NUM_ROWS; r++) {
+        for (int c = 0; c < NUM_VIEWS_PER_ROW; c++) {
+            if (feed_idx >= MAX_FEEDS) break;
+
+            int view_x = SIDE_MARGIN + MATRIX_PADDING + EXTRA_SIDE_PADDING + c * (VIEW_WIDTH + MATRIX_PADDING);
+            int view_y = TOP_MARGIN + MATRIX_PADDING + r * (VIEW_HEIGHT + MATRIX_PADDING);
+            
+            gui::fill_textured_rect(
+                view_x,
+                view_y,
+                VIEW_WIDTH,
+                VIEW_HEIGHT,
+                camera_feeds[feed_idx].gl_texture_id);
+
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+            static char feed_display_buffer[TEXT_MAX_LEN + 1];
+            snprintf(feed_display_buffer, sizeof(feed_display_buffer), "%d: %s", feed_idx, camera_feeds[feed_idx].name);
+
+            draw_text(font, feed_display_buffer, view_x + TEXT_PADDING, view_y + VIEW_HEIGHT - TEXT_SIZE - TEXT_PADDING, TEXT_SIZE);
+
+            feed_idx++;
+        }
+    }
+
+    const int HELP_TEXT_SIZE = 15;
+
+    const char* help_text;
+    if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+        help_text = "m: move camera | escape: exit matrix";
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        help_text = "escape: cancel move";
+    } else {
+        help_text = "?";
+    }
+
+    int help_text_width = text_width(font, help_text, HELP_TEXT_SIZE);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(
+        font, 
+        help_text, 
+        WINDOW_WIDTH - SIDE_MARGIN - TEXT_PADDING - help_text_width, 
+        WINDOW_HEIGHT - TOP_MARGIN - TEXT_PADDING - HELP_TEXT_SIZE,
+        HELP_TEXT_SIZE);
+
+    if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        glColor4f(255.0f/255.0f, 199.0f/255.0f, 0.0f, 1.0f);
+        draw_text(
+            font,
+            "Press key '0'-'9' to select feed to move",
+            SIDE_MARGIN + TEXT_PADDING,
+            WINDOW_HEIGHT - TOP_MARGIN - TEXT_PADDING - HELP_TEXT_SIZE,
+            HELP_TEXT_SIZE);
+    }
+}
+
+
+void do_gui(gui::Font* font)
 {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -449,7 +719,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.push();
 
     // Draw the main camera feed.
-    gui::do_textured_rect(&layout, 1298, 730, feed[primary_feed].gl_texture_id);
+    gui::do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, camera_feeds[primary_feed].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
@@ -457,7 +727,7 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
 
     // Draw the other camera feed.
     layout.reset_y();
-    gui::do_textured_rect(&layout, 533, 300, feed[secondary_feed].gl_texture_id);
+    gui::do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, camera_feeds[secondary_feed].gl_texture_id);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -478,6 +748,11 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     // Draw the debug overlay.
     layout = {};
     gui::debug_console::do_debug(&layout, font);
+
+    // Draw the camera matrix.
+    // Note: this currently needs to be called last here in order for the camera movement
+    // effects to work properly!
+    do_camera_matrix(font);
 }
 
 void glfw_character_callback(GLFWwindow *window, unsigned int codepoint)
@@ -495,15 +770,76 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             gui::debug_console::handle_keypress(key, mods);
         }
-    }
-
-	if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+    } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
 		if (action == GLFW_PRESS && key == GLFW_KEY_C) {
-			int temp = primary_feed;
-			primary_feed = secondary_feed;
-			secondary_feed = temp;
+            if (mods & GLFW_MOD_SHIFT) {
+                gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+            } else {
+                int temp = primary_feed;
+                primary_feed = secondary_feed;
+                secondary_feed = temp;
+            }
 		}
-	}
+	} else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+            gui::state.input_state = gui::InputState::CAMERA_MOVE;
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS) {
+            int selected_feed_idx = -1;
+            switch (key) {
+                case GLFW_KEY_0:
+                   selected_feed_idx = 0; 
+                   break;
+                case GLFW_KEY_1:
+                    selected_feed_idx = 1;
+                    break;
+                case GLFW_KEY_2:
+                    selected_feed_idx = 2;
+                    break;
+                case GLFW_KEY_3:
+                    selected_feed_idx = 3;
+                    break;
+                case GLFW_KEY_4:
+                    selected_feed_idx = 4;
+                    break;
+                case GLFW_KEY_5:
+                    selected_feed_idx = 5;
+                    break;
+                case GLFW_KEY_6:
+                    selected_feed_idx = 6;
+                    break;
+                case GLFW_KEY_7:
+                    selected_feed_idx = 7;
+                    break;
+                case GLFW_KEY_8:
+                    selected_feed_idx = 8;
+                    break;
+                case GLFW_KEY_9:
+                    selected_feed_idx = 9;
+                    break;
+            }
+
+            if (selected_feed_idx >= 0 && selected_feed_idx < MAX_FEEDS) {
+                feed_to_move = selected_feed_idx;
+                gui::state.input_state = gui::InputState::CAMERA_MOVE_TARGET;
+            }
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE_TARGET) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
+            primary_feed = feed_to_move;
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+            secondary_feed = feed_to_move;
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        }
+    }
 }
 
 // Takes values between 0 and 255 and returns them between 0 and 255.
@@ -527,6 +863,11 @@ int main()
 	// Load config.
 	Config config = load_config("res/bs.sconfig");
 
+    // Clear the stopwatch.
+    stopwatch.state = StopwatchState::STOPPED;
+    stopwatch.start_time = 0;
+    stopwatch.pause_time = 0;
+
     // Init GLFW.
     if (!glfwInit()) {
 		logger::log(logger::ERROR, "Failed to init GLFW!");
@@ -542,7 +883,7 @@ int main()
     gui::state.window = window;
 
     // Set sticky keys mode. It makes our input work as intended.
-    glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+    // glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
     // Disable mouse.
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -565,27 +906,30 @@ int main()
 
     // Initial setup for GUI here so that network errors are printed to log view.
 	map_texture_id = gui::load_texture("res/binghamton.jpg");
+    stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
+    // Load this down here so that sizing is correct.
     gui::Font font;
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
 		logger::log(logger::ERROR, "Failed to load font!");
         return 1;
     }
+    // TODO: Fix this hack (for the log view handler) and clean up globals in general.
+    global_font = font;
 
-	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
-
-    // Load this down here so that sizing is correct.
-    // TODO: The sizing is not correct... lines are going off the right side!
 	logger::register_handler(log_view_handler);
 
     // Initialize camera stuff.
     camera_feed::init();
 
     // Create the camera streams.
-    camera_feed::Feed feeds[2];
-    camera_feed::init_feed(&feeds[0], 1280, 720);
-    camera_feed::init_feed(&feeds[1], 1280, 720);
+    for (int i = 0; i < MAX_FEEDS; i++) {
+        static char init_feed_name_buffer[camera_feed::FEED_NAME_MAX_LEN + 1];
+        snprintf(init_feed_name_buffer, sizeof(init_feed_name_buffer), "UNKNOWN-%d", i);
+
+        camera_feed::init_feed(camera_feeds + i, init_feed_name_buffer, 1280, 720);
+    }
 
     // Initialize network functionality.
     {
@@ -634,8 +978,12 @@ int main()
 	std::vector<const char *> debug_commands;
 	commands.push_back("d: Show debug console");
 	commands.push_back("ctrl + q: Exit");
-	commands.push_back("c: Switch camera feeds");
+    commands.push_back("<shift>c: Open camera matrix");
+    commands.push_back("c: Swap camera feeds");
+	commands.push_back("s: Open stopwatch menu");
 	debug_commands.push_back("'test': displays red text");
+
+    bool stopwatch_menu_up = false;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -645,29 +993,70 @@ int main()
                 gui::state.show_debug_console = true;
                 gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
             }
-	} else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveTop();
-		} else {
-			gui::log_view::moveUpOne();
-		}
-	} else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			gui::log_view::moveBottom();
-		} else {
-			gui::log_view::moveDownOne();
-		}
+        } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveTop();
+            } else {
+                gui::log_view::moveUpOne();
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                gui::log_view::moveBottom();
+            } else {
+                gui::log_view::moveDownOne();
+            }
         } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-				break;	
-			}
-		}
-		else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-			if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
-		}
-		else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-			if (help_menu_up) help_menu_up = false;
-		}
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+                break;	
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+            if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
+        } else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            if (help_menu_up) help_menu_up = false;
+            if (stopwatch_menu_up) {
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            }
+        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
+            stopwatch_menu_up = true;
+            gui::state.input_state = gui::InputState::STOPWATCH_MENU;
+        }
+
+        if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
+            if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+                switch (stopwatch.state) {
+                case StopwatchState::RUNNING:
+                    stopwatch.state = StopwatchState::PAUSED;
+                    stopwatch.pause_time = global_clock.get_millis();
+                    break;
+                case StopwatchState::PAUSED:
+                    stopwatch.state = StopwatchState::RUNNING;
+                    stopwatch.start_time = global_clock.get_millis() - (stopwatch.pause_time - stopwatch.start_time);
+                    break;
+                case StopwatchState::STOPPED:
+                    stopwatch.state = StopwatchState::RUNNING;
+                    stopwatch.start_time = global_clock.get_millis();
+                    break;
+                }
+
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+                switch (stopwatch.state) {
+                case StopwatchState::RUNNING:
+                    stopwatch.start_time = global_clock.get_millis();
+                    break;
+                case StopwatchState::PAUSED:
+                    stopwatch.state = StopwatchState::STOPPED;
+                    break;
+                case StopwatchState::STOPPED:
+                    break;
+                }
+
+                stopwatch_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            }
+        }
 
         // Handle incoming network messages from the rover feed.
         network::IncomingMessage message;
@@ -692,12 +1081,8 @@ int main()
                     camera_message.data = camera_message_buffer;
                     network::deserialize(&message.buffer, &camera_message);
 
-                    if (camera_message.stream_index > 2) {
-                        break;
-                    }
-
                     auto camerr = camera_feed::handle_section(
-                        &feeds[camera_message.stream_index], camera_message.data, camera_message.size,
+                        camera_feeds + camera_message.stream_index, camera_message.data, camera_message.size,
                         camera_message.section_index, camera_message.section_count, camera_message.frame_index);
 
                     if (camerr != camera_feed::Error::OK) {
@@ -820,10 +1205,14 @@ int main()
 		}
 
         // Update and draw GUI.
-        do_gui(feeds, &font);
+        do_gui(&font);
 	
 		if(help_menu_up)
 			do_help_menu(&font,commands,debug_commands);
+
+        if (stopwatch_menu_up) {
+            do_stopwatch_menu(&font);
+        }
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
