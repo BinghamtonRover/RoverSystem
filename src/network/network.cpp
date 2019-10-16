@@ -201,64 +201,93 @@ Buffer get_outgoing_buffer(Feed* feed) {
 // Feed Management
 //
 
-Error init_subscriber(const char* group, uint16_t port, Feed* out_feed) {
+Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util::Clock* clock) {
     int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock_fd == -1) {
         return Error::SOCKET;
     }
-    out_feed->socket_fd = sock_fd;
 
     uint8_t ttl = MULTICAST_TTL;
 	setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
 
-    // Bind to the correct port.
-    struct sockaddr_in bind_addr{};
-    bind_addr.sin_family = AF_INET;
-    bind_addr.sin_port = htobe16(port);
-    bind_addr.sin_addr.s_addr = htobe32(INADDR_ANY);
+    switch (type) {
+    case FeedType::IN: {
+        // Bind to the correct port.
+        struct sockaddr_in bind_addr{};
+        bind_addr.sin_family = AF_INET;
+        bind_addr.sin_port = htobe16(port);
+        bind_addr.sin_addr.s_addr = htobe32(INADDR_ANY);
 
-    if (bind(sock_fd, (struct sockaddr*) &bind_addr, sizeof(bind_addr)) == -1) {
-        ::close(sock_fd);
-        return Error::BIND;
+        if (bind(sock_fd, (struct sockaddr*) &bind_addr, sizeof(bind_addr)) == -1) {
+            ::close(sock_fd);
+            return Error::BIND;
+        }
+
+        // Join the multicast group.
+        struct ip_mreq mreq;
+        mreq.imr_multiaddr.s_addr = inet_addr(group);
+        mreq.imr_interface.s_addr = htobe32(INADDR_ANY);
+        
+        if (setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+            ::close(sock_fd);
+            return Error::MULTICAST_JOIN;    
+        }
+
+        break;
+    }
+    case FeedType::OUT: {
+        // Connect so that future writes on this socket all go to the right place.
+        struct sockaddr_in connect_addr{};
+        connect_addr.sin_family = AF_INET;
+        connect_addr.sin_port = htobe16((short)port);
+        connect_addr.sin_addr.s_addr = inet_addr(group);
+
+        if (connect(sock_fd, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) == -1) {
+            ::close(sock_fd);
+            return Error::CONNECT;
+        }
+
+        break;
+    }
     }
 
-    // Join the multicast group.
-    struct ip_mreq mreq;
-    mreq.imr_multiaddr.s_addr = inet_addr(group);
-    mreq.imr_interface.s_addr = htobe32(INADDR_ANY);
-    
-    if (setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-        ::close(sock_fd);
-        return Error::MULTICAST_JOIN;    
-    }
-
+    out_feed->socket_fd = sock_fd;
     out_feed->memory_pool.init(MAX_RAW_PACKET_SIZE, 64);
+    out_feed->bytes_transferred = 0;
+    out_feed->clock = clock;
+    out_feed->last_active_time = 0;
+    out_feed->status = FeedStatus::DEAD;
 
     return Error::OK;
 }
 
-Error init_publisher(const char* group, uint16_t port, Feed* out_feed) {
-    int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock_fd == -1) {
-        return Error::SOCKET;
+Error update_status(Feed* feed) {
+    auto now = feed->clock->get_millis();
+
+    switch (feed->type) {
+    case FeedType::IN: {
+        if (now - feed->last_active_time >= MAX_HEARTBEAT_WAIT_TIME) {
+            feed->status = FeedStatus::DEAD;
+        } else {
+            feed->status = FeedStatus::ALIVE;    
+        }
+
+        return Error::OK;
+    }
+    case FeedType::OUT: {
+        if (now - feed->last_active_time >= MAX_IDLE_TIME) {
+            HeartbeatMessage hb;
+            
+            return publish(feed, &hb);
+        } else {
+            feed->status = FeedStatus::ALIVE;
+        }
+
+        return Error::OK;
+    }
     }
 
-    uint8_t ttl = MULTICAST_TTL;
-	setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
-
-    out_feed->socket_fd = sock_fd;
-    struct sockaddr_in connect_addr{};
-    connect_addr.sin_family = AF_INET;
-    connect_addr.sin_port = htobe16((short)port);
-    connect_addr.sin_addr.s_addr = inet_addr(group);
-
-    if (connect(sock_fd, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) == -1) {
-        ::close(sock_fd);
-        return Error::CONNECT;
-    }
-
-    out_feed->memory_pool.init(MAX_RAW_PACKET_SIZE, 64);
-
+    // I guess we'll do this...
     return Error::OK;
 }
 
@@ -282,15 +311,17 @@ Error receive(Feed* feed, IncomingMessage* out_message) {
     buffer.data = receive_buffer;
 
     auto res = recv(feed->socket_fd, buffer.data, buffer.cap, MSG_DONTWAIT);
-    buffer.size = (uint16_t) res;
-
     if (res == -1) {
-        if (errno == EAGAIN && errno == EWOULDBLOCK) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return Error::NOMORE;
         }
 
         return Error::RECEIVE;
     }
+
+    buffer.size = (uint16_t) res;
+
+    feed->bytes_transferred += buffer.size;
 
     uint8_t version;
     uint8_t message_type;
@@ -306,6 +337,8 @@ Error receive(Feed* feed, IncomingMessage* out_message) {
 
     out_message->type = (MessageType) message_type;
     out_message->buffer = buffer;
+
+    feed->last_active_time = feed->clock->get_millis();
 
     return Error::OK;
 }
@@ -325,12 +358,17 @@ Error send(Feed* feed, MessageType type, Buffer buffer) {
     serialize(&buffer, (uint8_t) type);
     serialize(&buffer, message_size);
 
+    feed->bytes_transferred += buffer.size;
+
     if (::send(feed->socket_fd, buffer.data, buffer.size, 0) == -1) {
         return Error::SEND;
     }
 
     // Discard buffer.
     feed->memory_pool.free(buffer.data);
+
+    feed->status = FeedStatus::ALIVE;
+    feed->last_active_time = feed->clock->get_millis();
 
     return Error::OK;
 }

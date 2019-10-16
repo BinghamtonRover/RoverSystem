@@ -1,5 +1,7 @@
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
+#include "../util/util.hpp"
+
 #include "camera.hpp"
 #include "suspension.hpp"
 #include "lidar.hpp"
@@ -9,7 +11,6 @@
 #include "gps.hpp"
 
 #include <turbojpeg.h>
-
 
 #include <cstddef>
 #include <cstdio>
@@ -27,29 +28,17 @@ const unsigned int CAMERA_HEIGHT = 720;
 
 const int LIDAR_SEND_INTERVAL = 1000 / 15;
 
-const int LOCATION_SEND_INTERVAL = 1000/ 15;
+const int LOCATION_SEND_INTERVAL = 1000/10;
 
 const int IMU_READ_INTERVAL = 1000 / 15;
 
 const int SUSPENSION_UPDATE_INTERVAL = 10;
 
-const int AUTONOMY_INTERVAL = 500;
-
 const int ZED_INTERVAL = 1000 / 15;
 
 const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
 
-// Save the start time so we can use get_ticks.
-std::chrono::high_resolution_clock::time_point start_time;
-
-bool do_autonomy = false;
-
-unsigned int get_ticks()
-{
-    auto now = std::chrono::high_resolution_clock::now();
-
-    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
-}
+util::Clock global_clock;
 
 struct Config
 {
@@ -124,7 +113,7 @@ Config load_config(const char* filename) {
 
 int main()
 {
-	start_time = std::chrono::high_resolution_clock::now();
+    util::Clock::init(&global_clock);
 
 	Config config = load_config("res/r.sconfig");
 
@@ -137,9 +126,6 @@ int main()
 		fprintf(stderr, "[!] Failed to init field LIDAR!\n");
 		return 1;
 	}
-
-	//Create rover position dummy
-	auto position = new gps::Position();
 
 #if 0
 	if (imu::start(config.imu_serial_id) != imu::Error::OK) {
@@ -195,13 +181,13 @@ int main()
 
     std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
-    zed::open();
+    zed::open(&global_clock);
 
     // Two feeds: incoming base station and outgoing rover.
     network::Feed r_feed, bs_feed;
 
     {
-        auto err = network::init_publisher(config.rover_multicast_group, config.rover_port, &r_feed);
+        auto err = network::init(&r_feed, network::FeedType::OUT, config.rover_multicast_group, config.rover_port, &global_clock);
         if (err != network::Error::OK) {
             printf("[!] Failed to start rover feed: %s\n", network::get_error_string(err));
             exit(1);
@@ -209,25 +195,36 @@ int main()
     }
 
     {
-        auto err = network::init_subscriber(config.base_station_multicast_group, config.base_station_port, &bs_feed);
+        auto err = network::init(&bs_feed, network::FeedType::IN, config.base_station_multicast_group, config.base_station_port, &global_clock);
         if (err != network::Error::OK) {
             printf("[!] Failed to subscribe to base station feed: %s\n", network::get_error_string(err));
             printf("errno %d\n", errno);
             exit(1);
         }
     }
-	auto last_location_send_time = get_ticks();
-	auto last_lidar_send_time = get_ticks();
-	auto last_imu_read_time = get_ticks();
-	auto last_suspension_update_time = get_ticks();
-	auto last_autonomy_time = get_ticks();
-	auto last_zed_time = get_ticks();
+
+    util::Timer lidar_send_timer;
+    util::Timer::init(&lidar_send_timer, LIDAR_SEND_INTERVAL, &global_clock);
+
+    util::Timer imu_read_timer;
+    util::Timer::init(&imu_read_timer, IMU_READ_INTERVAL, &global_clock);
+
+    util::Timer suspension_update_timer;
+    util::Timer::init(&suspension_update_timer, SUSPENSION_UPDATE_INTERVAL, &global_clock);
+
+    util::Timer zed_timer;
+    util::Timer::init(&zed_timer, ZED_INTERVAL, &global_clock);
+
+    util::Timer location_send_timer;
+    util::Timer::init(&location_send_timer,LOCATION_SEND_INTERVAL, &global_clock);
 
 	auto compressor = tjInitCompress();
 	auto decompressor = tjInitDecompress();
 
 	unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
 	uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
+
+    auto position = new gps::Position();
     while (true) {
         for (size_t i = 0; i < streams.size(); i++) {
             camera::CaptureSession *cs = streams[i];
@@ -285,7 +282,7 @@ int main()
         }
 
 		// LIDAR stuff.
-		if (get_ticks() - last_lidar_send_time >= LIDAR_SEND_INTERVAL) {
+		if (lidar_send_timer.ready()) {
 			lidar_points.clear();
 			if (lidar::scan(lidar_points) != lidar::Error::OK) {
 				fprintf(stderr, "[!] Failed to read LIDAR points!\n");
@@ -301,22 +298,19 @@ int main()
 			for (auto point : lidar_points) {
 				int64_t point_enc = point;
 			}
-
-			last_lidar_send_time = get_ticks();
 		}
-    
-	//Temporary code to test waypoint functionality
-	if (get_ticks() - last_location_send_time >= LOCATION_SEND_INTERVAL) {
-	    network::LocationMessage message;
-	    message.has_fix = true;
-	    message.latitude = position->latitude;
-	    message.longitude = position->longitude;
-	    network::publish(&r_feed,&message);
-	    position->latitude = 0;
-	    position->longitude += 1.1;
-	    last_location_send_time = get_ticks();
-	}
-    
+
+            //Temporary code to test waypoint functionality
+        if (location_send_timer.ready()) {
+            network::LocationMessage message;
+            message.has_fix = true;
+            message.latitude = position->latitude;
+            message.longitude = position->longitude;
+            network::publish(&r_feed,&message);
+            position->latitude += 0.001;
+            position->longitude += 0.001;
+        }
+
         unsigned char* zed_image;
         int zed_stride;
         zed::Pose zed_pose;
@@ -359,9 +353,7 @@ int main()
                 network::publish(&r_feed, &message);
             }
 
-            if (get_ticks() - last_zed_time > ZED_INTERVAL) {
-                last_zed_time = get_ticks();
-
+            if (zed_timer.ready()) {
                 // TODO: SEND NETWORK UPDATES AND UPDATE AUTONOMY.
             }
 		}
@@ -370,11 +362,9 @@ int main()
 
 #if 0
 		// IMU stuff.
-		if (get_ticks() - last_imu_read_time >= IMU_READ_INTERVAL) {
+		if (imu_timer.ready()) {
 			imu::Rotation rotation = imu::get_rotation();
 			printf("> Rotation: %f, %f, %f\n", rotation.pitch, rotation.yaw, rotation.roll);
-
-			last_imu_read_time = get_ticks();
 		}
 #endif
 
@@ -394,8 +384,6 @@ int main()
 
             switch (message.type) {
                 case network::MessageType::MOVEMENT: {
-					if (do_autonomy) break;
-
                     network::MovementMessage movement;
                     network::deserialize(&message.buffer, &movement);
 
@@ -407,11 +395,9 @@ int main()
 					uint8_t left_speed = movement.left < 0 ? (uint8_t) ((-movement.left)) : (uint8_t) (movement.left);
 					uint8_t right_speed = movement.right < 0 ? (uint8_t) ((-movement.right)) : (uint8_t) (movement.right);
 
-					if (get_ticks() - last_suspension_update_time >= SUSPENSION_UPDATE_INTERVAL) {
+					if (suspension_update_timer.ready()) {
 						suspension::update(suspension::LEFT, left_direction, left_speed);
 						suspension::update(suspension::RIGHT, right_direction, right_speed);
-
-						last_suspension_update_time = get_ticks();
 					}
 
                     break;
@@ -420,5 +406,9 @@ int main()
                     break;
             }
         }
+
+        // Update feed statuses.
+        network::update_status(&r_feed);
+        network::update_status(&bs_feed);
     }
 }

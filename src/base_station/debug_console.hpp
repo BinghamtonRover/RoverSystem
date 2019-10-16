@@ -7,6 +7,7 @@ namespace gui
 {
 namespace debug_console
 {
+
 struct Waypoint
 {
 	float latitude;

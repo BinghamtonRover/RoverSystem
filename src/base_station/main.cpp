@@ -1,5 +1,6 @@
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
+#include "../util/util.hpp"
 
 #include "camera_feed.hpp"
 #include "controller.hpp"
@@ -17,21 +18,14 @@
 #include <cstdlib>
 #include <cmath>
 
-#include <chrono>
 #include <iostream>
 #include <stack>
 #include <string>
 #include <vector>
-#include <tuple>
 #include <utility> //std::pair
-
-#include <iostream>
-#include <string>
-#include <vector>
 
 #include <sys/types.h>
 #include <unistd.h>
-#include <time.h>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -48,31 +42,29 @@ const int16_t JOINT_DRIVE_SPEED = 50;
 
 // Send movement updates 3x per second.
 const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
-// Heartbeat interval
-const int HEARTBEAT_SEND_INTERVAL = 1000 / 3;
-const int RECONNECT_INTERVAL = 1000 / 3;
-// Amount of time between heartbeats until disconnection flag is set
-const int DISCONNECT_TIMER = 5000;
+
+// Update network statistics once per second.
+const int NETWORK_STATS_INTERVAL = 1000;
 
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
 
+float ppm = 1;
 std::vector<std::pair<float,float>> waypoints;
 
 // Network feeds.
 network::Feed r_feed, bs_feed;
 
+struct {
+    float r_tp = 0;
+    float bs_tp = 0;
+    float t_tp = 0;
+} last_network_stats;
+
+// Clock!
+util::Clock global_clock;
+
 unsigned int map_texture_id;
-
-// Save the start time so we can use get_ticks.
-std::chrono::high_resolution_clock::time_point start_time;
-
-unsigned int get_ticks()
-{
-    auto now = std::chrono::high_resolution_clock::now();
-
-    return (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
-}
 
 std::vector<std::string> split_by_spaces(std::string s) {
 	std::vector<std::string> strings;
@@ -230,13 +222,25 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
 	gui::do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
-	char bandwidth_buffer[50];
-    //TODO: Update this with "bandwidth" (maybe call it network usage?
-	sprintf(bandwidth_buffer, "Network bandwidth: %.3fM/s", 69.0f);
+    char rover_network_status_buffer[50];
+    sprintf(rover_network_status_buffer, "Rover net status: %s",
+        r_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
+
+	if (r_feed.status == network::FeedStatus::ALIVE) {
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+    } else {
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    }
+	gui::draw_text(font, rover_network_status_buffer, x + 5, y + 5, 15);
+
+	char bandwidth_buffer[100];
+	sprintf(bandwidth_buffer, "Net thpt (r/bs/t): %.2f/%.2f/%.2f MiB/s", 
+        last_network_stats.r_tp,
+        last_network_stats.bs_tp,
+        last_network_stats.t_tp);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	gui::draw_text(font, bandwidth_buffer, x + 5, y + 5, 20);
-
+	gui::draw_text(font, bandwidth_buffer, x + 5, y + 20 + 5, 15);
 
 	time_t current_time;
 	time(&current_time);
@@ -419,86 +423,102 @@ void do_lidar(gui::Layout* layout) {
 	glEnd();
 }
 
-float angleInDegrees(float lat1, float long1, float lat2, float long2){
-	float angle = atan2(sin(long2 - long1)*cos(lat2),cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(long2-long1));
-	angle = angle * (180/M_PI);
-    return (int)(angle + 360) % 360;
+float angleOfPoints(float distance_x, float distance_y){
+	return atan2(distance_y,distance_x) * (180/M_PI);
 }
 
-float distanceInMeters(float lat1, float long1, float lat2, float long2){
-	//Note: haversine formula uses kilometers, so dividing by 1000 gets m to km
-	float lat1_rad = (lat1/1000) * (M_PI/180);
-	float lat2_rad = (lat2/1000) * (M_PI/180);
-	float long1_rad = (long1/1000) * (M_PI/180);
-	float long2_rad = (long2/1000) * (M_PI/180);
-	float lat_distance = lat2_rad - lat1_rad;
-	float long_distance = long2_rad - long1_rad;
-	float a = asin(sqrt(sin(lat_distance / 2) * sin(lat_distance / 2) + cos(lat1_rad) * cos(lat2_rad) * sin(long_distance / 2) * sin(long_distance / 2)));
-	float bearing = atan2(sin(long2-long1)*cos(lat2), cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(long2-long1));
-	float radius = 6372.8;
-	float distance = 2 * radius * a;
-	return distance;  
+float getDistance(float lat1, float long1, float lat2, float long2){
+	float R = 6378.137;
+    double dlat1 = lat1*(M_PI/180);
+    double dlong1 = long1*(M_PI/180);
+    double dlat2 = lat2*(M_PI/180);
+    double dlong2 = long2*(M_PI/180);
+    double dLong = dlong1-dlong2;
+    double dLat = dlat1-dlat2;
+    double a = pow(sin(dLat/2.0),2.0)+cos(dlat1)*cos(dlat2)*pow(sin(dLong/2),2);
+    double c = 2*atan2(sqrt(a),sqrt(1.0-a));
+    return R * c * 1000;
+
 }
 
 void do_waypoint_map(gui::Layout * layout, int w, int h, float rover_latitude, float rover_longitude){
     int x = layout->current_x;
     int y = layout->current_y;
+    
+    glPushMatrix();
+    glEnable(GL_SCISSOR_TEST);
+    //BUG: Can't figure out why the top part of the map isn't cut off
+    glScissor(x,y + h,w,h);
     gui::do_solid_rect(layout,w,h,0,0,0);
-    glColor4f(0.0,1.0,0.0,0.5);
+    glMatrixMode(GL_MODELVIEW);
+    //shift to (0,0)
+    glTranslatef(x +(w/2),y +(h/2),0);
+    //zoom
+    glScalef(ppm,ppm,1.0f);
+    //shift back
+    glTranslatef(-x - (w/2),-y - (h/2),0);
+    glColor4f(0.0,1.0,0.0,0.3);
 
     glBegin(GL_LINES);
     glLineWidth(1.0f);
-    int dimensions = 10;
-    for(int xOffset = w/dimensions; xOffset < w; xOffset+= w/dimensions){
-    	glVertex2f(xOffset + x,y);
-    	glVertex2f(xOffset + x,y + h);
+    //Recommended not to have the spacing > size of window (things get bigger than map space) but encouraged to mess with spacing
+    int spaceBetweenGridLines = std::min((w/4),(h/4)); 
+
+    int metersPerGridLine = 10;
+    int dimensions = 100; //Draws (dimensions * metersPerGridLine)/2 meters out from the rover
+    for(int xOffset = -(dimensions * spaceBetweenGridLines)/2 - spaceBetweenGridLines; xOffset < (dimensions * spaceBetweenGridLines)/2; xOffset+= spaceBetweenGridLines){
+    	glVertex2f(xOffset + x,y - (dimensions * spaceBetweenGridLines)/2);
+    	glVertex2f(xOffset + x,y + (dimensions * spaceBetweenGridLines)/2);
     }
-    for(int yOffset = h/dimensions; yOffset < h; yOffset+= h/dimensions){
-    	glVertex2f(x,y + yOffset);
-    	glVertex2f(x + w,y + yOffset);
+    for(int yOffset = -(dimensions * spaceBetweenGridLines)/2 - spaceBetweenGridLines; yOffset < (dimensions * spaceBetweenGridLines)/2; yOffset+= spaceBetweenGridLines){
+    	glVertex2f(x - (dimensions * spaceBetweenGridLines)/2,yOffset + y);
+    	glVertex2f(x + (dimensions * spaceBetweenGridLines)/2,y + yOffset);
     }
     glEnd();
+    
     glColor4f(1.0,0.0,0.0,1.0);
     float xMiddle = w/2;
 	float yMiddle = h/2;
-    if (rover_latitude != NULL && rover_longitude != NULL){
+    if (rover_latitude && rover_longitude){
     	//Handle drawing the rover in the middle of the map
-	    float triangleBottomLength = (w/dimensions)/2;
-	    glColor4f(1.0,0.0,0.0,1.0);
+	    float triangleWidth = spaceBetweenGridLines/2;
+	    float triangleHeight = spaceBetweenGridLines/2;
 	    glBegin(GL_TRIANGLE_STRIP);
-	    glVertex2f((x + xMiddle) - (triangleBottomLength/2),y + yMiddle + (h/dimensions)/2);
-	    glVertex2f((x + xMiddle) + (triangleBottomLength/2), y + yMiddle + (h/dimensions)/2);
-	    glVertex2f(x + xMiddle,y + yMiddle - (h/dimensions)/2);
+	    glVertex2f((x + xMiddle) - (triangleWidth/2),y + yMiddle + triangleHeight);
+	    glVertex2f((x + xMiddle) + (triangleWidth/2), y + yMiddle + triangleHeight);
+	    glVertex2f(x + xMiddle,y + yMiddle - triangleHeight);
 	    glEnd();   
+	    glColor4f(0.0,0.0,1.0,0.8);
+		float waypoint_width = spaceBetweenGridLines/2;
+		float waypoint_height = spaceBetweenGridLines/2;
+		auto temp = waypoints;
+	    while(temp.size() > 0){
+	    	std::pair<float,float> curWaypoint = temp.front();
+	    	float waypointY = curWaypoint.first;
+	    	float waypointX = curWaypoint.second;
+	    	temp.erase(temp.begin());
+	    	float distance_x = getDistance(rover_latitude,rover_longitude,rover_latitude,waypointX);
+	    	float distance_y = getDistance(rover_latitude,rover_longitude,waypointY,rover_longitude);
+	    	if (rover_latitude > waypointY)
+	    		distance_y = distance_y * -1;
+	    	if (rover_longitude > waypointX)
+	    		distance_x = distance_x * -1;
+	    	distance_x = distance_x/metersPerGridLine;
+	    	distance_y = distance_y/metersPerGridLine; 
+	    	
+	    	if (abs(distance_x) <= (w/2)*(1/ppm) && abs(distance_y) <= (h/2)*(1/ppm)){
+	    		glBegin(GL_QUADS);
+	    	    glVertex2f((x + xMiddle) + distance_x - (waypoint_width/2),(y + yMiddle) - distance_y + (waypoint_height/2));
+	    	    glVertex2f((x + xMiddle) +  distance_x + (waypoint_width/2),(y + yMiddle) - distance_y + (waypoint_height/2));
+	    	    glVertex2f((x + xMiddle) + distance_x + (waypoint_width/2),(y + yMiddle) - distance_y - (waypoint_height/2));
+	    	    glVertex2f((x + xMiddle) + distance_x - (waypoint_width/2),(y + yMiddle) - distance_y - (waypoint_height/2));
+	    	    glEnd();
+	    	}
+		}
 	}
-	float waypoint_width = (w/dimensions)/2;
-	float waypoint_height = (h/dimensions)/2;
-	glColor4f(0.0,0.0,1.0,0.7);
-	auto temp = waypoints;
-    while(temp.size() > 0){
-    	std::pair<float,float> curWaypoint = temp.front();
-    	float waypointX = (curWaypoint.first - rover_longitude);
-    	float waypointY = (rover_latitude - curWaypoint.second);
-    	temp.erase(temp.begin());
-    	float distance = distanceInMeters(waypointY,waypointX,rover_latitude,rover_longitude);
-    	float angle = angleInDegrees(waypointY,waypointX,rover_latitude,rover_longitude);
-    	//std::cout << distance << std::endl;
-    	float distance_x = distance * cos(angle);
-    	float distance_y = (distance * sin(angle)) * -1;
-    	//std::cout << distance_x << "," << distance_y << std::endl;
-    	if (abs(distance_x) <= (w/2) && abs(distance_y) <= (h/2)){
-
-    		glBegin(GL_QUADS);
-    	    glVertex2f((x + xMiddle) + distance_x - (waypoint_width/2),(y + yMiddle) + distance_y + (waypoint_height/2));
-    	    glVertex2f((x + xMiddle) + distance_x + (waypoint_width/2),(y + yMiddle) + distance_y + (waypoint_height/2));
-    	    glVertex2f((x + xMiddle) + distance_x + (waypoint_width/2),(y + yMiddle) + distance_y - (waypoint_height/2));
-    	    glVertex2f((x + xMiddle) + distance_x - (waypoint_width/2),(y + yMiddle) + distance_y - (waypoint_height/2));
-    	    glEnd();
-    	}
-    	
-
-    }   
-
+	glDisable(GL_SCISSOR_TEST);
+	glPopMatrix(); 
+	
 }
 
 int primary_feed = 0;
@@ -517,9 +537,9 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font, float rover_latitude, fl
     layout.advance_y(20);
     layout.push();
 
-    // Draw the map.
-    gui::do_textured_rect(&layout, 572, 572, map_texture_id);
-
+    // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
+    do_waypoint_map(&layout,572,572,rover_latitude,rover_longitude);
+    
     layout.reset_x();
     layout.advance_y(10);
 
@@ -544,11 +564,12 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font, float rover_latitude, fl
     layout.reset_y();
     layout.advance_x(10);
 
-	// Draw the lidar.
-	//do_lidar(&layout);
 
-	// Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
-    do_waypoint_map(&layout,300,300,rover_latitude,rover_longitude);
+
+	//Draw the lidar.
+	do_lidar(&layout);
+
+	
 
 	layout.reset_y();
 	layout.advance_x(10);
@@ -562,16 +583,14 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font, float rover_latitude, fl
 
     // Draw the debug overlay.
     layout = {};
-    gui::debug_console::do_debug(&layout,font);
-
-    
+    gui::debug_console::do_debug(&layout, font);
 }
 
 void glfw_character_callback(GLFWwindow *window, unsigned int codepoint)
 {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (codepoint < 128) {
-            gui::debug_console::handle_input((char)codepoint);
+           gui::debug_console::handle_input((char)codepoint);  
         }
     }
 }
@@ -581,7 +600,6 @@ void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, in
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             auto new_waypoints = gui::debug_console::handle_keypress(key, mods);
-            std::cout << waypoints.size() << std::endl;
             if (new_waypoints.size() > waypoints.size()){
             	for(int i = new_waypoints.size(); i > waypoints.size(); i--){
             		auto cur_waypoint = new_waypoints[i - 1];
@@ -612,15 +630,14 @@ float smooth_rover_input(float value) {
 
 int main()
 {
+    util::Clock::init(&global_clock);
+
 	logger::register_handler(stderr_handler);
 
 	gui::debug_console::set_callback(command_callback);
 
 	// Load config.
 	Config config = load_config("res/bs.sconfig");
-
-    // Start the timer.
-    start_time = std::chrono::high_resolution_clock::now();
 
     // Init GLFW.
     if (!glfwInit()) {
@@ -668,10 +685,6 @@ int main()
         return 1;
     }
 
-    //rover's coordinates
-    float rover_latitude = NULL;
-    float rover_longitude = NULL;
-
 	gui::log_view::calc_sizing(&font, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT);
 
     // Load this down here so that sizing is correct.
@@ -688,7 +701,7 @@ int main()
 
     // Initialize network functionality.
     {
-        auto err = network::init_publisher(config.base_station_multicast_group, config.base_station_port, &bs_feed);
+        auto err = network::init(&bs_feed, network::FeedType::OUT, config.base_station_multicast_group, config.base_station_port, &global_clock);
         if (err != network::Error::OK) {
 			logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
@@ -698,7 +711,7 @@ int main()
     }
 
     {
-        auto err = network::init_subscriber(config.rover_multicast_group, config.rover_port, &r_feed);
+        auto err = network::init(&r_feed, network::FeedType::IN, config.rover_multicast_group, config.rover_port, &global_clock);
         if (err != network::Error::OK) {
 			logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
             return 1;
@@ -707,10 +720,13 @@ int main()
         logger::log(logger::INFO, "Network: subscribed to rover feed on %s:%d", config.rover_multicast_group, config.rover_port);
     }
 
-    // Keep track of when we last sent movement and heartbeat info.
-    unsigned int last_movement_send_time = 0;
-    // Last time heartbeat was sent
-    unsigned int last_heartbeat_send_time = 0;
+    // Keep track of when we last sent movement info.
+    util::Timer movement_send_timer;
+    util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &global_clock);
+
+    // Grab network stats every second.
+    util::Timer network_stats_timer;
+    util::Timer::init(&network_stats_timer, NETWORK_STATS_INTERVAL, &global_clock);
 
     // Init the controller.
 	// TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
@@ -731,11 +747,30 @@ int main()
 	commands.push_back("d: Show debug console");
 	commands.push_back("ctrl + q: Exit");
 	commands.push_back("c: Switch camera feeds");
+	commands.push_back("z + UP ARROW: Zoom in map");
+	commands.push_back("z + DOWN ARROW: Zoom out map");
+	commands.push_back("z + r: Reset map");
 	debug_commands.push_back("'test': displays red text");
-	waypoints.push_back(std::make_pair(0.0,0.0));
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+	debug_commands.push_back("'aw <number> <number>: adds a waypoint (in latitude and longitude)");
 
+	//rover's coordinates
+    float rover_latitude = NULL;
+    float rover_longitude = NULL;
+
+    bool zOn = false;
+
+    while (!glfwWindowShouldClose(window)) {
+    	
+        glfwPollEvents();
+		if (zOn && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS))
+    		ppm += 0.01;
+    	if (zOn && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)){
+    		if (ppm > 0.15)
+    			ppm -= 0.01;
+    	}
+    	if (zOn && (glfwGetKey(window,GLFW_KEY_R) == GLFW_PRESS)){
+    			ppm = 1;
+    	}
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
                 gui::state.show_debug_console = true;
@@ -764,8 +799,18 @@ int main()
 		else if (glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			if (help_menu_up) help_menu_up = false;
 		}
-
-        // TODO: Do network usage update here!
+		else if (glfwGetKey(window,GLFW_KEY_Z) == GLFW_PRESS){
+			zOn = true;
+		}
+		else if (glfwGetKey(window,GLFW_KEY_Z) == GLFW_RELEASE){
+			zOn = false;
+		}
+		else if ( zOn && glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS) {
+			ppm += 0.01;
+		}
+		else if ( zOn && glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS) {
+			ppm -= 0.01;
+		}
 
         // Handle incoming network messages from the rover feed.
         network::IncomingMessage message;
@@ -815,24 +860,31 @@ int main()
 					}
 					break;
 				}
-				case network::MessageType::LOCATION: {
-					network::LocationMessage location_message;
-					network::deserialize(&message.buffer,&location_message);
+	            case network::MessageType::LOCATION: {
+	                network::LocationMessage location_message;
+	                network::deserialize(&message.buffer,&location_message);
+	                rover_latitude = location_message.latitude;
+	                rover_longitude = location_message.longitude;
 
-					rover_latitude = location_message.latitude;
-					rover_longitude = location_message.longitude;
+	                break;
+                }
 
-					break;
-
-				}
                 default:
                     break;
             }
         }
 
-        // Reset heartbeat send time
-        if (get_ticks() - last_heartbeat_send_time >= HEARTBEAT_SEND_INTERVAL) {
-            last_heartbeat_send_time = get_ticks();
+        // Update network stuff.
+        network::update_status(&r_feed);
+        network::update_status(&bs_feed);
+
+        if (network_stats_timer.ready()) {
+            last_network_stats.r_tp = (float)r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            last_network_stats.bs_tp = (float)bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            last_network_stats.t_tp = last_network_stats.r_tp + last_network_stats.bs_tp;
+
+            r_feed.bytes_transferred = 0;
+            bs_feed.bytes_transferred = 0;
         }
 
         if (controller_loaded) {
@@ -913,18 +965,14 @@ int main()
 			}
 		}
 
-		if (get_ticks() - last_movement_send_time >= MOVEMENT_SEND_INTERVAL) {
-			last_movement_send_time = get_ticks();
-
+		if (movement_send_timer.ready()) {
 			// printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
             network::publish(&bs_feed, &last_movement_message);
 		}
-		//Testing waypoints
 
-		
         // Update and draw GUI.
-        do_gui(feeds, &font, rover_latitude, rover_longitude);
+        do_gui(feeds, &font,rover_latitude, rover_longitude);
 	
 		if(help_menu_up)
 			do_help_menu(&font,commands,debug_commands);

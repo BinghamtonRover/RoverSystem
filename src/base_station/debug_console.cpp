@@ -34,6 +34,8 @@ struct DebugLine
     float r = 0.0f, g = 1.0f, b = 0.0f;
 };
 
+
+
 std::vector<Waypoint> wpList;
 
 struct DebugConsole
