@@ -33,6 +33,9 @@ const int MAX_HEARTBEAT_WAIT_TIME = 2000;
 // TODO: If things aren't getting through, increase this number to 32.
 const uint8_t MULTICAST_TTL = 1;
 
+//uint8_t MAX_FEEDS = 9;
+//uint8_t SIZE_OF_CAMERA_NAMES = 13;
+
 #define NETWORK_ERROR_DEF(X) \
     X(OK), \
     X(NOMORE), \
@@ -144,6 +147,9 @@ void deserialize(Buffer* buffer, double* value);
 void serialize(Buffer* buffer, uint8_t* memory, size_t size);
 void deserialize(Buffer* buffer, uint8_t* memory, size_t out_size);
 
+void serialize(Buffer* buffer, uint8_t** memory, size_t size);
+void deserialize(Buffer* buffer, uint8_t** memory, size_t out_size);
+
 Buffer get_outgoing_buffer(Feed* feed);
 
 //
@@ -162,7 +168,8 @@ enum class MessageType {
     CAMERA,
     LOG,
     LIDAR,
-    LOCATION
+    LOCATION,
+	CAMERA_STATUS
 };
 
 struct HeartbeatMessage {
@@ -290,6 +297,29 @@ struct LocationMessage {
         network::deserialize(buffer, &(this->latitude));
         network::deserialize(buffer, &(this->longitude));
     }
+};
+
+struct CameraStatusMessage {
+	static const auto TYPE = MessageType::CAMERA_STATUS;
+
+	uint8_t* camera_names[9];//MAX_FEEDS
+	uint8_t active_streams;
+	uint8_t size;
+
+    void serialize(Buffer* buffer) {
+		network::serialize(buffer, this->active_streams);
+        for (int i = 0; i < active_streams; i++) {
+        	network::serialize(buffer, camera_names[i], ((uint8_t)13));//SIZE_OF_CAMERA_NAMES
+        }
+    }
+
+    void deserialize(Buffer* buffer) {
+		network::deserialize(buffer, &(this->active_streams));
+        for (int i = 0; i < active_streams; i++) {
+            network::deserialize(buffer, this->camera_names + i, ((uint8_t)13));//SIZE_OF_CAMERA_NAMES
+        }
+    }
+	
 };
 
 //

@@ -136,7 +136,9 @@ int main()
     unsigned int frame_counter = 0;
 
     // Camera streams
-    std::vector<camera::CaptureSession *> streams;
+    camera::CaptureSession * streams[MAX_STREAMS];
+	int activeCameras = 0;
+
 
     // Try to open MAX_STREAMS streams.
     for (int i = 0; i < MAX_STREAMS; i++) {
@@ -173,10 +175,11 @@ int main()
         }
 
         // It was opened and started. Add it to the list of streams.
-        streams.push_back(cs);
+        streams[i] = cs;
+		activeCameras++;
     }
 
-    std::cout << "> Using " << streams.size() << " cameras." << std::endl;
+    std::cout << "> Using " << activeCameras << " cameras." << std::endl;
 
     zed::open(&global_clock);
 
@@ -220,7 +223,10 @@ int main()
 
     while (true) {
 		// Try to open any new camera streams.
-		for (int i = streams.size(); i < MAX_STREAMS; i++) {
+		for (int i = activeCameras; i < MAX_STREAMS; i++) {
+			if(streams[i]!=NULL && strcmp("null", streams[i]->name) == 0){	
+				continue;
+			}
 			camera::CaptureSession *cs = new camera::CaptureSession;
 
 			char name_filename_buffer[100];
@@ -242,6 +248,7 @@ int main()
 			camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT);
 			if (err != camera::Error::OK) {
 				delete cs;
+				printf("HERE\n");
 				break;
 			}
 
@@ -254,10 +261,14 @@ int main()
 			}
 
 			// It was opened and started. Add it to the list of streams.
-			streams.push_back(cs);
+			streams[i] = cs;
+			activeCameras++;
 		}
 		
-		for (size_t i = 0; i < streams.size(); i++) {
+		for (size_t i = 0; i < activeCameras; i++) {
+			if(streams[i]!=NULL && strcmp("null", streams[i]->name) == 0){
+				continue;
+			}
 			camera::CaptureSession *cs = streams[i];
 
 			// Grab a frame.
@@ -267,6 +278,10 @@ int main()
 				camera::Error err = camera::grab_frame(cs, &frame_buffer, &frame_size);
 				if (err != camera::Error::OK) {
 					std::cout << "Camera 0: " << camera::get_error_string(err) << std::endl;
+					strncpy(streams[i]->name, "null", sizeof(streams[i]) - 1);
+					camera::close(cs);
+					delete cs;
+					continue;
 				}
 			}
 
@@ -362,7 +377,7 @@ int main()
 					: jpeg_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
 
 				network::CameraMessage message = {
-					static_cast<uint8_t>(streams.size()),                                // stream_index
+					static_cast<uint8_t>(activeCameras),                                // stream_index
 					static_cast<uint16_t>(frame_counter),                   // frame_index
 					static_cast<uint8_t>(j),                                // section_index
 					num_buffers,                                            // section_count
@@ -431,4 +446,5 @@ int main()
 		network::update_status(&r_feed);
 		network::update_status(&bs_feed);
 	}
+
 }
