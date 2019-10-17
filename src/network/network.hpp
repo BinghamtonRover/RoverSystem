@@ -157,12 +157,12 @@ Buffer get_outgoing_buffer(Feed* feed);
 enum class MessageType {
     HEARTBEAT,
     TEST,
-
     MOVEMENT,
     CAMERA,
     LOG,
     LIDAR,
-    LOCATION
+    LOCATION,
+    JPEGQUALITY
 };
 
 struct HeartbeatMessage {
@@ -291,6 +291,22 @@ struct LocationMessage {
         network::deserialize(buffer, &(this->longitude));
     }
 };
+
+struct JpegQualityMessage {
+    static const auto TYPE = MessageType::JPEGQUALITY;
+    uint8_t jpegQuality;
+    bool greyscale;
+
+    void serialize(Buffer* buffer) {
+      network::serialize(buffer, this->jpegQuality);
+      network::serialize(buffer, this->greyscale);
+    }
+    void deserialize(Buffer* buffer) {
+      network::deserialize(buffer, &(this->jpegQuality));
+      network::deserialize(buffer, &(this->greyscale));
+    }
+};
+
 
 //
 // End Message Definitions
