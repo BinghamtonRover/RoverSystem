@@ -397,6 +397,7 @@ int main()
                     network::deserialize(&message.buffer, &quality);
                     greyscale = quality.greyscale;
                     jpeg_quality = quality.jpegQuality;
+                    break;
                 }
                 default:
                     break;
