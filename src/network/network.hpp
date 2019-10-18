@@ -253,6 +253,8 @@ struct LidarMessage {
 };
 
 struct LocationMessage {
+    static const auto TYPE = MessageType::LOCATION;
+
     bool has_fix;
     float latitude;
     float longitude;
