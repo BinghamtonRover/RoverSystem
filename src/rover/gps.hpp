@@ -7,4 +7,4 @@ struct Position {
 
 Position get_position();
 
-}
+} // namespace gps

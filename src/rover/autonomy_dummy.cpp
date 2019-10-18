@@ -1,9 +1,9 @@
 #include "autonomy.hpp"
 
-namespace autonomy
-{
+namespace autonomy {
 
-void update(unsigned int time, float x, float y, float z, float pitch, float yaw, float roll, std::vector<long> lidar_points) {
+void update(
+    unsigned int time, float x, float y, float z, float pitch, float yaw, float roll, std::vector<long> lidar_points) {
 }
 
 } // namespace autonomy

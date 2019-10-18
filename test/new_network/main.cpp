@@ -1,8 +1,8 @@
-#include <stdio.h>
+#include <assert.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "../../src/network/network.hpp"
 
@@ -17,7 +17,7 @@ const char* GROUP = "239.255.123.123";
 
 int main() {
     network::Feed in_feed, out_feed;
-    
+
     if (network::init_subscriber(GROUP, 5050, &in_feed) != network::Error::OK) fail();
     if (network::init_publisher(GROUP, 5050, &out_feed) != network::Error::OK) fail();
 
@@ -34,12 +34,12 @@ int main() {
         if (res != network::Error::OK) fail();
 
         if (message.type != network::MessageType::TEST) fail();
-        
+
         network::TestMessage received;
         network::deserialize(&message.buffer, &received);
 
         received.message[received.message_size] = 0;
-        
+
         printf("> Got message: %s\n", received.message);
     }
 

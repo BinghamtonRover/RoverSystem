@@ -1,10 +1,8 @@
-#include <cstdint> 
-namespace controller
-{
+#include <cstdint>
+namespace controller {
 
 // Button mapping for the XBox One controller.
-enum class Button : uint16_t
-{
+enum class Button : uint16_t {
     A = 0,
     B = 1,
     X = 2,
@@ -20,8 +18,7 @@ enum class Button : uint16_t
 const int NUM_BUTTONS = 11;
 
 // Axis mapping for the Xbox One controller.
-enum class Axis : uint16_t
-{
+enum class Axis : uint16_t {
     JS_LEFT_X = 0,
     JS_LEFT_Y = 1,
     JS_RIGHT_X = 3,
@@ -34,8 +31,7 @@ enum class Axis : uint16_t
 const int NUM_AXES = 8;
 
 // Represents the different error states associated with reading from the controller.
-enum class Error
-{
+enum class Error {
     OK,
     DONE,
 
@@ -43,19 +39,12 @@ enum class Error
     READ
 };
 
-enum class EventType
-{
-    BUTTON,
-    AXIS,
-    OTHER
-};
+enum class EventType { BUTTON, AXIS, OTHER };
 
-struct Event
-{
+struct Event {
     EventType type;
 
-    union
-    {
+    union {
         Button button;
         Axis axis;
     };
@@ -65,14 +54,14 @@ struct Event
 
 // Initializes the global controller by attempting to open the given device file.
 // Returns Error::OK on success and Error::OPEN if the file cannot be opened.
-Error init(const char *device_file);
+Error init(const char* device_file);
 
 // Polls for joystick events, filling in the given event.
 // Returns Error::OK if there are more events to be polled.
 // Returns Error::DONE if there are no more events to process
 // (if Error::DONE is returned, then no event was found).
 // Returns Error::READ if reading from the device file fails.
-Error poll(Event *event);
+Error poll(Event* event);
 
 // Retrieves the value of the given button or axis.
 // 0 is returned if no update has been received.

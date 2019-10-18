@@ -18,4 +18,4 @@ struct Pose {
 
 Error grab(unsigned char** out_frame, int* out_stride, Pose* out_pose);
 
-}
+} // namespace zed

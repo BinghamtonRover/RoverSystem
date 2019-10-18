@@ -26,15 +26,13 @@ const unsigned short
 const int16_t MAX_POS = 32767, MIN_POS = 3000;
 // Fixed controller update rate
 const auto RATE = std::chrono::milliseconds(100);
-const char *device_name = "/dev/input/js0";
-struct movement
-{
+const char* device_name = "/dev/input/js0";
+struct movement {
     int16_t left, right;
 };
 // Joystick values range from -32767 to +32767
 // Used formula scaled_val = (new_max - new_min) / (old_max - old_min) * (v - old_min) + new_min
-int16_t recalibrate(int16_t axis_value)
-{
+int16_t recalibrate(int16_t axis_value) {
     int16_t abs_value = std::abs(axis_value);
     if (abs_value < MIN_POS) {
         return 0;
@@ -47,16 +45,15 @@ int16_t recalibrate(int16_t axis_value)
     return new_axis_value;
 };
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
     network::Connection conn;
     network::Error error;
     if ((error = network::connect(&conn, "192.168.1.1", 45545, 45545)) != network::Error::OK) {
         fprintf(stderr, "[!] Failed to connect to rover!\n");
         return 1;
     }
-    network::MovementMessage currentMovement = {0};
-    network::Buffer *outgoing;
+    network::MovementMessage currentMovement = { 0 };
+    network::Buffer* outgoing;
     // Device input defaults to js0
     if (argc == 2) {
         device_name = argv[1];

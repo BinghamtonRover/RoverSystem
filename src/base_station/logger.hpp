@@ -4,12 +4,7 @@ namespace logger {
 
 constexpr int MAX_HANDLERS = 10;
 
-enum Level {
-	DEBUG,
-	INFO,
-	WARNING,
-	ERROR
-};
+enum Level { DEBUG, INFO, WARNING, ERROR };
 
 typedef void (*Handler)(Level, std::string);
 
@@ -19,4 +14,4 @@ bool toggleDebugMode();
 
 void log(Level level, const char* format, ...);
 
-} // namespace log
+} // namespace logger

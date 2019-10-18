@@ -25,8 +25,7 @@ std::vector<std::string> logMessages;
 std::vector<float> red, green, blue, alpha;
 
 // Helper method for addMessage
-static void removeOldMessages()
-{
+static void removeOldMessages() {
     while (logMessages.size() > total_lines) {
         logMessages.erase(logMessages.begin());
         red.erase(red.begin());
@@ -36,8 +35,7 @@ static void removeOldMessages()
     }
 }
 
-void print(gui::Font* font, int width, std::string m, float r, float g, float b, float a)
-{
+void print(gui::Font* font, int width, std::string m, float r, float g, float b, float a) {
     while (m.length() > 0) {
         int idx = gui::text_last_index_that_can_fit(font, m.c_str(), width, FONT_SIZE);
 
@@ -49,69 +47,70 @@ void print(gui::Font* font, int width, std::string m, float r, float g, float b,
 
         m.erase(0, idx + 1);
     }
-   
+
     removeOldMessages();
 }
 
 void moveUpOne() {
-	if(logMessages.size() >= num_lines && view_index > 0) {
-		view_index--;
-		lockBottom = false;
-	}
+    if (logMessages.size() >= num_lines && view_index > 0) {
+        view_index--;
+        lockBottom = false;
+    }
 }
 
 void moveDownOne() {
-	if(logMessages.size() >= num_lines && view_index < logMessages.size() - num_lines) {
-		view_index++;
-	}
-	if(view_index == logMessages.size() - num_lines) {
-		lockBottom = true;
-	}
+    if (logMessages.size() >= num_lines && view_index < logMessages.size() - num_lines) {
+        view_index++;
+    }
+    if (view_index == logMessages.size() - num_lines) {
+        lockBottom = true;
+    }
 }
 
 void moveTop() {
-	if(logMessages.size() >= num_lines) {
-		view_index = 0;
-		lockBottom = false;
-	}
+    if (logMessages.size() >= num_lines) {
+        view_index = 0;
+        lockBottom = false;
+    }
 }
 
 void moveBottom() {
-	if(logMessages.size() >= num_lines) {
-		view_index = logMessages.size() - num_lines;
-		lockBottom = true;
-	}
+    if (logMessages.size() >= num_lines) {
+        view_index = logMessages.size() - num_lines;
+        lockBottom = true;
+    }
 }
 
 void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
-	int x = layout->current_x;
-	int y = layout->current_y;
+    int x = layout->current_x;
+    int y = layout->current_y;
 
     gui::do_solid_rect(layout, width, height, 0, 0, 0);
 
-	// We want to print a num_lines amount of times *unless* logMessages is too small
-	unsigned int tempSize = logMessages.size();
-	if(logMessages.size() >= num_lines) {
-		tempSize = num_lines;
-	}
-
-	// Extra Failsafe
-	if(logMessages.size() < num_lines + view_index) {
-		view_index = 0;
-	}	
-
-	// Lock Bottom
-	if(lockBottom) {
-		moveBottom();
+    // We want to print a num_lines amount of times *unless* logMessages is too small
+    unsigned int tempSize = logMessages.size();
+    if (logMessages.size() >= num_lines) {
+        tempSize = num_lines;
     }
 
-	for (unsigned int i = view_index; i < tempSize + view_index; i++) {
-		const char* str = logMessages[i].c_str();
+    // Extra Failsafe
+    if (logMessages.size() < num_lines + view_index) {
+        view_index = 0;
+    }
 
-		glColor4f(red[i], green[i], blue[i], alpha[i]);
+    // Lock Bottom
+    if (lockBottom) {
+        moveBottom();
+    }
 
-		gui::draw_text(font, str, x + MARGIN, y + MARGIN + (i - view_index)*(FONT_SIZE + 5), FONT_SIZE);
-	}
+    for (unsigned int i = view_index; i < tempSize + view_index; i++) {
+        const char* str = logMessages[i].c_str();
+
+        glColor4f(red[i], green[i], blue[i], alpha[i]);
+
+        gui::draw_text(font, str, x + MARGIN, y + MARGIN + (i - view_index) * (FONT_SIZE + 5), FONT_SIZE);
+    }
 }
 
-} } // namespace gui::log_view
+} // namespace log_view
+} // namespace gui

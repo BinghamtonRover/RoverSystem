@@ -10,15 +10,15 @@ static const int FRAME_UPDATE_INTERVAL = 1000 / FPS;
 static util::Timer timer;
 
 Error open(util::Clock* clock) {
-	util::Timer::init(&timer, (uint32_t) FRAME_UPDATE_INTERVAL, clock);
+    util::Timer::init(&timer, (uint32_t) FRAME_UPDATE_INTERVAL, clock);
 
     return Error::OK;
 }
 
 Error grab(unsigned char** out_frame, int* out_stride, Pose* out_pose) {
-	if (!timer.ready()) {
-		return Error::GRAB;
-	}
+    if (!timer.ready()) {
+        return Error::GRAB;
+    }
 
     (*out_pose).x = 0;
     (*out_pose).y = 0;
@@ -37,4 +37,4 @@ Error grab(unsigned char** out_frame, int* out_stride, Pose* out_pose) {
     return Error::OK;
 }
 
-}
+} // namespace zed

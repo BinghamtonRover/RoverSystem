@@ -2,22 +2,22 @@
 #include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
 
-#include "camera.hpp"
-#include "suspension.hpp"
-#include "lidar.hpp"
-#include "imu.hpp"
 #include "autonomy.hpp"
+#include "camera.hpp"
+#include "imu.hpp"
+#include "lidar.hpp"
+#include "suspension.hpp"
 #include "zed.hpp"
 
 #include <turbojpeg.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <vector>
-#include <chrono>
 
 // GLOBAL CONSTANTS
 
@@ -37,8 +37,7 @@ const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - netwo
 
 util::Clock global_clock;
 
-struct Config
-{
+struct Config {
     char suspension_serial_id[500];
     char imu_serial_id[500];
 
@@ -81,7 +80,6 @@ Config load_config(const char* filename) {
     }
     strncpy(config.suspension_serial_id, suspension_serial_id, 500);
 
-
     char* imu_serial_id = sc::get(sc_config, "imu_serial_id");
     if (!imu_serial_id) {
         printf("Config file missing 'imu_serial_id'!\n");
@@ -108,8 +106,7 @@ Config load_config(const char* filename) {
     return config;
 }
 
-int main()
-{
+int main() {
     util::Clock::init(&global_clock);
 
     Config config = load_config("res/r.sconfig");
@@ -136,11 +133,11 @@ int main()
     unsigned int frame_counter = 0;
 
     // Camera streams
-    std::vector<camera::CaptureSession *> streams;
+    std::vector<camera::CaptureSession*> streams;
 
     // Try to open MAX_STREAMS streams.
     for (int i = 0; i < MAX_STREAMS; i++) {
-        camera::CaptureSession *cs = new camera::CaptureSession;
+        camera::CaptureSession* cs = new camera::CaptureSession;
 
         char name_filename_buffer[100];
         sprintf(name_filename_buffer, "/sys/class/video4linux/video%d/name", i);
@@ -184,7 +181,12 @@ int main()
     network::Feed r_feed, bs_feed;
 
     {
-        auto err = network::init(&r_feed, network::FeedType::OUT, config.rover_multicast_group, config.rover_port, &global_clock);
+        auto err = network::init(
+            &r_feed,
+            network::FeedType::OUT,
+            config.rover_multicast_group,
+            config.rover_port,
+            &global_clock);
         if (err != network::Error::OK) {
             printf("[!] Failed to start rover feed: %s\n", network::get_error_string(err));
             exit(1);
@@ -192,7 +194,12 @@ int main()
     }
 
     {
-        auto err = network::init(&bs_feed, network::FeedType::IN, config.base_station_multicast_group, config.base_station_port, &global_clock);
+        auto err = network::init(
+            &bs_feed,
+            network::FeedType::IN,
+            config.base_station_multicast_group,
+            config.base_station_port,
+            &global_clock);
         if (err != network::Error::OK) {
             printf("[!] Failed to subscribe to base station feed: %s\n", network::get_error_string(err));
             printf("errno %d\n", errno);
@@ -223,10 +230,10 @@ int main()
     bool greyscale = false;
     while (true) {
         for (size_t i = 0; i < streams.size(); i++) {
-            camera::CaptureSession *cs = streams[i];
+            camera::CaptureSession* cs = streams[i];
 
             // Grab a frame.
-            uint8_t *frame_buffer;
+            uint8_t* frame_buffer;
             size_t frame_size;
             {
                 camera::Error err = camera::grab_frame(cs, &frame_buffer, &frame_size);
@@ -239,16 +246,44 @@ int main()
             static uint8_t raw_buffer[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
 
             // Decompress into a raw frame.
-            tjDecompress2(decompressor, frame_buffer, frame_size, raw_buffer, CAMERA_WIDTH, 3 * CAMERA_WIDTH,
-                          CAMERA_HEIGHT, TJPF_RGB, 0);
+            tjDecompress2(
+                decompressor,
+                frame_buffer,
+                frame_size,
+                raw_buffer,
+                CAMERA_WIDTH,
+                3 * CAMERA_WIDTH,
+                CAMERA_HEIGHT,
+                TJPF_RGB,
+                0);
 
             // Recompress into jpeg buffer.
-            if(greyscale) {
-                tjCompress2(compressor, raw_buffer, CAMERA_WIDTH, 3 * CAMERA_WIDTH, CAMERA_HEIGHT, TJPF_RGB, &frame_buffer,
-                        &frame_size, TJSAMP_GRAY, jpeg_quality, TJFLAG_NOREALLOC);
+            if (greyscale) {
+                tjCompress2(
+                    compressor,
+                    raw_buffer,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
+                    TJPF_RGB,
+                    &frame_buffer,
+                    &frame_size,
+                    TJSAMP_GRAY,
+                    jpeg_quality,
+                    TJFLAG_NOREALLOC);
             } else {
-                tjCompress2(compressor, raw_buffer, CAMERA_WIDTH, 3 * CAMERA_WIDTH, CAMERA_HEIGHT, TJPF_RGB, &frame_buffer,
-                        &frame_size, TJSAMP_420, jpeg_quality, TJFLAG_NOREALLOC);
+                tjCompress2(
+                    compressor,
+                    raw_buffer,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
+                    TJPF_RGB,
+                    &frame_buffer,
+                    &frame_size,
+                    TJSAMP_420,
+                    jpeg_quality,
+                    TJFLAG_NOREALLOC);
             }
 
             /*
@@ -264,15 +299,15 @@ int main()
                 // This accounts for the last buffer that is not completely divisible
                 // by the defined buffer size, by using up the remaining space calculated
                 // with modulus    -yu
-                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE
-                                                              : frame_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
+                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE :
+                                                                frame_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
 
                 network::CameraMessage message = {
-                    static_cast<uint8_t>(i),                                // stream_index
-                    static_cast<uint16_t>(frame_counter),                   // frame_index
-                    static_cast<uint8_t>(j),                                // section_index
-                    num_buffers,                                            // section_count
-                    buffer_size,                                            // size
+                    static_cast<uint8_t>(i), // stream_index
+                    static_cast<uint16_t>(frame_counter), // frame_index
+                    static_cast<uint8_t>(j), // section_index
+                    num_buffers, // section_count
+                    buffer_size, // size
                     frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
 
@@ -307,15 +342,24 @@ int main()
         if (zed::grab(&zed_image, &zed_stride, &zed_pose) == zed::Error::OK) {
             jpeg_size = tjBufSize(1280, 720, TJSAMP_422);
 
-            auto tj_err = tjCompress2(compressor, zed_image, 1280, 
-                                    zed_stride, 720, TJPF_BGRA, 
-                                    (unsigned char**)&jpeg_buffer, &jpeg_size, TJSAMP_422, 40, TJFLAG_NOREALLOC);
+            auto tj_err = tjCompress2(
+                compressor,
+                zed_image,
+                1280,
+                zed_stride,
+                720,
+                TJPF_BGRA,
+                (unsigned char**) &jpeg_buffer,
+                &jpeg_size,
+                TJSAMP_422,
+                40,
+                TJFLAG_NOREALLOC);
 
-/*
-            auto tj_err = tjCompressFromYUV(compressor, zed_image.getPtr<unsigned char>(), 1280,
-                                            zed_image.getStepBytes(), 720, TJSAMP_444, &jpeg_buffer,
-                                            &jpeg_size, 40, TJFLAG_NOREALLOC);
-*/
+            /*
+                        auto tj_err = tjCompressFromYUV(compressor, zed_image.getPtr<unsigned char>(), 1280,
+                                                        zed_image.getStepBytes(), 720, TJSAMP_444, &jpeg_buffer,
+                                                        &jpeg_size, 40, TJFLAG_NOREALLOC);
+            */
             if (tj_err != 0) {
                 fprintf(stderr, "[!] tjCompress failed: %s\n", tjGetErrorStr2(compressor));
             }
@@ -328,15 +372,15 @@ int main()
                 // This accounts for the last buffer that is not completely divisible
                 // by the defined buffer size, by using up the remaining space calculated
                 // with modulus    -yu
-                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE
-                                                              : jpeg_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
+                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE :
+                                                                jpeg_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
 
                 network::CameraMessage message = {
-                    static_cast<uint8_t>(streams.size()),                                // stream_index
-                    static_cast<uint16_t>(frame_counter),                   // frame_index
-                    static_cast<uint8_t>(j),                                // section_index
-                    num_buffers,                                            // section_count
-                    buffer_size,                                            // size
+                    static_cast<uint8_t>(streams.size()), // stream_index
+                    static_cast<uint16_t>(frame_counter), // frame_index
+                    static_cast<uint8_t>(j), // section_index
+                    num_buffers, // section_count
+                    buffer_size, // size
                     jpeg_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
 
@@ -379,15 +423,17 @@ int main()
 
                     // printf("Got movement with %d, %d\n", movement.left, movement.right);
 
-                    suspension::Direction left_direction = movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
-                    suspension::Direction right_direction = movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD; 
+                    suspension::Direction left_direction =
+                        movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
+                    suspension::Direction right_direction =
+                        movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD;
 
-                    uint8_t left_speed = movement.left < 0 ? (uint8_t) ((-movement.left)) : (uint8_t) (movement.left);
-                    uint8_t right_speed = movement.right < 0 ? (uint8_t) ((-movement.right)) : (uint8_t) (movement.right);
+                    uint8_t left_speed = movement.left < 0 ? (uint8_t)((-movement.left)) : (uint8_t)(movement.left);
+                    uint8_t right_speed = movement.right < 0 ? (uint8_t)((-movement.right)) : (uint8_t)(movement.right);
 
-                        if (suspension_update_timer.ready()) {
-                            suspension::update(suspension::LEFT, left_direction, left_speed);
-                            suspension::update(suspension::RIGHT, right_direction, right_speed);
+                    if (suspension_update_timer.ready()) {
+                        suspension::update(suspension::LEFT, left_direction, left_speed);
+                        suspension::update(suspension::RIGHT, right_direction, right_speed);
                     }
 
                     break;
