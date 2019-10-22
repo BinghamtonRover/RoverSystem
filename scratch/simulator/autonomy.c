@@ -15,8 +15,8 @@
 #include "autonomy.h"
 #include <math.h>
 #include <stdbool.h>
-#include "main.c"
-#include "world.c"
+#include <stdio.h>
+#include <stdlib.h>
 
 const int ws = 10;
 const float B = 2;
@@ -37,13 +37,13 @@ typedef struct {
     int start, end;
 } Valley;
 
-void get_polar_obstacle_densities(float *h, int n, float A) {
-    wtc(rover_x, rover_y, c_x, c_y);
+void get_polar_obstacle_densities(World world, float rover_x, float rover_y, float rover_angle, float *h, int n, float A) {
+    world_to_cell(&world, rover_x, rover_y, c_x, c_y);
     for (int i = (*c_y - ws/2); i <= (*c_y + ws/2); i++)
     {
         for (int j = (*c_x - ws/2); j <= (*c_x + ws/2); j++)
         {
-            ctw(*c_x, *c_y, world_x, world_x);
+            cell_to_world(&world, *c_x, *c_y, world_x, world_x);
             cell_direction = atan2(*world_y - rover_y, *world_x - rover_x);
             cell_magnitude = pow(occupancy_grid_get(&world.occupancy_grid, *c_x, *c_y), 2) * (A - B * pow(pow(rover_y - *world_y, 2) + pow(rover_x - *world_x, 2), 0.5));
             int k = (int)(cell_direction/alpha);
@@ -121,10 +121,8 @@ AutonomyStatus autonomy_step(World* world, float rover_x, float rover_y, float r
     const float dmax = pow(2, 0.5) * (ws - 1) / 2;
     const float A = dmax;
     const int n = 360/alpha;
-    rover_x = rover_x;
-    rover_y = rover_y;
     float densities[n];
-    get_polar_obstacle_densities(densities, n, A);
+    get_polar_obstacle_densities(*world, rover_x, rover_y, rover_angle, densities, n, A);
     Valley valleys = get_valleys(densities, n);
     *out_offset_x = 0.5;
     *out_offset_y = 0.5;
