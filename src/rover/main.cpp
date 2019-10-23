@@ -307,8 +307,8 @@ int main()
             message.latitude = position->latitude;
             message.longitude = position->longitude;
             network::publish(&r_feed,&message);
-            position->latitude += 0.001;
-            position->longitude += 0.001;
+            position->latitude = 0.001;
+            position->longitude = 0.001;
         }
 
         unsigned char* zed_image;
