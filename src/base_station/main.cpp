@@ -248,8 +248,6 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
     char time_string_buffer[200];
     strftime(time_string_buffer, sizeof(time_string_buffer), "%I:%M:%S", time_info);
 
-    int tw = gui::text_width(font, time_string_buffer, 20);
-
     gui::draw_text(font, time_string_buffer, x + 5, y + h - 20 - 5, 20);
 }
 
@@ -347,10 +345,14 @@ void do_help_menu(gui::Font * font, std::vector<const char*> commands, std::vect
 std::vector<uint16_t> lidar_points;
 
 void do_lidar(gui::Layout* layout) {
+    /*
     int wx = layout->current_x;
     int wy = layout->current_y;
+    */
 
     gui::do_solid_rect(layout, 300, 300, 0, 0, 0);
+
+    /*
 
     glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
     glLineWidth(2.0f);
@@ -373,7 +375,7 @@ void do_lidar(gui::Layout* layout) {
                 float vx = wx + 150.0f + px + ppm * 1.2 * cosf(angle);
                 float vy = wy + 150.0f + py + ppm * 1.2 * sinf(angle);
 
-//              glVertex2f(vx, vy);
+                glVertex2f(vx, vy);
             }
 
             glEnd();
@@ -420,7 +422,9 @@ void do_lidar(gui::Layout* layout) {
     glVertex2f(x - hs, y + hs);
 
     glEnd();
+    */ 
 }
+
 
 int primary_feed = 0;
 int secondary_feed = 1;
@@ -465,12 +469,8 @@ void do_gui(camera_feed::Feed feed[4], gui::Font *font)
     layout.reset_y();
     layout.advance_x(10);
 
-
-
     //Draw the lidar.
     do_lidar(&layout);
-
-    
 
     layout.reset_y();
     layout.advance_x(10);

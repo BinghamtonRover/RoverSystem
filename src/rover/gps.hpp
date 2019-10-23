@@ -3,7 +3,9 @@ namespace gps {
 struct Position {
     float latitude;
     float longitude;
-    Position() : latitude(0), longitude(0) {}
 };
+
+bool has_fix();
+Position get_current_position();
 
 }

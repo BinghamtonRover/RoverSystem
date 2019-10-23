@@ -224,7 +224,6 @@ int main()
 	unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
 	uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
 
-    auto position = new gps::Position();
     while (true) {
         for (size_t i = 0; i < streams.size(); i++) {
             camera::CaptureSession *cs = streams[i];
@@ -282,6 +281,7 @@ int main()
         }
 
 		// LIDAR stuff.
+        /*
 		if (lidar_send_timer.ready()) {
 			lidar_points.clear();
 			if (lidar::scan(lidar_points) != lidar::Error::OK) {
@@ -296,19 +296,24 @@ int main()
             network::publish(&r_feed, &message);
 
 			for (auto point : lidar_points) {
-				int64_t point_enc = point;
+                // DO SOMETHING.
 			}
 		}
+        */
 
-            //Temporary code to test waypoint functionality
         if (location_send_timer.ready()) {
             network::LocationMessage message;
-            message.has_fix = true;
-            message.latitude = position->latitude;
-            message.longitude = position->longitude;
+
+            bool fix = gps::has_fix();
+            message.has_fix = fix;
+
+            if (fix) {
+                auto pos = gps::get_current_position();
+                message.latitude = pos.latitude;
+                message.longitude = pos.longitude;
+            }
+
             network::publish(&r_feed,&message);
-            position->latitude = 0.001;
-            position->longitude = 0.001;
         }
 
         unsigned char* zed_image;

@@ -2,7 +2,7 @@
 
 namespace lidar {
 
-Error start(char* ip) {
+Error start(const char* ip) {
     return Error::OK;
 }
 
