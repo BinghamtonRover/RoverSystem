@@ -520,9 +520,9 @@ void do_waypoint_map(gui::Layout * layout, int w, int h){
     float triangleWidth = w * 0.03;
     float triangleHeight = triangleWidth; //for a equilateral triangle
     glBegin(GL_TRIANGLE_STRIP);
-    glVertex2f((x + xMiddle) - (triangleWidth/2),y + yMiddle + triangleHeight);
-    glVertex2f((x + xMiddle) + (triangleWidth/2), y + yMiddle + triangleHeight);
-    glVertex2f(x + xMiddle,y + yMiddle - triangleHeight);
+    glVertex2f((x + xMiddle) - (triangleWidth/2),y + yMiddle + triangleHeight/2);
+    glVertex2f((x + xMiddle) + (triangleWidth/2), y + yMiddle + triangleHeight/2);
+    glVertex2f(x + xMiddle,y + yMiddle - triangleHeight/2);
     glEnd();   
 }
 
