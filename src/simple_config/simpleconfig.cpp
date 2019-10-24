@@ -26,24 +26,28 @@ const char* get_error_string(SimpleConfig* simple_config, Error error) {
     static char error_string_buffer[2000];
 
     switch (error) {
-    case Error::OK:
-        return "";
-    case Error::FILE_OPEN:
-        return "failed to open file";
-    case Error::LINE_TOO_LONG:
-        sprintf(error_string_buffer, "[line %d]: line is longer than max length (%d characters)", simple_config->bad_line, MAX_LINE_LEN);
-        return error_string_buffer;
-    case Error::MISSING_KEY:
-        sprintf(error_string_buffer, "[line %d]: expected a key", simple_config->bad_line);
-        return error_string_buffer;
-    case Error::MISSING_VALUE:
-        sprintf(error_string_buffer, "[line %d]: expected a value", simple_config->bad_line);
-        return error_string_buffer;
-    case Error::DUPLICATE_KEYS:
-        sprintf(error_string_buffer, "[line %d]: key was defined twice", simple_config->bad_line);
-        return error_string_buffer;
-    default:
-        return "unknown error";
+        case Error::OK:
+            return "";
+        case Error::FILE_OPEN:
+            return "failed to open file";
+        case Error::LINE_TOO_LONG:
+            sprintf(
+                error_string_buffer,
+                "[line %d]: line is longer than max length (%d characters)",
+                simple_config->bad_line,
+                MAX_LINE_LEN);
+            return error_string_buffer;
+        case Error::MISSING_KEY:
+            sprintf(error_string_buffer, "[line %d]: expected a key", simple_config->bad_line);
+            return error_string_buffer;
+        case Error::MISSING_VALUE:
+            sprintf(error_string_buffer, "[line %d]: expected a value", simple_config->bad_line);
+            return error_string_buffer;
+        case Error::DUPLICATE_KEYS:
+            sprintf(error_string_buffer, "[line %d]: key was defined twice", simple_config->bad_line);
+            return error_string_buffer;
+        default:
+            return "unknown error";
     }
 }
 
@@ -234,9 +238,9 @@ Error parse(const char* maybe_file_name, SimpleConfig** out_config) {
         if (c == EOF) {
             break;
         }
-        
+
         // Reset the buffer.
-        buffer_len = 0; 
+        buffer_len = 0;
     }
 
     return Error::OK;
@@ -272,4 +276,4 @@ char* get(SimpleConfig* simple_config, const char* maybe_key) {
 #undef MAX_LINE_LEN_STRING
 #undef STRINGIFY
 
-}
+} // namespace sc

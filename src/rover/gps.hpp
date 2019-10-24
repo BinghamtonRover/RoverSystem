@@ -8,4 +8,4 @@ struct Position {
 bool has_fix();
 Position get_current_position();
 
-}
+} // namespace gps

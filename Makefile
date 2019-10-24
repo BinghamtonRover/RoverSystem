@@ -21,4 +21,8 @@ rover:
 clean:
 	rm bin/*
 
-.PHONY: network, network_clean, base_station, rover, clean, simple_config
+format:
+	find . -name "*.cpp" -exec clang-format-9 -style=file -i '{}' \;
+	find . -name "*.hpp" -exec clang-format-9 -style=file -i '{}' \;
+
+.PHONY: network, network_clean, base_station, rover, clean, simple_config, format

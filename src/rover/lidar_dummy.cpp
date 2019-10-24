@@ -15,4 +15,4 @@ Error scan(std::vector<long>& data_points) {
     return Error::OK;
 }
 
-}
+} // namespace lidar

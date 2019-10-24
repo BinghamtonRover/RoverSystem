@@ -12,15 +12,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-namespace gui
-{
+namespace gui {
 
 gui::GlobalState state;
 
-bool load_font(Font *font, const char *file_name, int size)
-{
+bool load_font(Font* font, const char* file_name, int size) {
     // Open the font file for reading.
-    FILE *font_file = fopen(file_name, "r");
+    FILE* font_file = fopen(file_name, "r");
 
     if (!font_file) {
         return false;
@@ -90,8 +88,16 @@ bool load_font(Font *font, const char *file_name, int size)
 
     glBindTexture(GL_TEXTURE_2D, font->texture_id);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 1024, 1024, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE,
-                 real_font_bitmap);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_LUMINANCE_ALPHA,
+        1024,
+        1024,
+        0,
+        GL_LUMINANCE_ALPHA,
+        GL_UNSIGNED_BYTE,
+        real_font_bitmap);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -115,15 +121,14 @@ bool load_font(Font *font, const char *file_name, int size)
 
 // Returns the width of the given string if it were rendered with the given
 // font at the given height.
-int text_width(Font *font, const char *text, int height)
-{
+int text_width(Font* font, const char* text, int height) {
     // Basic idea: iterate through each character in text.
     // The rightmost x coordinate of the last character is the width of the whole string.
 
     float total_width = 0;
     {
         float x = 0, y = 0;
-        for (const char *text_ptr = text; *text_ptr; text_ptr++) {
+        for (const char* text_ptr = text; *text_ptr; text_ptr++) {
             stbtt_aligned_quad q;
             stbtt_GetBakedQuad(font->baked_chars, 1024, 1024, *text_ptr - 32, &x, &y, &q, 1);
 
@@ -134,14 +139,31 @@ int text_width(Font *font, const char *text, int height)
     }
 
     // We want to make sure our width is correctly reported.
-    float scale = (float)height / (float)font->max_height;
+    float scale = (float) height / (float) font->max_height;
 
-    return (int)((float)total_width * scale);
+    return (int) ((float) total_width * scale);
+}
+
+// Returns the index of the last character that can fit on a line of the given width.
+int text_last_index_that_can_fit(Font* font, const char* text, float width, int height) {
+    // We want to make sure our width is correctly reported.
+    float scale = (float) height / (float) font->max_height;
+
+    float x = 0, y = 0;
+    int i;
+    for (i = 0; text[i]; i++) {
+        stbtt_aligned_quad q;
+        stbtt_GetBakedQuad(font->baked_chars, 1024, 1024, text[i] - 32, &x, &y, &q, 1);
+
+        float line_width = q.x1 * scale;
+        if (line_width > width) return i - 1;
+    }
+
+    return i - 1;
 }
 
 // Draws the string with the given font at the given height.
-void draw_text(Font *font, const char *text, int x, int y, float height)
-{
+void draw_text(Font* font, const char* text, int x, int y, float height) {
     // We want the tallest character to have the height we specified.
     // That way, the string will be at most height pixels tall.
     // This works because scale will be multiplied by each character height.
@@ -197,8 +219,7 @@ void draw_text(Font *font, const char *text, int x, int y, float height)
 // The default value is gui::ANGULAR_RES. If the resulting circle
 // looks jagged at the edge, increase this value. When drawing a small circle,
 // it is more efficient to lower the angular resolution.
-void fill_circle(int center_x, int center_y, int radius, int angular_res)
-{
+void fill_circle(int center_x, int center_y, int radius, int angular_res) {
     // Here, we'll use the modelview matrix a bit.
 
     glMatrixMode(GL_MODELVIEW);
@@ -209,12 +230,12 @@ void fill_circle(int center_x, int center_y, int radius, int angular_res)
     glTranslatef(center_x, center_y, 0.0f);
     glScalef(radius, radius, 1.0f);
 
-    int NUM_VERTICES = (int)(2.0f * M_PI * angular_res);
+    int NUM_VERTICES = (int) (2.0f * M_PI * angular_res);
 
     glBegin(GL_TRIANGLE_FAN);
 
     for (int i = 0; i <= NUM_VERTICES; i++) {
-        float theta = i * (2.0f * M_PI / (float)NUM_VERTICES); // Get our progress around the circle, in radians.
+        float theta = i * (2.0f * M_PI / (float) NUM_VERTICES); // Get our progress around the circle, in radians.
 
         // Because we used the modelview matrix, all we need here is sin and cos.
         // This will give us points that are on the unit circle (radius 1).
@@ -230,8 +251,7 @@ void fill_circle(int center_x, int center_y, int radius, int angular_res)
 
 // Fills a rectangle at the given coordinates (top left corner) with the given
 // width and height.
-void fill_rectangle(int x, int y, int w, int h)
-{
+void fill_rectangle(int x, int y, int w, int h) {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
@@ -250,8 +270,7 @@ void fill_rectangle(int x, int y, int w, int h)
     glPopMatrix();
 }
 
-void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id)
-{
+void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int texture_id) {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
@@ -260,8 +279,6 @@ void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id)
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
 
@@ -281,8 +298,12 @@ void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id)
     glPopMatrix();
 }
 
-void do_solid_rect(Layout *layout, int width, int height, float r, float g, float b)
-{
+void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id) {
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    fill_textured_rect_mix_color(x, y, w, h, texture_id);
+}
+
+void do_solid_rect(Layout* layout, int width, int height, float r, float g, float b) {
     int x = layout->current_x;
     int y = layout->current_y;
 
@@ -293,8 +314,7 @@ void do_solid_rect(Layout *layout, int width, int height, float r, float g, floa
     layout->advance_y(height);
 }
 
-void do_textured_rect(Layout *layout, int width, int height, unsigned int texture_id)
-{
+void do_textured_rect(Layout* layout, int width, int height, unsigned int texture_id) {
     int x = layout->current_x;
     int y = layout->current_y;
 
@@ -304,15 +324,14 @@ void do_textured_rect(Layout *layout, int width, int height, unsigned int textur
     layout->advance_y(height);
 }
 
-unsigned int load_texture(const char *file_name)
-{
+unsigned int load_texture(const char* file_name) {
     int texture_w, texture_h, texture_channels;
     // This loads a PNG or JPEG file into memory as an array of RGB pixels.
     // We specify that we do not care about the alpha channel, whether it exists or not, by asking for 3 channels.
     // This function gives us the texture's size and how many channels it actually loaded.
     // The format of texture_data is what is frequently referred to as RGB24, where each pixel is composed
     // of three unsigned bytes: R, G, and B. Each color channel can have a value in [0, 255].
-    unsigned char *texture_data = stbi_load(file_name, &texture_w, &texture_h, &texture_channels, 3);
+    unsigned char* texture_data = stbi_load(file_name, &texture_w, &texture_h, &texture_channels, 3);
 
     // We need to register this texture with OpenGL.
     // Once we do that, we need a way to refer to the texture when we want to draw it.
@@ -350,6 +369,55 @@ unsigned int load_texture(const char *file_name)
     // the encoding of our texture data. Then we specify that each color channel is encoded in an unsigned byte.
     // stbi_load() dictates these values. Finally, we pass the raw texture data.
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_w, texture_h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data);
+
+    stbi_image_free(texture_data);
+
+    return tex_id;
+}
+
+// Loads a texture, but also loads a fourth alpha channel (for PNG images).
+unsigned int load_texture_alpha(const char* file_name) {
+    int texture_w, texture_h, texture_channels;
+    // This loads a PNG file into memory as an array of RGBA pixels.
+    // We specify that we do care about the alpha channel, by asking for 4 channels.
+    // This function gives us the texture's size and how many channels it actually loaded.
+    unsigned char* texture_data = stbi_load(file_name, &texture_w, &texture_h, &texture_channels, 4);
+
+    // We need to register this texture with OpenGL.
+    // Once we do that, we need a way to refer to the texture when we want to draw it.
+    // OpenGL does this with an unsigned int id.
+    // The weird signature for glGenTextures() comes from the fact that it works with arrays.
+    // For example, this would be valid:
+    //     unsigned int texture_ids[15];
+    //     glGenTextures(15, texture_ids);
+    // In this case, we have one texture id, so we pretend its pointer is an array of size one.
+    // This is C++, so a pointer to an int is indeed an array of size one.
+    unsigned int tex_id;
+    glGenTextures(1, &tex_id);
+
+    // OpenGL has any functions which modify or draw a texture.
+    // Before using them, we have to specify which texture should be modified.
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+
+    // Textures have many adjustable parameters. These two must be set, otherwise the texture won't render.
+    // This tells OpenGL how to scale the texture. The min filter specifies how to scale the texture
+    // if it needs to be shrunk in order to be rendered. The mag filter specifies how to scale the texture
+    // if it needs to be expanded in order to be rendered. The filter we use for both is the linear filter,
+    // which does bilinear interpolation across the pixels of the texture. There is also GL_NEAREST, which
+    // just finds the nearest texture pixel, which is faster but looks worse.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // This uploads the texture data to OpenGL's internal memory.
+    // The first zero specifies the mipmap level we want to modify.
+    // Mipmaps are a way to simplify textures when they are very small, in order to more efficiently render far-away
+    // objects. If you've ever played a 3D video game, its related to Level of Detail (LOD). We haven't enabled
+    // mipmapping (it can be enabled via glTexParameter(), but we don't need it for 2D), so 0 specifies the default
+    // mipmap level. The first GL_RGB specifies how we want OpenGL to represent the texture internally. If we needed
+    // alpha, we could use GL_RGBA here. That second zero is required to be zero. Don't ask. The second GL_RGBA
+    // specifies the encoding of our texture data. Then we specify that each color channel is encoded in an unsigned
+    // byte. stbi_load() dictates these values. Finally, we pass the raw texture data.
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_w, texture_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data);
 
     stbi_image_free(texture_data);
 

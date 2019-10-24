@@ -1,13 +1,13 @@
-#include <endian.h>
 #include <assert.h>
-#include <string.h>
+#include <endian.h>
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 #include "network.hpp"
 
@@ -19,13 +19,11 @@
 namespace network {
 
 #define X_STRINGIFY(name) #name
-const char* ERROR_STRINGS[] = {
-    NETWORK_ERROR_DEF(X_STRINGIFY)
-};
+const char* ERROR_STRINGS[] = { NETWORK_ERROR_DEF(X_STRINGIFY) };
 #undef X_STRINGIFY
 
 const char* get_error_string(Error error) {
-    return ERROR_STRINGS[static_cast<int>(error)];    
+    return ERROR_STRINGS[static_cast<int>(error)];
 }
 
 //
@@ -47,7 +45,7 @@ void serialize(Buffer* buffer, uint8_t* memory, size_t size) {
 
     memcpy(buffer->data + buffer->index, memory, size);
     buffer->index += size;
-    if (buffer-> index > buffer->size) buffer->size = buffer->index;
+    if (buffer->index > buffer->size) buffer->size = buffer->index;
 }
 
 void deserialize(Buffer* buffer, uint8_t* memory, size_t size) {
@@ -70,7 +68,6 @@ void deserialize(Buffer* buffer, uint8_t* value) {
     buffer->index += 1;
 }
 
-
 void serialize(Buffer* buffer, uint16_t value) {
     check_buffer_write_space(buffer, 2);
     value = htobe16(value);
@@ -86,7 +83,6 @@ void deserialize(Buffer* buffer, uint16_t* value) {
     buffer->index += 2;
 }
 
-
 void serialize(Buffer* buffer, int16_t value) {
     serialize(buffer, *reinterpret_cast<uint16_t*>(&value));
 }
@@ -94,7 +90,6 @@ void serialize(Buffer* buffer, int16_t value) {
 void deserialize(Buffer* buffer, int16_t* value) {
     deserialize(buffer, reinterpret_cast<uint16_t*>(value));
 }
-
 
 void serialize(Buffer* buffer, uint32_t value) {
     check_buffer_write_space(buffer, 4);
@@ -111,7 +106,6 @@ void deserialize(Buffer* buffer, uint32_t* value) {
     buffer->index += 4;
 }
 
-
 void serialize(Buffer* buffer, int32_t value) {
     serialize(buffer, *reinterpret_cast<uint32_t*>(&value));
 }
@@ -119,7 +113,6 @@ void serialize(Buffer* buffer, int32_t value) {
 void deserialize(Buffer* buffer, int32_t* value) {
     deserialize(buffer, reinterpret_cast<uint32_t*>(value));
 }
-
 
 void serialize(Buffer* buffer, uint64_t value) {
     check_buffer_write_space(buffer, 8);
@@ -135,7 +128,6 @@ void deserialize(Buffer* buffer, uint64_t* value) {
     *value = be64toh(*value);
     buffer->index += 8;
 }
-
 
 void serialize(Buffer* buffer, int64_t value) {
     serialize(buffer, *reinterpret_cast<uint64_t*>(&value));
@@ -153,7 +145,6 @@ void deserialize(Buffer* buffer, bool* value) {
     deserialize(buffer, reinterpret_cast<uint8_t*>(value));
 }
 
-
 void serialize(Buffer* buffer, float value) {
     serialize(buffer, *reinterpret_cast<uint32_t*>(&value));
 }
@@ -162,7 +153,6 @@ void deserialize(Buffer* buffer, float* value) {
     deserialize(buffer, reinterpret_cast<uint32_t*>(value));
 }
 
-
 void serialize(Buffer* buffer, double value) {
     serialize(buffer, *reinterpret_cast<uint64_t*>(&value));
 }
@@ -170,7 +160,6 @@ void serialize(Buffer* buffer, double value) {
 void deserialize(Buffer* buffer, double* value) {
     deserialize(buffer, reinterpret_cast<uint64_t*>(value));
 }
-
 
 //
 // End Serialization Primitives
@@ -189,7 +178,7 @@ Buffer get_outgoing_buffer(Feed* feed) {
     buffer.size = HEADER_SIZE;
     buffer.cap = (uint16_t) feed->memory_pool.element_size;
     buffer.data = buffer_bytes;
-    
+
     return buffer;
 }
 
@@ -208,47 +197,47 @@ Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util
     }
 
     uint8_t ttl = MULTICAST_TTL;
-	setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+    setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
 
     switch (type) {
-    case FeedType::IN: {
-        // Bind to the correct port.
-        struct sockaddr_in bind_addr{};
-        bind_addr.sin_family = AF_INET;
-        bind_addr.sin_port = htobe16(port);
-        bind_addr.sin_addr.s_addr = htobe32(INADDR_ANY);
+        case FeedType::IN: {
+            // Bind to the correct port.
+            struct sockaddr_in bind_addr {};
+            bind_addr.sin_family = AF_INET;
+            bind_addr.sin_port = htobe16(port);
+            bind_addr.sin_addr.s_addr = htobe32(INADDR_ANY);
 
-        if (bind(sock_fd, (struct sockaddr*) &bind_addr, sizeof(bind_addr)) == -1) {
-            ::close(sock_fd);
-            return Error::BIND;
+            if (bind(sock_fd, (struct sockaddr*) &bind_addr, sizeof(bind_addr)) == -1) {
+                ::close(sock_fd);
+                return Error::BIND;
+            }
+
+            // Join the multicast group.
+            struct ip_mreq mreq;
+            mreq.imr_multiaddr.s_addr = inet_addr(group);
+            mreq.imr_interface.s_addr = htobe32(INADDR_ANY);
+
+            if (setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+                ::close(sock_fd);
+                return Error::MULTICAST_JOIN;
+            }
+
+            break;
         }
+        case FeedType::OUT: {
+            // Connect so that future writes on this socket all go to the right place.
+            struct sockaddr_in connect_addr {};
+            connect_addr.sin_family = AF_INET;
+            connect_addr.sin_port = htobe16((short) port);
+            connect_addr.sin_addr.s_addr = inet_addr(group);
 
-        // Join the multicast group.
-        struct ip_mreq mreq;
-        mreq.imr_multiaddr.s_addr = inet_addr(group);
-        mreq.imr_interface.s_addr = htobe32(INADDR_ANY);
-        
-        if (setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-            ::close(sock_fd);
-            return Error::MULTICAST_JOIN;    
+            if (connect(sock_fd, (struct sockaddr*) &connect_addr, sizeof(connect_addr)) == -1) {
+                ::close(sock_fd);
+                return Error::CONNECT;
+            }
+
+            break;
         }
-
-        break;
-    }
-    case FeedType::OUT: {
-        // Connect so that future writes on this socket all go to the right place.
-        struct sockaddr_in connect_addr{};
-        connect_addr.sin_family = AF_INET;
-        connect_addr.sin_port = htobe16((short)port);
-        connect_addr.sin_addr.s_addr = inet_addr(group);
-
-        if (connect(sock_fd, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) == -1) {
-            ::close(sock_fd);
-            return Error::CONNECT;
-        }
-
-        break;
-    }
     }
 
     out_feed->socket_fd = sock_fd;
@@ -265,26 +254,26 @@ Error update_status(Feed* feed) {
     auto now = feed->clock->get_millis();
 
     switch (feed->type) {
-    case FeedType::IN: {
-        if (now - feed->last_active_time >= MAX_HEARTBEAT_WAIT_TIME) {
-            feed->status = FeedStatus::DEAD;
-        } else {
-            feed->status = FeedStatus::ALIVE;    
-        }
+        case FeedType::IN: {
+            if (now - feed->last_active_time >= MAX_HEARTBEAT_WAIT_TIME) {
+                feed->status = FeedStatus::DEAD;
+            } else {
+                feed->status = FeedStatus::ALIVE;
+            }
 
-        return Error::OK;
-    }
-    case FeedType::OUT: {
-        if (now - feed->last_active_time >= MAX_IDLE_TIME) {
-            HeartbeatMessage hb;
-            
-            return publish(feed, &hb);
-        } else {
-            feed->status = FeedStatus::ALIVE;
+            return Error::OK;
         }
+        case FeedType::OUT: {
+            if (now - feed->last_active_time >= MAX_IDLE_TIME) {
+                HeartbeatMessage hb;
 
-        return Error::OK;
-    }
+                return publish(feed, &hb);
+            } else {
+                feed->status = FeedStatus::ALIVE;
+            }
+
+            return Error::OK;
+        }
     }
 
     // I guess we'll do this...
@@ -378,4 +367,3 @@ Error send(Feed* feed, MessageType type, Buffer buffer) {
 //
 
 } // namespace network
-

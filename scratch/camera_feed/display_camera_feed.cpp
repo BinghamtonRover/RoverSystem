@@ -5,12 +5,11 @@
 #include <string.h>
 #include <turbojpeg.h>
 
-struct BufferItem
-{
+struct BufferItem {
     uint16_t frame_index;
     uint16_t data_size;
     uint8_t sections_remaining;
-    unsigned char *data_sections;
+    unsigned char* data_sections;
 };
 
 const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = 65000;
@@ -23,19 +22,26 @@ const int CAMERA_FRAME_BUFFER_COUNT = 5;
 const int WINDOW_X_LENGTH = 1920;
 const int WINDOW_Y_LENGTH = 1080;
 const long unsigned int JPEG_SIZE = WINDOW_X_LENGTH * WINDOW_Y_LENGTH * 3;
-const char *DESTINATION_ADDRESS = "127.0.0.1";
+const char* DESTINATION_ADDRESS = "127.0.0.1";
 tjhandle jpeg_decompressor;
 
-void decompress(unsigned char *buffer, unsigned char *compressed_image, int pitch)
-{
+void decompress(unsigned char* buffer, unsigned char* compressed_image, int pitch) {
     /*
         The parameters are the decompressor, the compressed image, the size of the
         image as an unsigned long, the buffer, the width of the jpeg, the pitch,
         the height, the pixel type (We have RGB here each contained in 1 byte),
         and the flags. Basically we say decompress it quickly.
     */
-    if (tjDecompress2(jpeg_decompressor, compressed_image, JPEG_SIZE, buffer, WINDOW_X_LENGTH, pitch, WINDOW_Y_LENGTH,
-                      TJPF_RGB, TJFLAG_FASTDCT) == -1) {
+    if (tjDecompress2(
+            jpeg_decompressor,
+            compressed_image,
+            JPEG_SIZE,
+            buffer,
+            WINDOW_X_LENGTH,
+            pitch,
+            WINDOW_Y_LENGTH,
+            TJPF_RGB,
+            TJFLAG_FASTDCT) == -1) {
         std::cout << "decompressed incorrectly" << std::endl;
     }
 }
@@ -46,8 +52,7 @@ void decompress(unsigned char *buffer, unsigned char *compressed_image, int pitc
     pixel_location. Then we unlock the texture again
     to render it to the screen.
  */
-void setUpFrame(BufferItem *frame_buffer, network::CameraMessage &frame, uint8_t &current_frame_indx)
-{
+void setUpFrame(BufferItem* frame_buffer, network::CameraMessage& frame, uint8_t& current_frame_indx) {
     /*
         Since we know that camera packets will only be sent out once we
         can manage the buffer by only keeping track of the number of
@@ -75,14 +80,13 @@ void setUpFrame(BufferItem *frame_buffer, network::CameraMessage &frame, uint8_t
     std::memcpy(frame_buffer[current_frame_indx].data_sections + offset, frame.data, frame.size);
 }
 
-void renderFrame(SDL_Texture *texture, SDL_Renderer *ren, unsigned char *pixel_location, unsigned char *data_sections)
-{
+void renderFrame(SDL_Texture* texture, SDL_Renderer* ren, unsigned char* pixel_location, unsigned char* data_sections) {
     /*
         Pitch is the number of bytes in a single row of JPEG data.
         Due to hardware padding this is not always width * numBytes per RGB value.
      */
     int pitch;
-    SDL_LockTexture(texture, NULL, (void **)&pixel_location, &pitch);
+    SDL_LockTexture(texture, NULL, (void**) &pixel_location, &pitch);
     decompress(pixel_location, data_sections, pitch);
     SDL_UnlockTexture(texture);
     // This clears anything currently in the renderer
@@ -98,8 +102,7 @@ void renderFrame(SDL_Texture *texture, SDL_Renderer *ren, unsigned char *pixel_l
     SDL_RenderPresent(ren);
 }
 
-int main()
-{
+int main() {
     jpeg_decompressor = tjInitDecompress();
     ;
     if (!jpeg_decompressor) {
@@ -107,7 +110,7 @@ int main()
         return 1;
     }
 
-    BufferItem *frame_buffer = new BufferItem[CAMERA_FRAME_BUFFER_COUNT];
+    BufferItem* frame_buffer = new BufferItem[CAMERA_FRAME_BUFFER_COUNT];
     /*
         Allocates space for frame data within each frame buffer.
      */
@@ -118,14 +121,14 @@ int main()
         We need a single additional buffer to store
         the data we recieve from the network.
      */
-    unsigned char *temp_compressed_message_buffer = new unsigned char[CAMERA_FRAME_BUFFER_SIZE];
+    unsigned char* temp_compressed_message_buffer = new unsigned char[CAMERA_FRAME_BUFFER_SIZE];
     uint8_t current_frame_indx;
 
     /*
         We have to write the pixel data to a specific location,
         so we need a pointer to store that location
      */
-    unsigned char *pixel_location;
+    unsigned char* pixel_location;
     /*
         Pitch is the number of bytes in a row of an image.
         (This value can change if the hardware uses padding)
@@ -155,7 +158,7 @@ int main()
         left corner), x end pos, and y end pos. We use the dimensions
         of the window provided above
      */
-    SDL_Window *win = SDL_CreateWindow("Camera feed!", 0, 0, WINDOW_X_LENGTH, WINDOW_Y_LENGTH, SDL_WINDOW_SHOWN);
+    SDL_Window* win = SDL_CreateWindow("Camera feed!", 0, 0, WINDOW_X_LENGTH, WINDOW_Y_LENGTH, SDL_WINDOW_SHOWN);
     if (win == nullptr) {
         std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
         SDL_Quit();
@@ -171,7 +174,7 @@ int main()
         and SOFTWARE which means the renderer has a software fallback
         should the hardware accelerated rendering fail
     */
-    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_Renderer* ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (ren == nullptr) {
         SDL_DestroyWindow(win);
         std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
@@ -185,7 +188,7 @@ int main()
        here we only use TEXTUREACCESS_STREAMING, which allows for
        the texture to change repeatedly.
    */
-    SDL_Texture *texture = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, 1920, 1080);
+    SDL_Texture* texture = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, 1920, 1080);
     bool running = true;
     SDL_Event event;
     while (running) {

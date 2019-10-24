@@ -11,10 +11,9 @@
 #include "stb_truetype.h"
 
 // Loads a font from a TTF file to our internal font representation.
-void load_font(Font *font, const char *file_name)
-{
+void load_font(Font* font, const char* file_name) {
     // Open the font file for reading.
-    FILE *font_file = fopen(file_name, "r");
+    FILE* font_file = fopen(file_name, "r");
 
     // We need some space to store our font. Let's just try this much.
     // This could be dynamically allocated to be the size of the file, but I'm lazy.
@@ -85,16 +84,23 @@ void load_font(Font *font, const char *file_name)
 
     glBindTexture(GL_TEXTURE_2D, font->texture_id);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 1024, 1024, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE,
-                 real_font_bitmap);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_LUMINANCE_ALPHA,
+        1024,
+        1024,
+        0,
+        GL_LUMINANCE_ALPHA,
+        GL_UNSIGNED_BYTE,
+        real_font_bitmap);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 // Returns the width and height of the given text if it were rendered with the given font.
-void size_text(Font *font, const char *text, int *width, int *height)
-{
+void size_text(Font* font, const char* text, int* width, int* height) {
     // Basic idea: iterate through each character in text, and check its height.
     // Check to see if it has the greatest height of all characters we want to display.
     // Then the rightmost x coordinate of the last character is the width of the whole string.
@@ -103,7 +109,7 @@ void size_text(Font *font, const char *text, int *width, int *height)
     float total_width = 0;
     {
         float x = 0, y = 0;
-        for (const char *text_ptr = text; *text_ptr; text_ptr++) {
+        for (const char* text_ptr = text; *text_ptr; text_ptr++) {
             stbtt_aligned_quad q;
             stbtt_GetBakedQuad(font->baked_chars, 1024, 1024, *text_ptr - 32, &x, &y, &q, 1);
 
@@ -117,12 +123,11 @@ void size_text(Font *font, const char *text, int *width, int *height)
         }
     }
 
-    *width = (int)total_width;
-    *height = (int)max_height;
+    *width = (int) total_width;
+    *height = (int) max_height;
 }
 
-void draw_text(Font *font, const char *text, int x, int y, float height)
-{
+void draw_text(Font* font, const char* text, int x, int y, float height) {
     // Scale the text based on height. removed max height calculation which was causing the
     // text size to change while typing. right now this uses a magic number, should be changed
     float scale = height / 85;

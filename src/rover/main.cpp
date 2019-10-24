@@ -3,10 +3,9 @@
 #include "../util/util.hpp"
 
 #include "camera.hpp"
-#include "suspension.hpp"
-#include "lidar.hpp"
 #include "imu.hpp"
-#include "autonomy.hpp"
+#include "lidar.hpp"
+#include "suspension.hpp"
 #include "zed.hpp"
 #include "gps.hpp"
 
@@ -18,7 +17,6 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
-#include <chrono>
 
 // GLOBAL CONSTANTS
 
@@ -40,10 +38,9 @@ const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - netwo
 
 util::Clock global_clock;
 
-struct Config
-{
-	char suspension_serial_id[500];
-	char imu_serial_id[500];
+struct Config {
+    char suspension_serial_id[500];
+    char imu_serial_id[500];
 
     int base_station_port;
     int rover_port;
@@ -53,7 +50,7 @@ struct Config
 };
 
 Config load_config(const char* filename) {
-	Config config;
+    Config config;
 
     sc::SimpleConfig* sc_config;
 
@@ -84,7 +81,6 @@ Config load_config(const char* filename) {
     }
     strncpy(config.suspension_serial_id, suspension_serial_id, 500);
 
-
     char* imu_serial_id = sc::get(sc_config, "imu_serial_id");
     if (!imu_serial_id) {
         printf("Config file missing 'imu_serial_id'!\n");
@@ -108,55 +104,54 @@ Config load_config(const char* filename) {
 
     sc::free(sc_config);
 
-	return config;
+    return config;
 }
 
-int main()
-{
+int main() {
     util::Clock::init(&global_clock);
 
-	Config config = load_config("res/r.sconfig");
+    Config config = load_config("res/r.sconfig");
 
-	if (suspension::init(config.suspension_serial_id) != suspension::Error::OK) {
-		fprintf(stderr, "[!] Failed to initialize the suspension!\n");
-		return 1;
-	}
+    if (suspension::init(config.suspension_serial_id) != suspension::Error::OK) {
+        fprintf(stderr, "[!] Failed to initialize the suspension!\n");
+        return 1;
+    }
 
-	if (lidar::start("192.168.1.21") != lidar::Error::OK) {
-		fprintf(stderr, "[!] Failed to init field LIDAR!\n");
-		return 1;
-	}
+    if (lidar::start("192.168.1.21") != lidar::Error::OK) {
+        fprintf(stderr, "[!] Failed to init field LIDAR!\n");
+        return 1;
+    }
 
 #if 0
-	if (imu::start(config.imu_serial_id) != imu::Error::OK) {
-		fprintf(stderr, "[!] Failed to start IMU!\n");
-		return 1;
-	}
+    if (imu::start(config.imu_serial_id) != imu::Error::OK) {
+        fprintf(stderr, "[!] Failed to start IMU!\n");
+        return 1;
+    }
 #endif
 
-	std::vector<long> lidar_points;
+    std::vector<long> lidar_points;
 
     unsigned int frame_counter = 0;
 
     // Camera streams
-    std::vector<camera::CaptureSession *> streams;
+    std::vector<camera::CaptureSession*> streams;
 
     // Try to open MAX_STREAMS streams.
     for (int i = 0; i < MAX_STREAMS; i++) {
-        camera::CaptureSession *cs = new camera::CaptureSession;
+        camera::CaptureSession* cs = new camera::CaptureSession;
 
-		char name_filename_buffer[100];
-		sprintf(name_filename_buffer, "/sys/class/video4linux/video%d/name", i);
+        char name_filename_buffer[100];
+        sprintf(name_filename_buffer, "/sys/class/video4linux/video%d/name", i);
 
-		FILE* name_file = fopen(name_filename_buffer, "r");
-		if (!name_file) continue;
+        FILE* name_file = fopen(name_filename_buffer, "r");
+        if (!name_file) continue;
 
-		fscanf(name_file, "%s\n", name_filename_buffer);
-		printf("> Found camera with name %s\n", name_filename_buffer);
+        fscanf(name_file, "%s\n", name_filename_buffer);
+        printf("> Found camera with name %s\n", name_filename_buffer);
 
-		fclose(name_file);
+        fclose(name_file);
 
-		if (strcmp("ZED", name_filename_buffer) == 0) continue;
+        if (strcmp("ZED", name_filename_buffer) == 0) continue;
 
         char filename_buffer[13]; // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
         sprintf(filename_buffer, "/dev/video%d", i);
@@ -172,7 +167,7 @@ int main()
         if (err != camera::Error::OK) {
             camera::close(cs);
             delete cs;
-			continue;
+            continue;
         }
 
         // It was opened and started. Add it to the list of streams.
@@ -187,7 +182,13 @@ int main()
     network::Feed r_feed, bs_feed;
 
     {
-        auto err = network::init(&r_feed, network::FeedType::OUT, config.rover_multicast_group, config.rover_port, &global_clock);
+        auto err = network::init(
+            &r_feed,
+            network::FeedType::OUT,
+            config.rover_multicast_group,
+            config.rover_port,
+            &global_clock);
+
         if (err != network::Error::OK) {
             printf("[!] Failed to start rover feed: %s\n", network::get_error_string(err));
             exit(1);
@@ -195,7 +196,13 @@ int main()
     }
 
     {
-        auto err = network::init(&bs_feed, network::FeedType::IN, config.base_station_multicast_group, config.base_station_port, &global_clock);
+        auto err = network::init(
+            &bs_feed,
+            network::FeedType::IN,
+            config.base_station_multicast_group,
+            config.base_station_port,
+            &global_clock);
+
         if (err != network::Error::OK) {
             printf("[!] Failed to subscribe to base station feed: %s\n", network::get_error_string(err));
             printf("errno %d\n", errno);
@@ -218,18 +225,21 @@ int main()
     util::Timer location_send_timer;
     util::Timer::init(&location_send_timer,LOCATION_SEND_INTERVAL, &global_clock);
 
-	auto compressor = tjInitCompress();
-	auto decompressor = tjInitDecompress();
+    auto compressor = tjInitCompress();
+    auto decompressor = tjInitDecompress();
 
-	unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
-	uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
+    unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
+    uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
 
+    // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
+    unsigned int jpeg_quality = 30;
+    bool greyscale = false;
     while (true) {
         for (size_t i = 0; i < streams.size(); i++) {
-            camera::CaptureSession *cs = streams[i];
+            camera::CaptureSession* cs = streams[i];
 
             // Grab a frame.
-            uint8_t *frame_buffer;
+            uint8_t* frame_buffer;
             size_t frame_size;
             {
                 camera::Error err = camera::grab_frame(cs, &frame_buffer, &frame_size);
@@ -242,12 +252,45 @@ int main()
             static uint8_t raw_buffer[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
 
             // Decompress into a raw frame.
-            tjDecompress2(decompressor, frame_buffer, frame_size, raw_buffer, CAMERA_WIDTH, 3 * CAMERA_WIDTH,
-                          CAMERA_HEIGHT, TJPF_RGB, 0);
+            tjDecompress2(
+                decompressor,
+                frame_buffer,
+                frame_size,
+                raw_buffer,
+                CAMERA_WIDTH,
+                3 * CAMERA_WIDTH,
+                CAMERA_HEIGHT,
+                TJPF_RGB,
+                0);
 
             // Recompress into jpeg buffer.
-            tjCompress2(compressor, raw_buffer, CAMERA_WIDTH, 3 * CAMERA_WIDTH, CAMERA_HEIGHT, TJPF_RGB, &frame_buffer,
-                        &frame_size, TJSAMP_420, 30, TJFLAG_NOREALLOC);
+            if (greyscale) {
+                tjCompress2(
+                    compressor,
+                    raw_buffer,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
+                    TJPF_RGB,
+                    &frame_buffer,
+                    &frame_size,
+                    TJSAMP_GRAY,
+                    jpeg_quality,
+                    TJFLAG_NOREALLOC);
+            } else {
+                tjCompress2(
+                    compressor,
+                    raw_buffer,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
+                    TJPF_RGB,
+                    &frame_buffer,
+                    &frame_size,
+                    TJSAMP_420,
+                    jpeg_quality,
+                    TJFLAG_NOREALLOC);
+            }
 
             /*
                     2. Send out packets
@@ -262,15 +305,15 @@ int main()
                 // This accounts for the last buffer that is not completely divisible
                 // by the defined buffer size, by using up the remaining space calculated
                 // with modulus    -yu
-                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE
-                                                              : frame_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
+                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE :
+                                                                frame_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
 
                 network::CameraMessage message = {
-                    static_cast<uint8_t>(i),                                // stream_index
-                    static_cast<uint16_t>(frame_counter),                   // frame_index
-                    static_cast<uint8_t>(j),                                // section_index
-                    num_buffers,                                            // section_count
-                    buffer_size,                                            // size
+                    static_cast<uint8_t>(i), // stream_index
+                    static_cast<uint16_t>(frame_counter), // frame_index
+                    static_cast<uint8_t>(j), // section_index
+                    num_buffers, // section_count
+                    buffer_size, // size
                     frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
 
@@ -288,10 +331,10 @@ int main()
 				fprintf(stderr, "[!] Failed to read LIDAR points!\n");
 			}
 
-			network::LidarMessage message;
-			for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
-				message.points[i] = (uint16_t) lidar_points[i];
-			}
+            network::LidarMessage message;
+            for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
+                message.points[i] = (uint16_t) lidar_points[i];
+            }
 
             network::publish(&r_feed, &message);
 
@@ -320,20 +363,29 @@ int main()
         int zed_stride;
         zed::Pose zed_pose;
         if (zed::grab(&zed_image, &zed_stride, &zed_pose) == zed::Error::OK) {
-			jpeg_size = tjBufSize(1280, 720, TJSAMP_422);
+            jpeg_size = tjBufSize(1280, 720, TJSAMP_422);
 
-			auto tj_err = tjCompress2(compressor, zed_image, 1280, 
-									zed_stride, 720, TJPF_BGRA, 
-									(unsigned char**)&jpeg_buffer, &jpeg_size, TJSAMP_422, 40, TJFLAG_NOREALLOC);
+            auto tj_err = tjCompress2(
+                compressor,
+                zed_image,
+                1280,
+                zed_stride,
+                720,
+                TJPF_BGRA,
+                (unsigned char**) &jpeg_buffer,
+                &jpeg_size,
+                TJSAMP_422,
+                40,
+                TJFLAG_NOREALLOC);
 
-/*
-			auto tj_err = tjCompressFromYUV(compressor, zed_image.getPtr<unsigned char>(), 1280,
-											zed_image.getStepBytes(), 720, TJSAMP_444, &jpeg_buffer,
-											&jpeg_size, 40, TJFLAG_NOREALLOC);
-*/
-			if (tj_err != 0) {
-				fprintf(stderr, "[!] tjCompress failed: %s\n", tjGetErrorStr2(compressor));
-			}
+            /*
+                        auto tj_err = tjCompressFromYUV(compressor, zed_image.getPtr<unsigned char>(), 1280,
+                                                        zed_image.getStepBytes(), 720, TJSAMP_444, &jpeg_buffer,
+                                                        &jpeg_size, 40, TJFLAG_NOREALLOC);
+            */
+            if (tj_err != 0) {
+                fprintf(stderr, "[!] tjCompress failed: %s\n", tjGetErrorStr2(compressor));
+            }
 
             // Send the frame.
             // Calculate how many buffers we will need to send the entire frame
@@ -343,15 +395,15 @@ int main()
                 // This accounts for the last buffer that is not completely divisible
                 // by the defined buffer size, by using up the remaining space calculated
                 // with modulus    -yu
-                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE
-                                                              : jpeg_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
+                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE :
+                                                                jpeg_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
 
                 network::CameraMessage message = {
-                    static_cast<uint8_t>(streams.size()),                                // stream_index
-                    static_cast<uint16_t>(frame_counter),                   // frame_index
-                    static_cast<uint8_t>(j),                                // section_index
-                    num_buffers,                                            // section_count
-                    buffer_size,                                            // size
+                    static_cast<uint8_t>(streams.size()), // stream_index
+                    static_cast<uint16_t>(frame_counter), // frame_index
+                    static_cast<uint8_t>(j), // section_index
+                    num_buffers, // section_count
+                    buffer_size, // size
                     jpeg_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
 
@@ -361,50 +413,59 @@ int main()
             if (zed_timer.ready()) {
                 // TODO: SEND NETWORK UPDATES AND UPDATE AUTONOMY.
             }
-		}
+        }
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
 
 #if 0
-		// IMU stuff.
-		if (imu_timer.ready()) {
-			imu::Rotation rotation = imu::get_rotation();
-			printf("> Rotation: %f, %f, %f\n", rotation.pitch, rotation.yaw, rotation.roll);
-		}
+        // IMU stuff.
+        if (imu_timer.ready()) {
+            imu::Rotation rotation = imu::get_rotation();
+            printf("> Rotation: %f, %f, %f\n", rotation.pitch, rotation.yaw, rotation.roll);
+        }
 #endif
 
         // Receive incoming messages
         network::IncomingMessage message;
         while (true) {
-			auto neterr = network::receive(&r_feed, &message);
-			if (neterr != network::Error::OK) {
-				if (neterr == network::Error::NOMORE) {
-					break;
-				}
+            auto neterr = network::receive(&r_feed, &message);
+            if (neterr != network::Error::OK) {
+                if (neterr == network::Error::NOMORE) {
+                    break;
+                }
 
                 printf("[!] Network error on receive!\n");
 
-				break;
-			}
+                break;
+            }
 
             switch (message.type) {
                 case network::MessageType::MOVEMENT: {
                     network::MovementMessage movement;
                     network::deserialize(&message.buffer, &movement);
 
-					// printf("Got movement with %d, %d\n", movement.left, movement.right);
+                    // printf("Got movement with %d, %d\n", movement.left, movement.right);
 
-					suspension::Direction left_direction = movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
-					suspension::Direction right_direction = movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD; 
+                    suspension::Direction left_direction =
+                        movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
+                    suspension::Direction right_direction =
+                        movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD;
 
-					uint8_t left_speed = movement.left < 0 ? (uint8_t) ((-movement.left)) : (uint8_t) (movement.left);
-					uint8_t right_speed = movement.right < 0 ? (uint8_t) ((-movement.right)) : (uint8_t) (movement.right);
+                    uint8_t left_speed = movement.left < 0 ? (uint8_t)((-movement.left)) : (uint8_t)(movement.left);
+                    uint8_t right_speed = movement.right < 0 ? (uint8_t)((-movement.right)) : (uint8_t)(movement.right);
 
-					if (suspension_update_timer.ready()) {
-						suspension::update(suspension::LEFT, left_direction, left_speed);
-						suspension::update(suspension::RIGHT, right_direction, right_speed);
-					}
+                    if (suspension_update_timer.ready()) {
+                        suspension::update(suspension::LEFT, left_direction, left_speed);
+                        suspension::update(suspension::RIGHT, right_direction, right_speed);
+                    }
 
+                    break;
+                }
+                case network::MessageType::JPEGQUALITY: {
+                    network::JpegQualityMessage quality;
+                    network::deserialize(&message.buffer, &quality);
+                    greyscale = quality.greyscale;
+                    jpeg_quality = quality.jpegQuality;
                     break;
                 }
                 default:

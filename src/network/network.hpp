@@ -1,8 +1,10 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
+#include "../util/util.hpp"
 
 #include "../util/util.hpp"
 
@@ -21,7 +23,7 @@ const int MAX_RAW_PACKET_SIZE = 1500; // Use Ethernet MTU.
 //     u8  protocol_version
 //     u8  message_type
 //     u16 message_size
-const int HEADER_SIZE = 1 + 1 + 2; 
+const int HEADER_SIZE = 1 + 1 + 2;
 const int MAX_MESSAGE_SIZE = MAX_RAW_PACKET_SIZE - HEADER_SIZE;
 
 // The time a sending feed will wait with no sending before sending a heartbeat.
@@ -34,21 +36,12 @@ const int MAX_HEARTBEAT_WAIT_TIME = 2000;
 const uint8_t MULTICAST_TTL = 1;
 
 #define NETWORK_ERROR_DEF(X) \
-    X(OK), \
-    X(NOMORE), \
-    \
-    X(SOCKET), \
-    X(BIND), \
-    X(MULTICAST_JOIN), \
-    X(CONNECT), \
-    X(SEND), \
-    X(RECEIVE), \
-    X(VERSION)
+    X(OK), X(NOMORE), \
+\
+        X(SOCKET), X(BIND), X(MULTICAST_JOIN), X(CONNECT), X(SEND), X(RECEIVE), X(VERSION)
 
 #define X_IDENTITY(name) name
-enum class Error {
-    NETWORK_ERROR_DEF(X_IDENTITY)
-};
+enum class Error { NETWORK_ERROR_DEF(X_IDENTITY) };
 #undef X_IDENTITY
 
 const char* get_error_string(Error error);
@@ -61,18 +54,12 @@ const char* get_error_string(Error error);
 // Feed Management
 //
 
-enum class FeedStatus {
-    ALIVE,
-    DEAD
-};
+enum class FeedStatus { ALIVE, DEAD };
 
-enum class FeedType {
-    IN,
-    OUT
-};
+enum class FeedType { IN, OUT };
 
 struct Feed {
-    FeedType type;    
+    FeedType type;
     int socket_fd;
 
     MemoryPool memory_pool;
@@ -106,7 +93,7 @@ struct Buffer {
     uint8_t* data;
 };
 
-template<typename T>
+template <typename T>
 void deserialize(Buffer* buffer, T* t) {
     t->deserialize(buffer);
 }
@@ -133,7 +120,7 @@ void serialize(Buffer* buffer, int64_t value);
 void deserialize(Buffer* buffer, int64_t* value);
 
 void serialize(Buffer* buffer, bool value);
-void deserialize(Buffer* buffer, bool* value); 
+void deserialize(Buffer* buffer, bool* value);
 
 void serialize(Buffer* buffer, float value);
 void deserialize(Buffer* buffer, float* value);
@@ -154,22 +141,15 @@ Buffer get_outgoing_buffer(Feed* feed);
 // Message Definitions
 //
 
-enum class MessageType {
-    HEARTBEAT,
-    TEST,
-
-    MOVEMENT,
-    CAMERA,
-    LOG,
-    LIDAR,
-    LOCATION
-};
+enum class MessageType { HEARTBEAT, TEST, MOVEMENT, CAMERA, LOG, LIDAR, LOCATION, JPEGQUALITY };
 
 struct HeartbeatMessage {
     static const auto TYPE = MessageType::HEARTBEAT;
 
-    void serialize(Buffer* buffer) {}
-    void deserialize(Buffer* buffer) {}
+    void serialize(Buffer* buffer) {
+    }
+    void deserialize(Buffer* buffer) {
+    }
 };
 
 struct TestMessage {
@@ -276,6 +256,7 @@ struct LidarMessage {
 
 struct LocationMessage {
     static const auto TYPE = MessageType::LOCATION;
+
     bool has_fix;
     float latitude;
     float longitude;
@@ -290,6 +271,21 @@ struct LocationMessage {
         network::deserialize(buffer, &(this->has_fix));
         network::deserialize(buffer, &(this->latitude));
         network::deserialize(buffer, &(this->longitude));
+    }
+};
+
+struct JpegQualityMessage {
+    static const auto TYPE = MessageType::JPEGQUALITY;
+    uint8_t jpegQuality;
+    bool greyscale;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->jpegQuality);
+        network::serialize(buffer, this->greyscale);
+    }
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->jpegQuality));
+        network::deserialize(buffer, &(this->greyscale));
     }
 };
 
@@ -309,7 +305,7 @@ struct IncomingMessage {
 Error receive(Feed* feed, IncomingMessage* out_message);
 Error send(Feed* feed, MessageType type, Buffer buffer);
 
-template<typename T>
+template <typename T>
 Error publish(Feed* feed, T* thing) {
     auto buffer = get_outgoing_buffer(feed);
     auto message_type = T::TYPE;

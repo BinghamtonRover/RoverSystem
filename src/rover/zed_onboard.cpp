@@ -7,24 +7,24 @@ namespace zed {
 sl::Camera zed;
 
 Error open() {
-	// Open ZED camera.
+    // Open ZED camera.
 
-	sl::InitParameters params;
-	params.camera_resolution = sl::RESOLUTION_HD720;
-	params.camera_fps = 30;
-	params.coordinate_system = sl::COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-	params.coordinate_units = sl::UNIT_METER; // Set units in meters
+    sl::InitParameters params;
+    params.camera_resolution = sl::RESOLUTION_HD720;
+    params.camera_fps = 30;
+    params.coordinate_system = sl::COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
+    params.coordinate_units = sl::UNIT_METER; // Set units in meters
 
-	auto zed_res = zed.open(params);
-	if (zed_res != sl::SUCCESS) {
+    auto zed_res = zed.open(params);
+    if (zed_res != sl::SUCCESS) {
         return Error::OPEN;
-	}
+    }
 
-	sl::TrackingParameters tracking_parameters;
-	zed_res = zed.enableTracking(tracking_parameters);
-	if (zed_res != sl::SUCCESS) {
+    sl::TrackingParameters tracking_parameters;
+    zed_res = zed.enableTracking(tracking_parameters);
+    if (zed_res != sl::SUCCESS) {
         return Error::TRACKING;
-	}
+    }
 
     return Error::OK;
 }
@@ -61,4 +61,4 @@ Error grab(unsigned char** out_frame, int* out_stride, Pose* out_pose) {
     return Error::OK;
 }
 
-}
+} // namespace zed

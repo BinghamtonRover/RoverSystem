@@ -1,8 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <time.h>
 #include <stdint.h>
+#include <time.h>
 
 namespace util {
 
@@ -12,9 +12,9 @@ struct Clock {
     uint32_t get_millis() {
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
-        
-        uint32_t ms = (uint32_t)now.tv_sec * 1000;
-        ms += (uint32_t)now.tv_nsec / 1000000;
+
+        uint32_t ms = (uint32_t) now.tv_sec * 1000;
+        ms += (uint32_t) now.tv_nsec / 1000000;
 
         return ms - start_ms;
     }
@@ -23,8 +23,8 @@ struct Clock {
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
 
-        clock->start_ms = (uint32_t)now.tv_sec * 1000;
-        clock->start_ms += (uint32_t)now.tv_nsec / 1000000;
+        clock->start_ms = (uint32_t) now.tv_sec * 1000;
+        clock->start_ms += (uint32_t) now.tv_nsec / 1000000;
     }
 };
 

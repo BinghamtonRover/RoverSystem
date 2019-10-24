@@ -11,7 +11,7 @@ Rotation get_rotation() {
 }
 
 Velocity get_velocity() {
-    return {30, 25, 0.554};
+    return { 30, 25, 0.554 };
 }
 
-}
+} // namespace imu

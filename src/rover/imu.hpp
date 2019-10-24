@@ -1,13 +1,13 @@
 namespace imu {
 
 enum class Error {
-	OK,
+    OK,
 
-	OPEN
+    OPEN
 };
 
 struct Rotation {
-	float pitch, yaw, roll;
+    float pitch, yaw, roll;
 };
 
 struct Velocity {
@@ -18,4 +18,4 @@ Error start(const char* device_serial_id);
 Rotation get_rotation();
 Velocity get_velocity();
 
-}
+} // namespace imu

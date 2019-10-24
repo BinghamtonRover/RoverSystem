@@ -1,6 +1,6 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "memory.hpp"
 
@@ -18,7 +18,7 @@ void MemoryPool::init(int element_size, int elements_per_bucket) {
 
     // Start with one bucket.
     this->num_buckets = 1;
-    
+
     // 0 indicates full (or unused).
     memset(this->bucket_bitmaps, 0, sizeof(this->bucket_bitmaps));
     this->bucket_bitmaps[0] = ~(0x0);
@@ -34,7 +34,7 @@ void MemoryPool::close() {
 }
 
 static int rightmost_bit(uint64_t n) {
-  return (int) (n & ~ (n -1)) - 1;
+    return (int) (n & ~(n - 1)) - 1;
 }
 
 uint8_t* MemoryPool::alloc() {
@@ -66,7 +66,7 @@ uint8_t* MemoryPool::alloc() {
     this->bucket_bitmaps[header.bucket] &= ~(1 << header.index_in_bucket);
 
     *reinterpret_cast<ElementHeader*>(segment_ptr) = header;
-    
+
     return segment_ptr + sizeof(ElementHeader);
 }
 
