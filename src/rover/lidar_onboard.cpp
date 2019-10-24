@@ -75,7 +75,7 @@ void parse_and_print_data(const char* command, std::vector<long>& out) {
 
 int sock;
 
-Error start(char* ip) {
+Error start(const char* ip) {
     sock = socket(AF_INET, SOCK_STREAM, 0);
 
     int enable = 1;

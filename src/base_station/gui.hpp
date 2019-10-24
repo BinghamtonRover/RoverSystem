@@ -10,6 +10,19 @@ namespace gui {
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
+
+
+struct Font {
+    // Information that keeps track of each character that we want to be able to draw.
+    stbtt_bakedchar baked_chars[95];
+
+    // The font is one big texture!
+    unsigned int texture_id;
+
+    // Maximum height of ASCII characters at the loaded size.
+    int max_height;
+};
+
 enum class InputState {
     KEY_COMMAND,
     DEBUG_CONSOLE,
@@ -25,6 +38,8 @@ enum class InputState {
 struct GlobalState {
     GLFWwindow* window;
 
+    Font font;
+
     InputState input_state = InputState::KEY_COMMAND;
 
     bool show_debug_console = false;
@@ -32,17 +47,6 @@ struct GlobalState {
 
 // This is how you access the global state.
 extern GlobalState state;
-
-struct Font {
-    // Information that keeps track of each character that we want to be able to draw.
-    stbtt_bakedchar baked_chars[95];
-
-    // The font is one big texture!
-    unsigned int texture_id;
-
-    // Maximum height of ASCII characters at the loaded size.
-    int max_height;
-};
 
 // Loads a font from a TTF file to our internal font representation.
 // The size here is the maximum size at which the font should be rendered.

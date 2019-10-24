@@ -1,6 +1,7 @@
 #include "gui.hpp"
 
 #include <string>
+#include <vector>
 
 namespace gui {
 namespace debug_console {

@@ -2,7 +2,11 @@
 
 namespace gps {
 
-Position get_position() {
+bool has_fix() {
+    return true;
+}
+
+Position get_current_position() {
     return { 42.087053, -75.967886 };
 }
 

@@ -1,6 +1,7 @@
 #include "debug_console.hpp"
 #include "gui.hpp"
 #include "log_view.hpp"
+#include "waypoint.hpp"
 #include "logger.hpp"
 
 #include <GLFW/glfw3.h>
@@ -30,13 +31,6 @@ struct DebugLine {
 
     float r = 0.0f, g = 1.0f, b = 0.0f;
 };
-
-struct Waypoint {
-    float latitude;
-    float longitude;
-};
-
-std::vector<Waypoint> wpList;
 
 struct DebugConsole {
     std::string prompt;
@@ -155,7 +149,7 @@ void handle_keypress(int key, int mods) {
             log("This is some red text.", 1, 0, 0);
         } else if (command == "tdl") {
             bool mode = logger::toggleDebugMode();
-            if (mode) {
+            if(mode) {
                 log("DebugMode turned on", 1, 0, 1);
             } else {
                 log("DebugMode turned off", 1, 0, 1);
@@ -164,21 +158,22 @@ void handle_keypress(int key, int mods) {
             std::vector<double> wps;
             int space = 0;
             space = command.substr(3).find(" ");
-            if (space <= 3) {
+            if(space <= 3) {
                 log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
             } else {
                 float lat = atof(command.substr(3, space).c_str());
-                float lon = atof(command.substr(space + 4).c_str());
-                wpList.push_back({ lat, lon });
+                float lon = atof(command.substr(space+4).c_str());
+                waypoint::add_waypoint(lat,lon);
                 log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
             }
         } else if (command == "aw") {
             log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
         } else if (command == "lw") {
             log("Waypoints: ", 1, 0, 1);
-            for (unsigned int i = 0; i < wpList.size(); i++) {
-                std::string latStr = std::to_string(wpList.at(i).latitude);
-                std::string lonStr = std::to_string(wpList.at(i).longitude);
+            auto waypoints = waypoint::get_waypoints();
+            for(unsigned int i = 0; i < waypoints.size(); i++) {
+                std::string latStr = std::to_string(waypoints.at(i).latitude);
+                std::string lonStr = std::to_string(waypoints.at(i).longitude);
                 log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
             }
         } else if (command == "help") {
@@ -195,7 +190,6 @@ void handle_keypress(int key, int mods) {
         } else {
             log("Invalid command.", 1, 0, 0);
         }
-
     } else if (key == GLFW_KEY_BACKSPACE) {
         if (mods & GLFW_MOD_CONTROL) {
             console.buffer = { CONSOLE_PROMPT, 0, 1, 0 };

@@ -6,6 +6,8 @@
 
 #include "../util/util.hpp"
 
+#include "../util/util.hpp"
+
 #include "memory.hpp"
 
 namespace network {

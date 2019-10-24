@@ -12,7 +12,7 @@ enum class Error {
 
 };
 
-Error start(char* ip);
+Error start(const char* ip);
 
 Error scan(std::vector<long>& data_points);
 

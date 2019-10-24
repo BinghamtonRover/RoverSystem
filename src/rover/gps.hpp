@@ -5,6 +5,7 @@ struct Position {
     float longitude;
 };
 
-Position get_position();
+bool has_fix();
+Position get_current_position();
 
 } // namespace gps

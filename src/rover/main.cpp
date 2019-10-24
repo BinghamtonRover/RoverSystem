@@ -2,16 +2,15 @@
 #include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
 
-#include "autonomy.hpp"
 #include "camera.hpp"
 #include "imu.hpp"
 #include "lidar.hpp"
 #include "suspension.hpp"
 #include "zed.hpp"
+#include "gps.hpp"
 
 #include <turbojpeg.h>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -26,6 +25,8 @@ const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
 
 const int LIDAR_SEND_INTERVAL = 1000 / 15;
+
+const int LOCATION_SEND_INTERVAL = 1000/10;
 
 const int IMU_READ_INTERVAL = 1000 / 15;
 
@@ -187,6 +188,7 @@ int main() {
             config.rover_multicast_group,
             config.rover_port,
             &global_clock);
+
         if (err != network::Error::OK) {
             printf("[!] Failed to start rover feed: %s\n", network::get_error_string(err));
             exit(1);
@@ -200,6 +202,7 @@ int main() {
             config.base_station_multicast_group,
             config.base_station_port,
             &global_clock);
+
         if (err != network::Error::OK) {
             printf("[!] Failed to subscribe to base station feed: %s\n", network::get_error_string(err));
             printf("errno %d\n", errno);
@@ -218,6 +221,9 @@ int main() {
 
     util::Timer zed_timer;
     util::Timer::init(&zed_timer, ZED_INTERVAL, &global_clock);
+
+    util::Timer location_send_timer;
+    util::Timer::init(&location_send_timer,LOCATION_SEND_INTERVAL, &global_clock);
 
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
@@ -317,12 +323,13 @@ int main() {
             camera::return_buffer(cs);
         }
 
-        // LIDAR stuff.
-        if (lidar_send_timer.ready()) {
-            lidar_points.clear();
-            if (lidar::scan(lidar_points) != lidar::Error::OK) {
-                fprintf(stderr, "[!] Failed to read LIDAR points!\n");
-            }
+		// LIDAR stuff.
+        /*
+		if (lidar_send_timer.ready()) {
+			lidar_points.clear();
+			if (lidar::scan(lidar_points) != lidar::Error::OK) {
+				fprintf(stderr, "[!] Failed to read LIDAR points!\n");
+			}
 
             network::LidarMessage message;
             for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
@@ -331,9 +338,25 @@ int main() {
 
             network::publish(&r_feed, &message);
 
-            for (auto point : lidar_points) {
-                int64_t point_enc = point;
+			for (auto point : lidar_points) {
+                // DO SOMETHING.
+			}
+		}
+        */
+
+        if (location_send_timer.ready()) {
+            network::LocationMessage message;
+
+            bool fix = gps::has_fix();
+            message.has_fix = fix;
+
+            if (fix) {
+                auto pos = gps::get_current_position();
+                message.latitude = pos.latitude;
+                message.longitude = pos.longitude;
             }
+
+            network::publish(&r_feed,&message);
         }
 
         unsigned char* zed_image;

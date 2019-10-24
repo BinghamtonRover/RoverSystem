@@ -8,6 +8,8 @@
 #include "gui.hpp"
 #include "log_view.hpp"
 #include "logger.hpp"
+#include "waypoint.hpp"
+#include "waypoint_map.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -286,6 +288,8 @@ const char* get_stopwatch_text() {
 }
 
 void do_info_panel(gui::Layout* layout, gui::Font* font) {
+    static char info_buffer[200];
+
     int x = layout->current_x;
     int y = layout->current_y;
 
@@ -294,9 +298,8 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
     gui::do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
-    char rover_network_status_buffer[50];
     sprintf(
-        rover_network_status_buffer,
+        info_buffer,
         "Rover net status: %s",
         r_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
 
@@ -305,29 +308,28 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
     } else {
         glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
     }
-    gui::draw_text(font, rover_network_status_buffer, x + 5, y + 5, 15);
+    gui::draw_text(font, info_buffer, x + 5, y + 5, 15);
 
-    char bandwidth_buffer[100];
     sprintf(
-        bandwidth_buffer,
+        info_buffer,
         "Net thpt (r/bs/t): %.2f/%.2f/%.2f MiB/s",
         last_network_stats.r_tp,
         last_network_stats.bs_tp,
         last_network_stats.t_tp);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    gui::draw_text(font, bandwidth_buffer, x + 5, y + 20 + 5, 15);
+    gui::draw_text(font, info_buffer, x + 5, y + 20 + 5, 15);
+
+    sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
+    gui::draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
 
     time_t current_time;
     time(&current_time);
     struct tm* time_info = localtime(&current_time);
 
-    char time_string_buffer[200];
-    strftime(time_string_buffer, sizeof(time_string_buffer), "%I:%M:%S", time_info);
+    strftime(info_buffer, sizeof(info_buffer), "%I:%M:%S", time_info);
 
-    int tw = gui::text_width(font, time_string_buffer, 20);
-
-    gui::draw_text(font, time_string_buffer, x + 5, y + h - 20 - 5, 20);
+    gui::draw_text(font, info_buffer, x + 5, y + h - 20 - 5, 20);
 
     auto stopwatch_buffer = get_stopwatch_text();
 
@@ -460,6 +462,7 @@ void do_help_menu(gui::Font* font, std::vector<const char*> commands, std::vecto
     glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
     glLineWidth(4.0f);
     glBegin(GL_LINES);
+
     // Footer
     glVertex2f(x, y + menu_height - 20);
     glVertex2f(x + menu_width, y + menu_height - 20);
@@ -484,10 +487,14 @@ void do_help_menu(gui::Font* font, std::vector<const char*> commands, std::vecto
 std::vector<uint16_t> lidar_points;
 
 void do_lidar(gui::Layout* layout) {
+    /*
     int wx = layout->current_x;
     int wy = layout->current_y;
+    */
 
     gui::do_solid_rect(layout, 300, 300, 0, 0, 0);
+
+    /*
 
     glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
     glLineWidth(2.0f);
@@ -495,7 +502,7 @@ void do_lidar(gui::Layout* layout) {
     for (int q = -3; q <= 3; q++) {
         for (int r = -3; r <= 3; r++) {
             float x = 1.2f * (3.0f / 2.0f) * q;
-            float y = 1.2f * ((sqrtf(3.0f) / 2.0f) * q + sqrtf(3) * r);
+            float y = 1.2f * ((sqrtf(3.0f)/2.0f) * q + sqrtf(3) * r);
 
             float ppm = 150.0f / 10.0f;
 
@@ -505,18 +512,17 @@ void do_lidar(gui::Layout* layout) {
             glBegin(GL_LINE_LOOP);
 
             for (int i = 0; i < 6; i++) {
-                float angle = M_PI * (float) i / 3.0f;
+                float angle = M_PI * (float)i / 3.0f;
 
                 float vx = wx + 150.0f + px + ppm * 1.2 * cosf(angle);
                 float vy = wy + 150.0f + py + ppm * 1.2 * sinf(angle);
 
-                //				glVertex2f(vx, vy);
+                glVertex2f(vx, vy);
             }
 
             glEnd();
         }
     }
-
     glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
@@ -557,6 +563,7 @@ void do_lidar(gui::Layout* layout) {
     glVertex2f(x - hs, y + hs);
 
     glEnd();
+    */ 
 }
 
 // Camera stuff.
@@ -727,9 +734,9 @@ void do_gui(gui::Font* font) {
     layout.advance_y(20);
     layout.push();
 
-    // Draw the map.
-    gui::do_textured_rect(&layout, 572, 572, map_texture_id);
-
+    // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
+    gui::waypoint_map::do_waypoint_map(&layout,572,572);
+    
     layout.reset_x();
     layout.advance_y(10);
 
@@ -964,6 +971,9 @@ int main() {
     // TODO: Fix this hack (for the log view handler) and clean up globals in general.
     global_font = font;
 
+    // TODO: Make everything just use the global font.
+    gui::state.font = font;
+
     logger::register_handler(log_view_handler);
 
     // Initialize camera stuff.
@@ -985,6 +995,7 @@ int main() {
             config.base_station_multicast_group,
             config.base_station_port,
             &global_clock);
+
         if (err != network::Error::OK) {
             logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
@@ -1004,6 +1015,7 @@ int main() {
             config.rover_multicast_group,
             config.rover_port,
             &global_clock);
+
         if (err != network::Error::OK) {
             logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
             return 1;
@@ -1037,6 +1049,8 @@ int main() {
     gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
 
     bool help_menu_up = false;
+    bool stopwatch_menu_up = false;
+
     // Add the help menu commands here
     std::vector<const char*> commands;
     std::vector<const char*> debug_commands;
@@ -1045,12 +1059,21 @@ int main() {
     commands.push_back("<shift>c: Open camera matrix");
     commands.push_back("c: Swap camera feeds");
     commands.push_back("s: Open stopwatch menu");
+    commands.push_back("z + UP ARROW: Zoom in map");
+    commands.push_back("z + DOWN ARROW: Zoom out map");
+    commands.push_back("z + r: Reset map");
     debug_commands.push_back("'test': displays red text");
-
-    bool stopwatch_menu_up = false;
+    debug_commands.push_back("'aw <number> <number>: adds a waypoint (in latitude and longitude)");
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+        bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+
+        if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
+            gui::waypoint_map::zoom_in();    
+        } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
+            gui::waypoint_map::zoom_out();    
+        }
 
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
@@ -1175,6 +1198,15 @@ int main() {
                     }
                     break;
                 }
+                case network::MessageType::LOCATION: {
+                    network::LocationMessage location_message;
+                    network::deserialize(&message.buffer,&location_message);
+                    waypoint::set_rover_coordinates(location_message.latitude,location_message.longitude);
+                    //waypoint::rover_latitude = location_message.latitude;
+                    //rover_longitude = location_message.longitude;
+
+                    break;
+                }
                 default:
                     break;
             }
@@ -1218,6 +1250,7 @@ int main() {
                     } else if (event.axis == controller::Axis::JS_RIGHT_Y) {
                         if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
                             controller::get_value(controller::Axis::DPAD_Y) != 0) {
+
                             continue;
                         }
 
