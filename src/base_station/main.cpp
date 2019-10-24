@@ -802,7 +802,12 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             gui::debug_console::handle_keypress(key, mods);
         }
     } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
-        if (action == GLFW_PRESS && key == GLFW_KEY_C) {
+        // We open the menu on release to prevent the D key from being detected
+        // in the character callback upon release.
+        if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
+            gui::state.show_debug_console = true;
+            gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_C) {
             if (mods & GLFW_MOD_SHIFT) {
                 gui::state.input_state = gui::InputState::CAMERA_MATRIX;
             } else {
@@ -1073,20 +1078,13 @@ int main() {
             gui::waypoint_map::zoom_in();    
         } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
             gui::waypoint_map::zoom_out();    
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
-                gui::state.show_debug_console = true;
-                gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
-            }
-        } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !gui::state.show_debug_console) {
+        } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
             if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
                 gui::log_view::moveTop();
             } else {
                 gui::log_view::moveUpOne();
             }
-        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !gui::state.show_debug_console) {
+        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
             if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
                 gui::log_view::moveBottom();
             } else {

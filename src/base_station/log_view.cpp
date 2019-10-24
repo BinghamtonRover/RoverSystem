@@ -85,6 +85,8 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
     int x = layout->current_x;
     int y = layout->current_y;
 
+    num_lines = height / (FONT_SIZE + 5);
+
     gui::do_solid_rect(layout, width, height, 0, 0, 0);
 
     // We want to print a num_lines amount of times *unless* logMessages is too small
