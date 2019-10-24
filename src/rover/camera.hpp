@@ -17,7 +17,7 @@
             camera::CameraSession session;
 
             // Call open to initialize the session.
-            auto err = camera::open(&session, "/dev/video0", 1920, 1080);
+            auto err = camera::open(&session, "/dev/video0", 1920, 1080, 0);
             // ... handle error ...
 
             // Call start to start the stream.
@@ -75,7 +75,7 @@ struct CaptureSession {
     int fd;
 
 	// The /dev/video id.
-	uint8_t stream_index;
+	uint8_t dev_video_id;
 
     // The width and height of the camera.
     size_t width, height;
@@ -152,7 +152,7 @@ const char* get_error_string(Error error);
             Error::REQUEST_BUFFERS: Failed to request the ability to use our buffers.
             Error::LINK_BUFFERS: Failed to link our buffers to the device.
 */
-Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height);
+Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height, uint8_t dev_video_id);
 
 /*
     Starts the capture session. The device will begin to offer frames.

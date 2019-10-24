@@ -21,10 +21,11 @@ const char* get_error_string(Error error) {
     return error_names[(int) error];
 }
 
-Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height) {
+Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height, uint8_t dev_id) {
     // Set the width and height.
     session->width = width;
     session->height = height;
+    session->dev_video_id = dev_id;
 
     // Call Linux open on the device file.
     session->fd = ::open(device_filepath, O_RDWR);

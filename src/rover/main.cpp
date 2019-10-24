@@ -112,7 +112,7 @@ Config load_config(const char* filename) {
 /**
  * @return: numOpen - the number of open cameras after updating.
  **/
-int updateCameraStatus(camera::CaptureSession *streams[MAX_STREAMS]) {
+int updateCameraStatus(camera::CaptureSession **streams) {
     /**
      * We need 2 arrays to keep track of all of our data.
      * 1. An array for new cameras found
@@ -121,7 +121,7 @@ int updateCameraStatus(camera::CaptureSession *streams[MAX_STREAMS]) {
     int camerasFound[MAX_STREAMS] = {-1};
     int existingCameras[MAX_STREAMS] = {-1};
     int cntr = 0;
-    int open = 1;
+    uint8_t open = 1;
     int numOpen = 0;
 
     for (int i = 0; true; i++) {
@@ -155,11 +155,12 @@ int updateCameraStatus(camera::CaptureSession *streams[MAX_STREAMS]) {
         /* 1.  Check which cameras exist in the file system. */
         for(int j = 1; j < MAX_STREAMS; j++) {
             if(streams[j] != nullptr) {
-                if(camerasFound[i] == streams[j]->stream_index) {
+                if(camerasFound[i] == streams[j]->dev_video_id) {
                     /**
                      * Use -1 to say this camera is being used,
                      * so we don't need to do anything.
                      **/
+                    printf("This camera already exists. Camera: %d\n", camerasFound[i]);
                     camerasFound[i] = -1;
                     existingCameras[j] = i;
                     break;
@@ -171,11 +172,14 @@ int updateCameraStatus(camera::CaptureSession *streams[MAX_STREAMS]) {
         if (camerasFound[i] == -1) continue;
         numOpen++;
 
+        while(streams[open] != nullptr)
+            open++;
+
         char filename_buffer[13]; // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
         sprintf(filename_buffer, "/dev/video%d", i);
 
         camera::CaptureSession* cs = new camera::CaptureSession;
-        camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT);
+        camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, open);
         
         if (err != camera::Error::OK) {
             printf("> Failed to open camera %s\n", name_filename_buffer);
@@ -194,15 +198,15 @@ int updateCameraStatus(camera::CaptureSession *streams[MAX_STREAMS]) {
         /** 
           * 2. Iterate through our cameras adding any extras that do exist.
          **/
-        while(streams[open] != nullptr)
-            open++;
         streams[open] = cs;
         printf("> Found camera with name %s\n", filename_buffer);
+        printf("> We put it into slot %d.", open);
     }
 
     /* 3. Remove any cameras that don't exist. */
     for(int j = 1; j < MAX_STREAMS; j++) {
-        if(existingCameras[j] != -1 && streams[j] != nullptr) {
+        if(existingCameras[j] == -1 && streams[j] != nullptr) {
+            printf("Deleting camera %d.", j);
             camera::close(streams[j]);
             delete streams[j];
             streams[j] = nullptr;
@@ -306,11 +310,7 @@ int main() {
     while (true) {
         for (size_t i = 0; i < MAX_STREAMS; i++) {
             camera::CaptureSession* cs = streams[i];
-            if(cs == nullptr) {
-                continue;
-            } else {
-                std::cout << "Found a frame" << std::endl;
-            }
+            if(cs == nullptr) continue;
 
             // Grab a frame.
             uint8_t* frame_buffer;
@@ -318,9 +318,15 @@ int main() {
             {
                 camera::Error err = camera::grab_frame(cs, &frame_buffer, &frame_size);
                 if (err != camera::Error::OK) {
-                    if (err != camera::Error::AGAIN)
-                        std::cout << "Camera 0: " << camera::get_error_string(err) << std::endl;
+                    if (err == camera::Error::AGAIN)
+                        continue;
+
+                    printf("Deleting camera %d, because it errored", streams[i]->dev_video_id);
+                    camera::close(cs);
+                    delete cs;
+                    streams[i] = nullptr;
                     continue;
+                    //std::cout << "Camera 0: " << camera::get_error_string(err) << std::endl;
                 }
             }
 

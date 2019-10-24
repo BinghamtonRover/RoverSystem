@@ -246,6 +246,7 @@ Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util
     out_feed->clock = clock;
     out_feed->last_active_time = 0;
     out_feed->status = FeedStatus::DEAD;
+    out_feed->type = type;
 
     return Error::OK;
 }
