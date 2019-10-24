@@ -1,6 +1,6 @@
 #include "debug_console.hpp"
 #include "gui.hpp"
-#include "logger.hpp"
+#include "../Logger/logger.hpp"
 #include "log_view.hpp"
 
 #include <GLFW/glfw3.h>
