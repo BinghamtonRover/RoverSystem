@@ -24,7 +24,7 @@ const int MAX_STREAMS = 9;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
 
-const int CAMERA_UPDATE_INTERVAL = 1000 / 15;
+const int CAMERA_UPDATE_INTERVAL = 5000;
 
 const int LIDAR_SEND_INTERVAL = 1000 / 15;
 
@@ -160,7 +160,6 @@ int updateCameraStatus(camera::CaptureSession **streams) {
                      * Use -1 to say this camera is being used,
                      * so we don't need to do anything.
                      **/
-                    printf("This camera already exists. Camera: %d\n", camerasFound[i]);
                     camerasFound[i] = -1;
                     existingCameras[j] = i;
                     break;
