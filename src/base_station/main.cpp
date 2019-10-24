@@ -184,6 +184,9 @@ struct Config {
 
     char rover_multicast_group[16]; // Max length of string ipv4 addr is 15, plus one for nt.
     char base_station_multicast_group[16];
+
+    static const int MAX_PREFERRED_MONITOR_LEN = 32;
+    char preferred_monitor[MAX_PREFERRED_MONITOR_LEN + 1];
 };
 
 Config load_config(const char* filename) {
@@ -224,6 +227,14 @@ Config load_config(const char* filename) {
         exit(1);
     }
     strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
+
+    char* preferred_monitor = sc::get(sc_config, "preferred_monitor");
+    if (!preferred_monitor) {
+        // Default: empty string means primary monitor.
+        config.preferred_monitor[0] = 0;
+    } else {
+        strncpy(config.preferred_monitor, preferred_monitor, Config::MAX_PREFERRED_MONITOR_LEN + 1);
+    }
 
     sc::free(sc_config);
 
@@ -886,10 +897,33 @@ int main() {
         return 1;
     }
 
+    GLFWmonitor* monitor_to_use = glfwGetPrimaryMonitor();
+
+    if (config.preferred_monitor[0] != 0) {
+        // A monitor was specified. Does it exist?
+        int num_monitors;
+        GLFWmonitor** monitors = glfwGetMonitors(&num_monitors);
+
+        bool found = false;
+
+        for (int i = 0; i < num_monitors; i++) {
+            if (strncmp(config.preferred_monitor, glfwGetMonitorName(monitors[i]), Config::MAX_PREFERRED_MONITOR_LEN) == 0) {
+                monitor_to_use = monitors[i];
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) logger::log(logger::WARNING, "Preferred monitor %s not found!", config.preferred_monitor);
+    }
+
+    // Get the correct resolution for the monitor we want to use.
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor_to_use);
+
     // Create a fullscreen window. Title isn't displayed, so doesn't really
     // matter.
     GLFWwindow* window =
-        glfwCreateWindow(gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT, "Base Station", glfwGetPrimaryMonitor(), NULL);
+        glfwCreateWindow(mode->width, mode->height, "Base Station", monitor_to_use, NULL);
 
     // Update the window so everyone can access it.
     gui::state.window = window;
@@ -907,7 +941,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     // OpenGL Setup.
-    glViewport(0, 0, gui::WINDOW_WIDTH, gui::WINDOW_HEIGHT);
+    glViewport(0, 0, mode->width, mode->height);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
