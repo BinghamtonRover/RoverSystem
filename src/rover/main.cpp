@@ -20,7 +20,7 @@
 
 // GLOBAL CONSTANTS
 
-const int MAX_STREAMS = 2;
+const int MAX_STREAMS = 4;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
 
@@ -158,8 +158,9 @@ int main() {
 
         camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT);
         if (err != camera::Error::OK) {
+            printf("> Failed to open camera %s\n", name_filename_buffer);
             delete cs;
-            break;
+            continue;
         }
 
         // Start the camera.
@@ -244,7 +245,9 @@ int main() {
             {
                 camera::Error err = camera::grab_frame(cs, &frame_buffer, &frame_size);
                 if (err != camera::Error::OK) {
-                    std::cout << "Camera 0: " << camera::get_error_string(err) << std::endl;
+                    if (err != camera::Error::AGAIN)
+                        std::cout << "Camera 0: " << camera::get_error_string(err) << std::endl;
+                    continue;
                 }
             }
 

@@ -6,6 +6,7 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "camera.hpp"
 
@@ -175,11 +176,16 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
     FD_SET(session->fd, &fds);
 
     // Set the timeout.
-    tv.tv_sec = SELECT_TIMEOUT;
+    
+    tv.tv_sec = 0;
+    //tv.tv_usec = SELECT_TIMEOUT * 1000;
     tv.tv_usec = 0;
 
     // Wait for the next frame. See man select(2) for more information.
     if (select(session->fd + 1, &fds, NULL, NULL, &tv) <= 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return Error::AGAIN;
+
         return Error::SELECT;
     }
 

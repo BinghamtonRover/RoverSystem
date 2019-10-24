@@ -57,9 +57,9 @@ const int NUM_BUFFERS = 4;
 // to change later.
 const uint32_t PIXEL_FORMAT = V4L2_PIX_FMT_MJPEG;
 
-// The timeout used when waiting for frames, in whole seconds.
+// The timeout used when waiting for frames, in milliseconds.
 // TODO: Make this more reasonable.
-const int SELECT_TIMEOUT = 2;
+const int SELECT_TIMEOUT = 50;
 
 // Represents a buffer that has a size.
 struct Buffer {
@@ -104,7 +104,7 @@ struct CaptureSession {
     for the errors as well as string values for easy printing/logging.
 */
 #define ERROR_DEF(X) \
-    X(OK), X(OPEN), X(QUERY_CAPABILITIES), X(NO_VIDEOCAPTURE), X(NO_STREAMING), X(QUERY_FORMAT), X(SET_FORMAT), \
+    X(OK), X(AGAIN), X(OPEN), X(QUERY_CAPABILITIES), X(NO_VIDEOCAPTURE), X(NO_STREAMING), X(QUERY_FORMAT), X(SET_FORMAT), \
         X(UNSUPPORTED_FORMAT), X(UNSUPPORTED_RESOLUTION), X(REQUEST_BUFFERS), X(LINK_BUFFERS), X(START_STREAM), \
         X(SELECT), X(READ_FRAME), X(PREPARE_BUFFER)
 
