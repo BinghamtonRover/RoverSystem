@@ -168,7 +168,9 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         }
 
         /* Don't initialize this camera, as it exists */
-        if (camerasFound[i] == -1) continue;
+        if (camerasFound[i] == -1) {
+            continue;
+        }
         numOpen++;
 
         while(streams[open] != nullptr)
@@ -178,10 +180,10 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         sprintf(filename_buffer, "/dev/video%d", i);
 
         camera::CaptureSession* cs = new camera::CaptureSession;
-        camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, open);
+        camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, camerasFound[i]);
         
         if (err != camera::Error::OK) {
-            printf("> Failed to open camera %s\n", name_filename_buffer);
+            printf("> Camera %d errored while opening\n", cs->dev_video_id);
             delete cs;
             continue;
         }
@@ -189,6 +191,7 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         // Start the camera.
         err = camera::start(cs);
         if (err != camera::Error::OK) {
+            printf("> Camera %d errored while starting\n", cs->dev_video_id);
             camera::close(cs);
             delete cs;
             continue;
@@ -198,14 +201,18 @@ int updateCameraStatus(camera::CaptureSession **streams) {
           * 2. Iterate through our cameras adding any extras that do exist.
          **/
         streams[open] = cs;
-        printf("> Found camera with name %s\n", filename_buffer);
-        printf("> We put it into slot %d.", open);
+    }
+
+    for(int i = 0; i < cntr; i++) {
+        if (camerasFound[i] != -1) {
+            printf("> Connected new camera at /dev/video%d\n", camerasFound[i]);
+        }
     }
 
     /* 3. Remove any cameras that don't exist. */
     for(int j = 1; j < MAX_STREAMS; j++) {
         if(existingCameras[j] == -1 && streams[j] != nullptr) {
-            printf("Deleting camera %d.", j);
+            printf("Deleting camera %d.\n", j);
             camera::close(streams[j]);
             delete streams[j];
             streams[j] = nullptr;
@@ -214,6 +221,7 @@ int updateCameraStatus(camera::CaptureSession **streams) {
 
     return numOpen;
 }
+
 int main() {
     util::Clock::init(&global_clock);
 
@@ -243,6 +251,9 @@ int main() {
     // Camera streams
     camera::CaptureSession * streams[MAX_STREAMS] = {0};
     int activeCameras = updateCameraStatus(streams);
+
+    // Note, this doesn't count the zed camera.
+    printf("> Started with %d cameras conncted.", activeCameras);
 
     //std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
