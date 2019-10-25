@@ -36,6 +36,8 @@ const int SUSPENSION_UPDATE_INTERVAL = 10;
 
 const int ZED_INTERVAL = 1000 / 15;
 
+const int TICK_INTERVAL = 1000;
+
 const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
 
 util::Clock global_clock;
@@ -308,6 +310,11 @@ int main() {
     util::Timer location_send_timer;
     util::Timer::init(&location_send_timer,LOCATION_SEND_INTERVAL, &global_clock);
 
+    util::Timer tick_timer;
+    util::Timer::init(&tick_timer, TICK_INTERVAL, &global_clock);
+
+    uint32_t ticks = 0;
+
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
 
@@ -572,5 +579,16 @@ int main() {
         // Update feed statuses.
         network::update_status(&r_feed);
         network::update_status(&bs_feed);
+
+        // Tick.
+        ticks++;
+        uint32_t last_tick_interval;
+        if (tick_timer.ready(&last_tick_interval)) {
+            network::TickMessage message;
+            message.ticks_per_second = (ticks * TICK_INTERVAL) / (float)last_tick_interval;
+            network::publish(&r_feed, &message);
+
+            ticks = 0;
+        }
     }
 }

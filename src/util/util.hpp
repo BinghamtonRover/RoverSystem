@@ -33,16 +33,24 @@ struct Timer {
     uint32_t last;
     Clock* clock;
 
-    bool ready() {
+    bool ready(uint32_t* out_interval) {
         auto now = clock->get_millis();
 
-        if (now - last >= interval) {
+        auto last_interval = now - last;
+        if (out_interval) *out_interval = last_interval;
+
+        if (last_interval >= interval) {
             last = now;
             return true;
         }
 
         return false;
     }
+
+    bool ready() {
+        return ready(nullptr);
+    }
+
 
     static void init(Timer* timer, uint32_t interval, Clock* clock) {
         timer->interval = interval;

@@ -1194,6 +1194,15 @@ int main() {
                     for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
                         lidar_points.push_back(lidar_message.points[i]);
                     }
+
+                    break;
+                }
+                case network::MessageType::TICK: {
+                    network::TickMessage tick_message;
+                    network::deserialize(&message.buffer, &tick_message);
+
+                    logger::log(logger::DEBUG, "Rover tick: %.4f tps", tick_message.ticks_per_second);
+
                     break;
                 }
                 case network::MessageType::LOCATION: {
