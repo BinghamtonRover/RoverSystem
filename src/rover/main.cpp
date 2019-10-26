@@ -182,9 +182,11 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         sprintf(filename_buffer, "/dev/video%d", i);
 
         camera::CaptureSession* cs = new camera::CaptureSession;
+        printf("Opening camera %d\n", camerasFound[i]);
         camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, camerasFound[i]);
         
         if (err != camera::Error::OK) {
+            camerasFound[i] = -1;
             printf("> Camera %d errored while opening\n", cs->dev_video_id);
             delete cs;
             continue;
@@ -193,6 +195,7 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         // Start the camera.
         err = camera::start(cs);
         if (err != camera::Error::OK) {
+            camerasFound[i] = -1;
             printf("> Camera %d errored while starting\n", cs->dev_video_id);
             camera::close(cs);
             delete cs;
@@ -255,7 +258,7 @@ int main() {
     int activeCameras = updateCameraStatus(streams);
 
     // Note, this doesn't count the zed camera.
-    printf("> Started with %d cameras conncted.", activeCameras);
+    printf("> Started with %d cameras conncted.\n", activeCameras);
 
     //std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
@@ -338,7 +341,7 @@ int main() {
                     if (err == camera::Error::AGAIN)
                         continue;
 
-                    printf("Deleting camera %d, because it errored", streams[i]->dev_video_id);
+                    printf("Deleting camera %d, because it errored\n", streams[i]->dev_video_id);
                     camera::close(cs);
                     delete cs;
                     streams[i] = nullptr;
