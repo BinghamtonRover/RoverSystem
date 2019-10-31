@@ -286,16 +286,34 @@ struct LocationMessage {
 
 struct JpegQualityMessage {
     static const auto TYPE = MessageType::JPEGQUALITY;
-    uint8_t jpegQuality;
-    bool greyscale;
+    uint8_t setting;
+    union {
+        uint8_t jpegQuality;
+        bool greyscale;
+    };
 
     void serialize(Buffer* buffer) {
-        network::serialize(buffer, this->jpegQuality);
-        network::serialize(buffer, this->greyscale);
+        network::serialize(buffer,this->setting);
+        switch(this->setting){
+            case 0:
+                network::serialize(buffer, this->jpegQuality);
+                break;
+            case 1:
+                network::serialize(buffer, this->greyscale);
+                break;
+        }
+        
     }
     void deserialize(Buffer* buffer) {
-        network::deserialize(buffer, &(this->jpegQuality));
-        network::deserialize(buffer, &(this->greyscale));
+        network::deserialize(buffer,&(this->setting));
+        switch(this->setting){
+            case 0:
+                network::deserialize(buffer, &(this->jpegQuality));
+                break;
+            case 1:
+                network::deserialize(buffer, &(this->greyscale));
+                break;
+        }  
     }
 };
 
@@ -333,7 +351,6 @@ template <typename T>
 Error publish(Feed* feed, T* thing) {
     auto buffer = get_outgoing_buffer(feed);
     auto message_type = T::TYPE;
-
     thing->serialize(&buffer);
 
     return send(feed, message_type, buffer);

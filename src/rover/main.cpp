@@ -537,8 +537,9 @@ int main() {
 
         // Receive incoming messages
         network::IncomingMessage message;
+
         while (true) {
-            auto neterr = network::receive(&r_feed, &message);
+            auto neterr = network::receive(&bs_feed, &message);
             if (neterr != network::Error::OK) {
                 if (neterr == network::Error::NOMORE) {
                     break;
@@ -548,7 +549,6 @@ int main() {
 
                 break;
             }
-
             switch (message.type) {
                 case network::MessageType::MOVEMENT: {
                     network::MovementMessage movement;
@@ -574,8 +574,16 @@ int main() {
                 case network::MessageType::JPEGQUALITY: {
                     network::JpegQualityMessage quality;
                     network::deserialize(&message.buffer, &quality);
-                    greyscale = quality.greyscale;
-                    jpeg_quality = quality.jpegQuality;
+                    uint8_t setting = quality.setting;
+                    if (setting == 0){
+                        jpeg_quality = quality.jpegQuality;
+                        
+                    }
+                    else if (setting == 1){
+                        greyscale = quality.greyscale;
+                    }
+                    
+                    
                     break;
                 }
                 default:

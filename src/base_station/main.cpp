@@ -10,6 +10,7 @@
 #include "logger.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
+#include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -1010,7 +1011,7 @@ int main() {
             logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
         }
-
+        shared_feeds::bs_feed = &bs_feed;
         logger::log(
             logger::INFO,
             "Network: publishing base station feed on %s:%d",
@@ -1036,8 +1037,10 @@ int main() {
             "Network: subscribed to rover feed on %s:%d",
             config.rover_multicast_group,
             config.rover_port);
-    }
 
+        
+    }
+    
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
     util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &global_clock);
@@ -1073,7 +1076,10 @@ int main() {
     commands.push_back("z + DOWN ARROW: Zoom out map");
     commands.push_back("z + r: Reset map");
     debug_commands.push_back("'test': displays red text");
-    debug_commands.push_back("'aw <number> <number>: adds a waypoint (in latitude and longitude)");
+    debug_commands.push_back("'aw <number> <number>': adds a waypoint (in latitude and longitude)");
+    debug_commands.push_back("'gs_on': Changes camera feeds to greyscale");
+    debug_commands.push_back("'gs_off': Changes camera feeds to RGB");
+    debug_commands.push_back("'jpeg_quality <0-100>: Changes the quality of the cameras");
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
