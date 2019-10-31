@@ -1071,7 +1071,10 @@ int main() {
     commands.push_back("z + DOWN ARROW: Zoom out map");
     commands.push_back("z + r: Reset map");
     debug_commands.push_back("'test': displays red text");
-    debug_commands.push_back("'aw <number> <number>: adds a waypoint (in latitude and longitude)");
+    debug_commands.push_back("'aw <number> <number>': adds a waypoint (in latitude and longitude)");
+    debug_commands.push_back("'gs_on': Changes camera feeds to greyscale");
+    debug_commands.push_back("'gs_off': Changes camera feeds to RGB");
+    debug_commands.push_back("'jpeg_quality <0-100>: Changes the quality of the cameras");
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
