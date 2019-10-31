@@ -20,33 +20,37 @@
 
 const int ws = 10;
 const float B = 2;
-const int alpha = 5;
+const int alpha = 1;
 const int l = 5;
 const float cell_size = 1;
 const float threshold = 0.3;
-int target_x = 100;
-int target_y = 100;
-int * c_x = 0;
-int * c_y = 0;
 float cell_certainty = 0;
-float cell_magnitude = 0;
-float cell_direction = 0;
-float * world_x;
-float * world_y;
 typedef struct {
     int start, end;
 } Valley;
 
-void get_polar_obstacle_densities(World world, float rover_x, float rover_y, float rover_angle, float *h, int n, float A) {
-    world_to_cell(&world, rover_x, rover_y, c_x, c_y);
-    for (int i = (*c_y - ws/2); i <= (*c_y + ws/2); i++)
+void get_polar_obstacle_densities(World world, float rover_x, float rover_y, float rover_angle, float* h, int n, float A) {
+    int c_x, c_y;
+    float world_x, world_y;
+    float cell_magnitude, cell_direction;
+    world_to_cell(&world, rover_x, rover_y, &c_x, &c_y);
+    for (int i = (c_y - ws/2); i <= (c_y + ws/2); i++)
     {
-        for (int j = (*c_x - ws/2); j <= (*c_x + ws/2); j++)
+        for (int j = (c_x - ws/2); j <= (c_x + ws/2); j++)
         {
-            cell_to_world(&world, *c_x, *c_y, world_x, world_x);
-            cell_direction = atan2(*world_y - rover_y, *world_x - rover_x);
-            cell_magnitude = pow(occupancy_grid_get(&world.occupancy_grid, *c_x, *c_y), 2) * (A - B * pow(pow(rover_y - *world_y, 2) + pow(rover_x - *world_x, 2), 0.5));
-            int k = (int)(cell_direction/alpha);
+            
+            cell_to_world(&world, c_x, c_y, &world_x, &world_y);
+            cell_direction = atan2(world_y - rover_y, world_x - rover_x);
+            printf("cell direction value: %f\n", cell_direction);
+            printf("cx value: %d\n", c_x);
+            printf("cy value: %d\n", c_y);
+            printf("worldx value: %f\n", world_x);
+            printf("worldy value: %f\n", world_y);
+            printf("cell mag pt 1: %f\n", pow(occupancy_grid_get(&world.occupancy_grid, c_x, c_y), 2));
+            cell_magnitude = pow(occupancy_grid_get(&world.occupancy_grid, c_x, c_y), 2) * (A - B * pow(pow(rover_y - world_y, 2) + pow(rover_x - world_x, 2), 0.5));
+            int k = abs((int)(cell_direction/alpha));
+            printf("index value: %d\n", k);
+            printf("cell mag value: %f\n", cell_magnitude);
             h[k] += cell_magnitude;
         }
     }
@@ -54,14 +58,33 @@ void get_polar_obstacle_densities(World world, float rover_x, float rover_y, flo
     for (int k = 0; k <= (n-1); k++)
     {
         float sum = 0;
-        for (int w = (k-l+1); w <= (k+l-1); w++)
+        int start = (k-l+1);
+        int end = (k+l-1);
+        if (start < 0)
+        {
+            start += n;
+        }
+        if (end < 0)
+        {
+            end += n;
+        }
+        if (start >= n)
+        {
+            start -= n;
+        }
+        if (end >= n)
+        {
+            end -= n;
+        }
+
+        for (int w = start; w <= end; w++)
         {
             int c = l-abs(w-k);
             if (w < 0)
             {
                 w += n;
             }
-            else if (w >= n)
+            else if (w >= n && end != n)
             {
                 w -= n;
             }
@@ -122,7 +145,13 @@ AutonomyStatus autonomy_step(World* world, float rover_x, float rover_y, float r
     const float A = dmax;
     const int n = 360/alpha;
     float densities[n];
+    printf("size of densities: %zu\n", sizeof(densities));
     get_polar_obstacle_densities(*world, rover_x, rover_y, rover_angle, densities, n, A);
+    printf ("MADE IT OUT OF FIRST FUNCTION\n");
+    for (int i = 0; i < sizeof(*densities); i++)
+    {
+        printf("value %d: %f\n", i, densities[i]);
+    }
     Valley valleys = get_valleys(densities, n);
     *out_offset_x = 0.5;
     *out_offset_y = 0.5;
