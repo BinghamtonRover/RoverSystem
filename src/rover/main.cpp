@@ -138,7 +138,8 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         fscanf(name_file, "%s\n", name_filename_buffer);
         fclose(name_file);
 
-        if (strcmp("ZED", name_filename_buffer) == 0) continue;
+        if (strncmp("ZED", name_filename_buffer, 3) == 0) continue;
+
         camerasFound[cntr] = i;
         cntr++;
     }
@@ -262,7 +263,10 @@ int main() {
 
     //std::cout << "> Using " << streams.size() << " cameras." << std::endl;
 
-    zed::open(&global_clock);
+    if (zed::open(&global_clock) != zed::Error::OK) {
+        printf("> Failed to open zed camera!\n");
+        return 1;
+    }
 
     // Two feeds: incoming base station and outgoing rover.
     network::Feed r_feed, bs_feed;
