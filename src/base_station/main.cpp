@@ -66,6 +66,8 @@ gui::Font global_font;
 unsigned int map_texture_id;
 unsigned int stopwatch_texture_id;
 
+float last_rover_tick = 0;
+
 enum class StopwatchState { STOPPED, PAUSED, RUNNING };
 
 struct {
@@ -322,6 +324,9 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
     sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
     gui::draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
+
+    sprintf(info_buffer, "Rover tps: %.0f", last_rover_tick);
+    gui::draw_text(font, info_buffer, x + 5, y + 60 + 5, 15);
 
     time_t current_time;
     time(&current_time);
@@ -1194,6 +1199,14 @@ int main() {
                     for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
                         lidar_points.push_back(lidar_message.points[i]);
                     }
+
+                    break;
+                }
+                case network::MessageType::TICK: {
+                    network::TickMessage tick_message;
+                    network::deserialize(&message.buffer, &tick_message);
+
+                    last_rover_tick = tick_message.ticks_per_second;
                     break;
                 }
                 case network::MessageType::LOCATION: {

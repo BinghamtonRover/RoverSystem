@@ -141,7 +141,17 @@ Buffer get_outgoing_buffer(Feed* feed);
 // Message Definitions
 //
 
-enum class MessageType { HEARTBEAT, TEST, MOVEMENT, CAMERA, LOG, LIDAR, LOCATION, JPEGQUALITY };
+enum class MessageType { 
+    HEARTBEAT, 
+    TEST, 
+    MOVEMENT, 
+    CAMERA, 
+    LOG, 
+    LIDAR, 
+    LOCATION, 
+    JPEGQUALITY,
+    TICK
+};
 
 struct HeartbeatMessage {
     static const auto TYPE = MessageType::HEARTBEAT;
@@ -286,6 +296,20 @@ struct JpegQualityMessage {
     void deserialize(Buffer* buffer) {
         network::deserialize(buffer, &(this->jpegQuality));
         network::deserialize(buffer, &(this->greyscale));
+    }
+};
+
+struct TickMessage {
+    static const auto TYPE = MessageType::TICK;
+
+    float ticks_per_second;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->ticks_per_second);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->ticks_per_second));
     }
 };
 
