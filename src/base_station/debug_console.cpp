@@ -3,7 +3,8 @@
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "logger.hpp"
-
+#include "shared_feeds.hpp" //TODO: Fix this hack, debug_console is referencing main here to use a rover_feed established in main.cpp to publish
+#include "../network/network.hpp"
 #include <GLFW/glfw3.h>
 
 #include <string>
@@ -187,8 +188,48 @@ void handle_keypress(int key, int mods) {
             log("test = Test Debug Menu", 1, 1, 1);
         } else if (command == "") {
             log("No command entered.", 1, 0, 0);
-        } else {
-            log("Invalid command.", 1, 0, 0);
+        } else if (command == "gs_on") {
+            if (shared_feeds::bs_feed != NULL){
+                //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
+                    network::JpegQualityMessage message = {
+                    static_cast<uint8_t>(1), //setting
+                    static_cast<bool>(true) //greyscale
+                    };
+                    network::publish(shared_feeds::bs_feed, &message);
+            }
+        } else if (command == "gs_off"){
+            if (shared_feeds::bs_feed != NULL){
+                //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
+                    network::JpegQualityMessage message = {
+                    static_cast<uint8_t>(1), //setting
+                    static_cast<bool>(false) //greyscale
+                    };
+                    network::publish(shared_feeds::bs_feed, &message);
+            }
+        } else if (command.substr(0,12) == "jpeg_quality"){
+            int space = 0;
+            space = command.substr(0).find(" ");
+            int value = atoi(command.substr(space+1,command.size()).c_str()); 
+            if (space < 12 || (command.substr(space+1,command.size()).size() >= 3 && command.substr(space+1,command.size()) != "100")){
+                log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
+            }
+            else if (value < 0) {
+                log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
+            } else if (value >= 0) {
+                //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
+                if (shared_feeds::bs_feed != NULL){
+                    network::JpegQualityMessage message = {
+                    static_cast<uint8_t>(0), //setting
+                    static_cast<uint8_t>(value) //jpegQuality
+                    };
+                    network::publish(shared_feeds::bs_feed, &message);
+                }
+                else {
+
+                }
+            } else {
+                log("Invalid command.", 1, 0, 0);
+            }
         }
     } else if (key == GLFW_KEY_BACKSPACE) {
         if (mods & GLFW_MOD_CONTROL) {

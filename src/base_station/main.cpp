@@ -10,6 +10,7 @@
 #include "logger.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
+#include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -1005,7 +1006,7 @@ int main() {
             logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
         }
-
+        shared_feeds::bs_feed = &bs_feed;
         logger::log(
             logger::INFO,
             "Network: publishing base station feed on %s:%d",
@@ -1031,8 +1032,10 @@ int main() {
             "Network: subscribed to rover feed on %s:%d",
             config.rover_multicast_group,
             config.rover_port);
-    }
 
+        
+    }
+    
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
     util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &global_clock);
