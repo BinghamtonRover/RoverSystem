@@ -270,6 +270,31 @@ void fill_rectangle(int x, int y, int w, int h) {
     glPopMatrix();
 }
 
+//Renders a circle around a given x,y coordinate.
+void do_circle(int x, int y, int radius){
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glTranslatef(x,y,0.0f);
+    int resolution = 600; //Determines how many points are being used to approximate the circle
+    float theta = (2 * M_PI)/(float)resolution;
+    float c = cosf(theta);
+    float s = sinf(theta);
+    float t;
+    float px = radius;
+    float py = 0;
+    glLineWidth(1.0f);
+    glBegin(GL_LINE_LOOP);
+    for(int i = 0; i < resolution; i++){
+        glVertex2f(px,py);
+        t = px;
+        px = c * px - s * py; //Rotating x component by theta
+        py = s * t + c * py; //Rotating y component by theta
+    }
+    glEnd();
+    glPopMatrix();
+
+}
+
 void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int texture_id) {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();

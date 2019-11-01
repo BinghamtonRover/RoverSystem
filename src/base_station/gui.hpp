@@ -130,6 +130,9 @@ void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int textu
 // Fills the specified rectangle with the currently-set OpenGL color.
 void fill_rectangle(int x, int y, int w, int h);
 
+//Renders a circle around a given x,y coordinate. 
+void do_circle(int x, int y, int radius);
+
 } // namespace gui
 
 #endif
