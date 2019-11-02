@@ -1,4 +1,5 @@
 #include "zed.hpp"
+#include "subsystem.hpp"
 
 #include <string.h>
 
@@ -9,7 +10,14 @@ static const int FRAME_UPDATE_INTERVAL = 1000 / FPS;
 
 static util::Timer timer;
 
+static uint8_t subsystem_id;
+
 Error open(util::Clock* clock) {
+    subsystem_id = subsystem::add("ZED Camera (dummy)");
+
+    // For the dummy, just immediately set status to connected.
+    subsystem::get(subsystem_id)->state = subsystem::State::CONNECTED;
+
     util::Timer::init(&timer, (uint32_t) FRAME_UPDATE_INTERVAL, clock);
 
     return Error::OK;

@@ -2,12 +2,10 @@
 #include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
 
-#include "camera.hpp"
-#include "imu.hpp"
-#include "lidar.hpp"
-#include "suspension.hpp"
-#include "zed.hpp"
 #include "gps.hpp"
+#include "camera.hpp"
+#include "zed.hpp"
+#include "subsystem.hpp"
 
 #include <turbojpeg.h>
 
@@ -26,15 +24,11 @@ const unsigned int CAMERA_HEIGHT = 720;
 
 const int CAMERA_UPDATE_INTERVAL = 5000;
 
-const int LIDAR_SEND_INTERVAL = 1000 / 15;
+const int NETWORK_UPDATE_INTERVAL = 1000 / 5;
 
-const int LOCATION_SEND_INTERVAL = 1000/10;
+const int SUBSYSTEM_SEND_INTERVAL = 1000 * 5;
 
-const int IMU_READ_INTERVAL = 1000 / 15;
-
-const int SUSPENSION_UPDATE_INTERVAL = 10;
-
-const int ZED_INTERVAL = 1000 / 15;
+const int LOCATION_SEND_INTERVAL = 1000;
 
 const int TICK_INTERVAL = 1000;
 
@@ -42,10 +36,8 @@ const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - netwo
 
 util::Clock global_clock;
 
-struct Config {
-    char suspension_serial_id[500];
-    char imu_serial_id[500];
-
+struct Config
+{
     int base_station_port;
     int rover_port;
 
@@ -77,20 +69,6 @@ Config load_config(const char* filename) {
         exit(1);
     }
     config.base_station_port = atoi(base_station_port);
-
-    char* suspension_serial_id = sc::get(sc_config, "suspension_serial_id");
-    if (!suspension_serial_id) {
-        printf("Config file missing 'suspension_serial_id'!\n");
-        exit(1);
-    }
-    strncpy(config.suspension_serial_id, suspension_serial_id, 500);
-
-    char* imu_serial_id = sc::get(sc_config, "imu_serial_id");
-    if (!imu_serial_id) {
-        printf("Config file missing 'imu_serial_id'!\n");
-        exit(1);
-    }
-    strncpy(config.imu_serial_id, imu_serial_id, 500);
 
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
@@ -233,25 +211,6 @@ int main() {
 
     Config config = load_config("res/r.sconfig");
 
-    if (suspension::init(config.suspension_serial_id) != suspension::Error::OK) {
-        fprintf(stderr, "[!] Failed to initialize the suspension!\n");
-        return 1;
-    }
-
-    if (lidar::start("192.168.1.21") != lidar::Error::OK) {
-        fprintf(stderr, "[!] Failed to init field LIDAR!\n");
-        return 1;
-    }
-
-#if 0
-    if (imu::start(config.imu_serial_id) != imu::Error::OK) {
-        fprintf(stderr, "[!] Failed to start IMU!\n");
-        return 1;
-    }
-#endif
-
-    std::vector<long> lidar_points;
-
     unsigned int frame_counter = 0;
 
     // Camera streams
@@ -267,6 +226,13 @@ int main() {
         printf("> Failed to open zed camera!\n");
         return 1;
     }
+
+    if (gps::open() != gps::Error::OK) {
+        printf("[!] Failed to open GPS!\n");
+        return 1;
+    }
+
+    zed::open(&global_clock);
 
     // Two feeds: incoming base station and outgoing rover.
     network::Feed r_feed, bs_feed;
@@ -300,19 +266,8 @@ int main() {
         }
     }
 
-    util::Timer lidar_send_timer;
-    util::Timer::init(&lidar_send_timer, LIDAR_SEND_INTERVAL, &global_clock);
     util::Timer camera_update_timer;
     util::Timer::init(&camera_update_timer, CAMERA_UPDATE_INTERVAL, &global_clock);
-
-    util::Timer imu_read_timer;
-    util::Timer::init(&imu_read_timer, IMU_READ_INTERVAL, &global_clock);
-
-    util::Timer suspension_update_timer;
-    util::Timer::init(&suspension_update_timer, SUSPENSION_UPDATE_INTERVAL, &global_clock);
-
-    util::Timer zed_timer;
-    util::Timer::init(&zed_timer, ZED_INTERVAL, &global_clock);
 
     util::Timer location_send_timer;
     util::Timer::init(&location_send_timer,LOCATION_SEND_INTERVAL, &global_clock);
@@ -320,10 +275,16 @@ int main() {
     util::Timer tick_timer;
     util::Timer::init(&tick_timer, TICK_INTERVAL, &global_clock);
 
+    util::Timer network_update_timer;
+    util::Timer::init(&network_update_timer, NETWORK_UPDATE_INTERVAL, &global_clock);
+
+    util::Timer subsystem_send_timer;
+    util::Timer::init(&subsystem_send_timer, SUBSYSTEM_SEND_INTERVAL, &global_clock);
     uint32_t ticks = 0;
 
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
+
 
     unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
     uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
@@ -429,27 +390,6 @@ int main() {
             camera::return_buffer(cs);
         }
 
-		// LIDAR stuff.
-        /*
-		if (lidar_send_timer.ready()) {
-			lidar_points.clear();
-			if (lidar::scan(lidar_points) != lidar::Error::OK) {
-				fprintf(stderr, "[!] Failed to read LIDAR points!\n");
-			}
-
-            network::LidarMessage message;
-            for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
-                message.points[i] = (uint16_t) lidar_points[i];
-            }
-
-            network::publish(&r_feed, &message);
-
-			for (auto point : lidar_points) {
-                // DO SOMETHING.
-			}
-		}
-        */
-
         if (camera_update_timer.ready()) {
             updateCameraStatus(streams);
         }
@@ -519,21 +459,9 @@ int main() {
 
                 network::publish(&r_feed, &message);
             }
-
-            if (zed_timer.ready()) {
-                // TODO: SEND NETWORK UPDATES AND UPDATE AUTONOMY.
-            }
         }
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
-
-#if 0
-        // IMU stuff.
-        if (imu_timer.ready()) {
-            imu::Rotation rotation = imu::get_rotation();
-            printf("> Rotation: %f, %f, %f\n", rotation.pitch, rotation.yaw, rotation.roll);
-        }
-#endif
 
         // Receive incoming messages
         network::IncomingMessage message;
@@ -554,20 +482,8 @@ int main() {
                     network::MovementMessage movement;
                     network::deserialize(&message.buffer, &movement);
 
-                    // printf("Got movement with %d, %d\n", movement.left, movement.right);
-
-                    suspension::Direction left_direction =
-                        movement.left < 0 ? suspension::BACKWARD : suspension::FORWARD;
-                    suspension::Direction right_direction =
-                        movement.right < 0 ? suspension::BACKWARD : suspension::FORWARD;
-
-                    uint8_t left_speed = movement.left < 0 ? (uint8_t)((-movement.left)) : (uint8_t)(movement.left);
-                    uint8_t right_speed = movement.right < 0 ? (uint8_t)((-movement.right)) : (uint8_t)(movement.right);
-
-                    if (suspension_update_timer.ready()) {
-                        suspension::update(suspension::LEFT, left_direction, left_speed);
-                        suspension::update(suspension::RIGHT, right_direction, right_speed);
-                    }
+					// printf("Got movement with %d, %d\n", movement.left, movement.right);
+                    // TODO: Feed suspension here!
 
                     break;
                 }
@@ -591,9 +507,11 @@ int main() {
             }
         }
 
-        // Update feed statuses.
-        network::update_status(&r_feed);
-        network::update_status(&bs_feed);
+        if (network_update_timer.ready()) {
+            // Update feed statuses.
+            network::update_status(&r_feed);
+            network::update_status(&bs_feed);
+        }
 
         // Tick.
         ticks++;
@@ -604,6 +522,10 @@ int main() {
             network::publish(&r_feed, &message);
 
             ticks = 0;
+        }
+
+        if (subsystem_send_timer.ready()) {
+            subsystem::send_update(&r_feed);
         }
     }
 }

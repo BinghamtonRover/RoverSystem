@@ -291,6 +291,18 @@ void close(Feed* feed) {
 //
 
 //
+// Message Types
+//
+
+void SubsystemMessage::Subsystem::set_name(const char* name) {
+    strncpy((char*) this->name, name, MAX_NAME_LEN + 1);
+}
+
+//
+// End Message TYpes
+//
+
+//
 // Sending and Receiving
 //
 

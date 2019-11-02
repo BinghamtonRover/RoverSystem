@@ -6,8 +6,6 @@
 
 #include "../util/util.hpp"
 
-#include "../util/util.hpp"
-
 #include "memory.hpp"
 
 namespace network {
@@ -150,7 +148,8 @@ enum class MessageType {
     LIDAR, 
     LOCATION, 
     JPEGQUALITY,
-    TICK
+    TICK,
+    SUBSYSTEM
 };
 
 struct HeartbeatMessage {
@@ -328,6 +327,46 @@ struct TickMessage {
 
     void deserialize(Buffer* buffer) {
         network::deserialize(buffer, &(this->ticks_per_second));
+    }
+};
+
+struct SubsystemMessage {
+    static const auto TYPE = MessageType::SUBSYSTEM;
+    static const auto MAX_NAME_LEN = 32;
+
+    struct Subsystem {
+        uint8_t id;
+       
+        // Null-terminated.
+        uint8_t name[MAX_NAME_LEN + 1];
+
+        uint8_t state; 
+
+        // Takes a null-terminated string and truncates it as necessary.
+        void set_name(const char* name);
+    };
+
+    uint8_t num;
+    Subsystem* subsystems;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->num);
+
+        for (uint8_t i = 0; i < this->num; i++) {
+            network::serialize(buffer, this->subsystems[i].id);
+            network::serialize(buffer, this->subsystems[i].name, MAX_NAME_LEN + 1);
+            network::serialize(buffer, this->subsystems[i].state);
+        }
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->num));
+
+        for (uint8_t i = 0; i < this->num; i++) {
+            network::deserialize(buffer, &(this->subsystems[i].id));
+            network::deserialize(buffer, this->subsystems[i].name, MAX_NAME_LEN + 1);
+            network::deserialize(buffer, &(this->subsystems[i].state));
+        }
     }
 };
 
