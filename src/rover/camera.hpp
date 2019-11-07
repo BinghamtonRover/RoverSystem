@@ -6,6 +6,8 @@
 
 #include <linux/videodev2.h>
 
+#include "../util/util.hpp"
+
 /*
     This library uses the Video4Linux kernel library to grab camera frames.
 
@@ -99,6 +101,9 @@ struct CaptureSession {
     // This is useful for distinguishing cameras, since it will not change
     // unless a camera is moved to a different port on the machine.
     char hardware_location[32];
+
+    // A timer that limits the camera's framerate.
+    util::Timer timer;
 };
 
 /*
@@ -138,6 +143,9 @@ const char* get_error_string(Error error);
         session: The session struct used to maintain session state.
         device_filepath: The file path of the camera device (/dev/video<n>, where n = 0, 1, ...).
         width, height: The capture resolution.
+        dev_video_id: The /dev/video* id.
+        clock: A clock to use for framerate limiting.
+        framerate: The max framerate of the camera.
 
     Returns:
         Error::OK on success, and a suitable error on failure:
@@ -152,7 +160,7 @@ const char* get_error_string(Error error);
             Error::REQUEST_BUFFERS: Failed to request the ability to use our buffers.
             Error::LINK_BUFFERS: Failed to link our buffers to the device.
 */
-Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height, uint8_t dev_video_id);
+Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height, uint8_t dev_video_id, util::Clock* clock, int framerate);
 
 /*
     Starts the capture session. The device will begin to offer frames.

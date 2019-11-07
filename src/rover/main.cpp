@@ -24,7 +24,9 @@ const unsigned int CAMERA_HEIGHT = 720;
 
 const int CAMERA_UPDATE_INTERVAL = 5000;
 
-const int NETWORK_UPDATE_INTERVAL = 1000 / 5;
+const int CAMERA_FRAME_INTERVAL = 1000 / 15;
+
+const int NETWORK_UPDATE_INTERVAL = 1000 / 2;
 
 const int SUBSYSTEM_SEND_INTERVAL = 1000 * 5;
 
@@ -43,6 +45,7 @@ struct Config
 
     char base_station_multicast_group[16];
     char rover_multicast_group[16];
+    char interface[16];
 };
 
 Config load_config(const char* filename) {
@@ -83,6 +86,14 @@ Config load_config(const char* filename) {
         exit(1);
     }
     strncpy(config.rover_multicast_group, rover_multicast_group, 16);
+
+    char* interface = sc::get(sc_config, "interface");
+    if (!interface) {
+        // Default.
+        strncpy(config.interface, "0.0.0.0", 16);
+    } else {
+        strncpy(config.interface, interface, 16);
+    }
 
     sc::free(sc_config);
 
@@ -158,11 +169,11 @@ int updateCameraStatus(camera::CaptureSession **streams) {
             open++;
 
         char filename_buffer[13]; // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
-        sprintf(filename_buffer, "/dev/video%d", i);
+        sprintf(filename_buffer, "/dev/video%d", camerasFound[i]);
 
         camera::CaptureSession* cs = new camera::CaptureSession;
         printf("Opening camera %d\n", camerasFound[i]);
-        camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, camerasFound[i]);
+        camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, camerasFound[i], &global_clock, CAMERA_FRAME_INTERVAL);
         
         if (err != camera::Error::OK) {
             camerasFound[i] = -1;
@@ -232,8 +243,6 @@ int main() {
         return 1;
     }
 
-    zed::open(&global_clock);
-
     // Two feeds: incoming base station and outgoing rover.
     network::Feed r_feed, bs_feed;
 
@@ -241,6 +250,7 @@ int main() {
         auto err = network::init(
             &r_feed,
             network::FeedType::OUT,
+            config.interface,
             config.rover_multicast_group,
             config.rover_port,
             &global_clock);
@@ -255,6 +265,7 @@ int main() {
         auto err = network::init(
             &bs_feed,
             network::FeedType::IN,
+            config.interface,
             config.base_station_multicast_group,
             config.base_station_port,
             &global_clock);
@@ -280,6 +291,7 @@ int main() {
 
     util::Timer subsystem_send_timer;
     util::Timer::init(&subsystem_send_timer, SUBSYSTEM_SEND_INTERVAL, &global_clock);
+
     uint32_t ticks = 0;
 
     auto compressor = tjInitCompress();

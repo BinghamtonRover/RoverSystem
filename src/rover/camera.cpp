@@ -21,7 +21,7 @@ const char* get_error_string(Error error) {
     return error_names[(int) error];
 }
 
-Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height, uint8_t dev_id) {
+Error open(CaptureSession* session, const char* device_filepath, size_t width, size_t height, uint8_t dev_id, util::Clock* clock, int framerate) {
     // Set the width and height.
     session->width = width;
     session->height = height;
@@ -152,6 +152,9 @@ Error open(CaptureSession* session, const char* device_filepath, size_t width, s
     // Initialize the frame buffer.
     session->frame_buffer = new uint8_t[session->image_size];
 
+    // Start the timer.
+    util::Timer::init(&(session->timer), framerate, clock);
+
     return Error::OK;
 }
 
@@ -210,6 +213,12 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
 
     // Set the buffer we used!
     session->last_capture_buffer = vbuf;
+
+    // Now that we actually got a frame, only return it if we actually need it.
+    if (!session->timer.ready()) {
+        return_buffer(session);
+        return Error::AGAIN;
+    }
 
     return Error::OK;
 }

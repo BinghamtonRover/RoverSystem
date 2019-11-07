@@ -190,7 +190,7 @@ Buffer get_outgoing_buffer(Feed* feed) {
 // Feed Management
 //
 
-Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util::Clock* clock) {
+Error init(Feed* out_feed, FeedType type, const char* interface, const char* group, uint16_t port, util::Clock* clock) {
     int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock_fd == -1) {
         return Error::SOCKET;
@@ -205,7 +205,7 @@ Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util
             struct sockaddr_in bind_addr {};
             bind_addr.sin_family = AF_INET;
             bind_addr.sin_port = htobe16(port);
-            bind_addr.sin_addr.s_addr = htobe32(INADDR_ANY);
+            bind_addr.sin_addr.s_addr = INADDR_ANY;
 
             if (bind(sock_fd, (struct sockaddr*) &bind_addr, sizeof(bind_addr)) == -1) {
                 ::close(sock_fd);
@@ -214,8 +214,13 @@ Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util
 
             // Join the multicast group.
             struct ip_mreq mreq;
-            mreq.imr_multiaddr.s_addr = inet_addr(group);
-            mreq.imr_interface.s_addr = htobe32(INADDR_ANY);
+            if (!inet_aton(group, &mreq.imr_multiaddr)) {
+                ::close(sock_fd);
+                return Error::INVALID_ADDRESS;
+            }
+            if (!inet_aton(interface, &mreq.imr_interface)) {
+                return Error::INVALID_INTERFACE;
+            }
 
             if (setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
                 ::close(sock_fd);
@@ -228,8 +233,11 @@ Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util
             // Connect so that future writes on this socket all go to the right place.
             struct sockaddr_in connect_addr {};
             connect_addr.sin_family = AF_INET;
-            connect_addr.sin_port = htobe16((short) port);
-            connect_addr.sin_addr.s_addr = inet_addr(group);
+            connect_addr.sin_port = htobe16(port);
+            if (!inet_aton(group, &connect_addr.sin_addr)) {
+                ::close(sock_fd);
+                return Error::INVALID_ADDRESS;
+            }
 
             if (connect(sock_fd, (struct sockaddr*) &connect_addr, sizeof(connect_addr)) == -1) {
                 ::close(sock_fd);

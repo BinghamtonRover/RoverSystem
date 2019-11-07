@@ -189,6 +189,7 @@ struct Config {
 
     char rover_multicast_group[16]; // Max length of string ipv4 addr is 15, plus one for nt.
     char base_station_multicast_group[16];
+    char interface[16];
 
     static const int MAX_PREFERRED_MONITOR_LEN = 32;
     char preferred_monitor[MAX_PREFERRED_MONITOR_LEN + 1];
@@ -232,6 +233,14 @@ Config load_config(const char* filename) {
         exit(1);
     }
     strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
+
+    char* interface = sc::get(sc_config, "interface");
+    if (!interface) {
+        // Default.
+        strncpy(config.interface, "0.0.0.0", 16);
+    } else {
+        strncpy(config.interface, interface, 16);
+    }
 
     char* preferred_monitor = sc::get(sc_config, "preferred_monitor");
     if (!preferred_monitor) {
@@ -1003,6 +1012,7 @@ int main() {
         auto err = network::init(
             &bs_feed,
             network::FeedType::OUT,
+            config.interface,
             config.base_station_multicast_group,
             config.base_station_port,
             &global_clock);
@@ -1023,6 +1033,7 @@ int main() {
         auto err = network::init(
             &r_feed,
             network::FeedType::IN,
+            config.interface,
             config.rover_multicast_group,
             config.rover_port,
             &global_clock);

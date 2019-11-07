@@ -16,7 +16,7 @@ namespace network {
 
 const uint8_t PROTOCOL_VERSION = 1;
 
-const int MAX_RAW_PACKET_SIZE = 1500; // Use Ethernet MTU.
+const int MAX_RAW_PACKET_SIZE = 1472; // Use Ethernet MTU.
 // Header:
 //     u8  protocol_version
 //     u8  message_type
@@ -31,12 +31,12 @@ const int MAX_IDLE_TIME = 1000; // In ms.
 const int MAX_HEARTBEAT_WAIT_TIME = 2000;
 
 // TODO: If things aren't getting through, increase this number to 32.
-const uint8_t MULTICAST_TTL = 1;
+const uint8_t MULTICAST_TTL = 64;
 
 #define NETWORK_ERROR_DEF(X) \
     X(OK), X(NOMORE), \
 \
-        X(SOCKET), X(BIND), X(MULTICAST_JOIN), X(CONNECT), X(SEND), X(RECEIVE), X(VERSION)
+        X(SOCKET), X(BIND), X(MULTICAST_JOIN), X(CONNECT), X(SEND), X(RECEIVE), X(VERSION), X(INVALID_ADDRESS), X(INVALID_INTERFACE)
 
 #define X_IDENTITY(name) name
 enum class Error { NETWORK_ERROR_DEF(X_IDENTITY) };
@@ -69,7 +69,7 @@ struct Feed {
     uint32_t last_active_time;
 };
 
-Error init(Feed* out_feed, FeedType type, const char* group, uint16_t port, util::Clock* clock);
+Error init(Feed* out_feed, FeedType type, const char* interface, const char* group, uint16_t port, util::Clock* clock);
 
 Error update_status(Feed* feed);
 

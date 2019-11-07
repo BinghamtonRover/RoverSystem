@@ -4,6 +4,7 @@ namespace zed {
 
 enum class Error {
     OK,
+    AGAIN,
 
     OPEN,
     TRACKING,
