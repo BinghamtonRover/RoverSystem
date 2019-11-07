@@ -312,10 +312,11 @@ int main() {
     // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
     unsigned int jpeg_quality = 30;
     bool greyscale = false;
-    int stream_width, stream_height;
     network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
-    streamTypes[0] = network::CameraControlMessage::sendType::SEND_LARGE;
-    streamTypes[1] = network::CameraControlMessage::sendType::SEND_SMALL;
+    // Set the starting 2 
+    for(int i = 0; i < 2; i++) {
+        streamTypes[i] = network::CameraControlMessage::sendType::SEND;
+    }
     for(size_t i = 2; i < MAX_STREAMS; i++) {
         streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
     }
@@ -346,13 +347,6 @@ int main() {
             // Decode the frame and encode it again to set our desired quality.
             static uint8_t raw_buffer[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
 
-            if (streamTypes[i] == network::CameraControlMessage::sendType::SEND_SMALL) {
-                stream_width = 640;
-                stream_height = 360;
-            } else { // We are sending the large image
-                stream_width = CAMERA_WIDTH;
-                stream_height = CAMERA_HEIGHT;
-            }
             // Decompress into a raw frame.
 
             tjDecompress2(
@@ -360,9 +354,9 @@ int main() {
                 frame_buffer,
                 frame_size,
                 raw_buffer,
-                stream_width,
-                3 * stream_width,
-                stream_height,
+                CAMERA_WIDTH,
+                3 * CAMERA_WIDTH,
+                CAMERA_HEIGHT,
                 TJPF_RGB,
                 0);
 
@@ -371,9 +365,9 @@ int main() {
                 tjCompress2(
                     compressor,
                     raw_buffer,
-                    stream_width,
-                    3 * stream_width,
-                    stream_height,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
                     TJPF_RGB,
                     &frame_buffer,
                     &frame_size,
@@ -384,9 +378,9 @@ int main() {
                 tjCompress2(
                     compressor,
                     raw_buffer,
-                    stream_width,
-                    3 * stream_width,
-                    stream_height,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
                     TJPF_RGB,
                     &frame_buffer,
                     &frame_size,

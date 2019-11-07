@@ -293,8 +293,7 @@ struct CameraControlMessage {
 
     enum sendType : uint8_t {
         DONT_SEND,
-        SEND_SMALL,
-        SEND_LARGE
+        SEND
     };
 
     Setting setting;
