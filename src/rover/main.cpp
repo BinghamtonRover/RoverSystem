@@ -245,6 +245,13 @@ int main() {
         return 1;
     }
 
+    if (gps::open() != gps::Error::OK) {
+        printf("[!] Failed to open GPS!\n");
+        return 1;
+    }
+
+    zed::open(&global_clock);
+
     // Two feeds: incoming base station and outgoing rover.
     network::Feed r_feed, bs_feed;
 
