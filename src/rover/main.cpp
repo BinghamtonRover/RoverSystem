@@ -312,10 +312,19 @@ int main() {
     // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
     unsigned int jpeg_quality = 30;
     bool greyscale = false;
+    int stream_width, stream_height;
+    network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
+    streamTypes[0] = network::CameraControlMessage::sendType::SEND_LARGE;
+    streamTypes[1] = network::CameraControlMessage::sendType::SEND_SMALL;
+    for(size_t i = 2; i < MAX_STREAMS; i++) {
+        streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
+    }
+    
     while (true) {
-        for (size_t i = 0; i < MAX_STREAMS; i++) {
+        for (size_t i = 1; i < MAX_STREAMS; i++) {
             camera::CaptureSession* cs = streams[i];
             if(cs == nullptr) continue;
+            if(streamTypes[i] == network::CameraControlMessage::sendType::DONT_SEND) continue;
 
             // Grab a frame.
             uint8_t* frame_buffer;
@@ -337,15 +346,23 @@ int main() {
             // Decode the frame and encode it again to set our desired quality.
             static uint8_t raw_buffer[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
 
+            if (streamTypes[i] == network::CameraControlMessage::sendType::SEND_SMALL) {
+                stream_width = 640;
+                stream_height = 360;
+            } else { // We are sending the large image
+                stream_width = CAMERA_WIDTH;
+                stream_height = CAMERA_HEIGHT;
+            }
             // Decompress into a raw frame.
+
             tjDecompress2(
                 decompressor,
                 frame_buffer,
                 frame_size,
                 raw_buffer,
-                CAMERA_WIDTH,
-                3 * CAMERA_WIDTH,
-                CAMERA_HEIGHT,
+                stream_width,
+                3 * stream_width,
+                stream_height,
                 TJPF_RGB,
                 0);
 
@@ -354,9 +371,9 @@ int main() {
                 tjCompress2(
                     compressor,
                     raw_buffer,
-                    CAMERA_WIDTH,
-                    3 * CAMERA_WIDTH,
-                    CAMERA_HEIGHT,
+                    stream_width,
+                    3 * stream_width,
+                    stream_height,
                     TJPF_RGB,
                     &frame_buffer,
                     &frame_size,
@@ -367,9 +384,9 @@ int main() {
                 tjCompress2(
                     compressor,
                     raw_buffer,
-                    CAMERA_WIDTH,
-                    3 * CAMERA_WIDTH,
-                    CAMERA_HEIGHT,
+                    stream_width,
+                    3 * stream_width,
+                    stream_height,
                     TJPF_RGB,
                     &frame_buffer,
                     &frame_size,
@@ -505,19 +522,22 @@ int main() {
 
                     break;
                 }
-                case network::MessageType::JPEGQUALITY: {
-                    network::JpegQualityMessage quality;
+                case network::MessageType::CAMERA_CONTROL: {
+                    network::CameraControlMessage quality;
                     network::deserialize(&message.buffer, &quality);
-                    uint8_t setting = quality.setting;
-                    if (setting == 0){
-                        jpeg_quality = quality.jpegQuality;
-                        
+                    network::CameraControlMessage::Setting setting = quality.setting;
+
+                    switch(setting) {
+                        case network::CameraControlMessage::Setting::JPEG_QUALITY:
+                            jpeg_quality = quality.jpegQuality;
+                            break;
+                        case network::CameraControlMessage::Setting::GREYSCALE:
+                            greyscale = quality.greyscale;
+                            break;
+                        case network::CameraControlMessage::Setting::DISPLAY_STATE:
+                            streamTypes[quality.resolution.stream_index] = quality.resolution.sending;
+                            break;
                     }
-                    else if (setting == 1){
-                        greyscale = quality.greyscale;
-                    }
-                    
-                    
                     break;
                 }
                 default:

@@ -184,8 +184,9 @@ void handle_keypress(int key, int mods) {
         } else if (command == "gs_on") {
             if (shared_feeds::bs_feed != NULL){
                 //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
-                    network::JpegQualityMessage message = {
-                    static_cast<uint8_t>(1), //setting
+                    network::CameraControlMessage message = {
+                    network::CameraControlMessage::Setting::GREYSCALE, // setting
+                    //static_cast<uint8_t>(1), //setting
                     static_cast<bool>(true) //greyscale
                     };
                     network::publish(shared_feeds::bs_feed, &message);
@@ -193,8 +194,8 @@ void handle_keypress(int key, int mods) {
         } else if (command == "gs_off"){
             if (shared_feeds::bs_feed != NULL){
                 //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
-                    network::JpegQualityMessage message = {
-                    static_cast<uint8_t>(1), //setting
+                    network::CameraControlMessage message = {
+                    network::CameraControlMessage::Setting::GREYSCALE, // setting
                     static_cast<bool>(false) //greyscale
                     };
                     network::publish(shared_feeds::bs_feed, &message);
@@ -211,8 +212,8 @@ void handle_keypress(int key, int mods) {
             } else if (value >= 0) {
                 //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                 if (shared_feeds::bs_feed != NULL){
-                    network::JpegQualityMessage message = {
-                    static_cast<uint8_t>(0), //setting
+                    network::CameraControlMessage message = {
+                    network::CameraControlMessage::Setting::GREYSCALE, // setting
                     static_cast<uint8_t>(value) //jpegQuality
                     };
                     network::publish(shared_feeds::bs_feed, &message);
