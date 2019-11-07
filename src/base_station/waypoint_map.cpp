@@ -1,7 +1,7 @@
 #include "waypoint_map.hpp"
 #include "waypoint.hpp"
 
-#include "logger.hpp"
+#include "../logger/logger.hpp"
 
 #include <GL/gl.h>
 

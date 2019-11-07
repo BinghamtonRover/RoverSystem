@@ -1,6 +1,7 @@
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
+#include "../logger/logger.hpp"
 
 #include "gps.hpp"
 #include "camera.hpp"
@@ -55,34 +56,34 @@ Config load_config(const char* filename) {
 
     auto err = sc::parse(filename, &sc_config);
     if (err != sc::Error::OK) {
-        printf("Failed to parse config file: %s\n", sc::get_error_string(sc_config, err));
+        logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
         exit(1);
     }
 
     char* rover_port = sc::get(sc_config, "rover_port");
     if (!rover_port) {
-        printf("Config file missing 'rover_port'!\n");
+        logger::log(logger::ERROR, "Config file missing 'rover_port'!");
         exit(1);
     }
     config.rover_port = atoi(rover_port);
 
     char* base_station_port = sc::get(sc_config, "base_station_port");
     if (!base_station_port) {
-        printf("Config file missing 'base_station_port'!\n");
+        logger::log(logger::ERROR, "Config file missing 'base_station_port'!");
         exit(1);
     }
     config.base_station_port = atoi(base_station_port);
 
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
-        printf("Config file missing 'base_station_multicast_group'!\n");
+        logger::log(logger::ERROR, "Config file missing 'base_station_multicast_group'!");
         exit(1);
     }
     strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
 
     char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
     if (!rover_multicast_group) {
-        printf("Config file missing 'rover_multicast_group'!\n");
+        logger::log(logger::ERROR, "Config file missing 'rover_multicast_group'!");
         exit(1);
     }
     strncpy(config.rover_multicast_group, rover_multicast_group, 16);
@@ -172,12 +173,12 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         sprintf(filename_buffer, "/dev/video%d", camerasFound[i]);
 
         camera::CaptureSession* cs = new camera::CaptureSession;
-        printf("Opening camera %d\n", camerasFound[i]);
+        logger::log(logger::DEBUG, "Opening camera %d", camerasFound[i]);
         camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, camerasFound[i], &global_clock, CAMERA_FRAME_INTERVAL);
         
         if (err != camera::Error::OK) {
             camerasFound[i] = -1;
-            printf("> Camera %d errored while opening\n", cs->dev_video_id);
+            logger::log(logger::DEBUG, "Camera %d errored while opening", cs->dev_video_id);
             delete cs;
             continue;
         }
@@ -186,7 +187,7 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         err = camera::start(cs);
         if (err != camera::Error::OK) {
             camerasFound[i] = -1;
-            printf("> Camera %d errored while starting\n", cs->dev_video_id);
+            logger::log(logger::DEBUG, "Camera %d errored while starting", cs->dev_video_id);
             camera::close(cs);
             delete cs;
             continue;
@@ -200,14 +201,14 @@ int updateCameraStatus(camera::CaptureSession **streams) {
 
     for(int i = 0; i < cntr; i++) {
         if (camerasFound[i] != -1) {
-            printf("> Connected new camera at /dev/video%d\n", camerasFound[i]);
+            logger::log(logger::INFO, "Connected new camera at /dev/video%d", camerasFound[i]);
         }
     }
 
     /* 3. Remove any cameras that don't exist. */
     for(int j = 1; j < MAX_STREAMS; j++) {
         if(existingCameras[j] == -1 && streams[j] != nullptr) {
-            printf("Deleting camera %d.\n", j);
+            logger::log(logger::INFO, "Camera %d disconnected.", j);
             camera::close(streams[j]);
             delete streams[j];
             streams[j] = nullptr;
@@ -217,7 +218,13 @@ int updateCameraStatus(camera::CaptureSession **streams) {
     return numOpen;
 }
 
+void stderr_handler(logger::Level leve, std::string message) {
+    fprintf(stderr, "%s\n", message.c_str());
+}
+
 int main() {
+    logger::register_handler(stderr_handler);
+
     util::Clock::init(&global_clock);
 
     Config config = load_config("res/r.sconfig");
@@ -228,18 +235,13 @@ int main() {
     camera::CaptureSession * streams[MAX_STREAMS] = {0};
     int activeCameras = updateCameraStatus(streams);
 
-    // Note, this doesn't count the zed camera.
-    printf("> Started with %d cameras conncted.\n", activeCameras);
-
-    //std::cout << "> Using " << streams.size() << " cameras." << std::endl;
-
     if (zed::open(&global_clock) != zed::Error::OK) {
-        printf("> Failed to open zed camera!\n");
+        logger::log(logger::ERROR, "> Failed to open zed camera!");
         return 1;
     }
 
     if (gps::open() != gps::Error::OK) {
-        printf("[!] Failed to open GPS!\n");
+        logger::log(logger::ERROR, "[!] Failed to open GPS!");
         return 1;
     }
 
@@ -256,7 +258,7 @@ int main() {
             &global_clock);
 
         if (err != network::Error::OK) {
-            printf("[!] Failed to start rover feed: %s\n", network::get_error_string(err));
+            logger::log(logger::ERROR, "[!] Failed to start rover feed: %s", network::get_error_string(err));
             exit(1);
         }
     }
@@ -271,8 +273,7 @@ int main() {
             &global_clock);
 
         if (err != network::Error::OK) {
-            printf("[!] Failed to subscribe to base station feed: %s\n", network::get_error_string(err));
-            printf("errno %d\n", errno);
+            logger::log(logger::ERROR, "[!] Failed to subscribe to base station feed: %s", network::get_error_string(err));
             exit(1);
         }
     }
@@ -318,12 +319,11 @@ int main() {
                     if (err == camera::Error::AGAIN)
                         continue;
 
-                    printf("Deleting camera %d, because it errored\n", streams[i]->dev_video_id);
+                    logger::log(logger::DEBUG, "Deleting camera %d, because it errored", streams[i]->dev_video_id);
                     camera::close(cs);
                     delete cs;
                     streams[i] = nullptr;
                     continue;
-                    //std::cout << "Camera 0: " << camera::get_error_string(err) << std::endl;
                 }
             }
 
@@ -446,7 +446,7 @@ int main() {
                                                         &jpeg_size, 40, TJFLAG_NOREALLOC);
             */
             if (tj_err != 0) {
-                fprintf(stderr, "[!] tjCompress failed: %s\n", tjGetErrorStr2(compressor));
+                logger::log(logger::DEBUG, "tjCompress failed: %s", tjGetErrorStr2(compressor));
             }
 
             // Send the frame.
@@ -485,7 +485,7 @@ int main() {
                     break;
                 }
 
-                printf("[!] Network error on receive!\n");
+                logger::log(logger::DEBUG, "Network error on receive!");
 
                 break;
             }
@@ -494,7 +494,6 @@ int main() {
                     network::MovementMessage movement;
                     network::deserialize(&message.buffer, &movement);
 
-					// printf("Got movement with %d, %d\n", movement.left, movement.right);
                     // TODO: Feed suspension here!
 
                     break;

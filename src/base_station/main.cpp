@@ -1,13 +1,13 @@
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
+#include "../logger/logger.hpp"
 
 #include "camera_feed.hpp"
 #include "controller.hpp"
 #include "debug_console.hpp"
 #include "gui.hpp"
 #include "log_view.hpp"
-#include "logger.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
 #include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console

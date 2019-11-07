@@ -1,7 +1,6 @@
 #include "logger.hpp"
 
 #include <stdarg.h>
-
 #include <cassert>
 
 namespace logger {

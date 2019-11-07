@@ -1,7 +1,7 @@
 SOURCES = main.cpp camera.cpp subsystem.cpp
 HEADERS = camera.hpp zed.hpp gps.hpp subsystem.hpp ../util/util.hpp 
-LIBRARIES = ../../bin/libnetwork.a ../../bin/libsimpleconfig.a
-LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a -lsimpleconfig
+LIBRARIES = ../../bin/libnetwork.a ../../bin/libsimpleconfig.a ../../bin/liblogger.a
+LFLAGS = -L../../bin -lnetwork -L/opt/libjpeg-turbo/lib64 -l:libturbojpeg.a -lsimpleconfig -llogger
 CFLAGS = -pthread -Wall -std=c++11 -g -I/opt/libjpeg-turbo/include
 EXECUTABLE = ../../bin/rover
 
