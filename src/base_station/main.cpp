@@ -811,6 +811,50 @@ void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     }
 }
 
+void send_feed(uint8_t stream_indx) {
+    network::CameraControlMessage message = {
+        network::CameraControlMessage::Setting::DISPLAY_STATE
+    };
+    message.resolution = {
+        stream_indx,
+        network::CameraControlMessage::sendType::SEND
+    };
+    network::publish(shared_feeds::bs_feed, &message);
+    return;
+}
+
+void send_all_feeds() {
+    for(uint8_t i = 0; i < 9; i++) {
+        if(i != primary_feed && i != secondary_feed) {
+            send_feed(i);
+        }
+    }
+    return;
+}
+
+void dont_send_feed(uint8_t stream_indx) {
+    network::CameraControlMessage message = {
+        network::CameraControlMessage::Setting::DISPLAY_STATE
+    };
+    message.resolution = {
+        stream_indx,
+        network::CameraControlMessage::sendType::DONT_SEND
+    };
+    network::publish(shared_feeds::bs_feed, &message);
+    return;
+}
+
+void dont_send_invalid() {
+    for(uint8_t i = 0; i < 9; i++) {
+        if(i != primary_feed && i != secondary_feed) {
+            dont_send_feed(i);
+        }
+    }
+    return;
+}
+
+
+
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
@@ -825,6 +869,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         } else if (action == GLFW_PRESS && key == GLFW_KEY_C) {
             if (mods & GLFW_MOD_SHIFT) {
                 gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+                send_all_feeds();
             } else {
                 int temp = primary_feed;
                 primary_feed = secondary_feed;
@@ -834,6 +879,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::KEY_COMMAND;
+            dont_send_invalid();
         } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             gui::state.input_state = gui::InputState::CAMERA_MOVE;
         }
@@ -884,10 +930,24 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::CAMERA_MATRIX;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
+            // If the new feed wasn't being displayed,
+            // lets start displaying it
+            if (feed_to_move != secondary_feed) {
+                send_feed(feed_to_move);
+            }
+
             primary_feed = feed_to_move;
+            dont_send_invalid();
             gui::state.input_state = gui::InputState::KEY_COMMAND;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+            // If the new feed isn't the same as it was,
+            // lets start displaying it
+            if (feed_to_move != primary_feed) {
+                send_feed(feed_to_move);
+            }
+
             secondary_feed = feed_to_move;
+            dont_send_invalid();
             gui::state.input_state = gui::InputState::KEY_COMMAND;
         }
     }
