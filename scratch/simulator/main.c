@@ -459,7 +459,7 @@ int main(int argc, char** argv) {
             float target_offset_x, target_offset_y;
             AutonomyStatus autonomy_status = autonomy_step(&world, rover_x, rover_y, rover_angle, &target_offset_x, &target_offset_y);
 
-            rover_angle +=  atan2f(target_offset_y, target_offset_x) * 180 / M_PI;
+            rover_angle =  atan2f(target_offset_y, target_offset_x) * 180 / M_PI;
 
             autonomy_last_tick = tick;
         }
