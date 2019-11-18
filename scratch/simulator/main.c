@@ -216,10 +216,7 @@ static void fill_origin(FillProgram* fill_program, CellModel* fill_model) {
 static void fill_target(FillProgram* fill_program, CellModel* fill_model) {
     Mat3f model;
 
-    float gcx, gcy;
-    ctw(world.target_x, world.target_y, &gcx, &gcy);
-
-    mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
+    mat3f_transformation_inplace(&model, world.cell_size, 0, world.target_x, world.target_y);
     fill_program_set_model(fill_program, model);
 
     fill_program_set_color(fill_program, 0, 1, 0);
