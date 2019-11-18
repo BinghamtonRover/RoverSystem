@@ -20,12 +20,11 @@
 #include <string.h>
 
 #define PI 3.14159265
-const int ws = 20;
+const int ws = 30;
 const float B = 2;
 const int alpha = 5;
 const int l = 5;
-const float cell_size = 1;
-const float threshold = 1000;
+const float threshold = 1;
 float cell_certainty = 0;
 typedef struct {
     int start, end;
@@ -40,19 +39,21 @@ void get_polar_obstacle_densities(World world, float rover_x, float rover_y, flo
     {
         for (int j = (c_x - ws/2); j <= (c_x + ws/2); j++)
         {
-            
-            //cell_to_world(&world, c_x, c_y, &world_x, &world_y);
-            cell_to_world(&world, j, i, &world_x, &world_y);
             cell_direction = atan2(world_y - rover_y, world_x - rover_x) * 180.0 / PI;
             if (cell_direction < 0) {
                 cell_direction += 360;
             }
-            cell_magnitude = pow(occupancy_grid_get(&world.occupancy_grid, j, i), 2) * (A - B * pow(pow(rover_y - world_y, 2) + pow(rover_x - world_x, 2), 0.5));
             int k = (int)(cell_direction/ alpha);
-            printf("index value: %d\n", k);
-            printf("cell MAGNITUDE value: %f\n", cell_magnitude);
-            h[k] += cell_magnitude;
-            //h[k] = k;
+            cell_to_world(&world, j, i, &world_x, &world_y);
+            // cell coords are world_x, world_y
+            // check that obstacle is closer than target bc we don't care abt obstacles farther away than target
+            if ( ( pow(rover_x - world_x, 2) + pow(rover_y - world_y, 2) ) < ( pow(rover_x - world.target_x, 2) + pow(rover_y - world.target_y, 2) ) ) {
+                cell_magnitude = pow(occupancy_grid_get(&world.occupancy_grid, j, i), 2) * (A - B * pow(pow(rover_y - world_y, 2) + pow(rover_x - world_x, 2), 0.5));
+                h[k] += cell_magnitude;
+            }
+            else {
+                h[k] += 0;
+            }
         }
     }
 
@@ -96,9 +97,6 @@ void get_polar_obstacle_densities(World world, float rover_x, float rover_y, flo
 }
 
 void get_valleys(Valley valleys[], float h[], int n) {
-    //h[24] = 0;
-    //h[31] = 0;
-    //h[32] = 0;
     for (int i = 0; i < n/2; i++) {
         valleys[i].start = -1;
         valleys[i].end = -1;
@@ -178,7 +176,6 @@ double get_best_sector(Valley valleys[], int n, float target_sector) {
             }
         }
     }
-    printf("TARGET SECTOR: %f AND BEST SECTOR: %f\n", target_sector, best_sector);
     return best_sector;
 }
 
@@ -188,33 +185,20 @@ AutonomyStatus autonomy_step(World* world, float rover_x, float rover_y, float r
     const int n = 360/alpha;
     float densities[n];
     memset(densities, 0, sizeof(float)*n);
-    float target_x = -5;
-    float target_y = 13;
+    float target_x = world->target_x;
+    float target_y = world->target_y;
     float target_angle = atan2(target_y - rover_y, target_x - rover_x) * 180.0 / PI;
     if (target_angle < 0) {
         target_angle += 360;
     }
-    printf("THE TARGET ANGLE %f\n", target_angle);
     int target_sector = (int)(target_angle / alpha);
     get_polar_obstacle_densities(*world, rover_x, rover_y, rover_angle, densities, n, A);
-    for (int i = 0; i < sizeof(densities)/sizeof(densities[0]); i++)
-    {
-        printf("THIS IS THE DENSITIES %d: %f\n", i, densities[i]);
-    }
     Valley valleys[n/2];
     get_valleys(valleys, densities, n);
-    for (int i = 0; i < sizeof(valleys)/sizeof(valleys[0]); i++)
-    {
-        printf("THIS IS THE VALLEYS  %d: (%d, %d)\n", i, valleys[i].start, valleys[i].end);
-    }
     int sector = (int)get_best_sector(valleys, n, target_sector);
-    printf("THE BEST SECTOR IS SECTOR %d\n", sector);
     double sector_direction = sector * alpha;
-    printf("sector direction is %f\n", sector_direction);
     *out_offset_x = cos((sector_direction * PI / 180.0));
     *out_offset_y = sin((sector_direction * PI / 180.0));
-    //*out_offset_x = 0.33;
-    //*out_offset_y = 0.33;
 
     return AS_OK;
 }
