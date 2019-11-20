@@ -10,6 +10,7 @@
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
+#include "waypoint_menu.hpp"
 #include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
 
 #include <GL/gl.h>
@@ -26,6 +27,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <stdlib.h>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -890,7 +892,94 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             secondary_feed = feed_to_move;
             gui::state.input_state = gui::InputState::KEY_COMMAND;
         }
+    } else if (gui::state.input_state == gui::InputState::WAYPOINT_MENU) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_S && waypoint::cur_waypoints.size() > 0) {
+            gui::state.input_state = gui::InputState::WAYPOINT_MENU_SELECT;
+            waypoint_menu::select = true;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
+            gui::state.input_state = gui::InputState::WAYPOINT_MENU_ADD;
+            waypoint_menu::add_waypoint = true;
+        }
+    } else if (gui::state.input_state == gui::InputState::WAYPOINT_MENU_SELECT) {
+        if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE){
+            gui::state.input_state = gui::InputState::WAYPOINT_MENU;
+            waypoint_menu::select = false;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_UP){
+            if (waypoint_menu::selection != 0){
+                waypoint_menu::selection--;
+            }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_DOWN){
+            if (waypoint_menu::selection < waypoint_menu::current_waypoints - 1){
+                waypoint_menu::selection++;
+            }
+        }else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER){
+            if (waypoint::cur_waypoints.size() > 0){
+                waypoint::remove_waypoint(waypoint::cur_waypoints.size() - 1 - waypoint_menu::selection);
+    		}
+            if (waypoint_menu::selection > 0){
+    			waypoint_menu::selection--;
+            }
+            if (waypoint::cur_waypoints.size() == 0) { 
+                gui::state.input_state = gui::InputState::WAYPOINT_MENU;
+                waypoint_menu::select = false;
+            }
+        } 
+    } else if (gui::state.input_state == gui::InputState::WAYPOINT_MENU_ADD) {
+        //Keys: "0-9" = 48-57, "Period" = 46, "Minus" = 45
+        if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE){
+            gui::state.input_state = gui::InputState::WAYPOINT_MENU;
+            waypoint_menu::add_waypoint = false;
+            waypoint_menu::lat_box = true;
+            waypoint_menu::lat_buffer = "";
+            waypoint_menu::lon_buffer = "";
+        } else if (action == GLFW_RELEASE && key <= 57 && key >= 48){
+            std::string num = std::to_string(key - 48);
+            if (waypoint_menu::lat_box && waypoint_menu::lat_buffer.size() < waypoint_menu::max_characters){
+                waypoint_menu::lat_buffer += num;
+            }
+            else if (!waypoint_menu::lat_box && waypoint_menu::lon_buffer.size() < waypoint_menu::max_characters) {
+                waypoint_menu::lon_buffer += num;
+            }   
+        } else if (action == GLFW_RELEASE && key == GLFW_KEY_PERIOD){
+            std::string period(".");
+            if (waypoint_menu::lat_box && waypoint_menu::lat_buffer.size() < waypoint_menu::max_characters){
+                waypoint_menu::lat_buffer += period;
+            }
+            else if (!waypoint_menu::lat_box && waypoint_menu::lon_buffer.size() < waypoint_menu::max_characters) {
+                waypoint_menu::lon_buffer += period;
+            }   
+        } else if (action == GLFW_RELEASE && key == GLFW_KEY_MINUS){
+            std::string minus("-");
+            if (waypoint_menu::lat_box && waypoint_menu::lat_buffer.size() < waypoint_menu::max_characters){
+                waypoint_menu::lat_buffer += minus;
+            }
+            else if (!waypoint_menu::lat_box && waypoint_menu::lon_buffer.size() < waypoint_menu::max_characters) {
+                waypoint_menu::lon_buffer += minus;
+            }   
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_BACKSPACE){
+            if (waypoint_menu::lat_box && waypoint_menu::lat_buffer.size() > 0){
+                waypoint_menu::lat_buffer = waypoint_menu::lat_buffer.substr(0,waypoint_menu::lat_buffer.size()-1);
+            }
+            else if (!waypoint_menu::lat_box && waypoint_menu::lon_buffer.size() > 0) {
+                waypoint_menu::lon_buffer = waypoint_menu::lon_buffer.substr(0,waypoint_menu::lon_buffer.size()-1);
+            }  
+        } else if (action == GLFW_RELEASE && key == GLFW_KEY_TAB){
+            waypoint_menu::lat_box = !waypoint_menu::lat_box;
+        } else if (action == GLFW_RELEASE && key == GLFW_KEY_ENTER){
+            if (waypoint_menu::lat_buffer.size() > 0 && waypoint_menu::lon_buffer.size() > 0){
+                std::string str_lat = waypoint_menu::lat_buffer;
+                std::string str_lon = waypoint_menu::lon_buffer;
+                float latitude = std::stof(str_lat);
+                float longitude = std::stof(str_lon);
+                waypoint::add_waypoint(latitude,longitude);
+                waypoint_menu::lat_buffer = "";
+                waypoint_menu::lon_buffer = "";
+                waypoint_menu::lat_box = true;
+            }
+        }
+             
     }
+
 }
 
 // Takes values between 0 and 255 and returns them between 0 and 255.
@@ -1073,6 +1162,7 @@ int main() {
     gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
 
     bool help_menu_up = false;
+    bool waypoint_menu_up = false;
     bool stopwatch_menu_up = false;
 
     // Add the help menu commands here
@@ -1086,6 +1176,7 @@ int main() {
     commands.push_back("z + UP ARROW: Zoom in map");
     commands.push_back("z + DOWN ARROW: Zoom out map");
     commands.push_back("z + r: Reset map");
+    commands.push_back("w: Open wyapoint menu");
     debug_commands.push_back("'test': displays red text");
     debug_commands.push_back("'aw <number> <number>': adds a waypoint (in latitude and longitude)");
     debug_commands.push_back("'gs_on': Changes camera feeds to greyscale");
@@ -1124,10 +1215,20 @@ int main() {
                 stopwatch_menu_up = false;
                 gui::state.input_state = gui::InputState::KEY_COMMAND;
             }
+            if (waypoint_menu_up && gui::state.input_state == gui::InputState::WAYPOINT_MENU) {
+                waypoint_menu_up = false;
+                gui::state.input_state = gui::InputState::KEY_COMMAND;
+            }
+
         } else if (
             glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
             stopwatch_menu_up = true;
             gui::state.input_state = gui::InputState::STOPWATCH_MENU;
+        } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            if (gui::state.input_state == gui::InputState::KEY_COMMAND){
+                waypoint_menu_up = true;
+                gui::state.input_state = gui::InputState::WAYPOINT_MENU;
+            }
         }
 
         if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
@@ -1341,6 +1442,10 @@ int main() {
 
         if (stopwatch_menu_up) {
             do_stopwatch_menu(&font);
+        }
+
+        if (waypoint_menu_up) {
+            waypoint_menu::do_menu(&font,WINDOW_WIDTH/2,WINDOW_HEIGHT/2);
         }
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
