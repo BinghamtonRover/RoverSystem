@@ -13,6 +13,10 @@ void add_waypoint(float lat, float lon){
 	cur_waypoints.push_back({lat,lon});
 }
 
+void remove_waypoint(int position){
+	cur_waypoints.erase(cur_waypoints.begin() + position);
+}
+
 std::vector<Waypoint> get_waypoints(){
 	return cur_waypoints;
 }

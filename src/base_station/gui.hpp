@@ -27,10 +27,13 @@ enum class InputState {
     KEY_COMMAND,
     DEBUG_CONSOLE,
     STOPWATCH_MENU,
+    WAYPOINT_MENU,
 
     CAMERA_MATRIX,
     CAMERA_MOVE,
-    CAMERA_MOVE_TARGET
+    CAMERA_MOVE_TARGET,
+    WAYPOINT_MENU_SELECT,
+    WAYPOINT_MENU_ADD,
 };
 
 // Stores the global GUI state.
