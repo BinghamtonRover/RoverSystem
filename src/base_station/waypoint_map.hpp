@@ -9,6 +9,7 @@ const float PPM_MAX = 20.0f;
 const float PPM_SCALE_FACTOR = 1.03f;
 
 const float GRID_SPACING = 10.0f; // In meters.
+extern bool gridMap;
 
 void do_waypoint_map(gui::Layout* layout, int w, int h);
 

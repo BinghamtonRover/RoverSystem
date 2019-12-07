@@ -812,6 +812,7 @@ void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
 }
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             gui::debug_console::handle_keypress(key, mods);
@@ -830,6 +831,8 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 primary_feed = secondary_feed;
                 secondary_feed = temp;
             }
+        } else if (z_on && action == GLFW_RELEASE && key == GLFW_KEY_G){
+            gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
@@ -1086,6 +1089,7 @@ int main() {
     commands.push_back("z + UP ARROW: Zoom in map");
     commands.push_back("z + DOWN ARROW: Zoom out map");
     commands.push_back("z + r: Reset map");
+    commands.push_back("z + g: Toggle map display");
     debug_commands.push_back("'test': displays red text");
     debug_commands.push_back("'aw <number> <number>': adds a waypoint (in latitude and longitude)");
     debug_commands.push_back("'gs_on': Changes camera feeds to greyscale");
@@ -1099,7 +1103,7 @@ int main() {
         if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
             gui::waypoint_map::zoom_in();    
         } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
-            gui::waypoint_map::zoom_out();    
+            gui::waypoint_map::zoom_out();
         } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
             if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
                 gui::log_view::moveTop();

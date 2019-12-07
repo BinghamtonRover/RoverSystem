@@ -11,6 +11,7 @@ namespace gui {
 namespace waypoint_map {
 
 float ppm = PPM_MIN;
+bool gridMap = true;
 
 void zoom_in() {
     ppm *= PPM_SCALE_FACTOR;
@@ -61,23 +62,31 @@ void do_waypoint_map(gui::Layout * layout, int w, int h){
 
     glColor4f(0.0,1.0,0.0,0.3);
 
-    glBegin(GL_LINES);
-    glLineWidth(1.0f);
 
     float mw = w / ppm;
     float mh = h / ppm;
 
     int num_x = mw / GRID_SPACING;
     int num_y = mh / GRID_SPACING;
-
-    for (int xg = -num_x/2; xg <= num_x/2; xg++) {
-        glVertex2f(xg * GRID_SPACING, -mh/2.0f);
-        glVertex2f(xg * GRID_SPACING, mh/2.0f);
+    
+    if (gridMap){
+        glLineWidth(1.0f);
+        glBegin(GL_LINES);
+        for (int xg = -num_x/2; xg <= num_x/2; xg++) {
+            glVertex2f(xg * GRID_SPACING, -mh/2.0f);
+            glVertex2f(xg * GRID_SPACING, mh/2.0f);
+        }
+        for (int yg = -num_y/2; yg <= num_y/2; yg++) {
+            glVertex2f(-mw/2.0f, yg * GRID_SPACING);
+            glVertex2f(mw/2.0f, yg * GRID_SPACING);
+        }
+        glEnd();
     }
-
-    for (int yg = -num_y/2; yg <= num_y/2; yg++) {
-        glVertex2f(-mw/2.0f, yg * GRID_SPACING);
-        glVertex2f(mw/2.0f, yg * GRID_SPACING);
+    else {
+        for(int radius = GRID_SPACING; radius < (mw/2) * GRID_SPACING; radius += GRID_SPACING){
+            //The coordinates are (0,0) since we shifted the origin to the middle instead of the top-left
+            gui::do_circle(0,0,radius); 
+        }
     }
 
     /*
@@ -92,8 +101,6 @@ void do_waypoint_map(gui::Layout * layout, int w, int h){
         glVertex2f(x_max, ygo);
     }
     */
-
-    glEnd();
 
     //If the rover coordinates are outside of the valid ranges of latitude and longitude, don't draw anything
     //This should only occur when the initial values for the rover's coordinates are set outside the range or when the basestation
