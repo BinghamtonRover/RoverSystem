@@ -1078,7 +1078,7 @@ int main() {
     commands.push_back("z + UP ARROW: Zoom in map");
     commands.push_back("z + DOWN ARROW: Zoom out map");
     commands.push_back("z + r: Reset map");
-    commands.push_back("z + 1: Toggle map display");
+    commands.push_back("z + g: Toggle map display");
     debug_commands.push_back("'test': displays red text");
     debug_commands.push_back("'aw <number> <number>': adds a waypoint (in latitude and longitude)");
     debug_commands.push_back("'gs_on': Changes camera feeds to greyscale");
