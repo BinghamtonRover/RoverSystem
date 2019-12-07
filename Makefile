@@ -29,6 +29,6 @@ archive:
 	git ls-files -z | xargs -0 zip RoverSystem.zip
 
 send: archive
-	scp RoverSystem.zip ubuntu@192.168.1.20:/home/ubuntu/RoverSystem.zip
+	scp RoverSystem.zip layne@192.168.1.20:/home/layne/RoverSystem.zip
 
 .PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger
