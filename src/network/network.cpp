@@ -206,7 +206,6 @@ Error init(Feed* out_feed, FeedType type, const char* interface, const char* gro
             bind_addr.sin_family = AF_INET;
             bind_addr.sin_port = htobe16(port);
             bind_addr.sin_addr.s_addr = INADDR_ANY;
-
             if (bind(sock_fd, (struct sockaddr*) &bind_addr, sizeof(bind_addr)) == -1) {
                 ::close(sock_fd);
                 return Error::BIND;
@@ -230,7 +229,19 @@ Error init(Feed* out_feed, FeedType type, const char* interface, const char* gro
             break;
         }
         case FeedType::OUT: {
+            struct sockaddr_in bind_addr {};
+            bind_addr.sin_family = AF_INET;
+            bind_addr.sin_port = htobe16(0);
+            if (!inet_aton(interface, &bind_addr.sin_addr)) {
+                ::close(sock_fd);
+                return Error::INVALID_ADDRESS;
+            }
+            if (bind(sock_fd, (struct sockaddr*) &bind_addr, sizeof(bind_addr)) == -1) {
+                ::close(sock_fd);
+                return Error::BIND;
+            }
             // Connect so that future writes on this socket all go to the right place.
+
             struct sockaddr_in connect_addr {};
             connect_addr.sin_family = AF_INET;
             connect_addr.sin_port = htobe16(port);
