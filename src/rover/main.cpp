@@ -312,10 +312,20 @@ int main() {
     // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
     unsigned int jpeg_quality = 30;
     bool greyscale = false;
+    network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
+    // Set the starting 2 
+    for(int i = 0; i < 2; i++) {
+        streamTypes[i] = network::CameraControlMessage::sendType::SEND;
+    }
+    for(size_t i = 2; i < MAX_STREAMS; i++) {
+        streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
+    }
+    
     while (true) {
-        for (size_t i = 0; i < MAX_STREAMS; i++) {
+        for (size_t i = 1; i < MAX_STREAMS; i++) {
             camera::CaptureSession* cs = streams[i];
             if(cs == nullptr) continue;
+            if(streamTypes[i] == network::CameraControlMessage::sendType::DONT_SEND) continue;
 
             // Grab a frame.
             uint8_t* frame_buffer;
@@ -338,6 +348,7 @@ int main() {
             static uint8_t raw_buffer[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
 
             // Decompress into a raw frame.
+
             tjDecompress2(
                 decompressor,
                 frame_buffer,
@@ -505,19 +516,22 @@ int main() {
 
                     break;
                 }
-                case network::MessageType::JPEGQUALITY: {
-                    network::JpegQualityMessage quality;
+                case network::MessageType::CAMERA_CONTROL: {
+                    network::CameraControlMessage quality;
                     network::deserialize(&message.buffer, &quality);
-                    uint8_t setting = quality.setting;
-                    if (setting == 0){
-                        jpeg_quality = quality.jpegQuality;
-                        
+                    network::CameraControlMessage::Setting setting = quality.setting;
+
+                    switch(setting) {
+                        case network::CameraControlMessage::Setting::JPEG_QUALITY:
+                            jpeg_quality = quality.jpegQuality;
+                            break;
+                        case network::CameraControlMessage::Setting::GREYSCALE:
+                            greyscale = quality.greyscale;
+                            break;
+                        case network::CameraControlMessage::Setting::DISPLAY_STATE:
+                            streamTypes[quality.resolution.stream_index] = quality.resolution.sending;
+                            break;
                     }
-                    else if (setting == 1){
-                        greyscale = quality.greyscale;
-                    }
-                    
-                    
                     break;
                 }
                 default:

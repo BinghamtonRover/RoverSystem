@@ -144,10 +144,10 @@ enum class MessageType {
     TEST, 
     MOVEMENT, 
     CAMERA, 
+    CAMERA_CONTROL,
     LOG, 
     LIDAR, 
     LOCATION, 
-    JPEGQUALITY,
     TICK,
     SUBSYSTEM
 };
@@ -283,36 +283,62 @@ struct LocationMessage {
     }
 };
 
-struct JpegQualityMessage {
-    static const auto TYPE = MessageType::JPEGQUALITY;
-    uint8_t setting;
+struct CameraControlMessage {
+    static const auto TYPE = MessageType::CAMERA_CONTROL;
+    enum Setting : uint8_t {
+        JPEG_QUALITY,
+        GREYSCALE, /* E for consistancy */
+        DISPLAY_STATE
+    };
+
+    enum sendType : uint8_t {
+        DONT_SEND,
+        SEND
+    };
+
+    Setting setting;
+
     union {
         uint8_t jpegQuality;
         bool greyscale;
+        struct {
+            uint8_t stream_index;
+            sendType sending;
+        } resolution;
     };
 
     void serialize(Buffer* buffer) {
-        network::serialize(buffer,this->setting);
+        network::serialize(buffer, static_cast<uint8_t>(this->setting));
         switch(this->setting){
-            case 0:
+            case JPEG_QUALITY:
                 network::serialize(buffer, this->jpegQuality);
                 break;
-            case 1:
+            case GREYSCALE:
                 network::serialize(buffer, this->greyscale);
+                break;
+            case DISPLAY_STATE:
+                network::serialize(buffer, this->resolution.stream_index);
+                network::serialize(buffer, static_cast<uint8_t>(
+                                            this->resolution.sending));
                 break;
         }
         
     }
     void deserialize(Buffer* buffer) {
-        network::deserialize(buffer,&(this->setting));
+        network::deserialize(buffer, reinterpret_cast<uint8_t *>(&(this->setting)));
         switch(this->setting){
-            case 0:
+            case JPEG_QUALITY:
                 network::deserialize(buffer, &(this->jpegQuality));
                 break;
-            case 1:
+            case GREYSCALE:
                 network::deserialize(buffer, &(this->greyscale));
                 break;
-        }  
+            case DISPLAY_STATE:
+                network::deserialize(buffer, 
+                                    &(this->resolution.stream_index));
+                network::deserialize(buffer, reinterpret_cast<uint8_t *>(&(this->resolution.sending)));
+                break;
+        }
     }
 };
 
