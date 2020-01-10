@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdbool.h>
 #include <math.h>
 #include <time.h>
 
@@ -46,6 +47,7 @@ static void report_error(const char* fmt, ...) {
 #define CELL_SIZE 0.25
 #define BORDER_WIDTH 0.04
 #define ROVER_SIZE 0.9
+#define ROVER_WHEEL_AXIS_LENGTH 0.9
 
 #define MIN_PPM 20.0f
 #define MAX_PPM 120.0f
@@ -54,6 +56,7 @@ static void report_error(const char* fmt, ...) {
 
 // In meters/sec.
 #define CONTROL_MOVEMENT_SPEED 0.25f
+#define ROVER_MAX_SPEED 0.25f
 
 Mat3f projection;
 Mat3f camera;
@@ -62,8 +65,8 @@ Map map;
 World world;
 
 // For control.
-float cvector_rotate = 0.0f;
-float cvector_move = 0.0f;
+// float cvector_rotate = 0.0f;
+// float cvector_move = 0.0f;
 
 OccupancyGrid frame_occupancy_grid;
 
@@ -75,6 +78,8 @@ float last_cursor_y = 0;
 
 float rover_x = 0, rover_y = 0;
 float rover_angle = 0;
+int8_t left_set = 0, right_set = 0;
+float prev_angle_to_path = 0;
 
 // For timing.
 long start_time;
@@ -276,6 +281,67 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     }
 }
 
+void diff_steer(int8_t left, int8_t right, float delta){
+    if(right > 127){
+        right = 127;
+    }
+    if(left > 127){
+        left = 127;
+    }
+    float left_velocity = (left / 127.0f) * ROVER_MAX_SPEED;
+    float right_velocity = (right / 127.0f) * ROVER_MAX_SPEED;
+    float rotational_velocity = (right_velocity - left_velocity) / ROVER_WHEEL_AXIS_LENGTH;
+    float rotation_angle = (rotational_velocity * delta) * 180.0f / M_PI;
+    float change_x = 0;
+    float change_y = 0;
+    // If we are turning (use radius/circle movement calculation)
+    if(left != right){
+        float radius = (ROVER_WHEEL_AXIS_LENGTH / 2.0f) * (left_velocity + right_velocity) / (right_velocity - left_velocity);
+        change_x = cosf(rotation_angle * M_PI / 180.0f) * (radius * sinf(rover_angle * M_PI / 180.0f)) - sinf(rotation_angle * M_PI / 180.0f) * (-1 * radius * cosf(rover_angle * M_PI / 180.0f)) - (radius * sinf(rover_angle * M_PI / 180.0f));
+        change_y = sinf(rotation_angle * M_PI / 180.0f) * (radius * sinf(rover_angle * M_PI / 180.0f)) + cosf(rotation_angle * M_PI / 180.0f) * (-1 * radius * cosf(rover_angle * M_PI / 180.0f)) + (radius * cosf(rover_angle * M_PI / 180.0f));
+    }
+    // If we are moving in a straight line (circle movement calculation makes no sense; radius would be undefined)
+    else {
+        // Note: In this case, left_velocity == right_velocity == velocity
+        change_x = delta * left_velocity * cosf(rover_angle * M_PI / 180.0f);
+        change_y = delta * left_velocity * sinf(rover_angle * M_PI / 180.0f);
+    }
+
+    rover_angle += rotation_angle;
+    rover_x += change_x;
+    rover_y += change_y;
+}
+
+// Returns the distance between two points
+float getDistance(float x1, float y1, float x2, float y2){
+    float delta_x = x2 - x1;
+    float delta_y = y2 - y1;
+    return(sqrt((delta_x * delta_x) + (delta_y * delta_y)));
+}
+
+// Controls the steepness of the curve.
+const float INTENSITY_STEEPNESS = 50.0f;
+// Controls how close to zero the curve levels out.
+const float INTENSITY_LEVELOUT = 5.0f;
+
+// Function to input angle_to_path and output the intensity decision
+float getIntensity(float theta) {
+    theta = fabsf(theta);
+
+    // Use a modified ln(x) where f(0) = 0 and f(1) = 1 with variable steepness.
+    float dominant_curve = (1.0f / logf(INTENSITY_STEEPNESS + 1)) * logf(INTENSITY_STEEPNESS*theta + 1);
+
+    // Use plain old x^2.
+    float levelout_curve = theta*theta;
+
+    // This is the function that selects how much levelout to apply.
+    // It is a modified e^(-x) with controlled steepness.
+    float control_curve = (-1.0f / (expf(-INTENSITY_LEVELOUT) - 1.0f)) * expf(-INTENSITY_LEVELOUT*theta) + 1.0f + (1.0f / (expf(-INTENSITY_LEVELOUT) - 1.0f));
+
+
+    return (1.0f - control_curve) * dominant_curve + control_curve * levelout_curve;
+}
+
 int main(int argc, char** argv) {
     init_clock();
 
@@ -379,7 +445,7 @@ int main(int argc, char** argv) {
     rover_angle = 90.0f;
 
     // Start with the rover moving forward.
-    cvector_move = 1.0f;
+    // cvector_move = 1.0f;
 
     frame_occupancy_grid = occupancy_grid_create(world.grid_size);
 
@@ -410,10 +476,7 @@ int main(int argc, char** argv) {
         if (time_diff == 0) time_diff = 1;
 
         float delta = (float)time_diff / 1000.0f;
-
-        rover_x += delta * cvector_move * CONTROL_MOVEMENT_SPEED * cosf(rover_angle * M_PI / 180.0f);
-        rover_y += delta * cvector_move * CONTROL_MOVEMENT_SPEED * sinf(rover_angle * M_PI / 180.0f);
-        // rover_angle += cvector_rotate * CONTROL_ROTATION_SPEED;
+        diff_steer(left_set, right_set, delta);
 
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -459,7 +522,32 @@ int main(int argc, char** argv) {
             float target_offset_x, target_offset_y;
             AutonomyStatus autonomy_status = autonomy_step(&world, rover_x, rover_y, rover_angle, &target_offset_x, &target_offset_y);
 
-            rover_angle +=  atan2f(target_offset_y, target_offset_x) * 180 / M_PI;
+            float target_x = rover_x + target_offset_x;
+            float target_y = rover_y + target_offset_y;
+
+            float dist_from_target = getDistance(rover_x, rover_y, target_x, target_y);
+            printf("Distance: %f\n", dist_from_target);
+
+            float target_angle = atan2f(target_y - rover_y, target_x - rover_x) * 180.0f / M_PI;
+
+            printf("Target Angle: %f\n", target_angle);
+
+            float adjusted_rover_angle = rover_angle - target_angle;
+            if (adjusted_rover_angle < 0) {
+                adjusted_rover_angle += 360;
+            }
+
+            printf("Angle: %f\n", adjusted_rover_angle);
+            
+            if(adjusted_rover_angle <= 180.0f){
+                printf("Turn Right\n");
+                left_set = 127;
+                right_set = 127 - 256.0f * getIntensity(adjusted_rover_angle / 360.0f);
+            } else {
+                printf("Turn Left\n");
+                left_set = 127 - 256.0f * getIntensity(adjusted_rover_angle / 360.0f);
+                right_set = 127;
+            }
 
             autonomy_last_tick = tick;
         }

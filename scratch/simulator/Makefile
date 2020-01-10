@@ -10,6 +10,6 @@ SOURCES += $(AUTONOMY_SOURCE)
 $(OUT): $(SOURCES)
 	gcc -o $@ $(CFLAGS) $(SOURCES) $(LFLAGS)
 
-.PHONY: run
+.PHONY: run memcheck
 run: $(OUT)
 	$(OUT)
