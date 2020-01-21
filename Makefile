@@ -12,10 +12,13 @@ simple_config: bin
 logger: bin
 	make -C src/logger
 
+rocs: bin
+	make -C src/rocs
+
 base_station: bin network simple_config logger
 	make -C src/base_station
 
-rover: bin network simple_config logger
+rover: bin network simple_config logger rocs
 	make -C src/rover
 
 clean:
@@ -31,4 +34,4 @@ archive:
 send: archive
 	scp RoverSystem.zip layne@192.168.1.20:/home/layne/RoverSystem.zip
 
-.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger
+.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs
