@@ -1,8 +1,8 @@
 #ifndef GRID_PROGRAM_H
 #define GRID_PROGRAM_H
 
-#include "program.h"
-#include "mutils.h"
+#include "program.hpp"
+#include "mutils.hpp"
 
 typedef struct {
     Program prog;

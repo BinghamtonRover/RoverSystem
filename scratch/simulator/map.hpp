@@ -1,17 +1,17 @@
 #ifndef MAP_H
 #define MAP_H
 
-typedef struct {
+struct MapObstacle {
     float* vertices;
     size_t num_vertices;
-} MapObstacle;
+};
 
-typedef struct {
+struct Map {
     MapObstacle* obstacles;
     size_t num_obstacles;
 
     float target_x, target_y;
-} Map;
+};
 
 #define MAP_ERROR_DEF(X) \
     X(MAP_ERROR_OK), \
@@ -20,9 +20,9 @@ typedef struct {
     X(MAP_ERROR_FORMAT)
 
 #define X(name) name
-typedef enum {
+enum MapError {
     MAP_ERROR_DEF(X)
-} MapError;
+};
 #undef X
 
 const char* map_error_string(MapError e);

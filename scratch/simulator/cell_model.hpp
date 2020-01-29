@@ -1,14 +1,14 @@
 #ifndef CELL_MODEL_H
 #define CELL_MODEL_H
 
-#include "model.h"
-#include "program.h"
+#include "model.hpp"
+#include "program.hpp"
 
-typedef struct {
+struct CellModel {
     Model model;
 
     int i_pos_loc;
-} CellModel;
+};
 
 CellModel cell_model_create(Program* prog);
 

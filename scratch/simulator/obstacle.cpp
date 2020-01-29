@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "obstacle.h"
+#include "obstacle.hpp"
 
 Obstacle obstacle_create(Program* prog, float* vertices, size_t num_vertices) {
     Obstacle obs;

@@ -1,6 +1,6 @@
 #include <GL/glew.h>
 
-#include "grid_program.h"
+#include "grid_program.hpp"
 
 GridProgram grid_program_create() {
     GridProgram gp;

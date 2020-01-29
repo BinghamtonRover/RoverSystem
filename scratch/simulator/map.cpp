@@ -4,7 +4,7 @@
 
 #include "tomlc99/toml.h"
 
-#include "map.h"
+#include "map.hpp"
 
 #define X(name) [name] = #name
 const char* map_error_names[] = {

@@ -1,17 +1,17 @@
 #ifndef FILL_PROGRAM_H
 #define FILL_PROGRAM_H
 
-#include "program.h"
-#include "mutils.h"
+#include "program.hpp"
+#include "mutils.hpp"
 
-typedef struct {
+struct FillProgram {
     Program prog;
 
     int u_model_loc;
     int u_view_loc;
     int u_projection_loc;
     int u_color_loc;
-} FillProgram;
+};
 
 FillProgram fill_program_create();
 

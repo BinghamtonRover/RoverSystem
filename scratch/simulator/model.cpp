@@ -3,7 +3,7 @@
 
 #include <GL/glew.h>
 
-#include "model.h"
+#include "model.hpp"
 
 Model model_create(size_t num_vbos) {
     Model m;

@@ -1,16 +1,16 @@
 #ifndef ROVER_PROGRAM_H
 #define ROVER_PROGRAM_H
 
-#include "program.h"
-#include "mutils.h"
+#include "program.hpp"
+#include "mutils.hpp"
 
-typedef struct {
+struct RoverProgram {
     Program prog;
 
     int u_model_loc;
     int u_view_loc;
     int u_projection_loc;
-} RoverProgram;
+};
 
 RoverProgram rover_program_create();
 

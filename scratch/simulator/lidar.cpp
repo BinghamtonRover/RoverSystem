@@ -3,9 +3,9 @@
 #include <math.h>
 #include <stddef.h>
 
-#include "lidar.h"
+#include "lidar.hpp"
 
-#define LIDAR_ZERO_DELTA 1e-2f
+const float LIDAR_ZERO_DELTA = 1e-2f;
 
 // Returns true if they are able to intersect, and false if otherwise (parallel).
 static bool calc_intersection_point(float s1x, float s1y, float e1x, float e1y, float s2x, float s2y, float e2x, float e2y, float* out_t1, float* out_t2) {

@@ -1,7 +1,7 @@
 /*
     DUMMY IMPLEMENTATION OF AUTONOMY
 */
-#include "autonomy.h"
+#include "autonomy.hpp"
 
 AutonomyStatus autonomy_step(World* world, float rover_x, float rover_y, float rover_angle, float* out_offset_x, float* out_offset_y) {
     *out_offset_x = 5 - rover_x;

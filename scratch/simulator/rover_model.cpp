@@ -1,6 +1,6 @@
 #include <GL/glew.h>
 
-#include "rover_model.h"
+#include "rover_model.hpp"
 
 RoverModel rover_model_create(Program* prog, float rover_size) {
     RoverModel rm;

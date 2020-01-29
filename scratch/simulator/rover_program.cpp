@@ -1,6 +1,6 @@
 #include <GL/glew.h>
 
-#include "rover_program.h"
+#include "rover_program.hpp"
 
 RoverProgram rover_program_create() {
     RoverProgram rp;

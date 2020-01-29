@@ -1,21 +1,21 @@
 #ifndef OBSTACLE_H
 #define OBSTACLE_H
 
-#include "model.h"
-#include "program.h"
+#include "model.hpp"
+#include "program.hpp"
 
-typedef struct {
+struct ObstacleModel {
     Model model;
 
     int i_pos_loc;
-} ObstacleModel;
+};
 
-typedef struct {
+struct Obstacle {
     float* vertices;
     size_t num_vertices;
 
     ObstacleModel model;
-} Obstacle;
+};
 
 Obstacle obstacle_create(Program* prog, float* vertices, size_t num_vertices);
 

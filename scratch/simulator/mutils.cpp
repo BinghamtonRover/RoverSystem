@@ -1,7 +1,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "mutils.h"
+#include "mutils.hpp"
 
 void mat3f_zero_inplace(Mat3f* mat) {
     memset(mat->data, 0, sizeof(float) * 9);

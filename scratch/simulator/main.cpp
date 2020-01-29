@@ -9,23 +9,23 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "mutils.h"
-#include "program.h"
-#include "cell_model.h"
-#include "grid_program.h"
-#include "fill_program.h"
-#include "rover_model.h"
-#include "rover_program.h"
-#include "obstacle.h"
-#include "map.h"
-#include "lidar.h"
-#include "lidar_point_model.h"
-#include "occupancy_grid.h"
-#include "autonomy.h"
-#include "world.h"
+#include "mutils.hpp"
+#include "program.hpp"
+#include "cell_model.hpp"
+#include "grid_program.hpp"
+#include "fill_program.hpp"
+#include "rover_model.hpp"
+#include "rover_program.hpp"
+#include "obstacle.hpp"
+#include "map.hpp"
+#include "lidar.hpp"
+#include "lidar_point_model.hpp"
+#include "occupancy_grid.hpp"
+#include "autonomy.hpp"
+#include "world.hpp"
 
-#define WW 1280
-#define WH 720
+const int WW = 1280;
+const int WH = 720;
 
 static void report_error(const char* fmt, ...) {
     va_list args;
@@ -38,25 +38,25 @@ static void report_error(const char* fmt, ...) {
     va_end(args);
 }
 
-#define WINDOW_TITLE_BUFFER_SIZE 1000
+const int WINDOW_TITLE_BUFFER_SIZE = 1000;
 
 // In milliseconds.
-#define AUTONOMY_TICK_INTERVAL 500
+const int AUTONOMY_TICK_INTERVAL = 500;
 
-#define GRID_SIZE 400
-#define CELL_SIZE 0.25
-#define BORDER_WIDTH 0.04
-#define ROVER_SIZE 0.9
-#define ROVER_WHEEL_AXIS_LENGTH 0.9
+const int GRID_SIZE = 400;
+const float CELL_SIZE = 0.25;
+const float BORDER_WIDTH = 0.04;
+const float ROVER_SIZE = 0.9;
+const float ROVER_WHEEL_AXIS_LENGTH = 0.9;
 
-#define MIN_PPM 20.0f
-#define MAX_PPM 120.0f
+const float MIN_PPM = 20.0f;
+const float MAX_PPM = 120.0f;
 
-#define CONTROL_ROTATION_SPEED 1.1f
+const float CONTROL_ROTATION_SPEED = 1.1f;
 
 // In meters/sec.
-#define CONTROL_MOVEMENT_SPEED 0.25f
-#define ROVER_MAX_SPEED 0.25f
+const float CONTROL_MOVEMENT_SPEED = 0.25f;
+const float ROVER_MAX_SPEED = 0.25f;
 
 Mat3f projection;
 Mat3f camera;
@@ -360,14 +360,12 @@ int main(int argc, char** argv) {
         map.target_y = 50;
     }
 
-    world = (World) {
-        .grid_size = GRID_SIZE,
-        .cell_size = CELL_SIZE,
-        .occupancy_grid = occupancy_grid_create(GRID_SIZE),
+    world.grid_size = GRID_SIZE;
+    world.cell_size = CELL_SIZE;
+    world.occupancy_grid = occupancy_grid_create(GRID_SIZE);
 
-        .target_x = map.target_x,
-        .target_y = map.target_y
-    };
+    world.target_x = map.target_x;
+    world.target_y = map.target_y;
 
     if (!glfwInit()) {
         report_error("failed to init GLFW");

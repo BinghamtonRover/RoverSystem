@@ -2,7 +2,7 @@
 
 #include <GL/glew.h>
 
-#include "cell_model.h"
+#include "cell_model.hpp"
 
 CellModel cell_model_create(Program* prog) {
     CellModel cm;

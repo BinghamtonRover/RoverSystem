@@ -1,6 +1,6 @@
 #include <GL/glew.h>
 
-#include "fill_program.h"
+#include "fill_program.hpp"
 
 FillProgram fill_program_create() {
     FillProgram fp;

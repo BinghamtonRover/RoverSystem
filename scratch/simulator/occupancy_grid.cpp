@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "occupancy_grid.h"
+#include "occupancy_grid.hpp"
 
 OccupancyGrid occupancy_grid_create(int grid_size) {
     return (OccupancyGrid) {

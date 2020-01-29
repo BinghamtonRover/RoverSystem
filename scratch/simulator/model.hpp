@@ -1,12 +1,12 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-typedef struct {
+struct Model {
     unsigned int vao;
 
     unsigned int* vbos;
     size_t num_vbos;
-} Model;
+};
 
 Model model_create(size_t num_vbos);
 

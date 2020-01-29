@@ -1,7 +1,7 @@
 #ifndef LIDAR_H
 #define LIDAR_H
 
-#include "obstacle.h"
+#include "obstacle.hpp"
 
 #define LIDAR_NUM_POINTS (271)
 #define LIDAR_RANGE (10)

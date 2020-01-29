@@ -1,6 +1,6 @@
 #include <GL/glew.h>
 
-#include "lidar_point_model.h"
+#include "lidar_point_model.hpp"
 
 LidarPointModel lidar_point_model_create(Program* prog, float point_size) {
     LidarPointModel lpm;

@@ -1,11 +1,11 @@
 #ifndef OCCUPANCY_GRID_H
 #define OCCUPANCY_GRID_H
 
-typedef struct {
+struct OccupancyGrid {
     int* grid;
     int grid_size;
     int max;
-} OccupancyGrid;
+};
 
 OccupancyGrid occupancy_grid_create(int grid_size);
 

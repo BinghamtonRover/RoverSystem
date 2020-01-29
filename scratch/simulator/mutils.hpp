@@ -5,9 +5,9 @@
 #define M_PI 3.1415926535
 #endif
 
-typedef struct {
+struct Mat3f {
     float data[9];
-} Mat3f;
+};
 
 void mat3f_zero_inplace(Mat3f* mat);
 Mat3f mat3f_zero_copy();

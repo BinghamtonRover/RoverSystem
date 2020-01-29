@@ -1,7 +1,8 @@
 #include <GL/glew.h>
 #include <stdio.h>
 #include <stdlib.h> 
-#include "program.h"
+
+#include "program.hpp"
 
 static char* read_entire_file(const char* file_name) {
     FILE* file = fopen(file_name, "r");
@@ -42,7 +43,7 @@ static unsigned int load_shader(const char* source, unsigned int type) {
     return id;
 }
 
-static unsigned int create_program(char* vertex_shader_source, char* fragment_shader_source) {
+static unsigned int create_program(const char* vertex_shader_source, const char* fragment_shader_source) {
     unsigned int id = glCreateProgram();
     
     unsigned int vertex_id = load_shader(vertex_shader_source, GL_VERTEX_SHADER); 
@@ -67,11 +68,11 @@ static unsigned int create_program(char* vertex_shader_source, char* fragment_sh
     return id;
 }
 
-Program program_create(char* vertex_shader_source, char* fragment_shader_source) {
+Program program_create(const char* vertex_shader_source, const char* fragment_shader_source) {
     return (Program) { create_program(vertex_shader_source, fragment_shader_source) };
 }
 
-Program program_create_from_files(char* vertex_file, char* fragment_file) {
+Program program_create_from_files(const char* vertex_file, const char* fragment_file) {
     char* vertex_shader_source = read_entire_file(vertex_file);
     char* fragment_shader_source = read_entire_file(fragment_file);
 
