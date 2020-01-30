@@ -15,7 +15,7 @@ enum class Error { SUSPENSION_ERRORS_DEF(X) };
 
 const char* get_error_string(Error e);
 
-Error init(const char* i2c_dev_path, uint8_t slave_addr);
+Error init(uint8_t slave_addr);
 
 Error update(Side side, Direction direction, uint8_t speed);
 

@@ -4,7 +4,7 @@
 
 namespace suspension {
 
-Error init(const char* i2c_dev_path, uint8_t slave_addr) {
+Error init(uint8_t slave_addr) {
     return Error::OK;
 }
 

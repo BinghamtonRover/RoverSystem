@@ -6,7 +6,6 @@
 
 #include "gps.hpp"
 #include "camera.hpp"
-#include "zed.hpp"
 #include "subsystem.hpp"
 #include "suspension.hpp"
 
@@ -20,6 +19,9 @@
 #include <vector>
 
 // GLOBAL CONSTANTS
+
+// ROCS addresses.
+const uint8_t SUSPENSION_I2C_ADDR = 0x01;
 
 const int MAX_STREAMS = 9;
 const unsigned int CAMERA_WIDTH = 1280;
@@ -239,14 +241,14 @@ int main() {
         return 1;
     }
 
+    if (suspension::init(SUSPENSION_I2C_ADDR) != suspension::Error::OK) {
+        logger::log(logger::ERROR, "[!] Failed to init suspension!");
+        return 1;
+    }
+
     // Camera streams
     camera::CaptureSession * streams[MAX_STREAMS] = {0};
     int activeCameras = updateCameraStatus(streams);
-
-    if (zed::open(&global_clock) != zed::Error::OK) {
-        logger::log(logger::ERROR, "> Failed to open zed camera!");
-        return 1;
-    }
 
     if (gps::open() != gps::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to open GPS!");
@@ -257,8 +259,6 @@ int main() {
         printf("[!] Failed to open GPS!\n");
         return 1;
     }
-
-    zed::open(&global_clock);
 
     // Two feeds: incoming base station and outgoing rover.
     network::Feed r_feed, bs_feed;
@@ -447,57 +447,6 @@ int main() {
             network::publish(&r_feed,&message);
         }
 
-        unsigned char* zed_image;
-        int zed_stride;
-        zed::Pose zed_pose;
-        if (zed::grab(&zed_image, &zed_stride, &zed_pose) == zed::Error::OK) {
-            jpeg_size = tjBufSize(1280, 720, TJSAMP_422);
-
-            auto tj_err = tjCompress2(
-                compressor,
-                zed_image,
-                1280,
-                zed_stride,
-                720,
-                TJPF_BGRA,
-                (unsigned char**) &jpeg_buffer,
-                &jpeg_size,
-                TJSAMP_422,
-                40,
-                TJFLAG_NOREALLOC);
-
-            /*
-                        auto tj_err = tjCompressFromYUV(compressor, zed_image.getPtr<unsigned char>(), 1280,
-                                                        zed_image.getStepBytes(), 720, TJSAMP_444, &jpeg_buffer,
-                                                        &jpeg_size, 40, TJFLAG_NOREALLOC);
-            */
-            if (tj_err != 0) {
-                logger::log(logger::DEBUG, "tjCompress failed: %s", tjGetErrorStr2(compressor));
-            }
-
-            // Send the frame.
-            // Calculate how many buffers we will need to send the entire frame
-            uint8_t num_buffers = (jpeg_size / CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE) + 1;
-
-            for (uint8_t j = 0; j < num_buffers; j++) {
-                // This accounts for the last buffer that is not completely divisible
-                // by the defined buffer size, by using up the remaining space calculated
-                // with modulus    -yu
-                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE :
-                                                                jpeg_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
-
-                network::CameraMessage message = {
-                    static_cast<uint8_t>(0), // stream_index
-                    static_cast<uint16_t>(frame_counter), // frame_index
-                    static_cast<uint8_t>(j), // section_index
-                    num_buffers, // section_count
-                    buffer_size, // size
-                    jpeg_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
-                };
-
-                network::publish(&r_feed, &message);
-            }
-        }
         // Increment global (across all streams) frame counter. Should be ok. Should...
         frame_counter++;
 

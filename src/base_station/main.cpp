@@ -1126,7 +1126,7 @@ int main() {
     // Init the controller.
     // TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
     bool controller_loaded = false;
-    if (controller::init("/dev/input/js1") == controller::Error::OK) {
+    if (controller::init("/dev/input/js0") == controller::Error::OK) {
         controller_loaded = true;
         logger::log(logger::INFO, "Controller connected.");
     } else {
