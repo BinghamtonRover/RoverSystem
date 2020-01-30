@@ -13,4 +13,8 @@ Error update(Side side, Direction direction, uint8_t speed) {
     return Error::OK;
 }
 
+Error stop(Side side) {
+    return Error::OK;
+}
+
 } // namespace suspension

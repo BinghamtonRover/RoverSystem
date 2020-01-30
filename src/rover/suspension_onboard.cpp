@@ -56,4 +56,14 @@ Error update(Side side, Direction direction, uint8_t speed) {
     return Error::OK;
 }
 
+Error stop(Side side) {
+    auto rocs_res = rocs::write_to_register(
+        global_slave_addr,
+        side_to_speed_register_map[side],
+        0);
+    if (rocs_res != rocs::Error::OK) return Error::WRITE;
+
+    return Error::OK;
+}
+
 }

@@ -8,6 +8,7 @@
 #include "camera.hpp"
 #include "zed.hpp"
 #include "subsystem.hpp"
+#include "suspension.hpp"
 
 #include <turbojpeg.h>
 
@@ -519,7 +520,48 @@ int main() {
                     network::MovementMessage movement;
                     network::deserialize(&message.buffer, &movement);
 
-                    // TODO: Feed suspension here!
+                    suspension::Direction left_dir;
+                    suspension::Direction right_dir;
+
+                    if (movement.left < 0) {
+                        left_dir = suspension::Direction::BACKWARD;
+                        movement.left = -movement.left;
+                    } else if (movement.left > 0) {
+                        left_dir = suspension::Direction::FORWARD;
+                    }
+
+                    if (movement.left > 255) movement.left = 255;
+
+                    if (movement.right < 0) {
+                        right_dir = suspension::Direction::BACKWARD;
+                        movement.right = -movement.right;
+                    } else if (movement.right > 0) {
+                        right_dir = suspension::Direction::FORWARD;
+                    } 
+
+                    if (movement.right > 255) movement.right = 255;
+
+                    if (movement.left == 0) {
+                        if (suspension::stop(suspension::Side::LEFT) != suspension::Error::OK) {
+                            logger::log(logger::ERROR, "Failed to stop left suspension side");
+                        }
+                    } else {
+                        if (suspension::update(suspension::Side::LEFT, left_dir, (uint8_t)movement.left) != suspension::Error::OK) {
+
+                            logger::log(logger::ERROR, "Failed to update left suspension side");
+                        }
+                    }
+
+                    if (movement.right == 0) {
+                        if (suspension::stop(suspension::Side::RIGHT) != suspension::Error::OK) {
+                            logger::log(logger::ERROR, "Failed to stop right suspension side");
+                        }
+                    } else {
+                        if (suspension::update(suspension::Side::RIGHT, right_dir, (uint8_t)movement.right) != suspension::Error::OK) {
+
+                            logger::log(logger::ERROR, "Failed to update right suspension side");
+                        }
+                    }
 
                     break;
                 }
