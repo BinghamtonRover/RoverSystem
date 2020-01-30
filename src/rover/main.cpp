@@ -2,6 +2,7 @@
 #include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
 #include "../logger/logger.hpp"
+#include "../rocs/rocs.hpp"
 
 #include "gps.hpp"
 #include "camera.hpp"
@@ -230,6 +231,12 @@ int main() {
     Config config = load_config("res/r.sconfig");
 
     unsigned int frame_counter = 0;
+
+    // i2c
+    if (rocs::init("/dev/i2c-0") != rocs::Error::OK) {
+        logger::log(logger::ERROR, "[!] Failed to init ROCS!");
+        return 1;
+    }
 
     // Camera streams
     camera::CaptureSession * streams[MAX_STREAMS] = {0};

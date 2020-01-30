@@ -10,6 +10,7 @@ all: $(OUT)
 $(OUT): $(SOURCES) $(HEADERS)
 	g++ -c -o $(OBJ_OUT) $(CFLAGS) $(SOURCES) $(LFLAGS)
 	ar rcs $(OUT) $(OBJ_OUT)
+	rm $(OBJ_OUT)
 
 .PHONY: test
 test: $(OUT)

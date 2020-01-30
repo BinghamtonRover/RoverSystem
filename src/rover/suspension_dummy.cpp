@@ -4,8 +4,7 @@
 
 namespace suspension {
 
-Error init(const char* device_serial_id) {
-    // Ignore the serial code.
+Error init(const char* i2c_dev_path, uint8_t slave_addr) {
     return Error::OK;
 }
 

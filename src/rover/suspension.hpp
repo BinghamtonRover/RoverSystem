@@ -7,7 +7,7 @@ enum Side : uint8_t { LEFT, RIGHT };
 enum Direction : uint8_t { FORWARD, BACKWARD };
 
 #define SUSPENSION_ERRORS_DEF(X) \
-    X(OK), X(DEVICE_NOT_FOUND), X(OPEN_DEVICE), X(INVALID_STATE), X(WRITE), X(GET_ATTR), X(SET_ATTR)
+    X(OK), X(DEVICE_NOT_RECOGNIZED), X(WRITE), X(READ)
 
 #define X(error) error
 enum class Error { SUSPENSION_ERRORS_DEF(X) };
@@ -15,7 +15,7 @@ enum class Error { SUSPENSION_ERRORS_DEF(X) };
 
 const char* get_error_string(Error e);
 
-Error init(const char* device_serial_id);
+Error init(const char* i2c_dev_path, uint8_t slave_addr);
 
 Error update(Side side, Direction direction, uint8_t speed);
 

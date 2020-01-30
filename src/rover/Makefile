@@ -7,6 +7,8 @@ EXECUTABLE = ../../bin/rover
 
 ifdef ONBOARD
 	ZED_ONBOARD = true
+	SUSPENSION_ONBOARD = true
+	ROCS_ONBOARD = true
 endif
 
 CUDA_VERSION = 9.0
@@ -19,6 +21,19 @@ ifdef ZED_ONBOARD
 	CFLAGS += -Wno-reorder -I/usr/local/zed/include -I/usr/local/cuda-$(CUDA_VERSION)/include
 else
 	SOURCES += zed_dummy.cpp
+endif
+
+ifdef SUSPENSION_ONBOARD
+	SOURCES += suspension_onboard.cpp
+else
+	SOURCES += suspension_dummy.cpp
+endif
+
+ifdef ROCS_ONBOARD
+	LIBRARIES += ../../bin/librocs.a
+	LFLAGS += -lrocs
+else
+	SOURCES += rocs_dummy.cpp
 endif
 
 SOURCES += gps_dummy.cpp
