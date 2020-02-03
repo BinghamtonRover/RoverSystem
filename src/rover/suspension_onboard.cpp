@@ -6,6 +6,9 @@
 
 namespace suspension {
 
+// Scale the input down by 2.
+const uint16_t PRESCALE = 2;
+
 uint8_t global_slave_addr;
 
 // Assumes rocs has already been initialized!
@@ -41,6 +44,12 @@ uint8_t dir_to_value_map[2] = {
 };
 
 Error update(Side side, Direction direction, uint8_t speed) {
+    // Scale it down so that we don't go too fast.
+    uint16_t speed_scaling = speed * 100;
+    speed_scaling /= PRESCALE;
+    speed_scaling /= 100;
+    speed = (uint8_t) speed_scaling;
+
     auto rocs_res = rocs::write_to_register(
         global_slave_addr,
         side_to_speed_register_map[side],

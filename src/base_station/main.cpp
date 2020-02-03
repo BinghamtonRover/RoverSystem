@@ -43,7 +43,7 @@ const float ALPHA = 30;
 // Speed for the DPAD up/down.
 const int16_t JOINT_DRIVE_SPEED = 50;
 
-// Send movement updates 3x per second.
+// Send movement updates x times per second.
 const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
 
 // Update network statistics once per second.

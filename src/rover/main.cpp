@@ -23,6 +23,8 @@
 // ROCS addresses.
 const uint8_t SUSPENSION_I2C_ADDR = 0x01;
 
+const int SUSPENSION_UPDATE_INTERVAL = 1000 / 15;
+
 const int MAX_STREAMS = 9;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
@@ -308,11 +310,15 @@ int main() {
     util::Timer subsystem_send_timer;
     util::Timer::init(&subsystem_send_timer, SUBSYSTEM_SEND_INTERVAL, &global_clock);
 
+    util::Timer suspension_update_timer;
+    util::Timer::init(&suspension_update_timer, SUSPENSION_UPDATE_INTERVAL, &global_clock);
+
     uint32_t ticks = 0;
+
+    network::MovementMessage last_movement_message = { 0, 0 };
 
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
-
 
     unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
     uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
@@ -466,51 +472,7 @@ int main() {
             }
             switch (message.type) {
                 case network::MessageType::MOVEMENT: {
-                    network::MovementMessage movement;
-                    network::deserialize(&message.buffer, &movement);
-
-                    suspension::Direction left_dir;
-                    suspension::Direction right_dir;
-
-                    if (movement.left < 0) {
-                        left_dir = suspension::Direction::BACKWARD;
-                        movement.left = -movement.left;
-                    } else if (movement.left > 0) {
-                        left_dir = suspension::Direction::FORWARD;
-                    }
-
-                    if (movement.left > 255) movement.left = 255;
-
-                    if (movement.right < 0) {
-                        right_dir = suspension::Direction::BACKWARD;
-                        movement.right = -movement.right;
-                    } else if (movement.right > 0) {
-                        right_dir = suspension::Direction::FORWARD;
-                    } 
-
-                    if (movement.right > 255) movement.right = 255;
-
-                    if (movement.left == 0) {
-                        if (suspension::stop(suspension::Side::LEFT) != suspension::Error::OK) {
-                            logger::log(logger::ERROR, "Failed to stop left suspension side");
-                        }
-                    } else {
-                        if (suspension::update(suspension::Side::LEFT, left_dir, (uint8_t)movement.left) != suspension::Error::OK) {
-
-                            logger::log(logger::ERROR, "Failed to update left suspension side");
-                        }
-                    }
-
-                    if (movement.right == 0) {
-                        if (suspension::stop(suspension::Side::RIGHT) != suspension::Error::OK) {
-                            logger::log(logger::ERROR, "Failed to stop right suspension side");
-                        }
-                    } else {
-                        if (suspension::update(suspension::Side::RIGHT, right_dir, (uint8_t)movement.right) != suspension::Error::OK) {
-
-                            logger::log(logger::ERROR, "Failed to update right suspension side");
-                        }
-                    }
+                    network::deserialize(&message.buffer, &last_movement_message);
 
                     break;
                 }
@@ -541,6 +503,53 @@ int main() {
             // Update feed statuses.
             network::update_status(&r_feed);
             network::update_status(&bs_feed);
+        }
+
+        if (suspension_update_timer.ready()) {
+            auto movement = last_movement_message;
+
+            suspension::Direction left_dir;
+            suspension::Direction right_dir;
+
+            if (movement.left < 0) {
+                left_dir = suspension::Direction::BACKWARD;
+                movement.left = -movement.left;
+            } else if (movement.left > 0) {
+                left_dir = suspension::Direction::FORWARD;
+            }
+
+            if (movement.left > 255) movement.left = 255;
+
+            if (movement.right < 0) {
+                right_dir = suspension::Direction::BACKWARD;
+                movement.right = -movement.right;
+            } else if (movement.right > 0) {
+                right_dir = suspension::Direction::FORWARD;
+            } 
+
+            if (movement.right > 255) movement.right = 255;
+
+            if (movement.left == 0) {
+                if (suspension::stop(suspension::Side::LEFT) != suspension::Error::OK) {
+                    logger::log(logger::ERROR, "Failed to stop left suspension side");
+                }
+            } else {
+                if (suspension::update(suspension::Side::LEFT, left_dir, (uint8_t)movement.left) != suspension::Error::OK) {
+
+                    logger::log(logger::ERROR, "Failed to update left suspension side");
+                }
+            }
+
+            if (movement.right == 0) {
+                if (suspension::stop(suspension::Side::RIGHT) != suspension::Error::OK) {
+                    logger::log(logger::ERROR, "Failed to stop right suspension side");
+                }
+            } else {
+                if (suspension::update(suspension::Side::RIGHT, right_dir, (uint8_t)movement.right) != suspension::Error::OK) {
+
+                    logger::log(logger::ERROR, "Failed to update right suspension side");
+                }
+            }
         }
 
         // Tick.
