@@ -251,6 +251,8 @@ int main() {
     // Camera streams
     camera::CaptureSession * streams[MAX_STREAMS] = {0};
     int activeCameras = updateCameraStatus(streams);
+    logger::log(logger::DEBUG, "We started with %d active cameras",
+            activeCameras);
 
     if (gps::open() != gps::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to open GPS!");
@@ -471,6 +473,16 @@ int main() {
                 break;
             }
             switch (message.type) {
+                case network::MessageType::EMERGENCY_STOP: {
+                        if (suspension::stop(suspension::Side::LEFT)
+                                != suspension::Error::OK) {
+                            // Freak out, we can't stop turning left
+                    }
+                        if (suspension::stop(suspension::Side::RIGHT)
+                               != suspension::Error::OK) {
+                            // Freak out, we can't stop turning right
+                    }
+                }
                 case network::MessageType::MOVEMENT: {
                     network::deserialize(&message.buffer, &last_movement_message);
 

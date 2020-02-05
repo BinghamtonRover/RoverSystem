@@ -140,14 +140,15 @@ Buffer get_outgoing_buffer(Feed* feed);
 //
 
 enum class MessageType { 
-    HEARTBEAT, 
-    TEST, 
-    MOVEMENT, 
-    CAMERA, 
+    HEARTBEAT,
+    TEST,
+    MOVEMENT,
+    CAMERA,
     CAMERA_CONTROL,
-    LOG, 
-    LIDAR, 
-    LOCATION, 
+    EMERGENCY_STOP,
+    LOG,
+    LIDAR,
+    LOCATION,
     TICK,
     SUBSYSTEM
 };
@@ -223,6 +224,23 @@ struct CameraMessage {
         network::deserialize(buffer, &(this->section_count));
         network::deserialize(buffer, &(this->size));
         network::deserialize(buffer, this->data, this->size);
+    }
+};
+
+struct EmergencyStopMessage {
+    static const auto TYPE = MessageType::EMERGENCY_STOP;
+
+    uint16_t message_size;
+    uint8_t message[MAX_MESSAGE_SIZE];
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->message_size);
+        network::serialize(buffer, this->message, this->message_size);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->message_size));
+        network::deserialize(buffer, this->message, this->message_size);
     }
 };
 
