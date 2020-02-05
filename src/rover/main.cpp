@@ -322,9 +322,6 @@ int main() {
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
 
-    unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
-    uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
-
     // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
     unsigned int jpeg_quality = 30;
     bool greyscale = false;
