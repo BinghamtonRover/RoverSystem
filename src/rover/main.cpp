@@ -22,6 +22,7 @@
 
 // ROCS addresses.
 const uint8_t SUSPENSION_I2C_ADDR = 0x01;
+const uint8_t NUM_RETRIES = 5;
 
 const int SUSPENSION_UPDATE_INTERVAL = 1000 / 15;
 
@@ -325,6 +326,7 @@ int main() {
     // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
     unsigned int jpeg_quality = 30;
     bool greyscale = false;
+    bool isStopped = false;
     network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
     // Set the starting 2 
     for(int i = 0; i < 2; i++) {
@@ -471,17 +473,47 @@ int main() {
             }
             switch (message.type) {
                 case network::MessageType::EMERGENCY_STOP: {
-                        if (suspension::stop(suspension::Side::LEFT)
-                                != suspension::Error::OK) {
-                            // Freak out, we can't stop turning left
+                    if(!isStopped) {
+                        switch (suspension::stop_rover(NUM_RETRIES)) {
+                            case suspension::Error::OK: {
+                                break;
+                            }
+                            case suspension::Error::STOPPING_LEFT: {
+                                /* Handle retring left if needed */
+                                break;
+                            }
+                            case suspension::Error::STOPPING_RIGHT: {
+                                /* Handle retring right if needed */
+                                break;
+                            }
+                            case suspension::Error::STOPPING_BOTH: {
+                                /* Handle retring both if needed */
+                                break;
+                            }
+                            default: {
+                                /* Handle any unexpected cases */
+                                logger::log(logger::ERROR, "We recieved an"
+                                       " unexpected type of error from "
+                                       "stop_rover()");
+                                break;
+                            }
+                        }
+                        isStopped = true;
                     }
-                        if (suspension::stop(suspension::Side::RIGHT)
-                               != suspension::Error::OK) {
-                            // Freak out, we can't stop turning right
+                    break;
+                }
+                case network::MessageType::RESUME_MOVEMENT: {
+                    if(isStopped) {
+                        suspension::resume_rover(NUM_RETRIES);
+                        isStopped = false;
                     }
+                    break;
                 }
                 case network::MessageType::MOVEMENT: {
-                    network::deserialize(&message.buffer, &last_movement_message);
+                    if(!isStopped) {
+                        network::deserialize(&message.buffer,
+                                             &last_movement_message);
+                    }
 
                     break;
                 }

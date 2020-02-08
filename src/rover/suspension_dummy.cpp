@@ -13,6 +13,16 @@ Error update(Side side, Direction direction, uint8_t speed) {
     return Error::OK;
 }
 
+Error stop_rover(uint8_t num_retries) {
+    printf("Stopping the rover\n");
+    return Error::OK;
+}
+
+Error resume_rover(uint8_t num_retries) {
+    printf("Resuming the rover\n");
+    return Error::OK;
+}
+
 Error stop(Side side) {
     return Error::OK;
 }

@@ -64,6 +64,49 @@ Error update(Side side, Direction direction, uint8_t speed) {
 
     return Error::OK;
 }
+Error resume_rover(uint8_t num_retries) {
+    /**
+     * Do a subsystem call somewhere to resume the rover if needed.
+     *
+     * I.E. if we need to restore power to the suspension we can try here.
+     */
+    for(uint8_t i = 0; i < num_retries; ++i) {
+
+    }
+    return Error::OK;
+}
+
+Error stop_rover(uint8_t num_retries) {
+    bool fixedLeft = false, fixedRight = false;
+    for(uint8_t i = 0; i < num_retries; ++i) {
+        if(!fixedLeft && stop(Side::LEFT) == Error::OK) {
+            fixedLeft = true;
+            if(fixedRight) {
+                break;
+            }
+        }
+        if(!fixedRight && stop(Side::RIGHT) == Error::OK) {
+            fixedRight = true;
+            if(fixedLeft) {
+                break;
+            }
+        }
+    }
+
+    // Consider switching to a suspension based error enum
+    // that tells us which side(s) failed.
+    if(!fixedLeft && !fixedRight) {
+        logger::log(logger::ERROR,"Failed to stop both sides of the rover");
+        return Error::STOPPING_BOTH;
+    } else if (!fixedLeft) {
+        logger::log(logger::ERROR, "Failed to stop the left side wheels");
+        return Error::STOPPING_LEFT;
+    } else if(!fixedRight) {
+        logger::log(logger::ERROR, "Failed to stop the right side wheels");
+        return Error::STOPPING_RIGHT;
+    }
+    return Error::OK;
+}
 
 Error stop(Side side) {
     auto rocs_res = rocs::write_to_register(
