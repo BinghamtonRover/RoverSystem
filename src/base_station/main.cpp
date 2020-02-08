@@ -811,6 +811,18 @@ void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     }
 }
 
+void emergency_stop() {
+    network::EmergencyStopMessage message;
+    network::publish(shared_feeds::bs_feed, &message);
+    return;
+}
+
+void resume_movement() {
+    network::ResumeMovementMessage message;
+    network::publish(shared_feeds::bs_feed, &message);
+    return;
+}
+
 void send_feed(uint8_t stream_indx) {
     network::CameraControlMessage message = {
         network::CameraControlMessage::Setting::DISPLAY_STATE
@@ -1146,6 +1158,8 @@ int main() {
     commands.push_back("<shift>c: Open camera matrix");
     commands.push_back("c: Swap camera feeds");
     commands.push_back("s: Open stopwatch menu");
+    commands.push_back("SPACE + BACKSPACE: Emergency stop");
+    commands.push_back("SPACE + ENTER: Resume momvement");
     commands.push_back("z + UP ARROW: Zoom in map");
     commands.push_back("z + DOWN ARROW: Zoom out map");
     commands.push_back("z + r: Reset map");
@@ -1159,7 +1173,20 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+        bool space_on = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
 
+        if(space_on && (glfwGetKey(window, GLFW_KEY_BACKSPACE) ==
+                             GLFW_PRESS)){
+            for(uint8_t i = 0; i < 5; i++) {
+                emergency_stop();
+            }
+
+        } else if(space_on && (glfwGetKey(window, GLFW_KEY_ENTER) ==
+                             GLFW_PRESS)){
+            for(uint8_t i = 0; i < 5; i++) {
+                resume_movement();
+            }
+        }
         if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
             gui::waypoint_map::zoom_in();    
         } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {

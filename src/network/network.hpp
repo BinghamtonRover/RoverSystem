@@ -146,6 +146,7 @@ enum class MessageType {
     CAMERA,
     CAMERA_CONTROL,
     EMERGENCY_STOP,
+    RESUME_MOVEMENT,
     LOG,
     LIDAR,
     LOCATION,
@@ -229,6 +230,23 @@ struct CameraMessage {
 
 struct EmergencyStopMessage {
     static const auto TYPE = MessageType::EMERGENCY_STOP;
+
+    uint16_t message_size;
+    uint8_t message[MAX_MESSAGE_SIZE];
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->message_size);
+        network::serialize(buffer, this->message, this->message_size);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->message_size));
+        network::deserialize(buffer, this->message, this->message_size);
+    }
+};
+
+struct ResumeMovementMessage {
+    static const auto TYPE = MessageType::RESUME_MOVEMENT;
 
     uint16_t message_size;
     uint8_t message[MAX_MESSAGE_SIZE];
