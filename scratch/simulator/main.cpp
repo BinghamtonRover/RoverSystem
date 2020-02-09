@@ -220,10 +220,14 @@ static void fill_origin(FillProgram* fill_program, CellModel* fill_model) {
 static void fill_target(FillProgram* fill_program, CellModel* fill_model) {
     Mat3f model;
 
-    float gcx, gcy;
-    ctw(context.target_x, context.target_y, &gcx, &gcy);
+    // Go to grid coords to get cell, then go back to get corner in world.
+    int gcx, gcy;
+    wtc(context.target_x, context.target_y, &gcx, &gcy);
 
-    mat3f_transformation_inplace(&model, context.cell_size, 0, gcx, gcy);
+    float wx, wy;
+    ctw(gcx, gcy, &wx, &wy);
+
+    mat3f_transformation_inplace(&model, context.cell_size, 0, wx, wy);
     fill_program_set_model(fill_program, model);
 
     fill_program_set_color(fill_program, 0, 1, 0);
