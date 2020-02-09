@@ -9,6 +9,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "../../src/autonomy/autonomy.hpp"
+
 #include "mutils.hpp"
 #include "program.hpp"
 #include "cell_model.hpp"
@@ -20,9 +22,6 @@
 #include "map.hpp"
 #include "lidar.hpp"
 #include "lidar_point_model.hpp"
-#include "occupancy_grid.hpp"
-#include "autonomy.hpp"
-#include "world.hpp"
 
 const int WW = 1280;
 const int WH = 720;
@@ -62,13 +61,13 @@ Mat3f projection;
 Mat3f camera;
 
 Map map;
-World world;
+autonomy::Context context;
 
 // For control.
 // float cvector_rotate = 0.0f;
 // float cvector_move = 0.0f;
 
-OccupancyGrid frame_occupancy_grid;
+autonomy::OccupancyGrid frame_occupancy_grid;
 
 float pixels_per_meter = MAX_PPM; // This is also the camera scale.
 float x_offset = 0; // In pixels.
@@ -164,11 +163,11 @@ static void cursor_position_callback(GLFWwindow* window, double x, double y) {
 }
 
 static void wtc(float wx, float wy, int* out_cx, int* out_cy) {
-    world_to_cell(&world, wx, wy, out_cx, out_cy);
+    context.world_to_cell(wx, wy, out_cx, out_cy);
 }
 
 static void ctw(int cx, int cy, float* out_wx, float* out_wy) {
-    cell_to_world(&world, cx, cy, out_wx, out_wy);
+    context.cell_to_world(cx, cy, out_wx, out_wy);
 }
 
 static void render_obstacle(FillProgram* fill_program, Obstacle* obstacle) {
@@ -208,7 +207,7 @@ static void fill_origin(FillProgram* fill_program, CellModel* fill_model) {
     float gcx, gcy;
     ctw(0, 0, &gcx, &gcy);
 
-    mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
+    mat3f_transformation_inplace(&model, context.cell_size, 0, gcx, gcy);
     fill_program_set_model(fill_program, model);
 
     fill_program_set_color(fill_program, 0, 1, 1);
@@ -222,9 +221,9 @@ static void fill_target(FillProgram* fill_program, CellModel* fill_model) {
     Mat3f model;
 
     float gcx, gcy;
-    ctw(world.target_x, world.target_y, &gcx, &gcy);
+    ctw(context.target_x, context.target_y, &gcx, &gcy);
 
-    mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
+    mat3f_transformation_inplace(&model, context.cell_size, 0, gcx, gcy);
     fill_program_set_model(fill_program, model);
 
     fill_program_set_color(fill_program, 0, 1, 0);
@@ -246,8 +245,8 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     wtc(wcx, wcy, &cq, &cr);
 
     // How many cells fit on the screen?
-    int screen_cells_x = (int)(((float)WW/pixels_per_meter) / world.cell_size);
-    int screen_cells_y = (int)(((float)WH/pixels_per_meter) / world.cell_size);
+    int screen_cells_x = (int)(((float)WW/pixels_per_meter) / context.cell_size);
+    int screen_cells_y = (int)(((float)WH/pixels_per_meter) / context.cell_size);
 
     // Add some for a buffer.
     screen_cells_x += 2;
@@ -256,22 +255,22 @@ static void render_grid(GridProgram* grid_program, CellModel* cell_model) {
     int q_offset = screen_cells_x / 2;
     int r_offset = screen_cells_y / 2;
 
-    int r_start = cr - r_offset < -world.grid_size/2 ? -world.grid_size/2 : cr - r_offset;
-    int r_end = cr + r_offset > world.grid_size/2 ? world.grid_size/2 - 1 : cr + r_offset;
-    int q_start = cq - q_offset < -world.grid_size/2 ? -world.grid_size/2 : cq - q_offset;
-    int q_end = cq + q_offset > world.grid_size/2 ? world.grid_size/2 - 1 : cq + q_offset;
+    int r_start = cr - r_offset < -context.grid_size/2 ? -context.grid_size/2 : cr - r_offset;
+    int r_end = cr + r_offset > context.grid_size/2 ? context.grid_size/2 - 1 : cr + r_offset;
+    int q_start = cq - q_offset < -context.grid_size/2 ? -context.grid_size/2 : cq - q_offset;
+    int q_end = cq + q_offset > context.grid_size/2 ? context.grid_size/2 - 1 : cq + q_offset;
 
     for (int r = r_start; r <= r_end; r++) {
         for (int q = q_start; q <= q_end; q++) {
-            int occupancy = occupancy_grid_get(&world.occupancy_grid, q, r);
-            grid_program_set_background_alpha(grid_program, (float)occupancy/(float)world.occupancy_grid.max);
+            int occupancy = context.occupancy_grid.get(q, r);
+            grid_program_set_background_alpha(grid_program, (float)occupancy/(float)context.occupancy_grid.max);
 
             float gcx, gcy;
             ctw(q, r, &gcx, &gcy);
 
             grid_program_set_cell_center(grid_program, gcx, gcy);
 
-            mat3f_transformation_inplace(&model, world.cell_size, 0, gcx, gcy);
+            mat3f_transformation_inplace(&model, context.cell_size, 0, gcx, gcy);
             grid_program_set_model(grid_program, model);
 
             glUseProgram(grid_program->prog.id);
@@ -360,12 +359,19 @@ int main(int argc, char** argv) {
         map.target_y = 50;
     }
 
-    world.grid_size = GRID_SIZE;
-    world.cell_size = CELL_SIZE;
-    world.occupancy_grid = occupancy_grid_create(GRID_SIZE);
+    // Start with the rover at the center.
+    rover_x = 0;
+    rover_y = 0;
+    rover_angle = 90.0f;
 
-    world.target_x = map.target_x;
-    world.target_y = map.target_y;
+    context = autonomy::create_context(
+        rover_x,
+        rover_y,
+        rover_angle,
+        map.target_x,
+        map.target_y,
+        CELL_SIZE,
+        GRID_SIZE);
 
     if (!glfwInit()) {
         report_error("failed to init GLFW");
@@ -381,7 +387,7 @@ int main(int argc, char** argv) {
 
     static char window_title_buffer[WINDOW_TITLE_BUFFER_SIZE];
 
-    snprintf(window_title_buffer, WINDOW_TITLE_BUFFER_SIZE, "BURT Autonomy Simulator (%s) [%s]", autonomy_get_name(), 
+    snprintf(window_title_buffer, WINDOW_TITLE_BUFFER_SIZE, "BURT Autonomy Simulator (%s) [%s]", autonomy::get_name(), 
         argc > 1 ? argv[1] : "NO FILE LOADED");
 
     GLFWwindow* window = glfwCreateWindow(WW, WH, window_title_buffer, NULL, NULL);
@@ -406,7 +412,7 @@ int main(int argc, char** argv) {
     GridProgram grid_program = grid_program_create();
     CellModel cell_model = cell_model_create(&grid_program.prog);
 
-    grid_program_set_cell_size(&grid_program, world.cell_size);
+    grid_program_set_cell_size(&grid_program, context.cell_size);
     grid_program_set_border_width(&grid_program, BORDER_WIDTH);
 
     FillProgram fill_program = fill_program_create();
@@ -437,15 +443,10 @@ int main(int argc, char** argv) {
     x_offset = WW/2;
     y_offset = WH/2;
 
-    // Start with the rover at the center.
-    rover_x = 0;
-    rover_y = 0;
-    rover_angle = 90.0f;
-
     // Start with the rover moving forward.
     // cvector_move = 1.0f;
 
-    frame_occupancy_grid = occupancy_grid_create(world.grid_size);
+    frame_occupancy_grid = autonomy::OccupancyGrid::create(context.grid_size);
 
     // Timing for autonomy.
     long autonomy_last_tick = get_tick();
@@ -493,7 +494,7 @@ int main(int argc, char** argv) {
             render_obstacle(&fill_program, obstacles + i);
         }
 
-        occupancy_grid_clear(&frame_occupancy_grid);
+        frame_occupancy_grid.clear();
 
         float lidar_points[LIDAR_NUM_POINTS];
         lidar_scan(rover_x, rover_y, rover_angle, obstacles, map.num_obstacles, lidar_points);
@@ -506,19 +507,24 @@ int main(int argc, char** argv) {
                 int q, r; 
                 wtc(x, y, &q, &r);
                 
-                occupancy_grid_inc(&frame_occupancy_grid, q, r);
+                frame_occupancy_grid.inc(q, r);
 
                 render_lidar_point(&fill_program, &lidar_point_model, x, y);
             }
         }
 
-        occupancy_grid_copy_if_max(&frame_occupancy_grid, &world.occupancy_grid);
+        frame_occupancy_grid.copy_if_max(&context.occupancy_grid);
 
         // Update autonomy with occupancy_grid.
         long tick = get_tick();
         if (tick - autonomy_last_tick >= AUTONOMY_TICK_INTERVAL) {
+            // Update the context for this frame.
+            context.rover_x = rover_x;
+            context.rover_y = rover_y;
+            context.rover_angle = rover_angle;
+            
             float target_offset_x, target_offset_y;
-            AutonomyStatus autonomy_status = autonomy_step(&world, rover_x, rover_y, rover_angle, &target_offset_x, &target_offset_y);
+            auto autonomy_status = autonomy::step(&context, &target_offset_x, &target_offset_y);
 
             float target_x = rover_x + target_offset_x;
             float target_y = rover_y + target_offset_y;

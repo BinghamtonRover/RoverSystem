@@ -1,4 +1,4 @@
-target = [15, 15]
+target = [-1.0, 3.5]
 
 [[obstacle]]
 vertices = [
