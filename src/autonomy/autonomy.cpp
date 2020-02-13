@@ -151,7 +151,7 @@ static void get_valleys(Valley valleys[], float h[], int n) {
     }
 }
 
-static double get_best_sector(Valley valleys[], int n, float target_sector) {
+static int get_best_sector(Valley valleys[], int n, float target_sector) {
     double best_sector = -1;
     for (int i = 0; i < n/2; i++) {
         if (valleys[i].start != -1) {
@@ -182,7 +182,7 @@ static double get_best_sector(Valley valleys[], int n, float target_sector) {
             }
         }
     }
-    return best_sector;
+    return (int)best_sector;
 }
 
 Status step(Context* ctx, float* out_offset_x, float* out_offset_y) {
