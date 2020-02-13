@@ -41,10 +41,8 @@ static void get_polar_obstacle_densities(Context* ctx, float h[], int n, float A
     float world_x, world_y;
     float cell_magnitude, cell_direction;
     ctx->world_to_cell(ctx->rover_x, ctx->rover_y, &c_x, &c_y);
-    for (int i = (c_y - ws/2); i <= (c_y + ws/2); i++)
-    {
-        for (int j = (c_x - ws/2); j <= (c_x + ws/2); j++)
-        {
+    for (int i = (c_y - ws/2); i <= (c_y + ws/2); i++) {
+        for (int j = (c_x - ws/2); j <= (c_x + ws/2); j++) {
             cell_direction = atan2(world_y - ctx->rover_y, world_x - ctx->rover_x) * 180.0 / PI;
             if (cell_direction < 0) {
                 cell_direction += 360;
@@ -63,37 +61,29 @@ static void get_polar_obstacle_densities(Context* ctx, float h[], int n, float A
         }
     }
 
-    for (int k = 0; k <= (n-1); k++)
-    {
+    for (int k = 0; k <= (n-1); k++) {
         float sum = 0;
         int start = (k-l+1);
         int end = (k+l-1);
-        if (start < 0)
-        {
+        if (start < 0) {
             start += n;
         }
-        if (end < 0)
-        {
+        if (end < 0) {
             end += n;
         }
-        if (start >= n)
-        {
+        if (start >= n) {
             start -= n;
         }
-        if (end >= n)
-        {
+        if (end >= n) {
             end -= n;
         }
 
-        for (int w = start; w <= end; w++)
-        {
+        for (int w = start; w <= end; w++) {
             int c = l-abs(w-k);
-            if (w < 0)
-            {
+            if (w < 0) {
                 w += n;
             }
-            else if (w >= n && end != n)
-            {
+            else if (w >= n && end != n) {
                 w -= n;
             }
             sum += c * h[w];
@@ -109,42 +99,34 @@ static void get_valleys(Valley valleys[], float h[], int n) {
     }
     int counter = 0;
     bool in_valley = false;
-    for (int k = 0; k <= (n-1); k++)
-    {
-        if (h[k] <= threshold)
-        {
-            if (in_valley)
-            {
+    for (int k = 0; k <= (n-1); k++) {
+        if (h[k] <= threshold) {
+            if (in_valley) {
                 valleys[counter-1].end = k;
             }
-            else
-            {
+            else {
                 valleys[counter].start = k;
                 valleys[counter].end = k;
                 counter++;
                 in_valley = true;
             }
         }
-        else
-        {
+        else {
             in_valley = false;
         }
     }
 
-    if (counter < 2)
-    {
+    if (counter < 2) {
         return;
     }
 
-    if (valleys[0].start == 0 && valleys[counter - 1].end == n-1)
-    {
+    if (valleys[0].start == 0 && valleys[counter - 1].end == n-1) {
         Valley updated_valleys[n/2];
         valleys[0].start = valleys[counter - 1].start;
         valleys[0].end = n + valleys[0].end;
         valleys[counter - 1].start = -1;
         valleys[counter - 1].end = -1;
-        for (int i = 0; i <= n/2 - 2; i++)
-        {
+        for (int i = 0; i <= n/2 - 2; i++) {
             updated_valleys[i] = valleys[i];
         }
         valleys = updated_valleys;
