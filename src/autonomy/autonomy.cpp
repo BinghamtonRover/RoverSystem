@@ -133,8 +133,8 @@ static void get_valleys(Valley valleys[], float h[], int n) {
     }
 }
 
-static int get_best_sector(Valley valleys[], int n, float target_sector) {
-    double best_sector = -1;
+static int get_best_sector(Valley valleys[], int n, int target_sector) {
+    int best_sector = -1;
     for (int i = 0; i < n/2; i++) {
         if (valleys[i].start != -1) {
             if (best_sector == -1) {
@@ -164,7 +164,7 @@ static int get_best_sector(Valley valleys[], int n, float target_sector) {
             }
         }
     }
-    return (int)best_sector;
+    return best_sector;
 }
 
 Status step(Context* ctx, float* out_offset_x, float* out_offset_y) {
@@ -183,7 +183,7 @@ Status step(Context* ctx, float* out_offset_x, float* out_offset_y) {
     get_polar_obstacle_densities(ctx, densities, n, A);
     Valley valleys[n/2];
     get_valleys(valleys, densities, n);
-    int sector = (int)get_best_sector(valleys, n, target_sector);
+    int sector = get_best_sector(valleys, n, target_sector);
     double sector_direction = sector * alpha;
     *out_offset_x = cos((sector_direction * PI / 180.0));
     *out_offset_y = sin((sector_direction * PI / 180.0));
