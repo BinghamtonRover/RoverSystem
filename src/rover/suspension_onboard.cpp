@@ -7,7 +7,7 @@
 namespace suspension {
 
 // Scale the input down by 2.
-const uint16_t PRESCALE = 2;
+const uint16_t PRESCALE = 1;
 
 uint8_t global_slave_addr;
 
