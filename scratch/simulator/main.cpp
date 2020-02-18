@@ -541,8 +541,20 @@ int main(int argc, char** argv) {
             printf("Target Angle: %f\n", target_angle);
 
             float adjusted_rover_angle = rover_angle - target_angle;
+            printf("%f\n", adjusted_rover_angle);
             if (adjusted_rover_angle < 0) {
-                adjusted_rover_angle += 360;
+                while(adjusted_rover_angle < 0) {
+                    printf("this is a test one\n");
+                    adjusted_rover_angle += 360;
+                    printf("test one adjusted val: %f\n", adjusted_rover_angle);
+                }
+            }
+            else if (adjusted_rover_angle > 360) {
+                while (adjusted_rover_angle > 360) {
+                    printf("second test\n");
+                    adjusted_rover_angle -= 360;
+                    printf("test second adjusted val: %f\n", adjusted_rover_angle);
+                }
             }
 
             printf("Angle: %f\n", adjusted_rover_angle);
