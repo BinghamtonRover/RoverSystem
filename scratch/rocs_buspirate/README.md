@@ -2,6 +2,7 @@ You need a bus pirate (duh).
 
 Wire its pins accordingly:
 
+```
 (Bus Pirate pinout)
 |-----|
 | G * |
@@ -10,6 +11,7 @@ Wire its pins accordingly:
 | C D |
 | * * |
 |-----|
+```
 
 G - connect to 0V.
 V - connect to 5V.
