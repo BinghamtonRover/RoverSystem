@@ -25,6 +25,8 @@ const uint8_t SUSPENSION_I2C_ADDR = 0x01;
 
 const int SUSPENSION_UPDATE_INTERVAL = 1000 / 15;
 
+const int SUSPENSION_CONNECT_TRIES = 5;
+
 const int MAX_STREAMS = 9;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
@@ -243,8 +245,18 @@ int main() {
         return 1;
     }
 
-    if (suspension::init(SUSPENSION_I2C_ADDR) != suspension::Error::OK) {
-        logger::log(logger::ERROR, "[!] Failed to init suspension!");
+    bool suspension_inited = false;
+    for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
+        if (suspension::init(SUSPENSION_I2C_ADDR) != suspension::Error::OK) {
+            logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
+        } else {
+            suspension_inited = true;
+            break;
+        }
+    }
+
+    if (!suspension_inited) {
+        logger::log(logger::WARNING, "[!] Failed to start suspension!");
         return 1;
     }
 
