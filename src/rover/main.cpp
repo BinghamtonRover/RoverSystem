@@ -8,6 +8,7 @@
 #include "camera.hpp"
 #include "subsystem.hpp"
 #include "suspension.hpp"
+#include "lidar.hpp"
 
 #include <turbojpeg.h>
 
@@ -40,6 +41,8 @@ const int NETWORK_UPDATE_INTERVAL = 1000 / 2;
 const int SUBSYSTEM_SEND_INTERVAL = 1000 * 5;
 
 const int LOCATION_SEND_INTERVAL = 1000;
+
+const int LIDAR_UPDATE_INTERVAL = 1000 / 15;
 
 const int TICK_INTERVAL = 1000;
 
@@ -256,7 +259,12 @@ int main() {
     }
 
     if (!suspension_inited) {
-        logger::log(logger::WARNING, "[!] Failed to start suspension!");
+        logger::log(logger::ERROR, "[!] Failed to start suspension!");
+        return 1;
+    }
+
+    if (lidar::start("192.168.1.21") != lidar::Error::OK) {
+        logger::log(logger::ERROR, "[!] Failed to start lidar!");
         return 1;
     }
 
@@ -325,9 +333,14 @@ int main() {
     util::Timer suspension_update_timer;
     util::Timer::init(&suspension_update_timer, SUSPENSION_UPDATE_INTERVAL, &global_clock);
 
+    util::Timer lidar_update_timer;
+    util::Timer::init(&lidar_update_timer, LIDAR_UPDATE_INTERVAL, &global_clock);
+
     uint32_t ticks = 0;
 
     network::MovementMessage last_movement_message = { 0, 0 };
+
+    std::vector<long> lidar_points;
 
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
@@ -463,6 +476,21 @@ int main() {
             }
 
             network::publish(&r_feed,&message);
+        }
+
+        if (lidar_update_timer.ready()) {
+            network::LidarMessage message;
+
+            lidar_points.clear();
+            if (lidar::scan(lidar_points) != lidar::Error::OK) {
+                logger::log(logger::ERROR, "Lidar scan failed");
+            } else {
+                for (int i = 0; i < network::LidarMessage::NUM_LIDAR_POINTS; i++) {
+                    message.points[i] = (uint16_t) lidar_points[i];
+                }
+
+                network::publish(&r_feed, &message);
+            }
         }
 
         // Increment global (across all streams) frame counter. Should be ok. Should...

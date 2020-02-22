@@ -502,10 +502,8 @@ void do_help_menu(gui::Font* font, std::vector<const char*> commands, std::vecto
 std::vector<uint16_t> lidar_points;
 
 void do_lidar(gui::Layout* layout) {
-    /*
     int wx = layout->current_x;
     int wy = layout->current_y;
-    */
 
     gui::do_solid_rect(layout, 300, 300, 0, 0, 0);
 
@@ -538,6 +536,9 @@ void do_lidar(gui::Layout* layout) {
             glEnd();
         }
     }
+
+    */
+
     glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
@@ -578,7 +579,6 @@ void do_lidar(gui::Layout* layout) {
     glVertex2f(x - hs, y + hs);
 
     glEnd();
-    */ 
 }
 
 // Camera stuff.
@@ -1274,10 +1274,12 @@ int main() {
                 case network::MessageType::LIDAR: {
                     lidar_points.clear();
 
+                    printf("GOT LIDAR\n");
+
                     network::LidarMessage lidar_message;
                     network::deserialize(&message.buffer, &lidar_message);
 
-                    for (int i = 0; i < network::NUM_LIDAR_POINTS; i++) {
+                    for (int i = 0; i < network::LidarMessage::NUM_LIDAR_POINTS; i++) {
                         lidar_points.push_back(lidar_message.points[i]);
                     }
 

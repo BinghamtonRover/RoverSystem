@@ -243,9 +243,9 @@ struct LogMessage {
     }
 };
 
-const int NUM_LIDAR_POINTS = 271;
 
 struct LidarMessage {
+    static const int NUM_LIDAR_POINTS = 271;
     static const auto TYPE = MessageType::LIDAR;
 
     uint16_t points[NUM_LIDAR_POINTS];

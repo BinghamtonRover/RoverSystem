@@ -24,8 +24,7 @@ void send_command(int sock, const char* command) {
     if (bcount <= 0) {
         fprintf(stderr, "[!] LIDAR: Invalid bytes written: %ld\n", bcount);
     }
-}
-
+} 
 void receive_command(int sock, char* buffer, size_t buffer_size) {
     ssize_t bread = read(sock, buffer, buffer_size);
     if (bread <= 0) {
