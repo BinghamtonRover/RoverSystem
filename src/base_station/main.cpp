@@ -41,7 +41,7 @@ const int WINDOW_HEIGHT = 1080;
 const float ALPHA = 30;
 
 // Speed for the DPAD up/down.
-const int16_t JOINT_DRIVE_SPEED = 50;
+const int16_t JOINT_DRIVE_SPEED = 100;
 
 // Send movement updates x times per second.
 const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
