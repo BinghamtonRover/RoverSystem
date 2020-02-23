@@ -534,6 +534,22 @@ int main() {
                     }
                     break;
                 }
+                case network::MessageType::ARM: {
+                    network::ArmMessage arm_message;
+                    network::deserialize(&message.buffer, &arm_message);
+
+                    /*
+                    logger::log(logger::DEBUG, "arm update:");
+                    logger::log(logger::DEBUG, "  gfinger=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::GRIPPER_FINGER)));
+                    logger::log(logger::DEBUG, "  gwrotate=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE)));
+                    logger::log(logger::DEBUG, "  gwflex=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX)));
+                    logger::log(logger::DEBUG, "  arml=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::ARM_LOWER)));
+                    logger::log(logger::DEBUG, "  armu=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::ARM_UPPER)));
+                    logger::log(logger::DEBUG, "  armb=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::ARM_BASE)));
+                    */
+
+                    break;
+                }
                 default:
                     break;
             }

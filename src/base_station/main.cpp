@@ -38,7 +38,7 @@ const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
 // For control smoothing.
-const float ALPHA = 30;
+const float CONTROL_ALPHA = 30;
 
 // Speed for the DPAD up/down.
 const int16_t JOINT_DRIVE_SPEED = 100;
@@ -48,6 +48,8 @@ const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
 
 // Update network statistics once per second.
 const int NETWORK_STATS_INTERVAL = 1000;
+
+const int ARM_SEND_INTERVAL = 1000 / 10;
 
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
@@ -86,7 +88,29 @@ struct {
 // Clock!
 util::Clock global_clock;
 
-std::vector<std::string> split_by_spaces(std::string s) {
+network::MovementMessage last_movement_message = { 0, 0 };
+
+network::ArmMessage last_arm_message;
+
+// Camera stuff.
+// These get initialized off-the-bat.
+int primary_feed = 0;
+int secondary_feed = 1;
+
+// We only care about this value when we are in camera move mode.
+int feed_to_move = -1;
+
+const int MAX_FEEDS = 9;
+camera_feed::Feed camera_feeds[MAX_FEEDS];
+
+enum class ControllerMode {
+    DRIVE,
+    ARM
+};
+
+ControllerMode controller_mode = ControllerMode::ARM;
+
+static std::vector<std::string> split_by_spaces(std::string s) {
     std::vector<std::string> strings;
 
     size_t last = 0;
@@ -101,8 +125,6 @@ std::vector<std::string> split_by_spaces(std::string s) {
 
     return strings;
 }
-
-network::MovementMessage last_movement_message = { 0, 0 };
 
 void command_callback(std::string command) {
     auto parts = split_by_spaces(command);
@@ -254,6 +276,173 @@ Config load_config(const char* filename) {
 
     return config;
 }
+
+// Takes values between 0 and 255 and returns them between 0 and 255.
+static float smooth_rover_input(float value) {
+    // We want to exponentially smooth this.
+    // We do that by picking alpha in (1, whatever).
+    // The higher the alpha, the more exponential the thing.
+    // We then make sure that f(0) = 0 and f(1) = 255.
+
+    return (255.0f / (CONTROL_ALPHA - 1)) * (powf(1 / CONTROL_ALPHA, -value / 255.0f) - 1);
+}
+
+static void handle_drive_controller_event(controller::Event event) {
+    if (event.type == controller::EventType::AXIS) {
+        bool forward = event.value <= 0;
+        int16_t abs_val = event.value < 0 ? -event.value : event.value;
+
+        if (event.axis == controller::Axis::JS_LEFT_Y) {
+            if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
+                controller::get_value(controller::Axis::DPAD_Y) != 0) {
+                return;
+            }
+
+            int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
+            // logger::log(logger::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
+
+            last_movement_message.left = smoothed;
+            if (!forward) last_movement_message.left *= -1;
+        } else if (event.axis == controller::Axis::JS_RIGHT_Y) {
+            if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
+                controller::get_value(controller::Axis::DPAD_Y) != 0) {
+
+                return;
+            }
+
+            int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
+            // logger::log(logger::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
+
+            last_movement_message.right = smoothed;
+            if (!forward) last_movement_message.right *= -1;
+        } else if (event.axis == controller::Axis::DPAD_Y) {
+            int16_t val = -event.value;
+
+            if (val > 0) {
+                last_movement_message.left = JOINT_DRIVE_SPEED;
+                last_movement_message.right = JOINT_DRIVE_SPEED;
+            } else if (val < 0) {
+                last_movement_message.left = -JOINT_DRIVE_SPEED;
+                last_movement_message.right = -JOINT_DRIVE_SPEED;
+            } else {
+                last_movement_message.left = 0;
+                last_movement_message.right = 0;
+            }
+        } else if (event.axis == controller::Axis::DPAD_X) {
+            if (event.value > 0) {
+                last_movement_message.left = JOINT_DRIVE_SPEED;
+                last_movement_message.right = -JOINT_DRIVE_SPEED;
+            } else if (event.value < 0) {
+                last_movement_message.left = -JOINT_DRIVE_SPEED;
+                last_movement_message.right = JOINT_DRIVE_SPEED;
+            } else {
+                last_movement_message.left = 0;
+                last_movement_message.right = 0;
+            }
+        }
+    } else if (event.type == controller::EventType::BUTTON) {
+        if (event.button == controller::Button::BACK && event.value != 0) {
+            int temp = primary_feed;
+            primary_feed = secondary_feed;
+            secondary_feed = temp;
+        }
+    }
+}
+
+static void handle_arm_controller_event(controller::Event event) {
+    if (event.type == controller::EventType::BUTTON) {
+        network::ArmMessage::Motor motor;
+        network::ArmMessage::State state;
+
+        switch (event.button) {
+            case controller::Button::A:
+                motor = network::ArmMessage::Motor::GRIPPER_FINGER;
+                state = network::ArmMessage::State::CLOCK;
+                break;
+            case controller::Button::B:
+                motor = network::ArmMessage::Motor::GRIPPER_FINGER;
+                state = network::ArmMessage::State::COUNTER;
+                break;
+            case controller::Button::X:
+                motor = network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE;
+                state = network::ArmMessage::State::CLOCK;
+                break;
+            case controller::Button::Y:
+                motor = network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE;
+                state = network::ArmMessage::State::COUNTER;
+                break;
+            case controller::Button::LB:
+                motor = network::ArmMessage::Motor::GRIPPER_WRIST_FLEX;
+                state = network::ArmMessage::State::CLOCK;
+                break;
+            case controller::Button::RB:
+                motor = network::ArmMessage::Motor::GRIPPER_WRIST_FLEX;
+                state = network::ArmMessage::State::COUNTER;
+                break;
+            default:
+                return;
+        }
+
+        if (event.value == 0) state = network::ArmMessage::State::STOP;
+
+        last_arm_message.set_state(motor, state);
+    } else if (event.type == controller::EventType::AXIS) {
+        network::ArmMessage::Motor motor;
+        network::ArmMessage::State state;
+
+        switch (event.axis) {
+            case controller::Axis::DPAD_X:
+                motor = network::ArmMessage::Motor::ARM_LOWER;
+                if (event.value >= 0) {
+                    state = network::ArmMessage::State::CLOCK;
+                } else {
+                    state = network::ArmMessage::State::COUNTER;
+                }
+                break;
+            case controller::Axis::DPAD_Y:
+                motor = network::ArmMessage::Motor::ARM_UPPER;
+                if (event.value >= 0) {
+                    state = network::ArmMessage::State::CLOCK;
+                } else {
+                    state = network::ArmMessage::State::COUNTER;
+                }
+                break;
+            case controller::Axis::LT:
+                motor = network::ArmMessage::Motor::ARM_BASE;
+                if (event.value >= INT16_MAX / 2) {
+                    state = network::ArmMessage::State::COUNTER;
+                } else {
+                    state = network::ArmMessage::State::STOP;
+                }
+                break;
+            case controller::Axis::RT:
+                motor = network::ArmMessage::Motor::ARM_BASE;
+                if (event.value >= INT16_MAX / 2) {
+                    state = network::ArmMessage::State::CLOCK;
+                } else {
+                    state = network::ArmMessage::State::STOP;
+                }
+                break;
+            default:
+                return;
+        }
+
+        if (event.value == 0) state = network::ArmMessage::State::STOP;
+
+        last_arm_message.set_state(motor, state);
+    }
+
+    /*
+    logger::log(logger::DEBUG, "arm status change:");
+    logger::log(logger::DEBUG, "  gfinger=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_FINGER)));
+    logger::log(logger::DEBUG, "  gwrotate=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE)));
+    logger::log(logger::DEBUG, "  gwflex=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX)));
+    logger::log(logger::DEBUG, "  arml=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_LOWER)));
+    logger::log(logger::DEBUG, "  armu=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_UPPER)));
+    logger::log(logger::DEBUG, "  armb=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_BASE)));
+    */
+}
+
 
 void set_stopwatch_icon_color() {
     switch (stopwatch.state) {
@@ -581,16 +770,6 @@ void do_lidar(gui::Layout* layout) {
     glEnd();
 }
 
-// Camera stuff.
-// These get initialized off-the-bat.
-int primary_feed = 0;
-int secondary_feed = 1;
-
-// We only care about this value when we are in camera move mode.
-int feed_to_move = -1;
-
-const int MAX_FEEDS = 9;
-camera_feed::Feed camera_feeds[MAX_FEEDS];
 
 void do_camera_move_target(gui::Font* font) {
     const float COVER_ALPHA = 0.5f;
@@ -956,15 +1135,6 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
     }
 }
 
-// Takes values between 0 and 255 and returns them between 0 and 255.
-float smooth_rover_input(float value) {
-    // We want to exponentially smooth this.
-    // We do that by picking alpha in (1, whatever).
-    // The higher the alpha, the more exponential the thing.
-    // We then make sure that f(0) = 0 and f(1) = 255.
-
-    return (255.0f / (ALPHA - 1)) * (powf(1 / ALPHA, -value / 255.0f) - 1);
-}
 
 int main() {
     util::Clock::init(&global_clock);
@@ -1118,6 +1288,9 @@ int main() {
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
     util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &global_clock);
+
+    util::Timer arm_send_timer;
+    util::Timer::init(&arm_send_timer, ARM_SEND_INTERVAL, &global_clock);
 
     // Grab network stats every second.
     util::Timer network_stats_timer;
@@ -1274,8 +1447,6 @@ int main() {
                 case network::MessageType::LIDAR: {
                     lidar_points.clear();
 
-                    printf("GOT LIDAR\n");
-
                     network::LidarMessage lidar_message;
                     network::deserialize(&message.buffer, &lidar_message);
 
@@ -1324,67 +1495,14 @@ int main() {
             controller::Event event;
             controller::Error err;
 
-            // Do nothing since we just want to update current values.
             while ((err = controller::poll(&event)) == controller::Error::OK) {
-                if (event.type == controller::EventType::AXIS) {
-                    bool forward = event.value <= 0;
-                    int16_t abs_val = event.value < 0 ? -event.value : event.value;
-
-                    if (event.axis == controller::Axis::JS_LEFT_Y) {
-                        if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
-                            controller::get_value(controller::Axis::DPAD_Y) != 0) {
-                            continue;
-                        }
-
-                        int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-                        logger::log(logger::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
-
-                        last_movement_message.left = smoothed;
-                        if (!forward) last_movement_message.left *= -1;
-                    } else if (event.axis == controller::Axis::JS_RIGHT_Y) {
-                        if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
-                            controller::get_value(controller::Axis::DPAD_Y) != 0) {
-
-                            continue;
-                        }
-
-                        int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-                        logger::log(logger::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
-
-                        last_movement_message.right = smoothed;
-                        if (!forward) last_movement_message.right *= -1;
-                    } else if (event.axis == controller::Axis::DPAD_Y) {
-                        int16_t val = -event.value;
-
-                        if (val > 0) {
-                            last_movement_message.left = JOINT_DRIVE_SPEED;
-                            last_movement_message.right = JOINT_DRIVE_SPEED;
-                        } else if (val < 0) {
-                            last_movement_message.left = -JOINT_DRIVE_SPEED;
-                            last_movement_message.right = -JOINT_DRIVE_SPEED;
-                        } else {
-                            last_movement_message.left = 0;
-                            last_movement_message.right = 0;
-                        }
-                    } else if (event.axis == controller::Axis::DPAD_X) {
-                        if (event.value > 0) {
-                            last_movement_message.left = JOINT_DRIVE_SPEED;
-                            last_movement_message.right = -JOINT_DRIVE_SPEED;
-                        } else if (event.value < 0) {
-                            last_movement_message.left = -JOINT_DRIVE_SPEED;
-                            last_movement_message.right = JOINT_DRIVE_SPEED;
-                        } else {
-                            last_movement_message.left = 0;
-                            last_movement_message.right = 0;
-                        }
-                    }
-
-                } else if (event.type == controller::EventType::BUTTON) {
-                    if (event.button == controller::Button::BACK && event.value != 0) {
-                        int temp = primary_feed;
-                        primary_feed = secondary_feed;
-                        secondary_feed = temp;
-                    }
+                switch (controller_mode) {
+                    case ControllerMode::DRIVE:
+                        handle_drive_controller_event(event);
+                        break;
+                    case ControllerMode::ARM:
+                        handle_arm_controller_event(event);
+                        break;
                 }
             }
 
@@ -1398,6 +1516,10 @@ int main() {
             // printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
             network::publish(&bs_feed, &last_movement_message);
+        }
+
+        if (arm_send_timer.ready()) {
+            network::publish(&bs_feed, &last_arm_message);
         }
 
         // Update and draw GUI.
