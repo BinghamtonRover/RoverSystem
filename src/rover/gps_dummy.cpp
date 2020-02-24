@@ -5,7 +5,7 @@ namespace gps {
 
 static uint8_t subsystem_id;
 
-Error open() {
+Error init(const char* device_id, util::Clock* global_clock) {
     subsystem_id = subsystem::add("GPS (dummy)");
 
     subsystem::get(subsystem_id)->state = subsystem::State::CONNECTED;
@@ -13,12 +13,16 @@ Error open() {
     return Error::OK;
 }
 
-bool has_fix() {
-    return true;
+network::LocationMessage::FixStatus get_fix() {
+    return network::LocationMessage::FixStatus::FIXED;
 }
 
-Position get_current_position() {
+Position get_position() {
     return { 42.087053, -75.967886 };
+}
+
+float get_heading() {
+    return 100.0f;
 }
 
 } // namespace gps

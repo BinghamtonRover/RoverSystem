@@ -1,18 +1,26 @@
+#include "../network/network.hpp"
+#include "../util/util.hpp"
+
 namespace gps {
-
-enum class Error {
-    OK,
-    OPEN
-};
-
-Error open();
 
 struct Position {
     float latitude;
     float longitude;
 };
 
-bool has_fix();
-Position get_current_position();
+enum class Error {
+    OK,
 
-} // namespace gps
+    OPEN,
+    GET_ATTR,
+    SET_ATTR
+};
+
+Error init(const char* device_id, util::Clock* global_clock);
+
+Position get_position();
+float get_heading();
+
+network::LocationMessage::FixStatus get_fix();
+
+}

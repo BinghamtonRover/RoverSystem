@@ -267,18 +267,24 @@ struct LidarMessage {
 struct LocationMessage {
     static const auto TYPE = MessageType::LOCATION;
 
-    bool has_fix;
+    enum class FixStatus : uint8_t {
+        NONE,
+        STABILIZING,
+        FIXED
+    };
+    
+    FixStatus fix_status;
     float latitude;
     float longitude;
 
     void serialize(Buffer* buffer) {
-        network::serialize(buffer, this->has_fix);
+        network::serialize(buffer, static_cast<uint8_t>(this->fix_status));
         network::serialize(buffer, this->latitude);
         network::serialize(buffer, this->longitude);
     }
 
     void deserialize(Buffer* buffer) {
-        network::deserialize(buffer, &(this->has_fix));
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->fix_status)));
         network::deserialize(buffer, &(this->latitude));
         network::deserialize(buffer, &(this->longitude));
     }

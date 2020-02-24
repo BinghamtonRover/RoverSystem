@@ -521,8 +521,28 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     gui::draw_text(font, info_buffer, x + 5, y + 20 + 5, 15);
 
-    sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
+    switch (waypoint::rover_fix) {
+        case network::LocationMessage::FixStatus::NONE:
+            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+            sprintf(info_buffer, "No GPS fix!");
+            gui::draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
+            break;
+        case network::LocationMessage::FixStatus::STABILIZING:
+            glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
+            sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
+            gui::draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
+            break;
+        case network::LocationMessage::FixStatus::FIXED:
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);        
+            sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
+            break;
+        default:
+            assert(false);
+            break;
+    }
     gui::draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     sprintf(info_buffer, "Rover tps: %.0f", last_rover_tick);
     gui::draw_text(font, info_buffer, x + 5, y + 60 + 5, 15);
@@ -1467,6 +1487,7 @@ int main() {
                     network::LocationMessage location_message;
                     network::deserialize(&message.buffer,&location_message);
                     waypoint::set_rover_coordinates(location_message.latitude,location_message.longitude);
+                    waypoint::rover_fix = location_message.fix_status;
                     //waypoint::rover_latitude = location_message.latitude;
                     //rover_longitude = location_message.longitude;
 

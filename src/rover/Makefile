@@ -8,9 +8,9 @@ EXECUTABLE = ../../bin/rover
 ifdef ONBOARD
 	SUSPENSION_ONBOARD = true
 	ROCS_ONBOARD = true
+	LIDAR_ONBOARD = true
+	GPS_ONBOARD = true
 endif
-
-CUDA_VERSION = 9.0
 
 ifdef SUSPENSION_ONBOARD
 	# ROCS is a dependency
@@ -33,7 +33,11 @@ else
 	SOURCES += lidar_dummy.cpp
 endif
 
-SOURCES += gps_dummy.cpp
+ifdef GPS_ONBOARD
+	SOURCES += gps_onboard.cpp
+else
+	SOURCES += gps_dummy.cpp
+endif
 
 $(EXECUTABLE): $(SOURCES) $(HEADERS) $(LIBRARIES)
 	g++ $(CFLAGS) $(SOURCES) -o $@ $(LFLAGS)

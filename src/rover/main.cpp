@@ -58,6 +58,9 @@ struct Config
     char base_station_multicast_group[16];
     char rover_multicast_group[16];
     char interface[16];
+
+    // For now, this is dynamically-sized.
+    char* gps_serial_id;
 };
 
 Config load_config(const char* filename) {
@@ -106,6 +109,14 @@ Config load_config(const char* filename) {
     } else {
         strncpy(config.interface, interface, 16);
     }
+
+    char* gps_serial_id = sc::get(sc_config, "gps_serial_id");
+    if (!gps_serial_id) {
+        logger::log(logger::ERROR, "Config file missing 'gps_serial_id'!");
+
+        exit(1);
+    }
+    config.gps_serial_id = strdup(gps_serial_id);
 
     sc::free(sc_config);
 
@@ -272,13 +283,8 @@ int main() {
     camera::CaptureSession * streams[MAX_STREAMS] = {0};
     int activeCameras = updateCameraStatus(streams);
 
-    if (gps::open() != gps::Error::OK) {
+    if (gps::init(config.gps_serial_id, &global_clock) != gps::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to open GPS!");
-        return 1;
-    }
-
-    if (gps::open() != gps::Error::OK) {
-        printf("[!] Failed to open GPS!\n");
         return 1;
     }
 
@@ -466,14 +472,13 @@ int main() {
         if (location_send_timer.ready()) {
             network::LocationMessage message;
 
-            bool fix = gps::has_fix();
-            message.has_fix = fix;
+            auto fix = gps::get_fix();
+            message.fix_status = fix;
 
-            if (fix) {
-                auto pos = gps::get_current_position();
-                message.latitude = pos.latitude;
-                message.longitude = pos.longitude;
-            }
+            auto pos = gps::get_position();
+            message.latitude = pos.latitude;
+            message.longitude = pos.longitude;
+
 
             network::publish(&r_feed,&message);
         }
