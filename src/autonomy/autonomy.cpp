@@ -185,7 +185,7 @@ static double get_best_sector(Valley valleys[], int n, float target_sector) {
     return best_sector;
 }
 
-Status step(Context* ctx, float* out_offset_x, float* out_offset_y) {
+StepResult step(Context* ctx, float* out_offset_x, float* out_offset_y) {
     const float dmax = pow(2, 0.5) * (ws - 1) / 2;
     const float A = dmax;
     const int n = 360/alpha;
@@ -206,7 +206,7 @@ Status step(Context* ctx, float* out_offset_x, float* out_offset_y) {
     *out_offset_x = cos((sector_direction * PI / 180.0));
     *out_offset_y = sin((sector_direction * PI / 180.0));
 
-    return Status::OK;
+    return StepResult::OK;
 }
 
 const char* get_name() {

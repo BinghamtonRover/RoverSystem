@@ -30,7 +30,10 @@ enum class InputState {
 
     CAMERA_MATRIX,
     CAMERA_MOVE,
-    CAMERA_MOVE_TARGET
+    CAMERA_MOVE_TARGET,
+
+    AUTONOMY_CONTROL,
+    AUTONOMY_EDIT_TARGET
 };
 
 // Stores the global GUI state.

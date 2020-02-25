@@ -60,6 +60,16 @@ const int PRIMARY_FEED_HEIGHT = 730;
 const int SECONDARY_FEED_WIDTH = 533;
 const int SECONDARY_FEED_HEIGHT = 300;
 
+network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
+
+struct {
+    network::AutonomyStatusMessage::Status status = network::AutonomyStatusMessage::Status::IDLE;
+    bool has_target = false;
+    float target_lat = 0, target_lon = 0;
+    int edit_idx = 0;
+    std::string edit_lat, edit_lon;
+} autonomy_info;
+
 // Network feeds.
 network::Feed r_feed, bs_feed;
 
@@ -160,6 +170,22 @@ void command_callback(std::string command) {
             "> Update movement to %d, %d",
             last_movement_message.left,
             last_movement_message.right);
+    } else if (parts[0] == "mode") {
+        if (parts.size() != 2) return;
+        // TODO: Print something to the debug console when this fails?
+
+        network::ModeMessage::Mode m;
+        if (parts[1] == "autonomous") {
+            m = network::ModeMessage::Mode::AUTONOMOUS;    
+        } else if (parts[1] == "manual") {
+            m = network::ModeMessage::Mode::MANUAL;    
+        } else {
+            return;
+        }
+
+        network::ModeMessage message;
+        message.mode = m;
+        network::publish(&bs_feed, &message);
     }
 }
 
@@ -225,6 +251,9 @@ Config load_config(const char* filename) {
     auto err = sc::parse(filename, &sc_config);
     if (err != sc::Error::OK) {
         logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
+        if (err == sc::Error::FILE_OPEN) {
+            logger::log(logger::ERROR, "(Did you forget to run the program from the repo root?)");
+        }
         exit(1);
     }
 
@@ -546,6 +575,16 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
     sprintf(info_buffer, "Rover tps: %.0f", last_rover_tick);
     gui::draw_text(font, info_buffer, x + 5, y + 60 + 5, 15);
+
+    switch (mode) {
+        case network::ModeMessage::Mode::MANUAL:
+            sprintf(info_buffer, "Mode: manual");
+            break;
+        case network::ModeMessage::Mode::AUTONOMOUS:
+            sprintf(info_buffer, "Mode: autonomous");
+            break;
+    }
+    gui::draw_text(font, info_buffer, x + 5, y + 80 + 5, 15);
 
     time_t current_time;
     time(&current_time);
@@ -936,6 +975,87 @@ void do_camera_matrix(gui::Font* font) {
     }
 }
 
+void do_autonomy_control(gui::Font* font) {
+    if (gui::state.input_state != gui::InputState::AUTONOMY_CONTROL
+        && gui::state.input_state != gui::InputState::AUTONOMY_EDIT_TARGET) return;
+
+    const int WIDTH = 600;
+    const int HEIGHT = 800;
+    const int PADDING = 10;
+    const int BACKGROUND_SHADE = 40;
+
+    const int PANEL_X = WINDOW_WIDTH / 2 - WIDTH / 2;
+    const int PANEL_Y = WINDOW_HEIGHT / 2 - HEIGHT / 2;
+
+    int x = PANEL_X + PADDING;
+    int y = PANEL_Y + PADDING;
+
+    glColor4f(BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, 1.0f);
+    gui::fill_rectangle(PANEL_X, PANEL_Y, WIDTH, HEIGHT);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    gui::draw_text(font, "Autonomy Control Panel", x, y, 30);
+    
+    y += 30 + 20;
+
+    char text_buffer[500];
+
+    
+    const char* status_text;
+    switch (autonomy_info.status) {
+        case network::AutonomyStatusMessage::Status::IDLE:
+            status_text = "idle";
+            break;
+        case network::AutonomyStatusMessage::Status::NAVIGATING:
+            status_text = "navigating";
+            break;
+        case network::AutonomyStatusMessage::Status::DONE:
+            status_text = "done";
+            break;
+    }
+
+    sprintf(text_buffer, "Status: %s", status_text);
+    gui::draw_text(font, text_buffer, x, y, 20);
+
+    y += 20 + 10;
+
+    if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
+        int target_width = text_width(font, "Target:", 20);
+        int lat_width = text_width(font, autonomy_info.edit_lat.c_str(), 20);
+        int comma_width = text_width(font, ",", 20);
+        int lon_width = text_width(font, autonomy_info.edit_lon.c_str(), 20);
+
+        gui::draw_text(font, "Target:", x, y, 20);
+        
+        if (autonomy_info.edit_idx == 0) {
+            glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+            gui::fill_rectangle(x + target_width + 10, y, lat_width, 20);
+        }
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        gui::draw_text(font, autonomy_info.edit_lat.c_str(), x + target_width + 10, y, 20);
+
+        gui::draw_text(font, ",", x + target_width + 10 + lat_width + 10, y, 20);
+
+        if (autonomy_info.edit_idx == 1) {
+            glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+            gui::fill_rectangle(x + target_width + 10 + lat_width + 10 + comma_width + 10, y, lon_width, 20);
+        }
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        gui::draw_text(font, autonomy_info.edit_lon.c_str(), x + target_width + 10 + lat_width + 10 + comma_width + 10, y, 20);
+    } else {
+        if (autonomy_info.has_target) {
+            sprintf(text_buffer, "Target: %.4f, %.4f", autonomy_info.target_lat, autonomy_info.target_lon);
+        } else {
+            sprintf(text_buffer, "No target");
+        }
+        gui::draw_text(font, text_buffer, x, y, 20);
+    }
+
+    y += 20 + 10;
+}
+
 void do_gui(gui::Font* font) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1000,6 +1120,8 @@ void do_gui(gui::Font* font) {
     // Note: this currently needs to be called last here in order for the camera movement
     // effects to work properly!
     do_camera_matrix(font);
+
+    do_autonomy_control(font);
 }
 
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
@@ -1077,6 +1199,8 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             }
         } else if (z_on && action == GLFW_RELEASE && key == GLFW_KEY_G){
             gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
+            gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
@@ -1152,6 +1276,65 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             dont_send_invalid();
             gui::state.input_state = gui::InputState::KEY_COMMAND;
         }
+    } else if (gui::state.input_state == gui::InputState::AUTONOMY_CONTROL) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_T) {
+            gui::state.input_state = gui::InputState::AUTONOMY_EDIT_TARGET;
+        }
+    } else if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
+            autonomy_info.edit_idx = (autonomy_info.edit_idx + 1) % 2;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
+            // Set has_target to true, save the target, and send the command.
+        } else if (action == GLFW_PRESS) {
+            std::string& edit_str = autonomy_info.edit_idx == 0 ?
+                autonomy_info.edit_lat : autonomy_info.edit_lon;
+
+            switch (key) {
+                case GLFW_KEY_0:
+                    edit_str.push_back('0');
+                    break;
+                case GLFW_KEY_1:
+                    edit_str.push_back('1');
+                    break;
+                case GLFW_KEY_2:
+                    edit_str.push_back('2');
+                    break;
+                case GLFW_KEY_3:
+                    edit_str.push_back('3');
+                    break;
+                case GLFW_KEY_4:
+                    edit_str.push_back('4');
+                    break;
+                case GLFW_KEY_5:
+                    edit_str.push_back('5');
+                    break;
+                case GLFW_KEY_6:
+                    edit_str.push_back('6');
+                    break;
+                case GLFW_KEY_7:
+                    edit_str.push_back('7');
+                    break;
+                case GLFW_KEY_8:
+                    edit_str.push_back('8');
+                    break;
+                case GLFW_KEY_9:
+                    edit_str.push_back('9');
+                    break;
+                case GLFW_KEY_MINUS:
+                    edit_str.push_back('-');
+                    break;
+                case GLFW_KEY_PERIOD:
+                    edit_str.push_back('.');
+                    break;
+                case GLFW_KEY_BACKSPACE:
+                    if (!edit_str.empty()) edit_str.pop_back();
+                    break;
+            }
+        }
     }
 }
 
@@ -1198,12 +1381,12 @@ int main() {
     }
 
     // Get the correct resolution for the monitor we want to use.
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor_to_use);
+    const GLFWvidmode* video_mode = glfwGetVideoMode(monitor_to_use);
 
     // Create a fullscreen window. Title isn't displayed, so doesn't really
     // matter.
     GLFWwindow* window =
-        glfwCreateWindow(mode->width, mode->height, "Base Station", monitor_to_use, NULL);
+        glfwCreateWindow(video_mode->width, video_mode->height, "Base Station", monitor_to_use, NULL);
 
     // Update the window so everyone can access it.
     gui::state.window = window;
@@ -1221,7 +1404,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     // OpenGL Setup.
-    glViewport(0, 0, mode->width, mode->height);
+    glViewport(0, 0, video_mode->width, video_mode->height);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -1491,6 +1674,12 @@ int main() {
                     //waypoint::rover_latitude = location_message.latitude;
                     //rover_longitude = location_message.longitude;
 
+                    break;
+                }
+                case network::MessageType::MODE: {
+                    network::ModeMessage mode_message;
+                    network::deserialize(&message.buffer, &mode_message);
+                    mode = mode_message.mode;
                     break;
                 }
                 default:

@@ -48,6 +48,8 @@ const int TICK_INTERVAL = 1000;
 
 const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
 
+network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
+
 util::Clock global_clock;
 
 struct Config
@@ -554,6 +556,15 @@ int main() {
                     */
 
                     break;
+                }
+                case network::MessageType::MODE: {
+                    network::ModeMessage mode_message;
+                    network::deserialize(&message.buffer, &mode_message);
+
+                    mode = mode_message.mode;
+
+                    // Echo back to BS to verify mode change.
+                    network::publish(&r_feed, &mode_message);
                 }
                 default:
                     break;

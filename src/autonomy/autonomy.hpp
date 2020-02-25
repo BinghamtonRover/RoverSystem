@@ -2,7 +2,7 @@
 #define AUTONOMY_H
 namespace autonomy {
 
-enum class Status {
+enum class StepResult {
     OK,
     DONE,
     ERROR
@@ -42,7 +42,7 @@ struct Context {
 
 Context create_context(float rover_x, float rover_y, float rover_angle, float target_x, float target_y, float cell_size, int grid_size);
 
-Status step(Context* context, float* out_offset_x, float* out_offset_y);
+StepResult step(Context* context, float* out_offset_x, float* out_offset_y);
 
 const char* get_name();
 

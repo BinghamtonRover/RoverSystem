@@ -150,7 +150,10 @@ enum class MessageType {
     LOCATION, 
     TICK,
     SUBSYSTEM,
-    ARM
+    ARM,
+    MODE,
+    AUTONOMY_STATUS,
+    AUTONOMY_COMMAND
 };
 
 struct HeartbeatMessage {
@@ -449,6 +452,87 @@ struct ArmMessage {
 
     void set_state(Motor m, State s) {
         states[static_cast<int>(m)] = s;
+    }
+};
+
+struct ModeMessage {
+    static const auto TYPE = MessageType::MODE;
+
+    enum class Mode : uint8_t {
+        MANUAL,
+        AUTONOMOUS
+    };
+
+    Mode mode;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, static_cast<uint8_t>(this->mode));
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->mode)));
+    }
+};
+
+struct AutonomyStatusMessage {
+    static const auto TYPE = MessageType::AUTONOMY_STATUS;
+
+    enum class Status : uint8_t {
+        IDLE,
+        NAVIGATING,
+        DONE
+    };
+    Status status;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, static_cast<uint8_t>(this->status));
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->status)));
+    }
+};
+
+struct AutonomyCommandMessage {
+    static const auto TYPE = MessageType::AUTONOMY_COMMAND;
+
+    enum class Command : uint8_t {
+        SET_TARGET,
+        STOP
+    };
+
+    struct SetTarget {
+        float lat;
+        float lon;
+    };
+
+    Command command;
+    union {
+        SetTarget set_target;
+    };
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, static_cast<uint8_t>(this->command));
+        switch (this->command) {
+            case Command::SET_TARGET:
+                network::serialize(buffer, this->set_target.lat);
+                network::serialize(buffer, this->set_target.lon);
+                break;
+            case Command::STOP:
+                break;
+        }
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->command)));
+        switch (this->command) {
+            case Command::SET_TARGET:
+                network::deserialize(buffer, &(this->set_target.lat));
+                network::deserialize(buffer, &(this->set_target.lon));
+                break;
+            case Command::STOP:
+                break;
+        }
     }
 };
 
