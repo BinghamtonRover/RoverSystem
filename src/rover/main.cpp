@@ -9,6 +9,8 @@
 #include "subsystem.hpp"
 #include "suspension.hpp"
 #include "lidar.hpp"
+#include "gripper.hpp"
+#include "arm.hpp"
 
 #include <turbojpeg.h>
 
@@ -23,6 +25,8 @@
 
 // ROCS addresses.
 const uint8_t SUSPENSION_I2C_ADDR = 0x01;
+const uint8_t ARM_I2C_ADDR = 0x02;
+const uint8_t GRIPPER_I2C_ADDR = 0x03;
 
 const int SUSPENSION_UPDATE_INTERVAL = 1000 / 15;
 
@@ -256,7 +260,7 @@ int main() {
     unsigned int frame_counter = 0;
 
     // i2c
-    if (rocs::init("/dev/i2c-0") != rocs::Error::OK) {
+    if (rocs::init("/dev/i2c-1") != rocs::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to init ROCS!");
         return 1;
     }
@@ -270,9 +274,36 @@ int main() {
             break;
         }
     }
-
     if (!suspension_inited) {
         logger::log(logger::ERROR, "[!] Failed to start suspension!");
+        return 1;
+    }
+
+    bool arm_inited = false;
+    for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
+        if (arm::init(ARM_I2C_ADDR) != arm::Error::OK) {
+            logger::log(logger::WARNING, "[!] Failed to init arm (try %d).", i);
+        } else {
+            arm_inited = true;
+            break;
+        }
+    }
+    if (!arm_inited) {
+        logger::log(logger::ERROR, "[!] Failed to start arm!");
+        return 1;
+    }
+
+    bool gripper_inited = false;
+    for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
+        if (gripper::init(GRIPPER_I2C_ADDR) != gripper::Error::OK) {
+            logger::log(logger::WARNING, "[!] Failed to init gripper (try %d).", i);
+        } else {
+            gripper_inited = true;
+            break;
+        }
+    }
+    if (!gripper_inited) {
+        logger::log(logger::ERROR, "[!] Failed to start gripper!");
         return 1;
     }
 
@@ -283,7 +314,7 @@ int main() {
 
     // Camera streams
     camera::CaptureSession * streams[MAX_STREAMS] = {0};
-    int activeCameras = updateCameraStatus(streams);
+    updateCameraStatus(streams);
 
     if (gps::init(config.gps_serial_id, &global_clock) != gps::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to open GPS!");
@@ -353,9 +384,6 @@ int main() {
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
 
-    unsigned long jpeg_size = tjBufSize(1280, 720, TJSAMP_444);
-    uint8_t* jpeg_buffer = (uint8_t*) malloc(jpeg_size);
-
     // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
     unsigned int jpeg_quality = 30;
     bool greyscale = false;
@@ -391,6 +419,8 @@ int main() {
                 }
             }
 
+            long unsigned int long_frame_size = frame_size;
+
             // Decode the frame and encode it again to set our desired quality.
             static uint8_t raw_buffer[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
 
@@ -417,7 +447,7 @@ int main() {
                     CAMERA_HEIGHT,
                     TJPF_RGB,
                     &frame_buffer,
-                    &frame_size,
+                    &long_frame_size,
                     TJSAMP_GRAY,
                     jpeg_quality,
                     TJFLAG_NOREALLOC);
@@ -430,7 +460,7 @@ int main() {
                     CAMERA_HEIGHT,
                     TJPF_RGB,
                     &frame_buffer,
-                    &frame_size,
+                    &long_frame_size,
                     TJSAMP_420,
                     jpeg_quality,
                     TJFLAG_NOREALLOC);
@@ -545,6 +575,13 @@ int main() {
                     network::ArmMessage arm_message;
                     network::deserialize(&message.buffer, &arm_message);
 
+                    arm::update(network::ArmMessage::Motor::ARM_LOWER, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::ARM_LOWER)]);
+                    arm::update(network::ArmMessage::Motor::ARM_UPPER, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::ARM_UPPER)]);
+                    arm::update(network::ArmMessage::Motor::ARM_BASE, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::ARM_BASE)]);
+                    
+                    gripper::update(network::ArmMessage::Motor::GRIPPER_FINGER, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::GRIPPER_FINGER)]);
+                    gripper::update(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE)]);
+                    gripper::update(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX)]);
                     /*
                     logger::log(logger::DEBUG, "arm update:");
                     logger::log(logger::DEBUG, "  gfinger=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::GRIPPER_FINGER)));

@@ -44,12 +44,12 @@ const float CONTROL_ALPHA = 30;
 const int16_t JOINT_DRIVE_SPEED = 100;
 
 // Send movement updates x times per second.
-const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
+const int MOVEMENT_SEND_INTERVAL = 1000 / 15;
 
 // Update network statistics once per second.
 const int NETWORK_STATS_INTERVAL = 1000;
 
-const int ARM_SEND_INTERVAL = 1000 / 10;
+const int ARM_SEND_INTERVAL = 1000 / 9;
 
 const int LOG_VIEW_WIDTH = 572;
 const int LOG_VIEW_HEIGHT = 458;
@@ -118,7 +118,7 @@ enum class ControllerMode {
     ARM
 };
 
-ControllerMode controller_mode = ControllerMode::ARM;
+ControllerMode controller_mode = ControllerMode::DRIVE;
 
 static std::vector<std::string> split_by_spaces(std::string s) {
     std::vector<std::string> strings;
@@ -369,13 +369,7 @@ static void handle_drive_controller_event(controller::Event event) {
                 last_movement_message.right = 0;
             }
         }
-    } else if (event.type == controller::EventType::BUTTON) {
-        if (event.button == controller::Button::BACK && event.value != 0) {
-            int temp = primary_feed;
-            primary_feed = secondary_feed;
-            secondary_feed = temp;
-        }
-    }
+    } 
 }
 
 static void handle_arm_controller_event(controller::Event event) {
@@ -578,13 +572,23 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
 
     switch (mode) {
         case network::ModeMessage::Mode::MANUAL:
-            sprintf(info_buffer, "Mode: manual");
+            sprintf(info_buffer, "Rover Mode: manual");
             break;
         case network::ModeMessage::Mode::AUTONOMOUS:
-            sprintf(info_buffer, "Mode: autonomous");
+            sprintf(info_buffer, "Rover Mode: autonomous");
             break;
     }
     gui::draw_text(font, info_buffer, x + 5, y + 80 + 5, 15);
+
+    switch (controller_mode) {
+        case ControllerMode::DRIVE:
+            sprintf(info_buffer, "Controller Mode: drive");
+            break;
+        case ControllerMode::ARM:
+            sprintf(info_buffer, "Controller Mode: arm");
+            break;
+    }
+    gui::draw_text(font, info_buffer, x + 5, y + 100 + 5, 15);
 
     time_t current_time;
     time(&current_time);
@@ -1201,6 +1205,15 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+            switch (controller_mode) {
+                case ControllerMode::DRIVE:
+                    controller_mode = ControllerMode::ARM;
+                    break;
+                case ControllerMode::ARM:
+                    controller_mode = ControllerMode::DRIVE;
+                    break;
+            }
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
@@ -1706,6 +1719,23 @@ int main() {
             controller::Error err;
 
             while ((err = controller::poll(&event)) == controller::Error::OK) {
+                if (event.type == controller::EventType::BUTTON) {
+                    if (event.button == controller::Button::BACK && event.value != 0) {
+                        int temp = primary_feed;
+                        primary_feed = secondary_feed;
+                        secondary_feed = temp;
+                    } else if (event.button == controller::Button::XBOX && event.value != 0) {
+                        switch (controller_mode) {
+                            case ControllerMode::DRIVE:
+                                controller_mode = ControllerMode::ARM;
+                                break;
+                            case ControllerMode::ARM:
+                                controller_mode = ControllerMode::DRIVE;
+                                break;
+                        }
+                    }
+                }
+
                 switch (controller_mode) {
                     case ControllerMode::DRIVE:
                         handle_drive_controller_event(event);
