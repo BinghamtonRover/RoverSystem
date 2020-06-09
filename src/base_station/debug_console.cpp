@@ -27,8 +27,6 @@ const int CONSOLE_CURSOR_PADDING = 2;
 
 const std::string CONSOLE_PROMPT = "> ";
 
-network::MovementMessage last_movement_messagesdjfklsdf;
-
 struct DebugLine {
     std::string line;
 
