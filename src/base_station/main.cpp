@@ -120,56 +120,15 @@ enum class ControllerMode {
 
 ControllerMode controller_mode = ControllerMode::DRIVE;
 
-static std::vector<std::string> split_by_spaces(std::string s) {
-    std::vector<std::string> strings;
-
-    size_t last = 0;
-    size_t next = 0;
-
-    while ((next = s.find(" ", last)) != std::string::npos) {
-        strings.push_back(s.substr(last, next - last));
-        last = next + 1;
-    }
-
-    strings.push_back(s.substr(last));
-
-    return strings;
-}
-
 void command_callback(std::string command) {
-    auto parts = split_by_spaces(command);
+    auto parts = gui::debug_console::split_by_spaces(command);
 
     if (parts.size() == 0) {
         return;
     }
 
     if (parts[0] == "move") {
-        if (parts.size() != 3) {
-            return;
-        }
-
-        char left_direction_char = parts[1][0];
-        int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
-
-        char right_direction_char = parts[2][0];
-        int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
-
-        last_movement_message.left = left_speed;
-        last_movement_message.right = right_speed;
-
-        if (left_direction_char == 'b') {
-            last_movement_message.left *= -1;
-        }
-
-        if (right_direction_char == 'b') {
-            last_movement_message.right *= -1;
-        }
-
-        logger::log(
-            logger::DEBUG,
-            "> Update movement to %d, %d",
-            last_movement_message.left,
-            last_movement_message.right);
+        gui::debug_console::move(parts, last_movement_message);
     } else if (parts[0] == "mode") {
         if (parts.size() != 2) return;
         // TODO: Print something to the debug console when this fails?

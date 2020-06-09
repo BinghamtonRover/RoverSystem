@@ -1,4 +1,5 @@
 #include "gui.hpp"
+#include "../network/network.hpp"
 
 #include <string>
 #include <vector>
@@ -16,6 +17,10 @@ void log(const std::string text, float r, float g, float b);
 
 void handle_input(char c);
 void handle_keypress(int key, int mods);
+
+std::vector<std::string> split_by_spaces(std::string s);
+
+void move(std::vector<std::string> parts, network::MovementMessage last_movement_message);
 
 } // namespace debug_console
 } // namespace gui

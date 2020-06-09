@@ -27,6 +27,8 @@ const int CONSOLE_CURSOR_PADDING = 2;
 
 const std::string CONSOLE_PROMPT = "> ";
 
+network::MovementMessage last_movement_messagesdjfklsdf;
+
 struct DebugLine {
     std::string line;
 
@@ -238,6 +240,50 @@ void handle_keypress(int key, int mods) {
         gui::state.input_state = gui::InputState::KEY_COMMAND;
         gui::state.show_debug_console = false;
     }
+}
+
+std::vector<std::string> split_by_spaces(std::string s) {
+    std::vector<std::string> strings;
+
+    size_t last = 0;
+    size_t next = 0;
+
+    while ((next = s.find(" ", last)) != std::string::npos) {
+        strings.push_back(s.substr(last, next - last));
+        last = next + 1;
+    }
+
+    strings.push_back(s.substr(last));
+
+    return strings;
+}
+
+void move(std::vector<std::string> parts, network::MovementMessage last_movement_message) {
+    if (parts.size() != 3) {
+            return;
+        }
+        char left_direction_char = parts[1][0];
+        int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
+
+        char right_direction_char = parts[2][0];
+        int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
+
+        last_movement_message.left = left_speed;
+        last_movement_message.right = right_speed;
+
+        if (left_direction_char == 'b') {
+            last_movement_message.left *= -1;
+        }
+
+        if (right_direction_char == 'b') {
+            last_movement_message.right *= -1;
+        }
+
+        logger::log(
+            logger::DEBUG,
+            "> Update movement to %d, %d",
+            last_movement_message.left,
+            last_movement_message.right);
 }
 
 } // namespace debug_console
