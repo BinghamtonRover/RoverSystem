@@ -199,7 +199,7 @@ void handle_keypress(int key, int mods) {
                     static_cast<bool>(false) //greyscale
                     };
                     network::publish(shared_feeds::bs_feed, &message);
-            }
+            }   
         } else if (command.substr(0,12) == "jpeg_quality"){
             int space = 0;
             space = command.substr(0).find(" ");
