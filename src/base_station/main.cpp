@@ -11,6 +11,7 @@
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
 #include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
+#include "constant_vars.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -30,35 +31,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// Default angular resolution (vertices / radian) to use when drawing circles.
-constexpr float ANGULAR_RES = 10.0f;
-
-// We know that our base station will have this resolution.
-const int WINDOW_WIDTH = 1920;
-const int WINDOW_HEIGHT = 1080;
-
-// For control smoothing.
-const float CONTROL_ALPHA = 30;
-
-// Speed for the DPAD up/down.
-const int16_t JOINT_DRIVE_SPEED = 100;
-
-// Send movement updates x times per second.
-const int MOVEMENT_SEND_INTERVAL = 1000 / 15;
-
-// Update network statistics once per second.
-const int NETWORK_STATS_INTERVAL = 1000;
-
-const int ARM_SEND_INTERVAL = 1000 / 9;
-
-const int LOG_VIEW_WIDTH = 572;
-const int LOG_VIEW_HEIGHT = 458;
-
-const int PRIMARY_FEED_WIDTH = 1298;
-const int PRIMARY_FEED_HEIGHT = 730;
-
-const int SECONDARY_FEED_WIDTH = 533;
-const int SECONDARY_FEED_HEIGHT = 300;
 
 network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
 
