@@ -1,4 +1,5 @@
 #include "gui.hpp"
+#include "../network/network.hpp"
 
 #include <string>
 #include <vector>
@@ -18,6 +19,8 @@ void handle_input(char c);
 void handle_keypress(int key, int mods);
 
 std::vector<std::string> split_by_spaces(std::string s);
+
+void mode(std::vector<std::string> parts, network::Feed bs_feed);
 
 } // namespace debug_console
 } // namespace gui
