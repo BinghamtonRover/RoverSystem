@@ -31,5 +31,6 @@ const int PRIMARY_FEED_HEIGHT = 730;
 const int SECONDARY_FEED_WIDTH = 533;
 const int SECONDARY_FEED_HEIGHT = 300;
 
+const int MAX_FEEDS = 9;
 
 #endif

@@ -1,3 +1,6 @@
+#ifndef LOG_VIEW_HPP
+#define LOG_VIEW_HPP
+
 #include "gui.hpp"
 
 #include <string>
@@ -16,3 +19,4 @@ void do_log(gui::Layout* layout, int width, int height, gui::Font* font);
 
 } // namespace log_view
 } // namespace gui
+#endif

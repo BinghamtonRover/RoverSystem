@@ -1,3 +1,6 @@
+#ifndef CAMERA_FEED_HPP
+#define CAMERA_FEED_HPP
+
 #include <cstdint>
 
 #include "../network/network.hpp"
@@ -45,3 +48,4 @@ Error handle_section(
 void destroy_feed(Feed* feed);
 
 } // namespace camera_feed
+#endif

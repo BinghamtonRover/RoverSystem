@@ -1,5 +1,13 @@
+#ifndef CONTROLLER_HPP
+#define CONTROLLER_HPP
+
 #include <cstdint>
 namespace controller {
+
+enum class ControllerMode {
+    DRIVE,
+    ARM
+};
 
 // Button mapping for the XBox One controller.
 enum class Button : uint16_t {
@@ -69,3 +77,4 @@ int16_t get_value(Button button);
 int16_t get_value(Axis axis);
 
 } // namespace controller
+#endif

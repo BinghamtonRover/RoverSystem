@@ -1,5 +1,4 @@
 #include "debug_console.hpp"
-#include "gui.hpp"
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "../logger/logger.hpp"

@@ -6,7 +6,6 @@
 #include "camera_feed.hpp"
 #include "controller.hpp"
 #include "debug_console.hpp"
-#include "gui.hpp"
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
@@ -34,13 +33,7 @@
 
 network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
 
-struct {
-    network::AutonomyStatusMessage::Status status = network::AutonomyStatusMessage::Status::IDLE;
-    bool has_target = false;
-    float target_lat = 0, target_lon = 0;
-    int edit_idx = 0;
-    std::string edit_lat, edit_lon;
-} autonomy_info;
+gui::autonomy_info_struct autonomy_info;
 
 // Network feeds.
 network::Feed r_feed, bs_feed;
@@ -53,19 +46,12 @@ unsigned int stopwatch_texture_id;
 
 float last_rover_tick = 0;
 
-enum class StopwatchState { STOPPED, PAUSED, RUNNING };
+gui::StopwatchStruct stopwatch;
 
-struct {
-    StopwatchState state;
-    unsigned int start_time;
-    unsigned int pause_time;
-} stopwatch;
+float r_tp = 0;
+float bs_tp = 0;
+float t_tp = 0;
 
-struct {
-    float r_tp = 0;
-    float bs_tp = 0;
-    float t_tp = 0;
-} last_network_stats;
 
 // Clock!
 util::Clock global_clock;
@@ -76,21 +62,17 @@ network::ArmMessage last_arm_message;
 
 // Camera stuff.
 // These get initialized off-the-bat.
+camera_feed::Feed camera_feeds[MAX_FEEDS];
+
 int primary_feed = 0;
 int secondary_feed = 1;
 
 // We only care about this value when we are in camera move mode.
 int feed_to_move = -1;
 
-const int MAX_FEEDS = 9;
-camera_feed::Feed camera_feeds[MAX_FEEDS];
 
-enum class ControllerMode {
-    DRIVE,
-    ARM
-};
 
-ControllerMode controller_mode = ControllerMode::DRIVE;
+controller::ControllerMode controller_mode = controller::ControllerMode::DRIVE;
 
 void command_callback(std::string command) {
     auto parts = gui::debug_console::split_by_spaces(command);
@@ -397,13 +379,13 @@ static void handle_arm_controller_event(controller::Event event) {
     */
 }
 
-
+/*
 void set_stopwatch_icon_color() {
     switch (stopwatch.state) {
-        case StopwatchState::RUNNING:
+        case gui::StopwatchState::RUNNING:
             glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
             break;
-        case StopwatchState::PAUSED:
+        case gui::StopwatchState::PAUSED:
             glColor4f(1.0f, 0.67f, 0.0f, 1.0f);
             break;
         default:
@@ -415,7 +397,7 @@ void set_stopwatch_icon_color() {
 const char* get_stopwatch_text() {
     static char buffer[50];
 
-    if (stopwatch.state == StopwatchState::STOPPED) {
+    if (stopwatch.state == gui::StopwatchState::STOPPED) {
         sprintf(buffer, "00:00:00");
 
         return buffer;
@@ -423,7 +405,7 @@ const char* get_stopwatch_text() {
 
     unsigned int time_to_use;
 
-    if (stopwatch.state == StopwatchState::PAUSED) {
+    if (stopwatch.state == gui::StopwatchState::PAUSED) {
         time_to_use = stopwatch.pause_time;
     } else {
         time_to_use = global_clock.get_millis();
@@ -468,9 +450,10 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
     sprintf(
         info_buffer,
         "Net thpt (r/bs/t): %.2f/%.2f/%.2f MiB/s",
-        last_network_stats.r_tp,
-        last_network_stats.bs_tp,
-        last_network_stats.t_tp);
+        r_tp,
+        bs_tp,
+        t_tp
+        );
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     gui::draw_text(font, info_buffer, x + 5, y + 20 + 5, 15);
@@ -512,10 +495,10 @@ void do_info_panel(gui::Layout* layout, gui::Font* font) {
     gui::draw_text(font, info_buffer, x + 5, y + 80 + 5, 15);
 
     switch (controller_mode) {
-        case ControllerMode::DRIVE:
+        case controller::ControllerMode::DRIVE:
             sprintf(info_buffer, "Controller Mode: drive");
             break;
-        case ControllerMode::ARM:
+        case controller::ControllerMode::ARM:
             sprintf(info_buffer, "Controller Mode: arm");
             break;
     }
@@ -559,13 +542,13 @@ void do_stopwatch_menu(gui::Font* font) {
 
     const char* space_help_text;
     switch (stopwatch.state) {
-        case StopwatchState::STOPPED:
+        case gui::StopwatchState::STOPPED:
             space_help_text = "<space> : start";
             break;
-        case StopwatchState::PAUSED:
+        case gui::StopwatchState::PAUSED:
             space_help_text = "<space> : resume";
             break;
-        case StopwatchState::RUNNING:
+        case gui::StopwatchState::RUNNING:
             space_help_text = "<space> : pause";
             break;
     }
@@ -690,37 +673,37 @@ void do_lidar(gui::Layout* layout) {
 
     gui::do_solid_rect(layout, 300, 300, 0, 0, 0);
 
-    /*
+    
 
-    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-    glLineWidth(2.0f);
+    // glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    // glLineWidth(2.0f);
 
-    for (int q = -3; q <= 3; q++) {
-        for (int r = -3; r <= 3; r++) {
-            float x = 1.2f * (3.0f / 2.0f) * q;
-            float y = 1.2f * ((sqrtf(3.0f)/2.0f) * q + sqrtf(3) * r);
+    // for (int q = -3; q <= 3; q++) {
+    //     for (int r = -3; r <= 3; r++) {
+    //         float x = 1.2f * (3.0f / 2.0f) * q;
+    //         float y = 1.2f * ((sqrtf(3.0f)/2.0f) * q + sqrtf(3) * r);
 
-            float ppm = 150.0f / 10.0f;
+    //         float ppm = 150.0f / 10.0f;
 
-            float px = ppm * x;
-            float py = ppm * y;
+    //         float px = ppm * x;
+    //         float py = ppm * y;
 
-            glBegin(GL_LINE_LOOP);
+    //         glBegin(GL_LINE_LOOP);
 
-            for (int i = 0; i < 6; i++) {
-                float angle = M_PI * (float)i / 3.0f;
+    //         for (int i = 0; i < 6; i++) {
+    //             float angle = M_PI * (float)i / 3.0f;
 
-                float vx = wx + 150.0f + px + ppm * 1.2 * cosf(angle);
-                float vy = wy + 150.0f + py + ppm * 1.2 * sinf(angle);
+    //             float vx = wx + 150.0f + px + ppm * 1.2 * cosf(angle);
+    //             float vy = wy + 150.0f + py + ppm * 1.2 * sinf(angle);
 
-                glVertex2f(vx, vy);
-            }
+    //             glVertex2f(vx, vy);
+    //         }
 
-            glEnd();
-        }
-    }
+    //         glEnd();
+    //     }
+    // }
 
-    */
+    
 
     glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -1059,6 +1042,10 @@ void do_gui(gui::Font* font) {
     do_autonomy_control(font);
 }
 
+*/
+
+std::vector<uint16_t> lidar_points;
+
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (codepoint < 128) {
@@ -1138,11 +1125,11 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             switch (controller_mode) {
-                case ControllerMode::DRIVE:
-                    controller_mode = ControllerMode::ARM;
+                case controller::ControllerMode::DRIVE:
+                    controller_mode = controller::ControllerMode::ARM;
                     break;
-                case ControllerMode::ARM:
-                    controller_mode = ControllerMode::DRIVE;
+                case controller::ControllerMode::ARM:
+                    controller_mode = controller::ControllerMode::DRIVE;
                     break;
             }
         }
@@ -1294,7 +1281,7 @@ int main() {
     Config config = load_config("res/bs.sconfig");
 
     // Clear the stopwatch.
-    stopwatch.state = StopwatchState::STOPPED;
+    stopwatch.state = gui::StopwatchState::STOPPED;
     stopwatch.start_time = 0;
     stopwatch.pause_time = 0;
 
@@ -1517,17 +1504,17 @@ int main() {
         if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
             if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
                 switch (stopwatch.state) {
-                    case StopwatchState::RUNNING:
-                        stopwatch.state = StopwatchState::PAUSED;
+                    case gui::StopwatchState::RUNNING:
+                        stopwatch.state = gui::StopwatchState::PAUSED;
                         stopwatch.pause_time = global_clock.get_millis();
                         break;
-                    case StopwatchState::PAUSED:
-                        stopwatch.state = StopwatchState::RUNNING;
+                    case gui::StopwatchState::PAUSED:
+                        stopwatch.state = gui::StopwatchState::RUNNING;
                         stopwatch.start_time =
                             global_clock.get_millis() - (stopwatch.pause_time - stopwatch.start_time);
                         break;
-                    case StopwatchState::STOPPED:
-                        stopwatch.state = StopwatchState::RUNNING;
+                    case gui::StopwatchState::STOPPED:
+                        stopwatch.state = gui::StopwatchState::RUNNING;
                         stopwatch.start_time = global_clock.get_millis();
                         break;
                 }
@@ -1536,13 +1523,13 @@ int main() {
                 gui::state.input_state = gui::InputState::KEY_COMMAND;
             } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
                 switch (stopwatch.state) {
-                    case StopwatchState::RUNNING:
+                    case gui::StopwatchState::RUNNING:
                         stopwatch.start_time = global_clock.get_millis();
                         break;
-                    case StopwatchState::PAUSED:
-                        stopwatch.state = StopwatchState::STOPPED;
+                    case gui::StopwatchState::PAUSED:
+                        stopwatch.state = gui::StopwatchState::STOPPED;
                         break;
-                    case StopwatchState::STOPPED:
+                    case gui::StopwatchState::STOPPED:
                         break;
                 }
 
@@ -1636,9 +1623,9 @@ int main() {
         network::update_status(&bs_feed);
 
         if (network_stats_timer.ready()) {
-            last_network_stats.r_tp = (float) r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
-            last_network_stats.bs_tp = (float) bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
-            last_network_stats.t_tp = last_network_stats.r_tp + last_network_stats.bs_tp;
+            r_tp = (float) r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            bs_tp = (float) bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            t_tp = r_tp + bs_tp;
 
             r_feed.bytes_transferred = 0;
             bs_feed.bytes_transferred = 0;
@@ -1657,21 +1644,21 @@ int main() {
                         secondary_feed = temp;
                     } else if (event.button == controller::Button::XBOX && event.value != 0) {
                         switch (controller_mode) {
-                            case ControllerMode::DRIVE:
-                                controller_mode = ControllerMode::ARM;
+                            case controller::ControllerMode::DRIVE:
+                                controller_mode = controller::ControllerMode::ARM;
                                 break;
-                            case ControllerMode::ARM:
-                                controller_mode = ControllerMode::DRIVE;
+                            case controller::ControllerMode::ARM:
+                                controller_mode = controller::ControllerMode::DRIVE;
                                 break;
                         }
                     }
                 }
 
                 switch (controller_mode) {
-                    case ControllerMode::DRIVE:
+                    case controller::ControllerMode::DRIVE:
                         handle_drive_controller_event(event);
                         break;
-                    case ControllerMode::ARM:
+                    case controller::ControllerMode::ARM:
                         handle_arm_controller_event(event);
                         break;
                 }
@@ -1694,12 +1681,12 @@ int main() {
         }
 
         // Update and draw GUI.
-        do_gui(&font);
+        gui::do_gui(&font, r_feed, mode, controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch, &lidar_points, autonomy_info, camera_feeds, primary_feed, secondary_feed);
 
         if (help_menu_up) do_help_menu(&font, commands, debug_commands);
 
         if (stopwatch_menu_up) {
-            do_stopwatch_menu(&font);
+            gui::do_stopwatch_menu(&font, stopwatch, stopwatch_texture_id, global_clock);
         }
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
