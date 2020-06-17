@@ -1,3 +1,6 @@
+#ifndef DEBUG_CONSOLE_H
+#define DEBUG_CONSOLE_H
+
 #include "gui.hpp"
 #include "../network/network.hpp"
 
@@ -24,3 +27,5 @@ void move(std::vector<std::string> parts, network::MovementMessage last_movement
 
 } // namespace debug_console
 } // namespace gui
+
+#endif
