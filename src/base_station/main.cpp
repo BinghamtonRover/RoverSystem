@@ -128,32 +128,7 @@ void command_callback(std::string command) {
     }
 
     if (parts[0] == "move") {
-        if (parts.size() != 3) {
-            return;
-        }
-
-        char left_direction_char = parts[1][0];
-        int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
-
-        char right_direction_char = parts[2][0];
-        int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
-
-        last_movement_message.left = left_speed;
-        last_movement_message.right = right_speed;
-
-        if (left_direction_char == 'b') {
-            last_movement_message.left *= -1;
-        }
-
-        if (right_direction_char == 'b') {
-            last_movement_message.right *= -1;
-        }
-
-        logger::log(
-            logger::DEBUG,
-            "> Update movement to %d, %d",
-            last_movement_message.left,
-            last_movement_message.right);
+        gui::debug_console::move(parts, last_movement_message);
     } else if (parts[0] == "mode") {
         gui::debug_console::mode(parts, bs_feed);
     }
