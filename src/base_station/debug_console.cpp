@@ -143,9 +143,9 @@ void handle_keypress(int key, int mods) {
 
         console.history.push_back(console.buffer);
         console.buffer = { CONSOLE_PROMPT, 0, 1, 0 };
-
+        
         console.callback(command);
-
+        
         if (command == "test") {
             log("This is some red text.", 1, 0, 0);
         } else if (command == "tdl") {
@@ -282,6 +282,24 @@ void move(std::vector<std::string> parts, network::MovementMessage last_movement
             "> Update movement to %d, %d",
             last_movement_message.left,
             last_movement_message.right);
+}
+
+void mode(std::vector<std::string> parts, network::Feed bs_feed) {
+    if (parts.size() != 2) return;
+    // TODO: Print something to the debug console when this fails?
+
+    network::ModeMessage::Mode m;
+    if (parts[1] == "autonomous") {
+        m = network::ModeMessage::Mode::AUTONOMOUS;    
+    } else if (parts[1] == "manual") {
+        m = network::ModeMessage::Mode::MANUAL;    
+    } else {
+        return;
+    }
+
+    network::ModeMessage message;
+    message.mode = m;
+    network::publish(&bs_feed, &message);
 }
 
 } // namespace debug_console

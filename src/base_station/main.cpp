@@ -102,21 +102,7 @@ void command_callback(std::string command) {
     if (parts[0] == "move") {
         gui::debug_console::move(parts, last_movement_message);
     } else if (parts[0] == "mode") {
-        if (parts.size() != 2) return;
-        // TODO: Print something to the debug console when this fails?
-
-        network::ModeMessage::Mode m;
-        if (parts[1] == "autonomous") {
-            m = network::ModeMessage::Mode::AUTONOMOUS;    
-        } else if (parts[1] == "manual") {
-            m = network::ModeMessage::Mode::MANUAL;    
-        } else {
-            return;
-        }
-
-        network::ModeMessage message;
-        message.mode = m;
-        network::publish(&bs_feed, &message);
+        gui::debug_console::mode(parts, bs_feed);
     }
 }
 
