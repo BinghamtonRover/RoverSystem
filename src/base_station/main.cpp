@@ -120,24 +120,8 @@ enum class ControllerMode {
 
 ControllerMode controller_mode = ControllerMode::DRIVE;
 
-static std::vector<std::string> split_by_spaces(std::string s) {
-    std::vector<std::string> strings;
-
-    size_t last = 0;
-    size_t next = 0;
-
-    while ((next = s.find(" ", last)) != std::string::npos) {
-        strings.push_back(s.substr(last, next - last));
-        last = next + 1;
-    }
-
-    strings.push_back(s.substr(last));
-
-    return strings;
-}
-
 void command_callback(std::string command) {
-    auto parts = split_by_spaces(command);
+    auto parts = gui::debug_console::split_by_spaces(command);
 
     if (parts.size() == 0) {
         return;
