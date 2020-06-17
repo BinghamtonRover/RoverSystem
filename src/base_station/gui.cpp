@@ -749,38 +749,6 @@ void do_lidar(Layout* layout, std::vector<uint16_t>* lidar_points) {
 
     do_solid_rect(layout, 300, 300, 0, 0, 0);
 
-    /*
-
-    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-    glLineWidth(2.0f);
-
-    for (int q = -3; q <= 3; q++) {
-        for (int r = -3; r <= 3; r++) {
-            float x = 1.2f * (3.0f / 2.0f) * q;
-            float y = 1.2f * ((sqrtf(3.0f)/2.0f) * q + sqrtf(3) * r);
-
-            float ppm = 150.0f / 10.0f;
-
-            float px = ppm * x;
-            float py = ppm * y;
-
-            glBegin(GL_LINE_LOOP);
-
-            for (int i = 0; i < 6; i++) {
-                float angle = M_PI * (float)i / 3.0f;
-
-                float vx = wx + 150.0f + px + ppm * 1.2 * cosf(angle);
-                float vy = wy + 150.0f + py + ppm * 1.2 * sinf(angle);
-
-                glVertex2f(vx, vy);
-            }
-
-            glEnd();
-        }
-    }
-
-    */
-
     glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
