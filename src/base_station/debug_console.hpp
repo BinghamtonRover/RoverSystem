@@ -1,3 +1,6 @@
+#ifndef DEBUG_CONSOLE_H
+#define DEBUG_CONSOLE_H
+
 #include "gui.hpp"
 #include "../network/network.hpp"
 
@@ -26,3 +29,5 @@ void mode(std::vector<std::string> parts, network::Feed bs_feed);
 
 } // namespace debug_console
 } // namespace gui
+
+#endif

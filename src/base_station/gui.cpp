@@ -1,8 +1,18 @@
+#include "../network/network.hpp"
+#include "waypoint.hpp"
+#include "controller.hpp"
+#include "camera_feed.hpp"
+#include "constant_vars.hpp"
+#include "waypoint_map.hpp"
+#include "debug_console.hpp"
+#include "log_view.hpp"
+
 #include <GL/gl.h>
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 
 #include "gui.hpp"
 
@@ -447,5 +457,631 @@ unsigned int load_texture_alpha(const char* file_name) {
     stbi_image_free(texture_data);
 
     return tex_id;
+}
+
+void set_stopwatch_icon_color(StopwatchStruct stopwatch) {
+    switch (stopwatch.state) {
+        case StopwatchState::RUNNING:
+            glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+            break;
+        case StopwatchState::PAUSED:
+            glColor4f(1.0f, 0.67f, 0.0f, 1.0f);
+            break;
+        default:
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+            break;
+    }
+}
+
+const char* get_stopwatch_text(util::Clock global_clock, StopwatchStruct stopwatch) {
+    static char buffer[50];
+
+    if (stopwatch.state == StopwatchState::STOPPED) {
+        sprintf(buffer, "00:00:00");
+
+        return buffer;
+    }
+
+    unsigned int time_to_use;
+
+    if (stopwatch.state == StopwatchState::PAUSED) {
+        time_to_use = stopwatch.pause_time;
+    } else {
+        time_to_use = global_clock.get_millis();
+    }
+
+    unsigned int millis = time_to_use - stopwatch.start_time;
+
+    unsigned int seconds = millis / 1000;
+    unsigned int minutes = seconds / 60;
+    seconds = seconds % 60;
+    unsigned int hours = minutes / 60;
+    minutes = minutes % 60;
+
+    sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
+
+    return buffer;
+}
+
+void do_info_panel(Layout* layout, Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch) {
+    static char info_buffer[200];
+
+    int x = layout->current_x;
+    int y = layout->current_y;
+
+    int w = 445;
+    int h = 300;
+
+    do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+
+    sprintf(
+        info_buffer,
+        "Rover net status: %s",
+        r_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
+
+    if (r_feed.status == network::FeedStatus::ALIVE) {
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+    } else {
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    }
+    draw_text(font, info_buffer, x + 5, y + 5, 15);
+
+    sprintf(
+        info_buffer,
+        "Net thpt (r/bs/t): %.2f/%.2f/%.2f MiB/s",
+        r_tp,
+        bs_tp,
+        t_tp);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(font, info_buffer, x + 5, y + 20 + 5, 15);
+
+    switch (waypoint::rover_fix) {
+        case network::LocationMessage::FixStatus::NONE:
+            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+            sprintf(info_buffer, "No GPS fix!");
+            draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
+            break;
+        case network::LocationMessage::FixStatus::STABILIZING:
+            glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
+            sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
+            draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
+            break;
+        case network::LocationMessage::FixStatus::FIXED:
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);        
+            sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    draw_text(font, info_buffer, x + 5, y + 40 + 5, 15);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    sprintf(info_buffer, "Rover tps: %.0f", last_rover_tick);
+    draw_text(font, info_buffer, x + 5, y + 60 + 5, 15);
+
+    switch (mode) {
+        case network::ModeMessage::Mode::MANUAL:
+            sprintf(info_buffer, "Rover Mode: manual");
+            break;
+        case network::ModeMessage::Mode::AUTONOMOUS:
+            sprintf(info_buffer, "Rover Mode: autonomous");
+            break;
+    }
+    draw_text(font, info_buffer, x + 5, y + 80 + 5, 15);
+
+    switch (controller_mode) {
+        case controller::ControllerMode::DRIVE:
+            sprintf(info_buffer, "Controller Mode: drive");
+            break;
+        case controller::ControllerMode::ARM:
+            sprintf(info_buffer, "Controller Mode: arm");
+            break;
+    }
+    draw_text(font, info_buffer, x + 5, y + 100 + 5, 15);
+
+    time_t current_time;
+    time(&current_time);
+    struct tm* time_info = localtime(&current_time);
+
+    strftime(info_buffer, sizeof(info_buffer), "%I:%M:%S", time_info);
+
+    draw_text(font, info_buffer, x + 5, y + h - 20 - 5, 20);
+
+    auto stopwatch_buffer = get_stopwatch_text(global_clock, stopwatch);
+
+    int stopwatch_text_width = text_width(font, stopwatch_buffer, 20);
+
+    draw_text(font, stopwatch_buffer, x + w - 5 - stopwatch_text_width, y + h - 20 - 5, 20);
+
+    set_stopwatch_icon_color(stopwatch);
+    fill_textured_rect_mix_color(
+        x + w - 5 - stopwatch_text_width - 3 - 20,
+        y + h - 20 - 5,
+        20,
+        20,
+        stopwatch_texture_id);
+}
+
+void do_stopwatch_menu(Font* font, StopwatchStruct stopwatch, unsigned int stopwatch_texture_id, util::Clock global_clock){
+    const int w = 150;
+    const int h = 110;
+
+    const int x = WINDOW_WIDTH - 20 - w;
+    const int y = WINDOW_HEIGHT - 20 - h;
+
+    glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
+    fill_rectangle(x, y, w, h);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(font, "Stopwatch", x + 5, y + 5, 20);
+
+    const char* space_help_text;
+    switch (stopwatch.state) {
+        case StopwatchState::STOPPED:
+            space_help_text = "<space> : start";
+            break;
+        case StopwatchState::PAUSED:
+            space_help_text = "<space> : resume";
+            break;
+        case StopwatchState::RUNNING:
+            space_help_text = "<space> : pause";
+            break;
+    }
+
+    draw_text(font, space_help_text, x + 5, y + 5 + 20 + 15, 15);
+    draw_text(font, "r       : reset", x + 5, y + 5 + 20 + 15 + 5 + 15, 15);
+
+    // Draw the actual stopwatch.
+
+    auto stopwatch_buffer = get_stopwatch_text(global_clock, stopwatch);
+    int stopwatch_text_width = text_width(font, stopwatch_buffer, 20);
+    draw_text(
+        font,
+        stopwatch_buffer,
+        WINDOW_WIDTH - 20 - stopwatch_text_width - 5,
+        WINDOW_HEIGHT - 20 - 5 - 20,
+        20);
+
+    set_stopwatch_icon_color(stopwatch);
+    fill_textured_rect_mix_color(
+        WINDOW_WIDTH - 20 - 5 - stopwatch_text_width - 3 - 20,
+        WINDOW_HEIGHT - 20 - 5 - 20,
+        20,
+        20,
+        stopwatch_texture_id);
+}
+
+void do_help_menu(Font* font, std::vector<const char*> commands, std::vector<const char*> debug_commands) {
+    // Texts have a fixed height and spacing
+    int height = 20;
+    int spacing = height + 10;
+
+    const char* title = "Help Menu";
+    int title_height = 25;
+    int title_width = text_width(font, title, title_height);
+    int debug_title_height = 25;
+    const char* debug_title = "Debug Commands";
+    int debug_title_width = text_width(font, debug_title, debug_title_height);
+    const char* exit_prompt = "Press 'escape' to exit menu";
+
+    int max_width = debug_title_width;
+    for (unsigned int i = 0; i < commands.size(); i++) {
+        int current_width = text_width(font, commands[i], height);
+        if (current_width > max_width) max_width = current_width;
+    }
+    for (unsigned int i = 0; i < debug_commands.size(); i++) {
+        int current_width = text_width(font, debug_commands[i], height);
+        if (current_width > max_width) max_width = current_width;
+    }
+
+    int right_padding = 150;
+    int bottom_padding = (spacing * 1.5) + 15; // The +15 is to account for the exit prompt
+    int top_padding = 20;
+    int menu_width = max_width + right_padding;
+    int menu_height = (spacing * commands.size()) + (spacing * debug_commands.size()) + title_height +
+        debug_title_height + top_padding + bottom_padding;
+
+    Layout help_layout{};
+
+    help_layout.advance_x((WINDOW_WIDTH / 2) - (menu_width / 2));
+    help_layout.advance_y((WINDOW_HEIGHT / 2) - (menu_height / 2));
+    help_layout.push();
+
+    int x = help_layout.current_x;
+    int y = help_layout.current_y;
+
+    do_solid_rect(&help_layout, menu_width, menu_height, 0.2, 0.2f, 0.2);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    int left_margin = 5;
+
+    draw_text(font, title, x + (menu_width / 2) - (title_width / 2), y, title_height);
+
+    for (unsigned int i = 0; i < commands.size(); i++) {
+        draw_text(font, commands[i], x + left_margin, y + (spacing * i) + top_padding + title_height, height);
+    }
+
+    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    int debug_commands_x = x + (menu_width / 2) - (debug_title_width / 2);
+    int debug_commands_y = y + (spacing * commands.size()) + top_padding + title_height;
+    draw_text(font, debug_title, debug_commands_x, debug_commands_y, debug_title_height);
+    debug_commands_y += 10; // To give extra room for the commands after the debug title
+
+    for (unsigned int i = 0; i < debug_commands.size(); i++) {
+        draw_text(font, debug_commands[i], x + left_margin, debug_commands_y + (spacing * (i + 1)), height);
+    }
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    int exit_prompt_width = text_width(font, exit_prompt, 15);
+    draw_text(font, exit_prompt, x + (menu_width / 2) - (exit_prompt_width / 2), y + menu_height - 20, 15);
+
+    glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+    glLineWidth(4.0f);
+    glBegin(GL_LINES);
+
+    // Footer
+    glVertex2f(x, y + menu_height - 20);
+    glVertex2f(x + menu_width, y + menu_height - 20);
+
+    // Title Line
+    glVertex2f(x, y + title_height + 10);
+    glVertex2f(x + menu_width, y + title_height + 10);
+
+    // Before debug title
+    glVertex2f(x, debug_commands_y - 8);
+    glVertex2f(x + menu_width, debug_commands_y - 8);
+
+    // After debug title
+    glVertex2f(x, debug_commands_y + debug_title_height + 2);
+    glVertex2f(x + menu_width, debug_commands_y + debug_title_height + 2);
+
+    glEnd();
+
+    help_layout.pop();
+}
+
+void do_lidar(Layout* layout, std::vector<uint16_t>* lidar_points) {
+    int wx = layout->current_x;
+    int wy = layout->current_y;
+
+    do_solid_rect(layout, 300, 300, 0, 0, 0);
+
+    glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+
+    glBegin(GL_QUADS);
+
+    for (size_t i = 0; i < lidar_points->size(); i++) {
+        float angle = 225.0f - (float) i;
+        float theta = angle * M_PI / 180.0f;
+
+        theta -= M_PI;
+
+        uint16_t dist = lidar_points->at(i);
+
+        float r = dist * 150.0f / 10000.0f;
+
+        float hs = 1.0f;
+
+        float x = wx + 150.0f + r * cosf(theta);
+        float y = wy + 150.0f + r * sinf(theta);
+
+        if (dist < 100) continue;
+
+        glVertex2f(x - hs, y - hs);
+        glVertex2f(x + hs, y - hs);
+        glVertex2f(x + hs, y + hs);
+        glVertex2f(x - hs, y + hs);
+    }
+
+    float hs = 1.2 * 15.0f / 2.0f;
+
+    float x = wx + 150.0f;
+    float y = wy + 150.0f;
+
+    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+
+    glVertex2f(x - hs, y - hs);
+    glVertex2f(x + hs, y - hs);
+    glVertex2f(x + hs, y + hs);
+    glVertex2f(x - hs, y + hs);
+
+    glEnd();
+}
+
+void do_camera_move_target(Font* font) {
+    const float COVER_ALPHA = 0.5f;
+    glColor4f(1.0f, 1.0f, 1.0f, COVER_ALPHA);
+    fill_rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    const int PRIMARY_TEXT_SIZE = 50;
+    const int SECONDARY_TEXT_SIZE = 30;
+
+    const char* primary_text = "Press '0' to move feed here";
+    const char* secondary_text = "Press '1' to move feed here";
+
+    // TODO: These are hardcoded from the do_gui layout stuff.
+    // Maybe calculate the positions of everything at runtime start?
+    const int X = 20 + 572 + 10;
+
+    const int Y_PRIMARY = 20;
+    const int Y_SECONDARY = Y_PRIMARY + PRIMARY_FEED_HEIGHT + 10;
+
+    int primary_text_width = text_width(font, primary_text, PRIMARY_TEXT_SIZE);
+    int secondary_text_width = text_width(font, secondary_text, SECONDARY_TEXT_SIZE);
+
+    int ptx = X + (PRIMARY_FEED_WIDTH / 2) - (primary_text_width / 2);
+    int pty = Y_PRIMARY + (PRIMARY_FEED_HEIGHT / 2);
+
+    int stx = X + (SECONDARY_FEED_WIDTH / 2) - (secondary_text_width / 2);
+    int sty = Y_SECONDARY + (SECONDARY_FEED_HEIGHT / 2);
+
+    const int BG_PADDING = 10;
+
+    glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+    fill_rectangle(
+        ptx - BG_PADDING,
+        pty - BG_PADDING,
+        primary_text_width + 2 * BG_PADDING,
+        PRIMARY_TEXT_SIZE + 2 * BG_PADDING);
+    fill_rectangle(
+        stx - BG_PADDING,
+        sty - BG_PADDING,
+        secondary_text_width + 2 * BG_PADDING,
+        SECONDARY_TEXT_SIZE + 2 * BG_PADDING);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(font, primary_text, ptx, pty, PRIMARY_TEXT_SIZE);
+    draw_text(font, secondary_text, stx, sty, SECONDARY_TEXT_SIZE);
+}
+
+void do_camera_matrix(gui::Font* font, camera_feed::Feed camera_feeds[]) {
+    switch (state.input_state) {
+        case InputState::CAMERA_MATRIX:
+        case InputState::CAMERA_MOVE:
+            break;
+        case InputState::CAMERA_MOVE_TARGET:
+            do_camera_move_target(font);
+            return;
+        default:
+            return;
+    }
+
+    const int SIDE_MARGIN = 50;
+    const int TOP_MARGIN = 50;
+
+    const int BACKGROUND_SHADE = 40;
+
+    const int MATRIX_WIDTH = WINDOW_WIDTH - 2 * SIDE_MARGIN;
+    const int MATRIX_HEIGHT = WINDOW_HEIGHT - 2 * SIDE_MARGIN;
+
+    const int MATRIX_PADDING = 25;
+
+    glColor4f(BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, 1.0f);
+    fill_rectangle(SIDE_MARGIN, TOP_MARGIN, MATRIX_WIDTH, MATRIX_HEIGHT);
+
+    const int VIEW_WIDTH = 500;
+    const int VIEW_HEIGHT = VIEW_WIDTH * 9 / 16;
+    const int NUM_VIEWS_PER_ROW = (MATRIX_WIDTH + MATRIX_PADDING) / (VIEW_WIDTH + MATRIX_PADDING);
+    const int NUM_ROWS = (MAX_FEEDS + NUM_VIEWS_PER_ROW - 1) / NUM_VIEWS_PER_ROW;
+    const int WIDTH_OF_ROW = NUM_VIEWS_PER_ROW * (VIEW_WIDTH + MATRIX_PADDING) + MATRIX_PADDING;
+    const int EXTRA_SIDE_PADDING = (MATRIX_WIDTH - WIDTH_OF_ROW) / 2;
+
+    const int TEXT_PADDING = 5;
+    const int TEXT_SIZE = 20;
+
+    // Stuff will overflow if we go over one digit!
+    // Plus 2 for ": ".
+    const int TEXT_MAX_LEN = camera_feed::FEED_NAME_MAX_LEN + 1 + 2;
+    // Can be equal since ids are 0-9.
+    assert(MAX_FEEDS <= 10);
+
+    int feed_idx = 0;
+    for (int r = 0; r < NUM_ROWS; r++) {
+        for (int c = 0; c < NUM_VIEWS_PER_ROW; c++) {
+            if (feed_idx >= MAX_FEEDS) break;
+
+            int view_x = SIDE_MARGIN + MATRIX_PADDING + EXTRA_SIDE_PADDING + c * (VIEW_WIDTH + MATRIX_PADDING);
+            int view_y = TOP_MARGIN + MATRIX_PADDING + r * (VIEW_HEIGHT + MATRIX_PADDING);
+
+            fill_textured_rect(view_x, view_y, VIEW_WIDTH, VIEW_HEIGHT, camera_feeds[feed_idx].gl_texture_id);
+
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+            static char feed_display_buffer[TEXT_MAX_LEN + 1];
+            snprintf(feed_display_buffer, sizeof(feed_display_buffer), "%d: %s", feed_idx, camera_feeds[feed_idx].name);
+
+            draw_text(
+                font,
+                feed_display_buffer,
+                view_x + TEXT_PADDING,
+                view_y + VIEW_HEIGHT - TEXT_SIZE - TEXT_PADDING,
+                TEXT_SIZE);
+
+            feed_idx++;
+        }
+    }
+
+    const int HELP_TEXT_SIZE = 15;
+
+    const char* help_text;
+    if (state.input_state == InputState::CAMERA_MATRIX) {
+        help_text = "m: move camera | escape: exit matrix";
+    } else if (state.input_state == InputState::CAMERA_MOVE) {
+        help_text = "escape: cancel move";
+    } else {
+        help_text = "?";
+    }
+
+    int help_text_width = text_width(font, help_text, HELP_TEXT_SIZE);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(
+        font,
+        help_text,
+        WINDOW_WIDTH - SIDE_MARGIN - TEXT_PADDING - help_text_width,
+        WINDOW_HEIGHT - TOP_MARGIN - TEXT_PADDING - HELP_TEXT_SIZE,
+        HELP_TEXT_SIZE);
+
+    if (state.input_state == InputState::CAMERA_MOVE) {
+        glColor4f(255.0f / 255.0f, 199.0f / 255.0f, 0.0f, 1.0f);
+        draw_text(
+            font,
+            "Press key '0'-'9' to select feed to move",
+            SIDE_MARGIN + TEXT_PADDING,
+            WINDOW_HEIGHT - TOP_MARGIN - TEXT_PADDING - HELP_TEXT_SIZE,
+            HELP_TEXT_SIZE);
+    }
+}
+
+void do_autonomy_control(gui::Font* font, autonomy_info_struct autonomy_info) {
+    if (gui::state.input_state != gui::InputState::AUTONOMY_CONTROL
+        && gui::state.input_state != gui::InputState::AUTONOMY_EDIT_TARGET) return;
+
+    const int WIDTH = 600;
+    const int HEIGHT = 800;
+    const int PADDING = 10;
+    const int BACKGROUND_SHADE = 40;
+
+    const int PANEL_X = WINDOW_WIDTH / 2 - WIDTH / 2;
+    const int PANEL_Y = WINDOW_HEIGHT / 2 - HEIGHT / 2;
+
+    int x = PANEL_X + PADDING;
+    int y = PANEL_Y + PADDING;
+
+    glColor4f(BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, BACKGROUND_SHADE / 255.0f, 1.0f);
+    gui::fill_rectangle(PANEL_X, PANEL_Y, WIDTH, HEIGHT);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    gui::draw_text(font, "Autonomy Control Panel", x, y, 30);
+    
+    y += 30 + 20;
+
+    char text_buffer[500];
+
+    
+    const char* status_text;
+    switch (autonomy_info.status) {
+        case network::AutonomyStatusMessage::Status::IDLE:
+            status_text = "idle";
+            break;
+        case network::AutonomyStatusMessage::Status::NAVIGATING:
+            status_text = "navigating";
+            break;
+        case network::AutonomyStatusMessage::Status::DONE:
+            status_text = "done";
+            break;
+    }
+
+    sprintf(text_buffer, "Status: %s", status_text);
+    gui::draw_text(font, text_buffer, x, y, 20);
+
+    y += 20 + 10;
+
+    if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
+        int target_width = text_width(font, "Target:", 20);
+        int lat_width = text_width(font, autonomy_info.edit_lat.c_str(), 20);
+        int comma_width = text_width(font, ",", 20);
+        int lon_width = text_width(font, autonomy_info.edit_lon.c_str(), 20);
+
+        gui::draw_text(font, "Target:", x, y, 20);
+        
+        if (autonomy_info.edit_idx == 0) {
+            glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+            gui::fill_rectangle(x + target_width + 10, y, lat_width, 20);
+        }
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        gui::draw_text(font, autonomy_info.edit_lat.c_str(), x + target_width + 10, y, 20);
+
+        gui::draw_text(font, ",", x + target_width + 10 + lat_width + 10, y, 20);
+
+        if (autonomy_info.edit_idx == 1) {
+            glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+            gui::fill_rectangle(x + target_width + 10 + lat_width + 10 + comma_width + 10, y, lon_width, 20);
+        }
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        gui::draw_text(font, autonomy_info.edit_lon.c_str(), x + target_width + 10 + lat_width + 10 + comma_width + 10, y, 20);
+    } else {
+        if (autonomy_info.has_target) {
+            sprintf(text_buffer, "Target: %.4f, %.4f", autonomy_info.target_lat, autonomy_info.target_lon);
+        } else {
+            sprintf(text_buffer, "No target");
+        }
+        gui::draw_text(font, text_buffer, x, y, 20);
+    }
+
+    y += 20 + 10;
+}
+
+void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed) {
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
+    waypoint_map::do_waypoint_map(&layout,572,572);
+    
+    layout.reset_x();
+    layout.advance_y(10);
+
+    // Draw the log.
+    log_view::do_log(&layout, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT, font);
+
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed.
+    do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, camera_feeds[primary_feed].gl_texture_id);
+
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+
+    // Draw the other camera feed.
+    layout.reset_y();
+    do_textured_rect(
+        &layout,
+        SECONDARY_FEED_WIDTH,
+        SECONDARY_FEED_HEIGHT,
+        camera_feeds[secondary_feed].gl_texture_id);
+
+    layout.reset_y();
+    layout.advance_x(10);
+
+    // Draw the lidar.
+    do_lidar(&layout, lidar_points);
+
+    layout.reset_y();
+    layout.advance_x(10);
+
+    // Draw the info panel.
+    do_info_panel(&layout, font, r_feed, mode,  controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch);
+
+    int help_text_width = text_width(font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    // Draw the debug overlay.
+    layout = {};
+    debug_console::do_debug(&layout, font);
+
+    // Draw the camera matrix.
+    // Note: this currently needs to be called last here in order for the camera movement
+    // effects to work properly!
+    do_camera_matrix(font, camera_feeds);
+
+    do_autonomy_control(font, autonomy_info);
 }
 } // namespace gui
