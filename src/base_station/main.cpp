@@ -11,6 +11,7 @@
 #include "waypoint_map.hpp"
 #include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
 #include "constant_vars.hpp"
+#include "session.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -31,22 +32,29 @@
 #include <unistd.h>
 
 
+Session bs_session;
+
+/*
+
 network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
 
 gui::autonomy_info_struct autonomy_info;
 
+
 // Network feeds.cd 
 network::Feed r_feed, bs_feed;
 
+
 // TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
 gui::Font global_font;
+
 
 unsigned int map_texture_id;
 unsigned int stopwatch_texture_id;
 
 float last_rover_tick = 0;
 
-//Decalres stopwatch
+//Declares stopwatch
 gui::StopwatchStruct stopwatch;
 
 //Network stats
@@ -72,7 +80,7 @@ int feed_to_move = -1;
 controller::ControllerMode controller_mode = controller::ControllerMode::DRIVE;
 
 std::vector<uint16_t> lidar_points;
-
+*/
 
 
 void command_callback(std::string command) {
@@ -83,9 +91,9 @@ void command_callback(std::string command) {
     }
 
     if (parts[0] == "move") {
-        gui::debug_console::move(parts, last_movement_message);
+        gui::debug_console::move(parts, bs_session.last_movement_message);
     } else if (parts[0] == "mode") {
-        gui::debug_console::mode(parts, bs_feed);
+        gui::debug_console::mode(parts, bs_session.bs_feed);
     }
 }
 
@@ -128,7 +136,7 @@ void log_view_handler(logger::Level level, std::string message) {
 
     std::string full_string = std::string(time_string_buffer) + message;
 
-    gui::log_view::print(&global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
+    gui::log_view::print(&bs_session.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
 }
 
 struct Config {
@@ -230,8 +238,8 @@ static void handle_drive_controller_event(controller::Event event) {
             int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
             // logger::log(logger::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
 
-            last_movement_message.left = smoothed;
-            if (!forward) last_movement_message.left *= -1;
+            bs_session.last_movement_message.left = smoothed;
+            if (!forward) bs_session.last_movement_message.left *= -1;
         } else if (event.axis == controller::Axis::JS_RIGHT_Y) {
             if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
                 controller::get_value(controller::Axis::DPAD_Y) != 0) {
@@ -242,31 +250,31 @@ static void handle_drive_controller_event(controller::Event event) {
             int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
             // logger::log(logger::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
 
-            last_movement_message.right = smoothed;
-            if (!forward) last_movement_message.right *= -1;
+            bs_session.last_movement_message.right = smoothed;
+            if (!forward) bs_session.last_movement_message.right *= -1;
         } else if (event.axis == controller::Axis::DPAD_Y) {
             int16_t val = -event.value;
 
             if (val > 0) {
-                last_movement_message.left = JOINT_DRIVE_SPEED;
-                last_movement_message.right = JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.left = JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.right = JOINT_DRIVE_SPEED;
             } else if (val < 0) {
-                last_movement_message.left = -JOINT_DRIVE_SPEED;
-                last_movement_message.right = -JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.left = -JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.right = -JOINT_DRIVE_SPEED;
             } else {
-                last_movement_message.left = 0;
-                last_movement_message.right = 0;
+                bs_session.last_movement_message.left = 0;
+                bs_session.last_movement_message.right = 0;
             }
         } else if (event.axis == controller::Axis::DPAD_X) {
             if (event.value > 0) {
-                last_movement_message.left = JOINT_DRIVE_SPEED;
-                last_movement_message.right = -JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.left = JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.right = -JOINT_DRIVE_SPEED;
             } else if (event.value < 0) {
-                last_movement_message.left = -JOINT_DRIVE_SPEED;
-                last_movement_message.right = JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.left = -JOINT_DRIVE_SPEED;
+                bs_session.last_movement_message.right = JOINT_DRIVE_SPEED;
             } else {
-                last_movement_message.left = 0;
-                last_movement_message.right = 0;
+                bs_session.last_movement_message.left = 0;
+                bs_session.last_movement_message.right = 0;
             }
         }
     } 
@@ -308,7 +316,7 @@ static void handle_arm_controller_event(controller::Event event) {
 
         if (event.value == 0) state = network::ArmMessage::State::STOP;
 
-        last_arm_message.set_state(motor, state);
+        bs_session.last_arm_message.set_state(motor, state);
     } else if (event.type == controller::EventType::AXIS) {
         network::ArmMessage::Motor motor;
         network::ArmMessage::State state;
@@ -352,7 +360,7 @@ static void handle_arm_controller_event(controller::Event event) {
 
         if (event.value == 0) state = network::ArmMessage::State::STOP;
 
-        last_arm_message.set_state(motor, state);
+        bs_session.last_arm_message.set_state(motor, state);
     }
 
     /*
@@ -388,7 +396,7 @@ void send_feed(uint8_t stream_indx) {
 
 void send_all_feeds() {
     for(uint8_t i = 0; i < 9; i++) {
-        if(i != primary_feed && i != secondary_feed) {
+        if(i != bs_session.primary_feed && i != bs_session.secondary_feed) {
             send_feed(i);
         }
     }
@@ -409,7 +417,7 @@ void dont_send_feed(uint8_t stream_indx) {
 
 void dont_send_invalid() {
     for(uint8_t i = 0; i < 9; i++) {
-        if(i != primary_feed && i != secondary_feed) {
+        if(i != bs_session.primary_feed && i != bs_session.secondary_feed) {
             dont_send_feed(i);
         }
     }
@@ -433,21 +441,21 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 gui::state.input_state = gui::InputState::CAMERA_MATRIX;
                 send_all_feeds();
             } else {
-                int temp = primary_feed;
-                primary_feed = secondary_feed;
-                secondary_feed = temp;
+                int temp = bs_session.primary_feed;
+                bs_session.primary_feed = bs_session.secondary_feed;
+                bs_session.secondary_feed = temp;
             }
         } else if (z_on && action == GLFW_RELEASE && key == GLFW_KEY_G){
             gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
-            switch (controller_mode) {
+            switch (bs_session.controller_mode) {
                 case controller::ControllerMode::DRIVE:
-                    controller_mode = controller::ControllerMode::ARM;
+                    bs_session.controller_mode = controller::ControllerMode::ARM;
                     break;
                 case controller::ControllerMode::ARM:
-                    controller_mode = controller::ControllerMode::DRIVE;
+                    bs_session.controller_mode = controller::ControllerMode::DRIVE;
                     break;
             }
         }
@@ -497,7 +505,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             }
 
             if (selected_feed_idx >= 0 && selected_feed_idx < MAX_FEEDS) {
-                feed_to_move = selected_feed_idx;
+                bs_session.feed_to_move = selected_feed_idx;
                 gui::state.input_state = gui::InputState::CAMERA_MOVE_TARGET;
             }
         }
@@ -507,21 +515,21 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         } else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
             // If the new feed wasn't being displayed,
             // lets start displaying it
-            if (feed_to_move != secondary_feed) {
-                send_feed(feed_to_move);
+            if (bs_session.feed_to_move != bs_session.secondary_feed) {
+                send_feed(bs_session.feed_to_move);
             }
 
-            primary_feed = feed_to_move;
+            bs_session.primary_feed = bs_session.feed_to_move;
             dont_send_invalid();
             gui::state.input_state = gui::InputState::KEY_COMMAND;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
             // If the new feed isn't the same as it was,
             // lets start displaying it
-            if (feed_to_move != primary_feed) {
-                send_feed(feed_to_move);
+            if (bs_session.feed_to_move != bs_session.primary_feed) {
+                send_feed(bs_session.feed_to_move);
             }
 
-            secondary_feed = feed_to_move;
+            bs_session.secondary_feed = bs_session.feed_to_move;
             dont_send_invalid();
             gui::state.input_state = gui::InputState::KEY_COMMAND;
         }
@@ -535,12 +543,12 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
-            autonomy_info.edit_idx = (autonomy_info.edit_idx + 1) % 2;
+            bs_session.autonomy_info.edit_idx = (bs_session.autonomy_info.edit_idx + 1) % 2;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
             // Set has_target to true, save the target, and send the command.
         } else if (action == GLFW_PRESS) {
-            std::string& edit_str = autonomy_info.edit_idx == 0 ?
-                autonomy_info.edit_lat : autonomy_info.edit_lon;
+            std::string& edit_str = bs_session.autonomy_info.edit_idx == 0 ?
+                bs_session.autonomy_info.edit_lat : bs_session.autonomy_info.edit_lon;
 
             switch (key) {
                 case GLFW_KEY_0:
@@ -588,9 +596,9 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 }
 
 
-
 int main() {
-    util::Clock::init(&global_clock);
+
+    util::Clock::init(&bs_session.global_clock);
 
     logger::register_handler(stderr_handler);
 
@@ -600,9 +608,9 @@ int main() {
     Config config = load_config("res/bs.sconfig");
 
     // Clear the stopwatch.
-    stopwatch.state = gui::StopwatchState::STOPPED;
-    stopwatch.start_time = 0;
-    stopwatch.pause_time = 0;
+    bs_session.stopwatch.state = gui::StopwatchState::STOPPED;
+    bs_session.stopwatch.start_time = 0;
+    bs_session.stopwatch.pause_time = 0;
 
     // Init GLFW.
     if (!glfwInit()) {
@@ -664,8 +672,8 @@ int main() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Initial setup for GUI here so that network errors are printed to log view.
-    map_texture_id = gui::load_texture("res/binghamton.jpg");
-    stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
+    bs_session.map_texture_id = gui::load_texture("res/binghamton.jpg");
+    bs_session.stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
     // Load this down here so that sizing is correct.
     gui::Font font;
@@ -675,7 +683,7 @@ int main() {
         return 1;
     }
     // TODO: Fix this hack (for the log view handler) and clean up globals in general.
-    global_font = font;
+    bs_session.global_font = font;
 
     // TODO: Make everything just use the global font.
     gui::state.font = font;
@@ -690,24 +698,24 @@ int main() {
         static char init_feed_name_buffer[camera_feed::FEED_NAME_MAX_LEN + 1];
         snprintf(init_feed_name_buffer, sizeof(init_feed_name_buffer), "UNKNOWN-%d", i);
 
-        camera_feed::init_feed(camera_feeds + i, init_feed_name_buffer, 1280, 720);
+        camera_feed::init_feed(bs_session.camera_feeds + i, init_feed_name_buffer, 1280, 720);
     }
 
     // Initialize network functionality.
     {
         auto err = network::init(
-            &bs_feed,
+            &bs_session.bs_feed,
             network::FeedType::OUT,
             config.interface,
             config.base_station_multicast_group,
             config.base_station_port,
-            &global_clock);
+            &bs_session.global_clock);
 
         if (err != network::Error::OK) {
             logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
         }
-        shared_feeds::bs_feed = &bs_feed;
+        shared_feeds::bs_feed = &bs_session.bs_feed;
         logger::log(
             logger::INFO,
             "Network: publishing base station feed on %s:%d",
@@ -717,12 +725,12 @@ int main() {
 
     {
         auto err = network::init(
-            &r_feed,
+            &bs_session.r_feed,
             network::FeedType::IN,
             config.interface,
             config.rover_multicast_group,
             config.rover_port,
-            &global_clock);
+            &bs_session.global_clock);
 
         if (err != network::Error::OK) {
             logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
@@ -740,14 +748,14 @@ int main() {
     
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
-    util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &global_clock);
+    util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &bs_session.global_clock);
 
     util::Timer arm_send_timer;
-    util::Timer::init(&arm_send_timer, ARM_SEND_INTERVAL, &global_clock);
+    util::Timer::init(&arm_send_timer, ARM_SEND_INTERVAL, &bs_session.global_clock);
 
     // Grab network stats every second.
     util::Timer network_stats_timer;
-    util::Timer::init(&network_stats_timer, NETWORK_STATS_INTERVAL, &global_clock);
+    util::Timer::init(&network_stats_timer, NETWORK_STATS_INTERVAL, &bs_session.global_clock);
 
     // Init the controller.
     // TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
@@ -822,31 +830,31 @@ int main() {
 
         if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
             if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-                switch (stopwatch.state) {
+                switch (bs_session.stopwatch.state) {
                     case gui::StopwatchState::RUNNING:
-                        stopwatch.state = gui::StopwatchState::PAUSED;
-                        stopwatch.pause_time = global_clock.get_millis();
+                        bs_session.stopwatch.state = gui::StopwatchState::PAUSED;
+                        bs_session.stopwatch.pause_time = bs_session.global_clock.get_millis();
                         break;
                     case gui::StopwatchState::PAUSED:
-                        stopwatch.state = gui::StopwatchState::RUNNING;
-                        stopwatch.start_time =
-                            global_clock.get_millis() - (stopwatch.pause_time - stopwatch.start_time);
+                        bs_session.stopwatch.state = gui::StopwatchState::RUNNING;
+                        bs_session.stopwatch.start_time =
+                            bs_session.global_clock.get_millis() - (bs_session.stopwatch.pause_time - bs_session.stopwatch.start_time);
                         break;
                     case gui::StopwatchState::STOPPED:
-                        stopwatch.state = gui::StopwatchState::RUNNING;
-                        stopwatch.start_time = global_clock.get_millis();
+                        bs_session.stopwatch.state = gui::StopwatchState::RUNNING;
+                        bs_session.stopwatch.start_time = bs_session.global_clock.get_millis();
                         break;
                 }
 
                 stopwatch_menu_up = false;
                 gui::state.input_state = gui::InputState::KEY_COMMAND;
             } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-                switch (stopwatch.state) {
+                switch (bs_session.stopwatch.state) {
                     case gui::StopwatchState::RUNNING:
-                        stopwatch.start_time = global_clock.get_millis();
+                        bs_session.stopwatch.start_time = bs_session.global_clock.get_millis();
                         break;
                     case gui::StopwatchState::PAUSED:
-                        stopwatch.state = gui::StopwatchState::STOPPED;
+                        bs_session.stopwatch.state = gui::StopwatchState::STOPPED;
                         break;
                     case gui::StopwatchState::STOPPED:
                         break;
@@ -860,7 +868,7 @@ int main() {
         // Handle incoming network messages from the rover feed.
         network::IncomingMessage message;
         while (true) {
-            auto neterr = network::receive(&r_feed, &message);
+            auto neterr = network::receive(&bs_session.r_feed, &message);
             if (neterr != network::Error::OK) {
                 if (neterr == network::Error::NOMORE) {
                     break;
@@ -884,7 +892,7 @@ int main() {
                     network::deserialize(&message.buffer, &camera_message);
 
                     auto camerr = camera_feed::handle_section(
-                        camera_feeds + camera_message.stream_index,
+                        bs_session.camera_feeds + camera_message.stream_index,
                         camera_message.data,
                         camera_message.size,
                         camera_message.section_index,
@@ -898,13 +906,13 @@ int main() {
                     break;
                 }
                 case network::MessageType::LIDAR: {
-                    lidar_points.clear();
+                    bs_session.lidar_points.clear();
 
                     network::LidarMessage lidar_message;
                     network::deserialize(&message.buffer, &lidar_message);
 
                     for (int i = 0; i < network::LidarMessage::NUM_LIDAR_POINTS; i++) {
-                        lidar_points.push_back(lidar_message.points[i]);
+                        bs_session.lidar_points.push_back(lidar_message.points[i]);
                     }
 
                     break;
@@ -913,7 +921,7 @@ int main() {
                     network::TickMessage tick_message;
                     network::deserialize(&message.buffer, &tick_message);
 
-                    last_rover_tick = tick_message.ticks_per_second;
+                    bs_session.last_rover_tick = tick_message.ticks_per_second;
                     break;
                 }
                 case network::MessageType::LOCATION: {
@@ -929,7 +937,7 @@ int main() {
                 case network::MessageType::MODE: {
                     network::ModeMessage mode_message;
                     network::deserialize(&message.buffer, &mode_message);
-                    mode = mode_message.mode;
+                    bs_session.mode = mode_message.mode;
                     break;
                 }
                 default:
@@ -938,16 +946,16 @@ int main() {
         }
 
         // Update network stuff.
-        network::update_status(&r_feed);
-        network::update_status(&bs_feed);
+        network::update_status(&bs_session.r_feed);
+        network::update_status(&bs_session.bs_feed);
 
         if (network_stats_timer.ready()) {
-            r_tp = (float) r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
-            bs_tp = (float) bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
-            t_tp = r_tp + bs_tp;
+            bs_session.r_tp = (float) bs_session.r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            bs_session.bs_tp = (float) bs_session.bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            bs_session.t_tp = bs_session.r_tp + bs_session.bs_tp;
 
-            r_feed.bytes_transferred = 0;
-            bs_feed.bytes_transferred = 0;
+            bs_session.r_feed.bytes_transferred = 0;
+            bs_session.bs_feed.bytes_transferred = 0;
         }
 
         if (controller_loaded) {
@@ -958,22 +966,22 @@ int main() {
             while ((err = controller::poll(&event)) == controller::Error::OK) {
                 if (event.type == controller::EventType::BUTTON) {
                     if (event.button == controller::Button::BACK && event.value != 0) {
-                        int temp = primary_feed;
-                        primary_feed = secondary_feed;
-                        secondary_feed = temp;
+                        int temp = bs_session.primary_feed;
+                        bs_session.primary_feed = bs_session.secondary_feed;
+                        bs_session.secondary_feed = temp;
                     } else if (event.button == controller::Button::XBOX && event.value != 0) {
-                        switch (controller_mode) {
+                        switch (bs_session.controller_mode) {
                             case controller::ControllerMode::DRIVE:
-                                controller_mode = controller::ControllerMode::ARM;
+                                bs_session.controller_mode = controller::ControllerMode::ARM;
                                 break;
                             case controller::ControllerMode::ARM:
-                                controller_mode = controller::ControllerMode::DRIVE;
+                                bs_session.controller_mode = controller::ControllerMode::DRIVE;
                                 break;
                         }
                     }
                 }
 
-                switch (controller_mode) {
+                switch (bs_session.controller_mode) {
                     case controller::ControllerMode::DRIVE:
                         handle_drive_controller_event(event);
                         break;
@@ -992,20 +1000,21 @@ int main() {
         if (movement_send_timer.ready()) {
             // printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
-            network::publish(&bs_feed, &last_movement_message);
+            network::publish(&bs_session.bs_feed, &bs_session.last_movement_message);
         }
 
         if (arm_send_timer.ready()) {
-            network::publish(&bs_feed, &last_arm_message);
+            network::publish(&bs_session.bs_feed, &bs_session.last_arm_message);
         }
 
         // Update and draw GUI.
-        gui::do_gui(&font, r_feed, mode, controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch, &lidar_points, autonomy_info, camera_feeds, primary_feed, secondary_feed);
+        gui::do_gui(&font, bs_session.r_feed, bs_session.mode, bs_session.controller_mode, bs_session.last_rover_tick, bs_session.stopwatch_texture_id, bs_session.global_clock, bs_session.r_tp,
+         bs_session.bs_tp, bs_session.t_tp, bs_session.stopwatch, &bs_session.lidar_points, bs_session.autonomy_info, bs_session.camera_feeds, bs_session.primary_feed, bs_session.secondary_feed);
 
         if (help_menu_up) do_help_menu(&font, commands, debug_commands);
 
         if (stopwatch_menu_up) {
-            gui::do_stopwatch_menu(&font, stopwatch, stopwatch_texture_id, global_clock);
+            gui::do_stopwatch_menu(&font, bs_session.stopwatch, bs_session.stopwatch_texture_id, bs_session.global_clock);
         }
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
