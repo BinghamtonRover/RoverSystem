@@ -11,6 +11,7 @@
 #include "waypoint_map.hpp"
 #include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
 #include "constant_vars.hpp"
+#include "session.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -31,15 +32,22 @@
 #include <unistd.h>
 
 
+Session bs_session;
+
+/*
+
 network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
 
 gui::autonomy_info_struct autonomy_info;
 
+
 // Network feeds.cd 
 network::Feed r_feed, bs_feed;
 
+
 // TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
 gui::Font global_font;
+*/
 
 unsigned int map_texture_id;
 unsigned int stopwatch_texture_id;
@@ -85,7 +93,7 @@ void command_callback(std::string command) {
     if (parts[0] == "move") {
         gui::debug_console::move(parts, last_movement_message);
     } else if (parts[0] == "mode") {
-        gui::debug_console::mode(parts, bs_feed);
+        gui::debug_console::mode(parts, bs_session.bs_feed);
     }
 }
 
@@ -128,7 +136,7 @@ void log_view_handler(logger::Level level, std::string message) {
 
     std::string full_string = std::string(time_string_buffer) + message;
 
-    gui::log_view::print(&global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
+    gui::log_view::print(&bs_session.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
 }
 
 struct Config {
@@ -535,12 +543,12 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
-            autonomy_info.edit_idx = (autonomy_info.edit_idx + 1) % 2;
+            bs_session.autonomy_info.edit_idx = (bs_session.autonomy_info.edit_idx + 1) % 2;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
             // Set has_target to true, save the target, and send the command.
         } else if (action == GLFW_PRESS) {
-            std::string& edit_str = autonomy_info.edit_idx == 0 ?
-                autonomy_info.edit_lat : autonomy_info.edit_lon;
+            std::string& edit_str = bs_session.autonomy_info.edit_idx == 0 ?
+                bs_session.autonomy_info.edit_lat : bs_session.autonomy_info.edit_lon;
 
             switch (key) {
                 case GLFW_KEY_0:
@@ -588,8 +596,8 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 }
 
 
-
 int main() {
+
     util::Clock::init(&global_clock);
 
     logger::register_handler(stderr_handler);
@@ -675,7 +683,7 @@ int main() {
         return 1;
     }
     // TODO: Fix this hack (for the log view handler) and clean up globals in general.
-    global_font = font;
+    bs_session.global_font = font;
 
     // TODO: Make everything just use the global font.
     gui::state.font = font;
@@ -696,7 +704,7 @@ int main() {
     // Initialize network functionality.
     {
         auto err = network::init(
-            &bs_feed,
+            &bs_session.bs_feed,
             network::FeedType::OUT,
             config.interface,
             config.base_station_multicast_group,
@@ -707,7 +715,7 @@ int main() {
             logger::log(logger::ERROR, "Failed to init base station feed: %s", network::get_error_string(err));
             return 1;
         }
-        shared_feeds::bs_feed = &bs_feed;
+        shared_feeds::bs_feed = &bs_session.bs_feed;
         logger::log(
             logger::INFO,
             "Network: publishing base station feed on %s:%d",
@@ -717,7 +725,7 @@ int main() {
 
     {
         auto err = network::init(
-            &r_feed,
+            &bs_session.r_feed,
             network::FeedType::IN,
             config.interface,
             config.rover_multicast_group,
@@ -860,7 +868,7 @@ int main() {
         // Handle incoming network messages from the rover feed.
         network::IncomingMessage message;
         while (true) {
-            auto neterr = network::receive(&r_feed, &message);
+            auto neterr = network::receive(&bs_session.r_feed, &message);
             if (neterr != network::Error::OK) {
                 if (neterr == network::Error::NOMORE) {
                     break;
@@ -929,7 +937,7 @@ int main() {
                 case network::MessageType::MODE: {
                     network::ModeMessage mode_message;
                     network::deserialize(&message.buffer, &mode_message);
-                    mode = mode_message.mode;
+                    bs_session.mode = mode_message.mode;
                     break;
                 }
                 default:
@@ -938,16 +946,16 @@ int main() {
         }
 
         // Update network stuff.
-        network::update_status(&r_feed);
-        network::update_status(&bs_feed);
+        network::update_status(&bs_session.r_feed);
+        network::update_status(&bs_session.bs_feed);
 
         if (network_stats_timer.ready()) {
-            r_tp = (float) r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
-            bs_tp = (float) bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            r_tp = (float) bs_session.r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            bs_tp = (float) bs_session.bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
             t_tp = r_tp + bs_tp;
 
-            r_feed.bytes_transferred = 0;
-            bs_feed.bytes_transferred = 0;
+            bs_session.r_feed.bytes_transferred = 0;
+            bs_session.bs_feed.bytes_transferred = 0;
         }
 
         if (controller_loaded) {
@@ -992,15 +1000,15 @@ int main() {
         if (movement_send_timer.ready()) {
             // printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
 
-            network::publish(&bs_feed, &last_movement_message);
+            network::publish(&bs_session.bs_feed, &last_movement_message);
         }
 
         if (arm_send_timer.ready()) {
-            network::publish(&bs_feed, &last_arm_message);
+            network::publish(&bs_session.bs_feed, &last_arm_message);
         }
 
         // Update and draw GUI.
-        gui::do_gui(&font, r_feed, mode, controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch, &lidar_points, autonomy_info, camera_feeds, primary_feed, secondary_feed);
+        gui::do_gui(&font, bs_session.r_feed, bs_session.mode, controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch, &lidar_points, bs_session.autonomy_info, camera_feeds, primary_feed, secondary_feed);
 
         if (help_menu_up) do_help_menu(&font, commands, debug_commands);
 
