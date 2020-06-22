@@ -837,7 +837,7 @@ void do_camera_move_target(Font* font) {
     draw_text(font, secondary_text, stx, sty, SECONDARY_TEXT_SIZE);
 }
 
-void do_camera_matrix(gui::Font* font, camera_feed::Feed camera_feeds[]) {
+void do_camera_matrix(Font* font, camera_feed::Feed camera_feeds[]) {
     switch (state.input_state) {
         case InputState::CAMERA_MATRIX:
         case InputState::CAMERA_MOVE:
@@ -936,7 +936,7 @@ void do_camera_matrix(gui::Font* font, camera_feed::Feed camera_feeds[]) {
     }
 }
 
-void do_autonomy_control(gui::Font* font, autonomy_info_struct autonomy_info) {
+void do_autonomy_control(Font* font, autonomy_info_struct autonomy_info) {
     if (gui::state.input_state != gui::InputState::AUTONOMY_CONTROL
         && gui::state.input_state != gui::InputState::AUTONOMY_EDIT_TARGET) return;
 

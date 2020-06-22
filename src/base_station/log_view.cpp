@@ -35,7 +35,7 @@ static void removeOldMessages() {
     }
 }
 
-void print(gui::Font* font, int width, std::string m, float r, float g, float b, float a) {
+void print(Font* font, int width, std::string m, float r, float g, float b, float a) {
     while (m.length() > 0) {
         int idx = gui::text_last_index_that_can_fit(font, m.c_str(), width, FONT_SIZE);
 
@@ -81,7 +81,7 @@ void moveBottom() {
     }
 }
 
-void do_log(gui::Layout* layout, int width, int height, gui::Font* font) {
+void do_log(gui::Layout* layout, int width, int height, Font* font) {
     int x = layout->current_x;
     int y = layout->current_y;
 

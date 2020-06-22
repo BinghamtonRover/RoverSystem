@@ -47,7 +47,7 @@ void set_callback(CommandCallback callback) {
     console.callback = callback;
 }
 
-void do_debug(gui::Layout* layout, gui::Font* font) {
+void do_debug(gui::Layout* layout, Font* font) {
     if (!gui::state.show_debug_console) {
         return;
     }

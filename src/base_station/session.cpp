@@ -1,5 +1,7 @@
 #include "session.hpp"
 
+
+
 //Create Session instance and initialize variables
 Session::Session(){
     mode = network::ModeMessage::Mode::MANUAL;
@@ -9,6 +11,8 @@ Session::Session(){
     r_tp = 0;
     bs_tp = 0;
     t_tp = 0;
+
+    
 
     last_movement_message = { 0, 0 };
 

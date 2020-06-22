@@ -8,6 +8,7 @@
 #include "../network/network.hpp"
 #include <vector>
 #include "controller.hpp"
+#include "session.hpp"
 #include "camera_feed.hpp"
 
 namespace gui {
@@ -16,16 +17,7 @@ const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
 
-struct Font {
-    // Information that keeps track of each character that we want to be able to draw.
-    stbtt_bakedchar baked_chars[95];
 
-    // The font is one big texture!
-    unsigned int texture_id;
-
-    // Maximum height of ASCII characters at the loaded size.
-    int max_height;
-};
 
 enum class InputState {
     KEY_COMMAND,
@@ -113,21 +105,6 @@ struct Layout {
     }
 };
 
-enum class StopwatchState { STOPPED, PAUSED, RUNNING };
-
-struct StopwatchStruct {
-    StopwatchState state;
-    unsigned int start_time;
-    unsigned int pause_time;
-};
-
-struct autonomy_info_struct {
-    network::AutonomyStatusMessage::Status status = network::AutonomyStatusMessage::Status::IDLE;
-    bool has_target = false;
-    float target_lat = 0, target_lon = 0;
-    int edit_idx = 0;
-    std::string edit_lat, edit_lon;
-};
 
 // Renders a solid rectangle at the position determined by the given layout,
 // filled with the given color.
@@ -178,10 +155,10 @@ void do_lidar(Layout* layout, std::vector<uint16_t>* lidar_points);
 void do_camera_move_target(Font* font);
 
 //Deals with camera matrix
-void do_camera_matrix(gui::Font* font, camera_feed::Feed camera_feeds[]);
+void do_camera_matrix(Font* font, camera_feed::Feed camera_feeds[]);
 
 //Displays info during autonomous navigation
-void do_autonomy_control(gui::Font* font, autonomy_info_struct autonomy_info);
+void do_autonomy_control(Font* font, autonomy_info_struct autonomy_info);
 
 //Draws the GUI in full
 void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed);
