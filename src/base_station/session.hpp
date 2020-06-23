@@ -2,9 +2,13 @@
 #define SESSION
 
 #include "../network/network.hpp"
-#include "gui.hpp"
 #include "constant_vars.hpp"
 #include "camera_feed.hpp"
+#include <string>
+#include "stb_truetype.h"
+#include "controller.hpp"
+#include <vector>
+
 
 struct autonomy_info_struct {
     network::AutonomyStatusMessage::Status status = network::AutonomyStatusMessage::Status::IDLE;

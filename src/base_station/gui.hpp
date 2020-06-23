@@ -1,13 +1,11 @@
 #ifndef GUI_HPP
 #define GUI_HPP
 
-#include "stb_truetype.h"
 #include <string>
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 #include "../network/network.hpp"
 #include <vector>
-#include "controller.hpp"
 #include "session.hpp"
 #include "camera_feed.hpp"
 
