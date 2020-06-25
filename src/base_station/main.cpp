@@ -12,7 +12,6 @@
 #include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
 #include "constant_vars.hpp"
 #include "session.hpp"
-//#include "Test.hpp"
 
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -32,58 +31,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
+//Declaring base station session object
 Session bs_session;
-//Test var;
-
-/*
-
-network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
-
-gui::autonomy_info_struct autonomy_info;
-
-
-// Network feeds.cd 
-network::Feed r_feed, bs_feed;
-
-
-// TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
-gui::Font global_font;
-
-
-unsigned int map_texture_id;
-unsigned int stopwatch_texture_id;
-
-float last_rover_tick = 0;
-
-//Declares stopwatch
-gui::StopwatchStruct stopwatch;
-
-//Network stats
-float r_tp = 0;
-float bs_tp = 0;
-float t_tp = 0;
-
-// Clock!
-util::Clock global_clock;
-
-network::MovementMessage last_movement_message = { 0, 0 };
-
-network::ArmMessage last_arm_message;
-
-// Camera stuff.
-// These get initialized off-the-bat.
-camera_feed::Feed camera_feeds[MAX_FEEDS];
-int primary_feed = 0;
-int secondary_feed = 1;
-// We only care about this value when we are in camera move mode.
-int feed_to_move = -1;
-
-controller::ControllerMode controller_mode = controller::ControllerMode::DRIVE;
-
-std::vector<uint16_t> lidar_points;
-*/
-
 
 void command_callback(std::string command) {
     auto parts = gui::debug_console::split_by_spaces(command);

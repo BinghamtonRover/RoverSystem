@@ -9,15 +9,6 @@
 #include "controller.hpp"
 #include <vector>
 
-/*
-struct autonomy_info_struct {
-    network::AutonomyStatusMessage::Status status = network::AutonomyStatusMessage::Status::IDLE;
-    bool has_target = false;
-    float target_lat = 0, target_lon = 0;
-    int edit_idx = 0;
-    std::string edit_lat, edit_lon;
-};
-*/
 struct autonomy_info_struct {
     network::AutonomyStatusMessage::Status status;
     bool has_target;
