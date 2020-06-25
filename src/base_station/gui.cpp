@@ -1017,7 +1017,8 @@ void do_autonomy_control(Font* font, autonomy_info_struct autonomy_info) {
     y += 20 + 10;
 }
 
-void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
+//void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
+void do_gui(network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1036,7 +1037,7 @@ void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, c
     layout.advance_y(10);
 
     // Draw the log.
-    log_view::do_log(&layout, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT, font);
+    log_view::do_log(&layout, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT, &bs_session->global_font);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -1067,21 +1068,21 @@ void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, c
     layout.advance_x(10);
 
     // Draw the info panel.
-    do_info_panel(&layout, font, r_feed, mode,  controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch);
+    do_info_panel(&layout, &bs_session->global_font, r_feed, mode,  controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch);
 
-    int help_text_width = text_width(font, "Press 'h' for help", 15);
+    int help_text_width = text_width(&bs_session->global_font, "Press 'h' for help", 15);
     glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
-    draw_text(font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+    draw_text(&bs_session->global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
 
     // Draw the debug overlay.
     layout = {};
-    debug_console::do_debug(&layout, font);
+    debug_console::do_debug(&layout, &bs_session->global_font);
 
     // Draw the camera matrix.
     // Note: this currently needs to be called last here in order for the camera movement
     // effects to work properly!
-    do_camera_matrix(font, camera_feeds);
+    do_camera_matrix(&bs_session->global_font, camera_feeds);
 
-    do_autonomy_control(font, autonomy_info);
+    do_autonomy_control(&bs_session->global_font, autonomy_info);
 }
 } // namespace gui
