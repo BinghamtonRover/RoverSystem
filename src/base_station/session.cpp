@@ -12,6 +12,13 @@ Session::Session(){
     this->bs_tp = 0;
     this->t_tp = 0;
 
+    //Initializing autonomy_info struct variables, edit_lat and edit_lon remain uninitialized
+    this->autonomy_info.status = network::AutonomyStatusMessage::Status::IDLE;
+    this->autonomy_info.has_target = false;
+    this->autonomy_info.target_lat = 0;
+    this->autonomy_info.target_lon = 0;
+    this->autonomy_info.edit_idx = 0;
+
     this->last_movement_message = { 0, 0 };
 
     //These get initialized off-the-bat.
@@ -20,7 +27,7 @@ Session::Session(){
     this->secondary_feed = 1;
     this->feed_to_move = -1;
 
-    controller_mode = controller::ControllerMode::DRIVE;
+    this->controller_mode = controller::ControllerMode::DRIVE;
 }
 
 Session::~Session() {};
