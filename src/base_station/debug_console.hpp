@@ -14,7 +14,7 @@ typedef void (*CommandCallback)(std::string command);
 
 void set_callback(CommandCallback callback);
 
-void do_debug(gui::Layout* layout, gui::Font* font);
+void do_debug(gui::Layout* layout, Font* font);
 
 void log(const std::string text, float r, float g, float b);
 

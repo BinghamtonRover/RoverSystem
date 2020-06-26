@@ -9,8 +9,8 @@
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
-#include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
-#include "constant_vars.hpp"
+//TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
+#include "shared_feeds.hpp" 
 #include "session.hpp"
 
 #include <GL/gl.h>
@@ -31,57 +31,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
+//Declaring base station session object
 Session bs_session;
-
-/*
-
-network::ModeMessage::Mode mode = network::ModeMessage::Mode::MANUAL;
-
-gui::autonomy_info_struct autonomy_info;
-
-
-// Network feeds.cd 
-network::Feed r_feed, bs_feed;
-
-
-// TODO: Refactor texture ids and fonts (and etc.) into some GuiResources thingy.
-gui::Font global_font;
-
-
-unsigned int map_texture_id;
-unsigned int stopwatch_texture_id;
-
-float last_rover_tick = 0;
-
-//Declares stopwatch
-gui::StopwatchStruct stopwatch;
-
-//Network stats
-float r_tp = 0;
-float bs_tp = 0;
-float t_tp = 0;
-
-// Clock!
-util::Clock global_clock;
-
-network::MovementMessage last_movement_message = { 0, 0 };
-
-network::ArmMessage last_arm_message;
-
-// Camera stuff.
-// These get initialized off-the-bat.
-camera_feed::Feed camera_feeds[MAX_FEEDS];
-int primary_feed = 0;
-int secondary_feed = 1;
-// We only care about this value when we are in camera move mode.
-int feed_to_move = -1;
-
-controller::ControllerMode controller_mode = controller::ControllerMode::DRIVE;
-
-std::vector<uint16_t> lidar_points;
-*/
-
 
 void command_callback(std::string command) {
     auto parts = gui::debug_console::split_by_spaces(command);
@@ -608,7 +559,7 @@ int main() {
     Config config = load_config("res/bs.sconfig");
 
     // Clear the stopwatch.
-    bs_session.stopwatch.state = gui::StopwatchState::STOPPED;
+    bs_session.stopwatch.state = StopwatchState::STOPPED;
     bs_session.stopwatch.start_time = 0;
     bs_session.stopwatch.pause_time = 0;
 
@@ -676,7 +627,7 @@ int main() {
     bs_session.stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
     // Load this down here so that sizing is correct.
-    gui::Font font;
+    Font font;
     bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
         logger::log(logger::ERROR, "Failed to load font!");
@@ -831,17 +782,17 @@ int main() {
         if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
             if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
                 switch (bs_session.stopwatch.state) {
-                    case gui::StopwatchState::RUNNING:
-                        bs_session.stopwatch.state = gui::StopwatchState::PAUSED;
+                    case StopwatchState::RUNNING:
+                        bs_session.stopwatch.state = StopwatchState::PAUSED;
                         bs_session.stopwatch.pause_time = bs_session.global_clock.get_millis();
                         break;
-                    case gui::StopwatchState::PAUSED:
-                        bs_session.stopwatch.state = gui::StopwatchState::RUNNING;
+                    case StopwatchState::PAUSED:
+                        bs_session.stopwatch.state = StopwatchState::RUNNING;
                         bs_session.stopwatch.start_time =
                             bs_session.global_clock.get_millis() - (bs_session.stopwatch.pause_time - bs_session.stopwatch.start_time);
                         break;
-                    case gui::StopwatchState::STOPPED:
-                        bs_session.stopwatch.state = gui::StopwatchState::RUNNING;
+                    case StopwatchState::STOPPED:
+                        bs_session.stopwatch.state = StopwatchState::RUNNING;
                         bs_session.stopwatch.start_time = bs_session.global_clock.get_millis();
                         break;
                 }
@@ -850,13 +801,13 @@ int main() {
                 gui::state.input_state = gui::InputState::KEY_COMMAND;
             } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
                 switch (bs_session.stopwatch.state) {
-                    case gui::StopwatchState::RUNNING:
+                    case StopwatchState::RUNNING:
                         bs_session.stopwatch.start_time = bs_session.global_clock.get_millis();
                         break;
-                    case gui::StopwatchState::PAUSED:
-                        bs_session.stopwatch.state = gui::StopwatchState::STOPPED;
+                    case StopwatchState::PAUSED:
+                        bs_session.stopwatch.state = StopwatchState::STOPPED;
                         break;
-                    case gui::StopwatchState::STOPPED:
+                    case StopwatchState::STOPPED:
                         break;
                 }
 
@@ -1008,13 +959,12 @@ int main() {
         }
 
         // Update and draw GUI.
-        gui::do_gui(&font, bs_session.r_feed, bs_session.mode, bs_session.controller_mode, bs_session.last_rover_tick, bs_session.stopwatch_texture_id, bs_session.global_clock, bs_session.r_tp,
-         bs_session.bs_tp, bs_session.t_tp, bs_session.stopwatch, &bs_session.lidar_points, bs_session.autonomy_info, bs_session.camera_feeds, bs_session.primary_feed, bs_session.secondary_feed);
+        gui::do_gui(&bs_session);
 
-        if (help_menu_up) do_help_menu(&font, commands, debug_commands);
+        if (help_menu_up) gui::do_help_menu(commands, debug_commands, &bs_session);
 
         if (stopwatch_menu_up) {
-            gui::do_stopwatch_menu(&font, bs_session.stopwatch, bs_session.stopwatch_texture_id, bs_session.global_clock);
+            gui::do_stopwatch_menu(&bs_session);
         }
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1024,6 +974,7 @@ int main() {
     }
 
     // Cleanup.
+    //var.fn();
     glfwTerminate();
 
     return 0;

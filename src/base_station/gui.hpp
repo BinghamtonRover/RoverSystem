@@ -1,31 +1,18 @@
 #ifndef GUI_HPP
 #define GUI_HPP
 
-#include "stb_truetype.h"
 #include <string>
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 #include "../network/network.hpp"
 #include <vector>
-#include "controller.hpp"
+#include "session.hpp"
 #include "camera_feed.hpp"
 
 namespace gui {
 
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
-
-
-struct Font {
-    // Information that keeps track of each character that we want to be able to draw.
-    stbtt_bakedchar baked_chars[95];
-
-    // The font is one big texture!
-    unsigned int texture_id;
-
-    // Maximum height of ASCII characters at the loaded size.
-    int max_height;
-};
 
 enum class InputState {
     KEY_COMMAND,
@@ -113,21 +100,6 @@ struct Layout {
     }
 };
 
-enum class StopwatchState { STOPPED, PAUSED, RUNNING };
-
-struct StopwatchStruct {
-    StopwatchState state;
-    unsigned int start_time;
-    unsigned int pause_time;
-};
-
-struct autonomy_info_struct {
-    network::AutonomyStatusMessage::Status status = network::AutonomyStatusMessage::Status::IDLE;
-    bool has_target = false;
-    float target_lat = 0, target_lon = 0;
-    int edit_idx = 0;
-    std::string edit_lat, edit_lon;
-};
 
 // Renders a solid rectangle at the position determined by the given layout,
 // filled with the given color.
@@ -157,34 +129,34 @@ void fill_rectangle(int x, int y, int w, int h);
 void do_circle(int x, int y, int radius);
 
 //Sets color of stopwatch based on its current state
-void set_stopwatch_icon_color(StopwatchStruct stopwatch);
+void set_stopwatch_icon_color(Session *bs_session);
 
 //Displays the time currently contained in stopwatch
-const char* get_stopwatch_text(util::Clock global_clock, StopwatchStruct stopwatch);
+const char* get_stopwatch_text(Session *bs_session);
 
 //Displays info about rover connection and controller mode
-void do_info_panel(Layout* layout, Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch);
+void do_info_panel(Layout* layout, Session *bs_session);
 
 //Sets up the window to display stopwatch information
-void do_stopwatch_menu(Font* font, StopwatchStruct stopwatch, unsigned int stopwatch_texture_id, util::Clock global_clock);
+void do_stopwatch_menu(Session *bs_session);
 
 //Sets up the help menu window
-void do_help_menu(Font* font, std::vector<const char*> commands, std::vector<const char*> debug_commands);
+void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, Session *bs_session);
 
 //Draws info acquired by the lidar system
-void do_lidar(Layout* layout, std::vector<uint16_t>* lidar_points);
+void do_lidar(Layout* layout, Session *bs_session);
 
 //Deals with moving the camera to different parts of the UI
-void do_camera_move_target(Font* font);
+void do_camera_move_target(Session *bs_session);
 
 //Deals with camera matrix
-void do_camera_matrix(gui::Font* font, camera_feed::Feed camera_feeds[]);
+void do_camera_matrix(Session *bs_session);
 
 //Displays info during autonomous navigation
-void do_autonomy_control(gui::Font* font, autonomy_info_struct autonomy_info);
+void do_autonomy_control(Session *bs_session);
 
 //Draws the GUI in full
-void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed);
+void do_gui(Session *bs_session);
 } // namespace gui
 
 #endif

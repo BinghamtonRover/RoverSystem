@@ -6,6 +6,7 @@
 #include "shared_feeds.hpp" //TODO: Fix this hack, debug_console is referencing main here to use a rover_feed established in main.cpp to publish
 #include "../network/network.hpp"
 #include <GLFW/glfw3.h>
+#include "session.hpp"
 
 #include <string>
 #include <vector>
@@ -47,7 +48,7 @@ void set_callback(CommandCallback callback) {
     console.callback = callback;
 }
 
-void do_debug(gui::Layout* layout, gui::Font* font) {
+void do_debug(gui::Layout* layout, Font* font) {
     if (!gui::state.show_debug_console) {
         return;
     }
