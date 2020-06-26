@@ -46,14 +46,7 @@ public:
     network::ModeMessage::Mode mode;
 
     autonomy_info_struct autonomy_info;
-    //START
-
-
-    //Declares stopwatch
-    
-
-    //END
-
+   
     // Network feeds.cd 
     network::Feed r_feed;
     network::Feed bs_feed;
