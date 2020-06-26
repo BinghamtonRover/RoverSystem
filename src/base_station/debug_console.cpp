@@ -149,14 +149,16 @@ void handle_keypress(int key, int mods) {
         
         if (command == "test") {
             log("This is some red text.", 1, 0, 0);
-        } else if (command == "tdl") {
+        } 
+        else if (command == "tdl") {
             bool mode = logger::toggleDebugMode();
             if(mode) {
                 log("DebugMode turned on", 1, 0, 1);
             } else {
                 log("DebugMode turned off", 1, 0, 1);
             }
-        } else if (command.substr(0, 3) == "aw ") {
+        } 
+        else if (command.substr(0, 3) == "aw ") {
             std::vector<double> wps;
             int space = 0;
             space = command.substr(3).find(" ");
@@ -168,9 +170,11 @@ void handle_keypress(int key, int mods) {
                 waypoint::add_waypoint(lat,lon);
                 log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
             }
-        } else if (command == "aw") {
+        } 
+        else if (command == "aw") {
             log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
-        } else if (command == "lw") {
+        } 
+        else if (command == "lw") {
             log("Waypoints: ", 1, 0, 1);
             auto waypoints = waypoint::get_waypoints();
             for(unsigned int i = 0; i < waypoints.size(); i++) {
@@ -178,11 +182,14 @@ void handle_keypress(int key, int mods) {
                 std::string lonStr = std::to_string(waypoints.at(i).longitude);
                 log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
             }
-        } else if (command == "help") {
+        } 
+        else if (command == "help") {
             log("Press 'h' on the main screen for help.", 1, 1, 1);
-        } else if (command == "") {
+        } 
+        else if (command == "") {
             log("No command entered.", 1, 0, 0);
-        } else if (command == "gs_on") {
+        } 
+        else if (command == "gs_on") {
             if (shared_feeds::bs_feed != NULL){
                 //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                     network::CameraControlMessage message = {
@@ -192,7 +199,8 @@ void handle_keypress(int key, int mods) {
                     };
                     network::publish(shared_feeds::bs_feed, &message);
             }
-        } else if (command == "gs_off"){
+        } 
+        else if (command == "gs_off"){
             if (shared_feeds::bs_feed != NULL){
                 //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                     network::CameraControlMessage message = {
@@ -201,7 +209,8 @@ void handle_keypress(int key, int mods) {
                     };
                     network::publish(shared_feeds::bs_feed, &message);
             }   
-        } else if (command.substr(0,12) == "jpeg_quality"){
+        } 
+        else if (command.substr(0,12) == "jpeg_quality"){
             int space = 0;
             space = command.substr(0).find(" ");
             int value = atoi(command.substr(space+1,command.size()).c_str()); 
