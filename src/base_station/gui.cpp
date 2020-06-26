@@ -459,8 +459,8 @@ unsigned int load_texture_alpha(const char* file_name) {
     return tex_id;
 }
 
-void set_stopwatch_icon_color(StopwatchStruct stopwatch) {
-    switch (stopwatch.state) {
+void set_stopwatch_icon_color(Session *bs_session) {
+    switch (bs_session->stopwatch.state) {
         case StopwatchState::RUNNING:
             glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
             break;
@@ -473,10 +473,10 @@ void set_stopwatch_icon_color(StopwatchStruct stopwatch) {
     }
 }
 
-const char* get_stopwatch_text(util::Clock global_clock, StopwatchStruct stopwatch) {
+const char* get_stopwatch_text(Session *bs_session) {
     static char buffer[50];
 
-    if (stopwatch.state == StopwatchState::STOPPED) {
+    if (bs_session->stopwatch.state == StopwatchState::STOPPED) {
         sprintf(buffer, "00:00:00");
 
         return buffer;
@@ -484,13 +484,13 @@ const char* get_stopwatch_text(util::Clock global_clock, StopwatchStruct stopwat
 
     unsigned int time_to_use;
 
-    if (stopwatch.state == StopwatchState::PAUSED) {
-        time_to_use = stopwatch.pause_time;
+    if (bs_session->stopwatch.state == StopwatchState::PAUSED) {
+        time_to_use = bs_session->stopwatch.pause_time;
     } else {
-        time_to_use = global_clock.get_millis();
+        time_to_use = bs_session->global_clock.get_millis();
     }
 
-    unsigned int millis = time_to_use - stopwatch.start_time;
+    unsigned int millis = time_to_use - bs_session->stopwatch.start_time;
 
     unsigned int seconds = millis / 1000;
     unsigned int minutes = seconds / 60;
@@ -503,7 +503,7 @@ const char* get_stopwatch_text(util::Clock global_clock, StopwatchStruct stopwat
     return buffer;
 }
 
-void do_info_panel(Layout* layout, StopwatchStruct stopwatch, Session *bs_session) {
+void do_info_panel(Layout* layout, Session *bs_session) {
     static char info_buffer[200];
 
     int x = layout->current_x;
@@ -585,17 +585,17 @@ void do_info_panel(Layout* layout, StopwatchStruct stopwatch, Session *bs_sessio
 
     draw_text(&bs_session->global_font, info_buffer, x + 5, y + h - 20 - 5, 20);
 
-    auto stopwatch_buffer = get_stopwatch_text(bs_session->global_clock, stopwatch);
+    auto stopwatch_buffer = get_stopwatch_text(bs_session);
 
     int stopwatch_text_width = text_width(&bs_session->global_font, stopwatch_buffer, 20);
 
     draw_text(&bs_session->global_font, stopwatch_buffer, x + w - 5 - stopwatch_text_width, y + h - 20 - 5, 20);
 
-    set_stopwatch_icon_color(stopwatch);
+    set_stopwatch_icon_color(bs_session);
     fill_textured_rect_mix_color(x + w - 5 - stopwatch_text_width - 3 - 20, y + h - 20 - 5, 20, 20, bs_session->stopwatch_texture_id);
 }
 
-void do_stopwatch_menu(StopwatchStruct stopwatch, unsigned int stopwatch_texture_id, util::Clock global_clock, Session *bs_session){
+void do_stopwatch_menu(Session *bs_session){
     const int w = 150;
     const int h = 110;
 
@@ -609,7 +609,7 @@ void do_stopwatch_menu(StopwatchStruct stopwatch, unsigned int stopwatch_texture
     draw_text(&bs_session->global_font, "Stopwatch", x + 5, y + 5, 20);
 
     const char* space_help_text;
-    switch (stopwatch.state) {
+    switch (bs_session->stopwatch.state) {
         case StopwatchState::STOPPED:
             space_help_text = "<space> : start";
             break;
@@ -626,12 +626,13 @@ void do_stopwatch_menu(StopwatchStruct stopwatch, unsigned int stopwatch_texture
 
     // Draw the actual stopwatch.
 
-    auto stopwatch_buffer = get_stopwatch_text(global_clock, stopwatch);
+    auto stopwatch_buffer = get_stopwatch_text(bs_session);
     int stopwatch_text_width = text_width(&bs_session->global_font, stopwatch_buffer, 20);
     draw_text(&bs_session->global_font, stopwatch_buffer, WINDOW_WIDTH - 20 - stopwatch_text_width - 5, WINDOW_HEIGHT - 20 - 5 - 20, 20);
 
-    set_stopwatch_icon_color(stopwatch);
-    fill_textured_rect_mix_color(WINDOW_WIDTH - 20 - 5 - stopwatch_text_width - 3 - 20, WINDOW_HEIGHT - 20 - 5 - 20, 20, 20, stopwatch_texture_id);
+    set_stopwatch_icon_color(bs_session);
+    fill_textured_rect_mix_color(WINDOW_WIDTH - 20 - 5 - stopwatch_text_width - 3 - 20,
+        WINDOW_HEIGHT - 20 - 5 - 20, 20, 20, bs_session->stopwatch_texture_id);
 }
 
 void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, Session *bs_session) {
@@ -985,7 +986,7 @@ void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session
 }
 
 //void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
-void do_gui(StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
+void do_gui(std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1035,7 +1036,7 @@ void do_gui(StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, auto
     layout.advance_x(10);
 
     // Draw the info panel.
-    do_info_panel(&layout, stopwatch, bs_session);
+    do_info_panel(&layout, bs_session);
 
     int help_text_width = text_width(&bs_session->global_font, "Press 'h' for help", 15);
     glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
