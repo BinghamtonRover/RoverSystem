@@ -58,6 +58,7 @@ struct StopwatchStruct {
     unsigned int pause_time;
 };
 
+/*
 struct Font {
     // Information that keeps track of each character that we want to be able to draw.
     stbtt_bakedchar baked_chars[95];
@@ -67,7 +68,7 @@ struct Font {
 
     // Maximum height of ASCII characters at the loaded size.
     int max_height;
-};
+};*/
 
 
 class Session {
@@ -82,7 +83,7 @@ public:
     network::Feed r_feed;
     network::Feed bs_feed;
 
-    Font global_font;
+    //Font global_font;
 
     unsigned int map_texture_id;
 

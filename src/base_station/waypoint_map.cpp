@@ -146,7 +146,7 @@ void do_waypoint_map(gui::Layout * layout, int w, int h){
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     static char ppm_text_buffer[100];
     sprintf(ppm_text_buffer, "ppm: %.2f | grid: %.2f", ppm, GRID_SPACING);
-    gui::draw_text(&gui::state.font, ppm_text_buffer, x + 5, y + h - 15 - 5, 15);
+    gui::draw_text(&gui::state.global_font, ppm_text_buffer, x + 5, y + h - 15 - 5, 15);
 }
 
 }} // namespace gui::waypoint_map

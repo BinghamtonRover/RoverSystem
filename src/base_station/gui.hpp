@@ -27,12 +27,23 @@ enum class InputState {
     AUTONOMY_EDIT_TARGET
 };
 
+struct Font {
+    // Information that keeps track of each character that we want to be able to draw.
+    stbtt_bakedchar baked_chars[95];
+
+    // The font is one big texture!
+    unsigned int texture_id;
+
+    // Maximum height of ASCII characters at the loaded size.
+    int max_height;
+};
+
 // Stores the global GUI state.
 // Anything that needs to be persistent goes in here.
 struct GlobalState {
     GLFWwindow* window;
 
-    Font font;
+    Font global_font;
 
     InputState input_state = InputState::KEY_COMMAND;
 
