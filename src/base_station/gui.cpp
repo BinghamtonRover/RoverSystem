@@ -801,23 +801,15 @@ void do_camera_move_target(Session *bs_session) {
     const int BG_PADDING = 10;
 
     glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
-    fill_rectangle(
-        ptx - BG_PADDING,
-        pty - BG_PADDING,
-        primary_text_width + 2 * BG_PADDING,
-        PRIMARY_TEXT_SIZE + 2 * BG_PADDING);
-    fill_rectangle(
-        stx - BG_PADDING,
-        sty - BG_PADDING,
-        secondary_text_width + 2 * BG_PADDING,
-        SECONDARY_TEXT_SIZE + 2 * BG_PADDING);
+    fill_rectangle(ptx - BG_PADDING, pty - BG_PADDING, primary_text_width + 2 * BG_PADDING, PRIMARY_TEXT_SIZE + 2 * BG_PADDING);
+    fill_rectangle(stx - BG_PADDING, sty - BG_PADDING, secondary_text_width + 2 * BG_PADDING, SECONDARY_TEXT_SIZE + 2 * BG_PADDING);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     draw_text(&bs_session->global_font, primary_text, ptx, pty, PRIMARY_TEXT_SIZE);
     draw_text(&bs_session->global_font, secondary_text, stx, sty, SECONDARY_TEXT_SIZE);
 }
 
-void do_camera_matrix(camera_feed::Feed camera_feeds[], Session *bs_session) {
+void do_camera_matrix(Session *bs_session) {
     switch (state.input_state) {
         case InputState::CAMERA_MATRIX:
         case InputState::CAMERA_MOVE:
@@ -866,12 +858,12 @@ void do_camera_matrix(camera_feed::Feed camera_feeds[], Session *bs_session) {
             int view_x = SIDE_MARGIN + MATRIX_PADDING + EXTRA_SIDE_PADDING + c * (VIEW_WIDTH + MATRIX_PADDING);
             int view_y = TOP_MARGIN + MATRIX_PADDING + r * (VIEW_HEIGHT + MATRIX_PADDING);
 
-            fill_textured_rect(view_x, view_y, VIEW_WIDTH, VIEW_HEIGHT, camera_feeds[feed_idx].gl_texture_id);
+            fill_textured_rect(view_x, view_y, VIEW_WIDTH, VIEW_HEIGHT, bs_session->camera_feeds[feed_idx].gl_texture_id);
 
             glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
             static char feed_display_buffer[TEXT_MAX_LEN + 1];
-            snprintf(feed_display_buffer, sizeof(feed_display_buffer), "%d: %s", feed_idx, camera_feeds[feed_idx].name);
+            snprintf(feed_display_buffer, sizeof(feed_display_buffer), "%d: %s", feed_idx, bs_session->camera_feeds[feed_idx].name);
 
             draw_text(&bs_session->global_font, feed_display_buffer, view_x + TEXT_PADDING, view_y + VIEW_HEIGHT - TEXT_SIZE - TEXT_PADDING,TEXT_SIZE);
 
@@ -985,7 +977,7 @@ void do_autonomy_control(Session *bs_session) {
 }
 
 //void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
-void do_gui(camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
+void do_gui(int primary_feed, int secondary_feed, Session *bs_session) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1011,7 +1003,7 @@ void do_gui(camera_feed::Feed camera_feeds[], int primary_feed, int secondary_fe
     layout.push();
 
     // Draw the main camera feed.
-    do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, camera_feeds[primary_feed].gl_texture_id);
+    do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, bs_session->camera_feeds[primary_feed].gl_texture_id);
 
     layout.reset_x();
     layout.advance_y(10);
@@ -1019,11 +1011,7 @@ void do_gui(camera_feed::Feed camera_feeds[], int primary_feed, int secondary_fe
 
     // Draw the other camera feed.
     layout.reset_y();
-    do_textured_rect(
-        &layout,
-        SECONDARY_FEED_WIDTH,
-        SECONDARY_FEED_HEIGHT,
-        camera_feeds[secondary_feed].gl_texture_id);
+    do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[secondary_feed].gl_texture_id);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -1048,7 +1036,7 @@ void do_gui(camera_feed::Feed camera_feeds[], int primary_feed, int secondary_fe
     // Draw the camera matrix.
     // Note: this currently needs to be called last here in order for the camera movement
     // effects to work properly!
-    do_camera_matrix(camera_feeds, bs_session);
+    do_camera_matrix(bs_session);
 
     do_autonomy_control(bs_session);
 }

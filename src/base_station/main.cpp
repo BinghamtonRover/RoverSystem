@@ -9,7 +9,8 @@
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
-#include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
+//TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
+#include "shared_feeds.hpp" 
 #include "session.hpp"
 
 #include <GL/gl.h>
@@ -958,7 +959,7 @@ int main() {
         }
 
         // Update and draw GUI.
-        gui::do_gui(bs_session.camera_feeds, bs_session.primary_feed, bs_session.secondary_feed, &bs_session);
+        gui::do_gui(bs_session.primary_feed, bs_session.secondary_feed, &bs_session);
 
         if (help_menu_up) gui::do_help_menu(commands, debug_commands, &bs_session);
 
