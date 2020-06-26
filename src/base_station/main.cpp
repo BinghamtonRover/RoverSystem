@@ -627,17 +627,11 @@ int main() {
     bs_session.stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
     // Load this down here so that sizing is correct.
-    //Font font;
     bool loaded_font = gui::load_font(&gui::state.global_font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
         logger::log(logger::ERROR, "Failed to load font!");
         return 1;
     }
-    // TODO: Fix this hack (for the log view handler) and clean up globals in general.
-    //bs_session.global_font = font;
-
-    // TODO: Make everything just use the global font.
-    //gui::state.global_font = font;
 
     logger::register_handler(log_view_handler);
 
