@@ -959,7 +959,7 @@ int main() {
         }
 
         // Update and draw GUI.
-        gui::do_gui(bs_session.controller_mode, bs_session.last_rover_tick, bs_session.stopwatch_texture_id, bs_session.global_clock, bs_session.r_tp,
+        gui::do_gui(bs_session.stopwatch_texture_id, bs_session.global_clock, bs_session.r_tp,
          bs_session.bs_tp, bs_session.t_tp, bs_session.stopwatch, &bs_session.lidar_points, bs_session.autonomy_info, bs_session.camera_feeds, bs_session.primary_feed, bs_session.secondary_feed, &bs_session);
 
         if (help_menu_up) gui::do_help_menu(commands, debug_commands, &bs_session);

@@ -503,7 +503,7 @@ const char* get_stopwatch_text(util::Clock global_clock, StopwatchStruct stopwat
     return buffer;
 }
 
-void do_info_panel(Layout* layout, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, Session *bs_session) {
+void do_info_panel(Layout* layout, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, Session *bs_session) {
     static char info_buffer[200];
 
     int x = layout->current_x;
@@ -559,7 +559,7 @@ void do_info_panel(Layout* layout, controller::ControllerMode controller_mode, f
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-    sprintf(info_buffer, "Rover tps: %.0f", last_rover_tick);
+    sprintf(info_buffer, "Rover tps: %.0f", bs_session->last_rover_tick);
     draw_text(&bs_session->global_font, info_buffer, x + 5, y + 60 + 5, 15);
 
     switch (bs_session->mode) {
@@ -572,7 +572,7 @@ void do_info_panel(Layout* layout, controller::ControllerMode controller_mode, f
     }
     draw_text(&bs_session->global_font, info_buffer, x + 5, y + 80 + 5, 15);
 
-    switch (controller_mode) {
+    switch (bs_session->controller_mode) {
         case controller::ControllerMode::DRIVE:
             sprintf(info_buffer, "Controller Mode: drive");
             break;
@@ -995,7 +995,7 @@ void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session
 }
 
 //void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
-void do_gui(controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
+void do_gui(unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1045,7 +1045,7 @@ void do_gui(controller::ControllerMode controller_mode, float last_rover_tick, u
     layout.advance_x(10);
 
     // Draw the info panel.
-    do_info_panel(&layout, controller_mode, last_rover_tick, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch, bs_session);
+    do_info_panel(&layout, stopwatch_texture_id, global_clock, r_tp, bs_tp, t_tp, stopwatch, bs_session);
 
     int help_text_width = text_width(&bs_session->global_font, "Press 'h' for help", 15);
     glColor4f(0.0f, 0.5f, 0.0f, 1.0f);

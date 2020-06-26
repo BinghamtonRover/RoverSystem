@@ -138,7 +138,7 @@ void set_stopwatch_icon_color(StopwatchStruct stopwatch);
 const char* get_stopwatch_text(util::Clock global_clock, StopwatchStruct stopwatch);
 
 //Displays info about rover connection and controller mode
-void do_info_panel(Layout* layout, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, Session *bs_session);
+void do_info_panel(Layout* layout, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, Session *bs_session);
 
 //Sets up the window to display stopwatch information
 void do_stopwatch_menu(StopwatchStruct stopwatch, unsigned int stopwatch_texture_id, util::Clock global_clock, Session *bs_session);
@@ -160,7 +160,7 @@ void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session
 
 //Draws the GUI in full
 //void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session);
-void do_gui(controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session);
+void do_gui(unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session);
 } // namespace gui
 
 #endif
