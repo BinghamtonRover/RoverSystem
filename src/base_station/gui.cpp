@@ -724,7 +724,7 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
     help_layout.pop();
 }
 
-void do_lidar(Layout* layout, std::vector<uint16_t>* lidar_points) {
+void do_lidar(Layout* layout, Session *bs_session) {
     int wx = layout->current_x;
     int wy = layout->current_y;
 
@@ -986,7 +986,7 @@ void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session
 }
 
 //void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
-void do_gui(std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
+void do_gui(autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
