@@ -128,9 +128,6 @@ void fill_rectangle(int x, int y, int w, int h);
 //Renders a circle around a given x,y coordinate. 
 void do_circle(int x, int y, int radius);
 
-
-
-
 //Sets color of stopwatch based on its current state
 void set_stopwatch_icon_color(Session *bs_session);
 
@@ -159,8 +156,7 @@ void do_camera_matrix(Session *bs_session);
 void do_autonomy_control(Session *bs_session);
 
 //Draws the GUI in full
-//void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session);
-void do_gui(int primary_feed, int secondary_feed, Session *bs_session);
+void do_gui(Session *bs_session);
 } // namespace gui
 
 #endif
