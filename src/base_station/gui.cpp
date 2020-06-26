@@ -734,13 +734,13 @@ void do_lidar(Layout* layout, Session *bs_session) {
 
     glBegin(GL_QUADS);
 
-    for (size_t i = 0; i < lidar_points->size(); i++) {
+    for (size_t i = 0; i < bs_session->lidar_points.size(); i++) {
         float angle = 225.0f - (float) i;
         float theta = angle * M_PI / 180.0f;
 
         theta -= M_PI;
 
-        uint16_t dist = lidar_points->at(i);
+        uint16_t dist = bs_session->lidar_points.at(i);
 
         float r = dist * 150.0f / 10000.0f;
 
@@ -904,7 +904,7 @@ void do_camera_matrix(camera_feed::Feed camera_feeds[], Session *bs_session) {
     }
 }
 
-void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session) {
+void do_autonomy_control(Session *bs_session) {
     if (gui::state.input_state != gui::InputState::AUTONOMY_CONTROL
         && gui::state.input_state != gui::InputState::AUTONOMY_EDIT_TARGET) return;
 
@@ -931,7 +931,7 @@ void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session
 
     
     const char* status_text;
-    switch (autonomy_info.status) {
+    switch (bs_session->autonomy_info.status) {
         case network::AutonomyStatusMessage::Status::IDLE:
             status_text = "idle";
             break;
@@ -950,32 +950,32 @@ void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session
 
     if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
         int target_width = text_width(&bs_session->global_font, "Target:", 20);
-        int lat_width = text_width(&bs_session->global_font, autonomy_info.edit_lat.c_str(), 20);
+        int lat_width = text_width(&bs_session->global_font, bs_session->autonomy_info.edit_lat.c_str(), 20);
         int comma_width = text_width(&bs_session->global_font, ",", 20);
-        int lon_width = text_width(&bs_session->global_font, autonomy_info.edit_lon.c_str(), 20);
+        int lon_width = text_width(&bs_session->global_font, bs_session->autonomy_info.edit_lon.c_str(), 20);
 
         gui::draw_text(&bs_session->global_font, "Target:", x, y, 20);
         
-        if (autonomy_info.edit_idx == 0) {
+        if (bs_session->autonomy_info.edit_idx == 0) {
             glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
             gui::fill_rectangle(x + target_width + 10, y, lat_width, 20);
         }
 
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        gui::draw_text(&bs_session->global_font, autonomy_info.edit_lat.c_str(), x + target_width + 10, y, 20);
+        gui::draw_text(&bs_session->global_font, bs_session->autonomy_info.edit_lat.c_str(), x + target_width + 10, y, 20);
 
         gui::draw_text(&bs_session->global_font, ",", x + target_width + 10 + lat_width + 10, y, 20);
 
-        if (autonomy_info.edit_idx == 1) {
+        if (bs_session->autonomy_info.edit_idx == 1) {
             glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
             gui::fill_rectangle(x + target_width + 10 + lat_width + 10 + comma_width + 10, y, lon_width, 20);
         }
 
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        gui::draw_text(&bs_session->global_font, autonomy_info.edit_lon.c_str(), x + target_width + 10 + lat_width + 10 + comma_width + 10, y, 20);
+        gui::draw_text(&bs_session->global_font, bs_session->autonomy_info.edit_lon.c_str(), x + target_width + 10 + lat_width + 10 + comma_width + 10, y, 20);
     } else {
-        if (autonomy_info.has_target) {
-            sprintf(text_buffer, "Target: %.4f, %.4f", autonomy_info.target_lat, autonomy_info.target_lon);
+        if (bs_session->autonomy_info.has_target) {
+            sprintf(text_buffer, "Target: %.4f, %.4f", bs_session->autonomy_info.target_lat, bs_session->autonomy_info.target_lon);
         } else {
             sprintf(text_buffer, "No target");
         }
@@ -986,7 +986,7 @@ void do_autonomy_control(autonomy_info_struct autonomy_info, Session *bs_session
 }
 
 //void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, controller::ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
-void do_gui(autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
+void do_gui(camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1030,7 +1030,7 @@ void do_gui(autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[]
     layout.advance_x(10);
 
     // Draw the lidar.
-    do_lidar(&layout, lidar_points);
+    do_lidar(&layout, bs_session);
 
     layout.reset_y();
     layout.advance_x(10);
@@ -1051,6 +1051,6 @@ void do_gui(autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[]
     // effects to work properly!
     do_camera_matrix(camera_feeds, bs_session);
 
-    do_autonomy_control(autonomy_info, bs_session);
+    do_autonomy_control(bs_session);
 }
 } // namespace gui
