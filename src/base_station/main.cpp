@@ -10,7 +10,6 @@
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
 #include "shared_feeds.hpp" //TODO: fix this design hack, currently using shared_feeds to get the rover_feed established in main for debug_console
-#include "constant_vars.hpp"
 #include "session.hpp"
 
 #include <GL/gl.h>

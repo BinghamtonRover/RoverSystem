@@ -2,7 +2,6 @@
 #include "waypoint.hpp"
 #include "controller.hpp"
 #include "camera_feed.hpp"
-#include "constant_vars.hpp"
 #include "waypoint_map.hpp"
 #include "debug_console.hpp"
 #include "log_view.hpp"
