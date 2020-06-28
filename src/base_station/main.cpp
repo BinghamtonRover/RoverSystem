@@ -1,11 +1,10 @@
 #include "../network/network.hpp"
-#include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
-#include "../logger/logger.hpp"
 
 #include "camera_feed.hpp"
 #include "controller.hpp"
 #include "debug_console.hpp"
+#include "../logger/logger.hpp"
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
@@ -21,7 +20,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include <iostream>
 #include <stack>
@@ -90,80 +88,9 @@ void log_view_handler(logger::Level level, std::string message) {
     gui::log_view::print(&gui::state.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
 }
 
-struct Config {
-    int rover_port;
-    int base_station_port;
 
-    char rover_multicast_group[16]; // Max length of string ipv4 addr is 15, plus one for nt.
-    char base_station_multicast_group[16];
-    char interface[16];
 
-    static const int MAX_PREFERRED_MONITOR_LEN = 32;
-    char preferred_monitor[MAX_PREFERRED_MONITOR_LEN + 1];
-};
 
-Config load_config(const char* filename) {
-    Config config;
-
-    sc::SimpleConfig* sc_config;
-
-    auto err = sc::parse(filename, &sc_config);
-    if (err != sc::Error::OK) {
-        logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
-        if (err == sc::Error::FILE_OPEN) {
-            logger::log(logger::ERROR, "(Did you forget to run the program from the repo root?)");
-        }
-        exit(1);
-    }
-
-    char* rover_port = sc::get(sc_config, "rover_port");
-    if (!rover_port) {
-        logger::log(logger::ERROR, "Config missing 'rover_port'!");
-        exit(1);
-    }
-    config.rover_port = atoi(rover_port);
-
-    char* base_station_port = sc::get(sc_config, "base_station_port");
-    if (!base_station_port) {
-        logger::log(logger::ERROR, "Config missing 'base_station_port'!");
-        exit(1);
-    }
-    config.base_station_port = atoi(base_station_port);
-
-    char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
-    if (!rover_multicast_group) {
-        logger::log(logger::ERROR, "Config missing 'rover_multicast_group'!");
-        exit(1);
-    }
-    strncpy(config.rover_multicast_group, rover_multicast_group, 16);
-
-    char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
-    if (!base_station_multicast_group) {
-        logger::log(logger::ERROR, "Config missing 'base_station_multicast_group'!");
-        exit(1);
-    }
-    strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
-
-    char* interface = sc::get(sc_config, "interface");
-    if (!interface) {
-        // Default.
-        strncpy(config.interface, "0.0.0.0", 16);
-    } else {
-        strncpy(config.interface, interface, 16);
-    }
-
-    char* preferred_monitor = sc::get(sc_config, "preferred_monitor");
-    if (!preferred_monitor) {
-        // Default: empty string means primary monitor.
-        config.preferred_monitor[0] = 0;
-    } else {
-        strncpy(config.preferred_monitor, preferred_monitor, Config::MAX_PREFERRED_MONITOR_LEN + 1);
-    }
-
-    sc::free(sc_config);
-
-    return config;
-}
 
 // Takes values between 0 and 255 and returns them between 0 and 255.
 static float smooth_rover_input(float value) {
@@ -556,7 +483,7 @@ int main() {
     gui::debug_console::set_callback(command_callback);
 
     // Load config.
-    Config config = load_config("res/bs.sconfig");
+    bs_session.config = bs_session.load_config("res/bs.sconfig");
 
     // Clear the stopwatch.
     bs_session.stopwatch.state = StopwatchState::STOPPED;
@@ -571,7 +498,7 @@ int main() {
 
     GLFWmonitor* monitor_to_use = glfwGetPrimaryMonitor();
 
-    if (config.preferred_monitor[0] != 0) {
+    if (bs_session.config.preferred_monitor[0] != 0) {
         // A monitor was specified. Does it exist?
         int num_monitors;
         GLFWmonitor** monitors = glfwGetMonitors(&num_monitors);
@@ -579,14 +506,14 @@ int main() {
         bool found = false;
 
         for (int i = 0; i < num_monitors; i++) {
-            if (strncmp(config.preferred_monitor, glfwGetMonitorName(monitors[i]), Config::MAX_PREFERRED_MONITOR_LEN) == 0) {
+            if (strncmp(bs_session.config.preferred_monitor, glfwGetMonitorName(monitors[i]), Config::MAX_PREFERRED_MONITOR_LEN) == 0) {
                 monitor_to_use = monitors[i];
                 found = true;
                 break;
             }
         }
 
-        if (!found) logger::log(logger::WARNING, "Preferred monitor %s not found!", config.preferred_monitor);
+        if (!found) logger::log(logger::WARNING, "Preferred monitor %s not found!", bs_session.config.preferred_monitor);
     }
 
     // Get the correct resolution for the monitor we want to use.
@@ -651,9 +578,9 @@ int main() {
         auto err = network::init(
             &bs_session.bs_feed,
             network::FeedType::OUT,
-            config.interface,
-            config.base_station_multicast_group,
-            config.base_station_port,
+            bs_session.config.interface,
+            bs_session.config.base_station_multicast_group,
+            bs_session.config.base_station_port,
             &bs_session.global_clock);
 
         if (err != network::Error::OK) {
@@ -664,17 +591,17 @@ int main() {
         logger::log(
             logger::INFO,
             "Network: publishing base station feed on %s:%d",
-            config.base_station_multicast_group,
-            config.base_station_port);
+            bs_session.config.base_station_multicast_group,
+            bs_session.config.base_station_port);
     }
 
     {
         auto err = network::init(
             &bs_session.r_feed,
             network::FeedType::IN,
-            config.interface,
-            config.rover_multicast_group,
-            config.rover_port,
+            bs_session.config.interface,
+            bs_session.config.rover_multicast_group,
+            bs_session.config.rover_port,
             &bs_session.global_clock);
 
         if (err != network::Error::OK) {
@@ -685,8 +612,8 @@ int main() {
         logger::log(
             logger::INFO,
             "Network: subscribed to rover feed on %s:%d",
-            config.rover_multicast_group,
-            config.rover_port);
+            bs_session.config.rover_multicast_group,
+            bs_session.config.rover_port);
 
         
     }

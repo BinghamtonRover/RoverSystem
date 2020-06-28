@@ -1,4 +1,5 @@
 #include "session.hpp"
+#include "../logger/logger.hpp"
 
 
 
@@ -31,3 +32,66 @@ Session::Session(){
 }
 
 Session::~Session() {};
+
+Config Session::load_config(const char* filename) {
+    Config config;
+
+    sc::SimpleConfig* sc_config;
+
+    auto err = sc::parse(filename, &sc_config);
+    if (err != sc::Error::OK) {
+        logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
+        if (err == sc::Error::FILE_OPEN) {
+            logger::log(logger::ERROR, "(Did you forget to run the program from the repo root?)");
+        }
+        exit(1);
+    }
+
+    char* rover_port = sc::get(sc_config, "rover_port");
+    if (!rover_port) {
+        logger::log(logger::ERROR, "Config missing 'rover_port'!");
+        exit(1);
+    }
+    config.rover_port = atoi(rover_port);
+
+    char* base_station_port = sc::get(sc_config, "base_station_port");
+    if (!base_station_port) {
+        logger::log(logger::ERROR, "Config missing 'base_station_port'!");
+        exit(1);
+    }
+    config.base_station_port = atoi(base_station_port);
+
+    char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
+    if (!rover_multicast_group) {
+        logger::log(logger::ERROR, "Config missing 'rover_multicast_group'!");
+        exit(1);
+    }
+    strncpy(config.rover_multicast_group, rover_multicast_group, 16);
+
+    char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
+    if (!base_station_multicast_group) {
+        logger::log(logger::ERROR, "Config missing 'base_station_multicast_group'!");
+        exit(1);
+    }
+    strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
+
+    char* interface = sc::get(sc_config, "interface");
+    if (!interface) {
+        // Default.
+        strncpy(config.interface, "0.0.0.0", 16);
+    } else {
+        strncpy(config.interface, interface, 16);
+    }
+
+    char* preferred_monitor = sc::get(sc_config, "preferred_monitor");
+    if (!preferred_monitor) {
+        // Default: empty string means primary monitor.
+        config.preferred_monitor[0] = 0;
+    } else {
+        strncpy(config.preferred_monitor, preferred_monitor, Config::MAX_PREFERRED_MONITOR_LEN + 1);
+    }
+
+    sc::free(sc_config);
+
+    return config;
+}
