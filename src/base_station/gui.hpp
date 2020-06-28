@@ -111,7 +111,6 @@ struct Layout {
     }
 };
 
-
 // Renders a solid rectangle at the position determined by the given layout,
 // filled with the given color.
 void do_solid_rect(Layout* layout, int width, int height, float r, float g, float b);
