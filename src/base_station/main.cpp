@@ -87,7 +87,7 @@ void log_view_handler(logger::Level level, std::string message) {
 
     std::string full_string = std::string(time_string_buffer) + message;
 
-    gui::log_view::print(&bs_session.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
+    gui::log_view::print(&gui::state.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
 }
 
 struct Config {
@@ -627,17 +627,11 @@ int main() {
     bs_session.stopwatch_texture_id = gui::load_texture_alpha("res/stopwatch_white.png");
 
     // Load this down here so that sizing is correct.
-    Font font;
-    bool loaded_font = gui::load_font(&font, "res/FiraMono-Regular.ttf", 100);
+    bool loaded_font = gui::load_font(&gui::state.global_font, "res/FiraMono-Regular.ttf", 100);
     if (!loaded_font) {
         logger::log(logger::ERROR, "Failed to load font!");
         return 1;
     }
-    // TODO: Fix this hack (for the log view handler) and clean up globals in general.
-    bs_session.global_font = font;
-
-    // TODO: Make everything just use the global font.
-    gui::state.font = font;
 
     logger::register_handler(log_view_handler);
 
