@@ -34,19 +34,19 @@
 //Declaring base station session object
 Session bs_session;
 
-void command_callback(std::string command) {
-    auto parts = gui::debug_console::split_by_spaces(command);
-
-    if (parts.size() == 0) {
-        return;
-    }
-
-    if (parts[0] == "move") {
-        gui::debug_console::move(parts, bs_session.last_movement_message);
-    } else if (parts[0] == "mode") {
-        gui::debug_console::mode(parts, bs_session.bs_feed);
-    }
-}
+// void command_callback(std::string command) {
+//     auto parts = gui::debug_console::split_by_spaces(command);
+// 
+//     if (parts.size() == 0) {
+//         return;
+//     }
+// 
+//     if (parts[0] == "move") {
+//         gui::debug_console::move(parts, bs_session.last_movement_message);
+//     } else if (parts[0] == "mode") {
+//         gui::debug_console::mode(parts, bs_session.bs_feed);
+//     }
+// }
 
 void stderr_handler(logger::Level level, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());
@@ -379,7 +379,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
     bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-            gui::debug_console::handle_keypress(key, mods);
+            gui::debug_console::handle_keypress(key, mods, &bs_session);
         }
     } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
         // We open the menu on release to prevent the D key from being detected
@@ -553,7 +553,7 @@ int main() {
 
     logger::register_handler(stderr_handler);
 
-    gui::debug_console::set_callback(command_callback);
+    gui::debug_console::set_callback(gui::debug_console::command_callback);
 
     // Load config.
     Config config = load_config("res/bs.sconfig");
