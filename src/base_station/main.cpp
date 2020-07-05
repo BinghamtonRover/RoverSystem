@@ -92,165 +92,7 @@ void log_view_handler(logger::Level level, std::string message) {
 
 
 
-// Takes values between 0 and 255 and returns them between 0 and 255.
-static float smooth_rover_input(float value) {
-    // We want to exponentially smooth this.
-    // We do that by picking alpha in (1, whatever).
-    // The higher the alpha, the more exponential the thing.
-    // We then make sure that f(0) = 0 and f(1) = 255.
 
-    return (255.0f / (CONTROL_ALPHA - 1)) * (powf(1 / CONTROL_ALPHA, -value / 255.0f) - 1);
-}
-
-static void handle_drive_controller_event(controller::Event event) {
-    if (event.type == controller::EventType::AXIS) {
-        bool forward = event.value <= 0;
-        int16_t abs_val = event.value < 0 ? -event.value : event.value;
-
-        if (event.axis == controller::Axis::JS_LEFT_Y) {
-            if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
-                controller::get_value(controller::Axis::DPAD_Y) != 0) {
-                return;
-            }
-
-            int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-            // logger::log(logger::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
-
-            bs_session.last_movement_message.left = smoothed;
-            if (!forward) bs_session.last_movement_message.left *= -1;
-        } else if (event.axis == controller::Axis::JS_RIGHT_Y) {
-            if (controller::get_value(controller::Axis::DPAD_X) != 0 ||
-                controller::get_value(controller::Axis::DPAD_Y) != 0) {
-
-                return;
-            }
-
-            int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-            // logger::log(logger::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
-
-            bs_session.last_movement_message.right = smoothed;
-            if (!forward) bs_session.last_movement_message.right *= -1;
-        } else if (event.axis == controller::Axis::DPAD_Y) {
-            int16_t val = -event.value;
-
-            if (val > 0) {
-                bs_session.last_movement_message.left = JOINT_DRIVE_SPEED;
-                bs_session.last_movement_message.right = JOINT_DRIVE_SPEED;
-            } else if (val < 0) {
-                bs_session.last_movement_message.left = -JOINT_DRIVE_SPEED;
-                bs_session.last_movement_message.right = -JOINT_DRIVE_SPEED;
-            } else {
-                bs_session.last_movement_message.left = 0;
-                bs_session.last_movement_message.right = 0;
-            }
-        } else if (event.axis == controller::Axis::DPAD_X) {
-            if (event.value > 0) {
-                bs_session.last_movement_message.left = JOINT_DRIVE_SPEED;
-                bs_session.last_movement_message.right = -JOINT_DRIVE_SPEED;
-            } else if (event.value < 0) {
-                bs_session.last_movement_message.left = -JOINT_DRIVE_SPEED;
-                bs_session.last_movement_message.right = JOINT_DRIVE_SPEED;
-            } else {
-                bs_session.last_movement_message.left = 0;
-                bs_session.last_movement_message.right = 0;
-            }
-        }
-    } 
-}
-
-static void handle_arm_controller_event(controller::Event event) {
-    if (event.type == controller::EventType::BUTTON) {
-        network::ArmMessage::Motor motor;
-        network::ArmMessage::State state;
-
-        switch (event.button) {
-            case controller::Button::A:
-                motor = network::ArmMessage::Motor::GRIPPER_FINGER;
-                state = network::ArmMessage::State::CLOCK;
-                break;
-            case controller::Button::B:
-                motor = network::ArmMessage::Motor::GRIPPER_FINGER;
-                state = network::ArmMessage::State::COUNTER;
-                break;
-            case controller::Button::X:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE;
-                state = network::ArmMessage::State::CLOCK;
-                break;
-            case controller::Button::Y:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE;
-                state = network::ArmMessage::State::COUNTER;
-                break;
-            case controller::Button::LB:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_FLEX;
-                state = network::ArmMessage::State::CLOCK;
-                break;
-            case controller::Button::RB:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_FLEX;
-                state = network::ArmMessage::State::COUNTER;
-                break;
-            default:
-                return;
-        }
-
-        if (event.value == 0) state = network::ArmMessage::State::STOP;
-
-        bs_session.last_arm_message.set_state(motor, state);
-    } else if (event.type == controller::EventType::AXIS) {
-        network::ArmMessage::Motor motor;
-        network::ArmMessage::State state;
-
-        switch (event.axis) {
-            case controller::Axis::DPAD_X:
-                motor = network::ArmMessage::Motor::ARM_LOWER;
-                if (event.value >= 0) {
-                    state = network::ArmMessage::State::CLOCK;
-                } else {
-                    state = network::ArmMessage::State::COUNTER;
-                }
-                break;
-            case controller::Axis::DPAD_Y:
-                motor = network::ArmMessage::Motor::ARM_UPPER;
-                if (event.value >= 0) {
-                    state = network::ArmMessage::State::CLOCK;
-                } else {
-                    state = network::ArmMessage::State::COUNTER;
-                }
-                break;
-            case controller::Axis::LT:
-                motor = network::ArmMessage::Motor::ARM_BASE;
-                if (event.value >= INT16_MAX / 2) {
-                    state = network::ArmMessage::State::COUNTER;
-                } else {
-                    state = network::ArmMessage::State::STOP;
-                }
-                break;
-            case controller::Axis::RT:
-                motor = network::ArmMessage::Motor::ARM_BASE;
-                if (event.value >= INT16_MAX / 2) {
-                    state = network::ArmMessage::State::CLOCK;
-                } else {
-                    state = network::ArmMessage::State::STOP;
-                }
-                break;
-            default:
-                return;
-        }
-
-        if (event.value == 0) state = network::ArmMessage::State::STOP;
-
-        bs_session.last_arm_message.set_state(motor, state);
-    }
-
-    /*
-    logger::log(logger::DEBUG, "arm status change:");
-    logger::log(logger::DEBUG, "  gfinger=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_FINGER)));
-    logger::log(logger::DEBUG, "  gwrotate=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE)));
-    logger::log(logger::DEBUG, "  gwflex=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX)));
-    logger::log(logger::DEBUG, "  arml=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_LOWER)));
-    logger::log(logger::DEBUG, "  armu=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_UPPER)));
-    logger::log(logger::DEBUG, "  armb=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_BASE)));
-    */
-}
 
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
@@ -329,11 +171,11 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             switch (bs_session.controller_mode) {
-                case controller::ControllerMode::DRIVE:
-                    bs_session.controller_mode = controller::ControllerMode::ARM;
+                case ControllerMode::DRIVE:
+                    bs_session.controller_mode = ControllerMode::ARM;
                     break;
-                case controller::ControllerMode::ARM:
-                    bs_session.controller_mode = controller::ControllerMode::DRIVE;
+                case ControllerMode::ARM:
+                    bs_session.controller_mode = ControllerMode::DRIVE;
                     break;
             }
         }
@@ -843,22 +685,22 @@ int main() {
                         bs_session.secondary_feed = temp;
                     } else if (event.button == controller::Button::XBOX && event.value != 0) {
                         switch (bs_session.controller_mode) {
-                            case controller::ControllerMode::DRIVE:
-                                bs_session.controller_mode = controller::ControllerMode::ARM;
+                            case ControllerMode::DRIVE:
+                                bs_session.controller_mode = ControllerMode::ARM;
                                 break;
-                            case controller::ControllerMode::ARM:
-                                bs_session.controller_mode = controller::ControllerMode::DRIVE;
+                            case ControllerMode::ARM:
+                                bs_session.controller_mode = ControllerMode::DRIVE;
                                 break;
                         }
                     }
                 }
 
                 switch (bs_session.controller_mode) {
-                    case controller::ControllerMode::DRIVE:
-                        handle_drive_controller_event(event);
+                    case ControllerMode::DRIVE:
+                        controller::handle_drive_controller_event(event, &bs_session);
                         break;
-                    case controller::ControllerMode::ARM:
-                        handle_arm_controller_event(event);
+                    case ControllerMode::ARM:
+                        controller::handle_arm_controller_event(event, &bs_session);
                         break;
                 }
             }

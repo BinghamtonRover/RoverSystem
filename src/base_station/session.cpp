@@ -28,7 +28,7 @@ Session::Session(){
     this->secondary_feed = 1;
     this->feed_to_move = -1;
 
-    this->controller_mode = controller::ControllerMode::DRIVE;
+    this->controller_mode = ControllerMode::DRIVE;
 }
 
 Session::~Session() {};
