@@ -2,11 +2,14 @@
 #define SESSION
 
 #include "../network/network.hpp"
+#include "../simple_config/simpleconfig.h"
 #include "camera_feed.hpp"
 #include <string>
 #include "stb_truetype.h"
 #include "controller.hpp"
 #include <vector>
+#include <cstring>
+
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -58,6 +61,18 @@ struct StopwatchStruct {
     unsigned int pause_time;
 };
 
+struct Config {
+    int rover_port;
+    int base_station_port;
+
+    char rover_multicast_group[16]; // Max length of string ipv4 addr is 15, plus one for nt.
+    char base_station_multicast_group[16];
+    char interface[16];
+
+    static const int MAX_PREFERRED_MONITOR_LEN = 32;
+    char preferred_monitor[MAX_PREFERRED_MONITOR_LEN + 1];
+};
+
 class Session {
 private:
 public:
@@ -102,9 +117,13 @@ public:
 
     std::vector<uint16_t> lidar_points;
 
+    Config config;
+
     //Constructor & Destructor
     Session();
     ~Session();
+
+    Config load_config(const char* filename);
 };
 
 #endif
