@@ -315,51 +315,5 @@ std::vector<std::string> split_by_spaces(std::string s) {
     return strings;
 }
 
-// void move(std::vector<std::string> parts, network::MovementMessage last_movement_message) {
-//     if (parts.size() != 3) {
-//             return;
-//         }
-//         char left_direction_char = parts[1][0];
-//         int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
-// 
-//         char right_direction_char = parts[2][0];
-//         int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
-// 
-//         last_movement_message.left = left_speed;
-//         last_movement_message.right = right_speed;
-// 
-//         if (left_direction_char == 'b') {
-//             last_movement_message.left *= -1;
-//         }
-// 
-//         if (right_direction_char == 'b') {
-//             last_movement_message.right *= -1;
-//         }
-// 
-//         logger::log(
-//             logger::DEBUG,
-//             "> Update movement to %d, %d",
-//             last_movement_message.left,
-//             last_movement_message.right);
-// }
-
-// void mode(std::vector<std::string> parts, network::Feed bs_feed) {
-//     if (parts.size() != 2) return;
-//     // TODO: Print something to the debug console when this fails?
-// 
-//     network::ModeMessage::Mode m;
-//     if (parts[1] == "autonomous") {
-//         m = network::ModeMessage::Mode::AUTONOMOUS;    
-//     } else if (parts[1] == "manual") {
-//         m = network::ModeMessage::Mode::MANUAL;    
-//     } else {
-//         return;
-//     }
-// 
-//     network::ModeMessage message;
-//     message.mode = m;
-//     network::publish(&bs_feed, &message);
-// }
-
 } // namespace debug_console
 } // namespace gui

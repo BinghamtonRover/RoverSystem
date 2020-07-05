@@ -26,10 +26,6 @@ void handle_keypress(int key, int mods, Session *session);
 
 std::vector<std::string> split_by_spaces(std::string s);
 
-//void move(std::vector<std::string> parts, network::MovementMessage last_movement_message);
-
-//void mode(std::vector<std::string> parts, network::Feed bs_feed);
-
 } // namespace debug_console
 } // namespace gui
 

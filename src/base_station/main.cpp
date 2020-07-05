@@ -32,20 +32,6 @@
 //Declaring base station session object
 Session bs_session;
 
-// void command_callback(std::string command) {
-//     auto parts = gui::debug_console::split_by_spaces(command);
-// 
-//     if (parts.size() == 0) {
-//         return;
-//     }
-// 
-//     if (parts[0] == "move") {
-//         gui::debug_console::move(parts, bs_session.last_movement_message);
-//     } else if (parts[0] == "mode") {
-//         gui::debug_console::mode(parts, bs_session.bs_feed);
-//     }
-// }
-
 void stderr_handler(logger::Level level, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());
 }
