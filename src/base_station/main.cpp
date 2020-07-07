@@ -32,9 +32,6 @@
 //Declaring base station session object
 Session bs_session;
 
-
-
-
 // Takes values between 0 and 255 and returns them between 0 and 255.
 static float smooth_rover_input(float value) {
     // We want to exponentially smooth this.
@@ -194,14 +191,14 @@ static void handle_arm_controller_event(controller::Event event) {
     logger::log(logger::DEBUG, "  armb=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_BASE)));
     */
 }
-
+/*
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (codepoint < 128) {
             gui::debug_console::handle_input((char) codepoint);
         }
     }
-}
+}*/
 
 void send_feed(uint8_t stream_indx) {
     network::CameraControlMessage message = {
@@ -476,7 +473,7 @@ int main() {
     // Disable mouse.
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-    glfwSetCharCallback(window, glfw_character_callback);
+    glfwSetCharCallback(window, gui::glfw_character_callback);
     glfwSetKeyCallback(window, glfw_key_callback);
 
     // Create an OpenGL context.

@@ -167,6 +167,8 @@ void do_autonomy_control(Session *bs_session);
 
 //Draws the GUI in full
 void do_gui(Session *bs_session);
+
+void glfw_character_callback(GLFWwindow* window, unsigned int codepoint);
 } // namespace gui
 
 #endif

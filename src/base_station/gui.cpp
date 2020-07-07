@@ -1040,4 +1040,12 @@ void do_gui(Session *bs_session) {
 
     do_autonomy_control(bs_session);
 }
+
+void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
+    if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+        if (codepoint < 128) {
+            gui::debug_console::handle_input((char) codepoint);
+        }
+    }
+}
 } // namespace gui
