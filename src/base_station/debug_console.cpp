@@ -2,7 +2,7 @@
 #include "gui.hpp"
 #include "log_view.hpp"
 #include "waypoint.hpp"
-#include "../logger/logger.hpp"
+//#include "../logger/logger.hpp"
 #include "shared_feeds.hpp" //TODO: Fix this hack, debug_console is referencing main here to use a rover_feed established in main.cpp to publish
 #include "../network/network.hpp"
 #include <GLFW/glfw3.h>

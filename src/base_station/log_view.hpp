@@ -2,6 +2,8 @@
 #define LOG_VIEW_HPP
 
 #include "gui.hpp"
+#include "../logger/logger.hpp"
+
 
 #include <string>
 
@@ -14,6 +16,7 @@ void moveUpOne();
 void moveDownOne();
 void moveTop();
 void moveBottom();
+void log_view_handler(logger::Level level, std::string message);
 
 void do_log(gui::Layout* layout, int width, int height, Font* font);
 

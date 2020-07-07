@@ -114,5 +114,43 @@ void do_log(gui::Layout* layout, int width, int height, Font* font) {
     }
 }
 
+void log_view_handler(logger::Level level, std::string message) {
+    float r, g, b, a = 1.0f;
+
+    switch (level) {
+        case logger::DEBUG:
+            r = 0.70f;
+            g = 0.70f;
+            b = 0.70f;
+            break;
+        case logger::INFO:
+            r = 1.0f;
+            g = 1.0f;
+            b = 1.0f;
+            break;
+        case logger::WARNING:
+            r = 1.00f;
+            g = 0.52f;
+            b = 0.01f;
+            break;
+        case logger::ERROR:
+            r = 1.0f;
+            g = 0.0f;
+            b = 0.0f;
+            break;
+    }
+
+    time_t current_time;
+    time(&current_time);
+    struct tm* time_info = localtime(&current_time);
+
+    char time_string_buffer[200];
+    strftime(time_string_buffer, sizeof(time_string_buffer), "[%H:%M:%S] ", time_info);
+
+    std::string full_string = std::string(time_string_buffer) + message;
+
+    gui::log_view::print(&gui::state.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
+}
+
 } // namespace log_view
 } // namespace gui

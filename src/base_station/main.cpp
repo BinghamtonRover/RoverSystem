@@ -4,7 +4,7 @@
 #include "camera_feed.hpp"
 #include "controller.hpp"
 #include "debug_console.hpp"
-#include "../logger/logger.hpp"
+//#include "../logger/logger.hpp"
 #include "log_view.hpp"
 #include "waypoint.hpp"
 #include "waypoint_map.hpp"
@@ -35,47 +35,6 @@ Session bs_session;
 void stderr_handler(logger::Level level, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());
 }
-
-void log_view_handler(logger::Level level, std::string message) {
-    float r, g, b, a = 1.0f;
-
-    switch (level) {
-        case logger::DEBUG:
-            r = 0.70f;
-            g = 0.70f;
-            b = 0.70f;
-            break;
-        case logger::INFO:
-            r = 1.0f;
-            g = 1.0f;
-            b = 1.0f;
-            break;
-        case logger::WARNING:
-            r = 1.00f;
-            g = 0.52f;
-            b = 0.01f;
-            break;
-        case logger::ERROR:
-            r = 1.0f;
-            g = 0.0f;
-            b = 0.0f;
-            break;
-    }
-
-    time_t current_time;
-    time(&current_time);
-    struct tm* time_info = localtime(&current_time);
-
-    char time_string_buffer[200];
-    strftime(time_string_buffer, sizeof(time_string_buffer), "[%H:%M:%S] ", time_info);
-
-    std::string full_string = std::string(time_string_buffer) + message;
-
-    gui::log_view::print(&gui::state.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
-}
-
-
-
 
 
 // Takes values between 0 and 255 and returns them between 0 and 255.
@@ -546,7 +505,7 @@ int main() {
         return 1;
     }
 
-    logger::register_handler(log_view_handler);
+    logger::register_handler(gui::log_view::log_view_handler);
 
     // Initialize camera stuff.
     camera_feed::init();
