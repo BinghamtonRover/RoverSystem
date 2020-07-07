@@ -32,9 +32,7 @@
 //Declaring base station session object
 Session bs_session;
 
-void stderr_handler(logger::Level level, std::string message) {
-    fprintf(stderr, "%s\n", message.c_str());
-}
+
 
 
 // Takes values between 0 and 255 and returns them between 0 and 255.
@@ -423,7 +421,7 @@ int main() {
 
     util::Clock::init(&bs_session.global_clock);
 
-    logger::register_handler(stderr_handler);
+    logger::register_handler(logger::stderr_handler);
 
     gui::debug_console::set_callback(gui::debug_console::command_callback);
 

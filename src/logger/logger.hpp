@@ -14,4 +14,6 @@ bool toggleDebugMode();
 
 void log(Level level, const char* format, ...);
 
+void stderr_handler(logger::Level level, std::string message);
+
 } // namespace logger
