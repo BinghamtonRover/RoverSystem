@@ -11,7 +11,6 @@
 #include <vector>
 #include <cstring>
 
-
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
 

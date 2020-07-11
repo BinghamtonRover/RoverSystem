@@ -242,7 +242,8 @@ void dont_send_invalid() {
     }
     return;
 }
-*/
+
+
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
@@ -413,7 +414,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         }
     }
 }
-
+*/
 
 int main() {
 
@@ -474,8 +475,10 @@ int main() {
     // Disable mouse.
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
+
     glfwSetCharCallback(window, gui::glfw_character_callback);
-    glfwSetKeyCallback(window, glfw_key_callback);
+    glfwSetWindowUserPointer(window, &bs_session);
+    glfwSetKeyCallback(window, gui::glfw_key_callback);
 
     // Create an OpenGL context.
     glfwMakeContextCurrent(window);

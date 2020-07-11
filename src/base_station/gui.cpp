@@ -1048,4 +1048,179 @@ void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
         }
     }
 }
+
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    void *bs_session_pointer = glfwGetWindowUserPointer(window);
+    Session *bs_session = static_cast<Session *>(bs_session_pointer);
+    bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+    if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+            gui::debug_console::handle_keypress(key, mods, bs_session);
+        }
+    } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+        // We open the menu on release to prevent the D key from being detected
+        // in the character callback upon release.
+        if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
+            gui::state.show_debug_console = true;
+            gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_C) {
+            if (mods & GLFW_MOD_SHIFT) {
+                gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+                bs_session->send_all_feeds();
+            } else {
+                int temp = bs_session->primary_feed;
+                bs_session->primary_feed = bs_session->secondary_feed;
+                bs_session->secondary_feed = temp;
+            }
+        } else if (z_on && action == GLFW_RELEASE && key == GLFW_KEY_G){
+            gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
+            gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+            switch (bs_session->controller_mode) {
+                case controller::ControllerMode::DRIVE:
+                    bs_session->controller_mode = controller::ControllerMode::ARM;
+                    break;
+                case controller::ControllerMode::ARM:
+                    bs_session->controller_mode = controller::ControllerMode::DRIVE;
+                    break;
+            }
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+            bs_session->dont_send_invalid();
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+            gui::state.input_state = gui::InputState::CAMERA_MOVE;
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS) {
+            int selected_feed_idx = -1;
+            switch (key) {
+                case GLFW_KEY_0:
+                    selected_feed_idx = 0;
+                    break;
+                case GLFW_KEY_1:
+                    selected_feed_idx = 1;
+                    break;
+                case GLFW_KEY_2:
+                    selected_feed_idx = 2;
+                    break;
+                case GLFW_KEY_3:
+                    selected_feed_idx = 3;
+                    break;
+                case GLFW_KEY_4:
+                    selected_feed_idx = 4;
+                    break;
+                case GLFW_KEY_5:
+                    selected_feed_idx = 5;
+                    break;
+                case GLFW_KEY_6:
+                    selected_feed_idx = 6;
+                    break;
+                case GLFW_KEY_7:
+                    selected_feed_idx = 7;
+                    break;
+                case GLFW_KEY_8:
+                    selected_feed_idx = 8;
+                    break;
+                case GLFW_KEY_9:
+                    selected_feed_idx = 9;
+                    break;
+            }
+
+            if (selected_feed_idx >= 0 && selected_feed_idx < MAX_FEEDS) {
+                bs_session->feed_to_move = selected_feed_idx;
+                gui::state.input_state = gui::InputState::CAMERA_MOVE_TARGET;
+            }
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE_TARGET) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
+            // If the new feed wasn't being displayed,
+            // lets start displaying it
+            if (bs_session->feed_to_move != bs_session->secondary_feed) {
+                bs_session->send_feed(bs_session->feed_to_move);
+            }
+
+            bs_session->primary_feed = bs_session->feed_to_move;
+            bs_session->dont_send_invalid();
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+            // If the new feed isn't the same as it was,
+            // lets start displaying it
+            if (bs_session->feed_to_move != bs_session->primary_feed) {
+                bs_session->send_feed(bs_session->feed_to_move);
+            }
+
+            bs_session->secondary_feed = bs_session->feed_to_move;
+            bs_session->dont_send_invalid();
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        }
+    } else if (gui::state.input_state == gui::InputState::AUTONOMY_CONTROL) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_T) {
+            gui::state.input_state = gui::InputState::AUTONOMY_EDIT_TARGET;
+        }
+    } else if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
+            bs_session->autonomy_info.edit_idx = (bs_session->autonomy_info.edit_idx + 1) % 2;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
+            // Set has_target to true, save the target, and send the command.
+        } else if (action == GLFW_PRESS) {
+            std::string& edit_str = bs_session->autonomy_info.edit_idx == 0 ?
+                bs_session->autonomy_info.edit_lat : bs_session->autonomy_info.edit_lon;
+
+            switch (key) {
+                case GLFW_KEY_0:
+                    edit_str.push_back('0');
+                    break;
+                case GLFW_KEY_1:
+                    edit_str.push_back('1');
+                    break;
+                case GLFW_KEY_2:
+                    edit_str.push_back('2');
+                    break;
+                case GLFW_KEY_3:
+                    edit_str.push_back('3');
+                    break;
+                case GLFW_KEY_4:
+                    edit_str.push_back('4');
+                    break;
+                case GLFW_KEY_5:
+                    edit_str.push_back('5');
+                    break;
+                case GLFW_KEY_6:
+                    edit_str.push_back('6');
+                    break;
+                case GLFW_KEY_7:
+                    edit_str.push_back('7');
+                    break;
+                case GLFW_KEY_8:
+                    edit_str.push_back('8');
+                    break;
+                case GLFW_KEY_9:
+                    edit_str.push_back('9');
+                    break;
+                case GLFW_KEY_MINUS:
+                    edit_str.push_back('-');
+                    break;
+                case GLFW_KEY_PERIOD:
+                    edit_str.push_back('.');
+                    break;
+                case GLFW_KEY_BACKSPACE:
+                    if (!edit_str.empty()) edit_str.pop_back();
+                    break;
+            }
+        }
+    }
+}
+
+
 } // namespace gui
