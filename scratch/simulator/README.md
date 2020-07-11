@@ -1,10 +1,11 @@
+# Rover Autonomy Simulator
 **Simulator needs to be run on linux; no faking it with virtual machines or ubuntu for windows. Real linux.**
 
 Clone the repo:
 ```
 git clone https://github.com/BinghamtonRover/RoverSystem.git
 ```
-# Installing dependencies
+## Installing dependencies
 
 This simulator requires GLFW and GLEW as well as OpenGL development files.
 
@@ -24,7 +25,7 @@ Then install OpenGL with `sudo apt install libgl1-mesa-dev`.
 
 See test.toml for an example level file.
 
-# Building the simulator
+## Building the simulator
 
 From RoverSystem top level directory run make:
 ```
