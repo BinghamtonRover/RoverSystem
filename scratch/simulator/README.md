@@ -31,13 +31,29 @@ From RoverSystem top level directory run make:
 ```
 make
 ```
-Change directories to the simulator folder:
-```
-cd scratch/simulator
-```
 Make a top level bin folder:
 ```
 mkdir bin
+```
+Change directories to the autonomy folder:
+```
+cd src/autonomy
+```
+Run make:
+```
+make
+```
+Change directories to the tomlc99 folder:
+```
+cd ../../scratch/simulator/tomlc99
+```
+Run make:
+```
+make
+```
+Change directories to the simulator folder:
+```
+cd ../
 ```
 Run make:
 ```
@@ -53,4 +69,4 @@ To edit the obstacles, edit the coordinates in test.toml.
 
 To quit, either press escape or x-out.
 
-Whenver you make edits, run `make` and then run the simulator to view changes.
+Whenever you make edits, run `make` and then run the simulator to view changes.
