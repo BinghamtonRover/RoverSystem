@@ -4,6 +4,8 @@ Clone the repo:
 ```
 git clone https://github.com/BinghamtonRover/RoverSystem.git
 ```
+# Installing dependencies
+
 This simulator requires GLFW and GLEW as well as OpenGL development files.
 
 To install GLFW:
@@ -22,7 +24,9 @@ Then install OpenGL with `sudo apt install libgl1-mesa-dev`.
 
 See test.toml for an example level file.
 
-Run make:
+# Building the simulator
+
+From RoverSystem top level directory run make:
 ```
 make
 ```
