@@ -7,7 +7,6 @@
 #include "camera_feed.hpp"
 #include <string>
 #include "stb_truetype.h"
-#include "controller.hpp"
 #include <vector>
 #include <cstring>
 
@@ -51,6 +50,11 @@ struct autonomy_info_struct {
     int edit_idx;
     std::string edit_lat;
     std::string edit_lon;
+};
+
+enum class ControllerMode {
+    DRIVE,
+    ARM
 };
 
 enum class StopwatchState { STOPPED, PAUSED, RUNNING };
@@ -113,7 +117,7 @@ public:
     int secondary_feed;
     int feed_to_move;
 
-    controller::ControllerMode controller_mode;
+    ControllerMode controller_mode;
 
     std::vector<uint16_t> lidar_points;
 

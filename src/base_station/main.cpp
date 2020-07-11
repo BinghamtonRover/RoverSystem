@@ -32,6 +32,7 @@
 //Declaring base station session object
 Session bs_session;
 
+/*
 // Takes values between 0 and 255 and returns them between 0 and 255.
 static float smooth_rover_input(float value) {
     // We want to exponentially smooth this.
@@ -181,7 +182,7 @@ static void handle_arm_controller_event(controller::Event event) {
         bs_session.last_arm_message.set_state(motor, state);
     }
 
-    /*
+    
     logger::log(logger::DEBUG, "arm status change:");
     logger::log(logger::DEBUG, "  gfinger=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_FINGER)));
     logger::log(logger::DEBUG, "  gwrotate=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE)));
@@ -189,17 +190,75 @@ static void handle_arm_controller_event(controller::Event event) {
     logger::log(logger::DEBUG, "  arml=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_LOWER)));
     logger::log(logger::DEBUG, "  armu=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_UPPER)));
     logger::log(logger::DEBUG, "  armb=%d", static_cast<uint8_t>(last_arm_message.get_state(network::ArmMessage::Motor::ARM_BASE)));
-    */
+    
 }
-/*
+
+
+void command_callback(std::string command) {
+    auto parts = gui::debug_console::split_by_spaces(command);
+
+    if (parts.size() == 0) {
+        return;
+    }
+
+    if (parts[0] == "move") {
+        gui::debug_console::move(parts, bs_session.last_movement_message);
+    } else if (parts[0] == "mode") {
+        gui::debug_console::mode(parts, bs_session.bs_feed);
+    }
+}
+
+void stderr_handler(logger::Level level, std::string message) {
+    fprintf(stderr, "%s\n", message.c_str());
+}
+
+void log_view_handler(logger::Level level, std::string message) {
+    float r, g, b, a = 1.0f;
+
+    switch (level) {
+        case logger::DEBUG:
+            r = 0.70f;
+            g = 0.70f;
+            b = 0.70f;
+            break;
+        case logger::INFO:
+            r = 1.0f;
+            g = 1.0f;
+            b = 1.0f;
+            break;
+        case logger::WARNING:
+            r = 1.00f;
+            g = 0.52f;
+            b = 0.01f;
+            break;
+        case logger::ERROR:
+            r = 1.0f;
+            g = 0.0f;
+            b = 0.0f;
+            break;
+    }
+
+    time_t current_time;
+    time(&current_time);
+    struct tm* time_info = localtime(&current_time);
+
+    char time_string_buffer[200];
+    strftime(time_string_buffer, sizeof(time_string_buffer), "[%H:%M:%S] ", time_info);
+
+    std::string full_string = std::string(time_string_buffer) + message;
+
+    gui::log_view::print(&gui::state.global_font, LOG_VIEW_WIDTH, full_string, r, g, b, a);
+}
+
+
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (codepoint < 128) {
             gui::debug_console::handle_input((char) codepoint);
         }
     }
-}*/
-/*
+}
+
 void send_feed(uint8_t stream_indx) {
     network::CameraControlMessage message = {
         network::CameraControlMessage::Setting::DISPLAY_STATE
@@ -271,11 +330,11 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             switch (bs_session.controller_mode) {
-                case controller::ControllerMode::DRIVE:
-                    bs_session.controller_mode = controller::ControllerMode::ARM;
+                case ControllerMode::DRIVE:
+                    bs_session.controller_mode = ControllerMode::ARM;
                     break;
-                case controller::ControllerMode::ARM:
-                    bs_session.controller_mode = controller::ControllerMode::DRIVE;
+                case ControllerMode::ARM:
+                    bs_session.controller_mode = ControllerMode::DRIVE;
                     break;
             }
         }
@@ -787,22 +846,22 @@ int main() {
                         bs_session.secondary_feed = temp;
                     } else if (event.button == controller::Button::XBOX && event.value != 0) {
                         switch (bs_session.controller_mode) {
-                            case controller::ControllerMode::DRIVE:
-                                bs_session.controller_mode = controller::ControllerMode::ARM;
+                            case ControllerMode::DRIVE:
+                                bs_session.controller_mode = ControllerMode::ARM;
                                 break;
-                            case controller::ControllerMode::ARM:
-                                bs_session.controller_mode = controller::ControllerMode::DRIVE;
+                            case ControllerMode::ARM:
+                                bs_session.controller_mode = ControllerMode::DRIVE;
                                 break;
                         }
                     }
                 }
 
                 switch (bs_session.controller_mode) {
-                    case controller::ControllerMode::DRIVE:
-                        handle_drive_controller_event(event);
+                    case ControllerMode::DRIVE:
+                        controller::handle_drive_controller_event(event, &bs_session);
                         break;
-                    case controller::ControllerMode::ARM:
-                        handle_arm_controller_event(event);
+                    case ControllerMode::ARM:
+                        controller::handle_arm_controller_event(event, &bs_session);
                         break;
                 }
             }

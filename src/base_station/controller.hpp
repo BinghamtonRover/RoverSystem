@@ -2,12 +2,9 @@
 #define CONTROLLER_HPP
 
 #include <cstdint>
-namespace controller {
+#include "session.hpp"
 
-enum class ControllerMode {
-    DRIVE,
-    ARM
-};
+namespace controller {
 
 // Button mapping for the XBox One controller.
 enum class Button : uint16_t {
@@ -75,6 +72,10 @@ Error poll(Event* event);
 // 0 is returned if no update has been received.
 int16_t get_value(Button button);
 int16_t get_value(Axis axis);
+
+float smooth_rover_input(float value);
+void handle_drive_controller_event(controller::Event event, Session* bs_session);
+void handle_arm_controller_event(controller::Event event, Session* bs_session);
 
 } // namespace controller
 #endif
