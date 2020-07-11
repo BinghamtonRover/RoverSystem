@@ -2,9 +2,6 @@
 #include "gui.hpp"
 #include "log_view.hpp"
 #include "waypoint.hpp"
-//#include "../logger/logger.hpp"
-#include "shared_feeds.hpp" //TODO: Fix this hack, debug_console is referencing main here to use a rover_feed established in main.cpp to publish
-#include "../network/network.hpp"
 #include <GLFW/glfw3.h>
 #include "session.hpp"
 
@@ -46,6 +43,22 @@ struct DebugConsole {
 
 void set_callback(CommandCallback callback) {
     console.callback = callback;
+}
+
+std::vector<std::string> split_by_spaces(std::string s) {
+    std::vector<std::string> strings;
+
+    size_t last = 0;
+    size_t next = 0;
+
+    while ((next = s.find(" ", last)) != std::string::npos) {
+        strings.push_back(s.substr(last, next - last));
+        last = next + 1;
+    }
+
+    strings.push_back(s.substr(last));
+
+    return strings;
 }
 
 void command_callback(std::string command, Session *bs_session) {
@@ -298,22 +311,5 @@ void handle_keypress(int key, int mods, Session *session) {
         gui::state.show_debug_console = false;
     }
 }
-
-std::vector<std::string> split_by_spaces(std::string s) {
-    std::vector<std::string> strings;
-
-    size_t last = 0;
-    size_t next = 0;
-
-    while ((next = s.find(" ", last)) != std::string::npos) {
-        strings.push_back(s.substr(last, next - last));
-        last = next + 1;
-    }
-
-    strings.push_back(s.substr(last));
-
-    return strings;
-}
-
 } // namespace debug_console
 } // namespace gui

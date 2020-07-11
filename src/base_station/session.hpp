@@ -5,8 +5,9 @@
 #include "../simple_config/simpleconfig.h"
 #include "shared_feeds.hpp" 
 #include "camera_feed.hpp"
-#include <string>
 #include "stb_truetype.h"
+
+#include <string>
 #include <vector>
 #include <cstring>
 

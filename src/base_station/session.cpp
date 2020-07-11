@@ -1,8 +1,6 @@
 #include "session.hpp"
 #include "../logger/logger.hpp"
 
-
-
 //Create Session instance and initialize variables
 Session::Session(){
     this->mode = network::ModeMessage::Mode::MANUAL;

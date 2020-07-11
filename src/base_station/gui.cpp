@@ -976,7 +976,6 @@ void do_autonomy_control(Session *bs_session) {
     y += 20 + 10;
 }
 
-//void do_gui(Font* font, network::Feed r_feed, network::ModeMessage::Mode mode, ControllerMode controller_mode, float last_rover_tick, unsigned int stopwatch_texture_id, util::Clock global_clock, float r_tp, float bs_tp, float t_tp, StopwatchStruct stopwatch, std::vector<uint16_t>* lidar_points, autonomy_info_struct autonomy_info, camera_feed::Feed camera_feeds[], int primary_feed, int secondary_feed, Session *bs_session) {
 void do_gui(Session *bs_session) {
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
