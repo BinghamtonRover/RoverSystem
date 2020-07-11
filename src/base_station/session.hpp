@@ -3,6 +3,7 @@
 
 #include "../network/network.hpp"
 #include "../simple_config/simpleconfig.h"
+#include "shared_feeds.hpp" 
 #include "camera_feed.hpp"
 #include <string>
 #include "stb_truetype.h"
@@ -124,6 +125,12 @@ public:
     ~Session();
 
     Config load_config(const char* filename);
+
+    void send_feed(uint8_t stream_indx);
+    void send_all_feeds();
+    void dont_send_feed(uint8_t stream_indx);
+    void dont_send_invalid();
+
 };
 
 #endif

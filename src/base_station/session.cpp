@@ -95,3 +95,45 @@ Config Session::load_config(const char* filename) {
 
     return config;
 }
+
+void Session::send_feed(uint8_t stream_indx) {
+    network::CameraControlMessage message = {
+        network::CameraControlMessage::Setting::DISPLAY_STATE
+    };
+    message.resolution = {
+        stream_indx,
+        network::CameraControlMessage::sendType::SEND
+    };
+    network::publish(shared_feeds::bs_feed, &message);
+    return;
+}
+
+void Session::send_all_feeds() {
+    for(uint8_t i = 0; i < 9; i++) {
+        if(i != this->primary_feed && i != this->secondary_feed) {
+            this->send_feed(i);
+        }
+    }
+    return;
+}
+
+void Session::dont_send_feed(uint8_t stream_indx) {
+    network::CameraControlMessage message = {
+        network::CameraControlMessage::Setting::DISPLAY_STATE
+    };
+    message.resolution = {
+        stream_indx,
+        network::CameraControlMessage::sendType::DONT_SEND
+    };
+    network::publish(shared_feeds::bs_feed, &message);
+    return;
+}
+
+void Session::dont_send_invalid() {
+    for(uint8_t i = 0; i < 9; i++) {
+        if(i != this->primary_feed && i != this->secondary_feed) {
+            this->dont_send_feed(i);
+        }
+    }
+    return;
+}
