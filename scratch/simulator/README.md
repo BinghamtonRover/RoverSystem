@@ -59,13 +59,15 @@ Run make:
 ```
 make
 ```
-Run the simulator:
+Run the simulator (you don't need to be connected to robot or anything; all you need is your computer and the argument for which .toml file to point to):
 ```
 ../../bin/simulator test.toml
 ```
 To move around the simulator, either scroll in or out; or click and drag to move the screen.
 
 To edit the obstacles, edit the coordinates in test.toml.
+
+Or, to edit obstacles during run time, hold left-ctrl and left-click on as many points on the simulator as you wish. Each click will serve as a vertex (minumum 3 vertices) for the new obstacle.
 
 To quit, either press escape or x-out.
 
