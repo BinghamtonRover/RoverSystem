@@ -59,18 +59,22 @@ Run make:
 ```
 make
 ```
+
+## Run the Simulator
 Run the simulator (you don't need to be connected to robot or anything; all you need is your computer and the argument for which .toml file to point to):
 ```
 ../../bin/simulator test.toml
 ```
-    NOTE: If the following error message appears when attempting to run the simulator...
-    ```
-    ../../bin/simulator: error while loading shared libraries: libGLEW.so.2.1: cannot open shared object file: No such file or directory
-    ```
-    You need to install glew utils:
-    ```
-    sudo apt-get install glew-utils
-    ```
+NOTE: If the following error message appears when attempting to run the simulator...
+```
+../../bin/simulator: error while loading shared libraries: libGLEW.so.2.1: cannot open shared object file: No such file or directory
+```
+You need to install glew utils:
+```
+sudo apt-get install glew-utils
+```
+
+## How to use it
 To move around the simulator, either scroll in or out; or click and drag to move the screen.
 
 To edit the obstacles, edit the coordinates in test.toml.
