@@ -64,7 +64,11 @@ std::vector<std::string> split_by_spaces(std::string s) {
 void command_callback(std::string command, Session *bs_session) {
     auto parts = gui::debug_console::split_by_spaces(command);
     if (parts[0] == "test") {
-        log("This is some red text.", 1, 0, 0);
+        if (parts.size() == 1) {
+            log("This is some red text.", 1, 0, 0);
+        } else {
+            log("Invalid Input: \"test\" expects no parameters.", 1, 0, 0);
+        }
     } 
     else if (parts[0] == "tdl") {
         if (parts.size() == 1) {
@@ -79,32 +83,41 @@ void command_callback(std::string command, Session *bs_session) {
         }
     } 
     else if (parts[0] == "aw") {
-        std::vector<double> wps;
-        int space = 0;
-        space = command.substr(3).find(" ");
-        if(space <= 3) {
-            log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
+        if (parts.size() == 3) {
+            std::vector<double> wps;
+            int space = 0;
+            space = command.substr(3).find(" ");
+            if(space <= 3) {
+                log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
+            } else {
+                float lat = atof(command.substr(3, space).c_str());
+                float lon = atof(command.substr(space+4).c_str());
+                waypoint::add_waypoint(lat,lon);
+                log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
+            }
         } else {
-            float lat = atof(command.substr(3, space).c_str());
-            float lon = atof(command.substr(space+4).c_str());
-            waypoint::add_waypoint(lat,lon);
-            log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
+            log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
         }
     } 
-//     else if (command == "aw") {
-//         log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
-//     } 
     else if (parts[0] == "lw") {
-        log("Waypoints: ", 1, 0, 1);
-        auto waypoints = waypoint::get_waypoints();
-        for(unsigned int i = 0; i < waypoints.size(); i++) {
-            std::string latStr = std::to_string(waypoints.at(i).latitude);
-            std::string lonStr = std::to_string(waypoints.at(i).longitude);
-            log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
+        if (parts.size() == 1) {
+            log("Waypoints: ", 1, 0, 1);
+            auto waypoints = waypoint::get_waypoints();
+            for(unsigned int i = 0; i < waypoints.size(); i++) {
+                std::string latStr = std::to_string(waypoints.at(i).latitude);
+                std::string lonStr = std::to_string(waypoints.at(i).longitude);
+                log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
+            }
+        } else {
+            log("Invalid Input: \"lw\" expects no parameters.", 1, 0, 0);
         }
     } 
     else if (parts[0] == "help") {
-        log("Press 'h' on the main screen for help.", 1, 1, 1);
+        if (parts.size() == 1) {
+            log("Press 'h' on the main screen for help.", 1, 1, 1);
+        } else {
+            log("Invalid Input: \"help\" expects no parameters.", 1, 0, 0);
+        }
     }
     else if (parts[0] == "gs_on") {
         if (parts.size() == 1) {
@@ -190,21 +203,26 @@ void command_callback(std::string command, Session *bs_session) {
         }
     }
     else if (parts[0] == "mode") {
-        if (parts.size() != 2) return;
-        //TODO: Print something to the debug console when this fails?
+        if (parts.size() == 2) {
+            network::ModeMessage::Mode m;
+            if (parts[1] == "auto") {
+                m = network::ModeMessage::Mode::AUTONOMOUS;    
+            } else if (parts[1] == "man") {
+                m = network::ModeMessage::Mode::MANUAL;    
+            } else {
+                log("Invalid Input: \"mode\" expects either \"man\" or \"auto\".", 1, 0, 0);
+                return;
+            }
 
-        network::ModeMessage::Mode m;
-        if (parts[1] == "autonomous") {
-            m = network::ModeMessage::Mode::AUTONOMOUS;    
-        } else if (parts[1] == "manual") {
-            m = network::ModeMessage::Mode::MANUAL;    
+            network::ModeMessage message;
+            message.mode = m;
+            network::publish(&bs_session->bs_feed, &message);
         } else {
-            return;
+            log("Invalid Input: \"mode\" expects either \"man\" or \"auto\".", 1, 0, 0);
         }
-
-        network::ModeMessage message;
-        message.mode = m;
-        network::publish(&bs_session->bs_feed, &message);
+    }
+    else if (parts[0].length() > 0) {
+        log("Invalid Input: no matching command was found", 1, 0, 0);
     }
 }
 
