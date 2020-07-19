@@ -47,8 +47,6 @@ Change directories to the tomlc99 folder:
 ```
 cd ../../scratch/simulator/tomlc99
 ```
-<<<<<<< HEAD
-=======
 Run make:
 ```
 make
@@ -57,7 +55,6 @@ Change directories to the simulator folder:
 ```
 cd ../
 ```
->>>>>>> eb42e7903b220f0596bf6b5038a98347fafd72fe
 Run make:
 ```
 make
