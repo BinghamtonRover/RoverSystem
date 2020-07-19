@@ -63,18 +63,22 @@ std::vector<std::string> split_by_spaces(std::string s) {
 
 void command_callback(std::string command, Session *bs_session) {
     auto parts = gui::debug_console::split_by_spaces(command);
-    if (command == "test") {
+    if (parts[0] == "test") {
         log("This is some red text.", 1, 0, 0);
     } 
-    else if (command == "tdl") {
-        bool mode = logger::toggleDebugMode();
-        if(mode) {
-            log("DebugMode turned on", 1, 0, 1);
+    else if (parts[0] == "tdl") {
+        if (parts.size() == 1) {
+            bool mode = logger::toggleDebugMode();
+            if(mode) {
+                log("DebugMode turned on", 1, 0, 1);
+            } else {
+                log("DebugMode turned off", 1, 0, 1);
+            }
         } else {
-            log("DebugMode turned off", 1, 0, 1);
+            log("Invalid Input: \"tdl\" expects no parameters.", 1, 0, 0);
         }
     } 
-    else if (command.substr(0, 3) == "aw ") {
+    else if (parts[0] == "aw") {
         std::vector<double> wps;
         int space = 0;
         space = command.substr(3).find(" ");
@@ -87,10 +91,10 @@ void command_callback(std::string command, Session *bs_session) {
             log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
         }
     } 
-    else if (command == "aw") {
-        log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
-    } 
-    else if (command == "lw") {
+//     else if (command == "aw") {
+//         log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
+//     } 
+    else if (parts[0] == "lw") {
         log("Waypoints: ", 1, 0, 1);
         auto waypoints = waypoint::get_waypoints();
         for(unsigned int i = 0; i < waypoints.size(); i++) {
@@ -99,34 +103,40 @@ void command_callback(std::string command, Session *bs_session) {
             log("[" + latStr + ", " + lonStr + "]", 1, 1, 1);
         }
     } 
-    else if (command == "help") {
+    else if (parts[0] == "help") {
         log("Press 'h' on the main screen for help.", 1, 1, 1);
-    } 
-    else if (command == "") {
-        log("No command entered.", 1, 0, 0);
-    } 
-    else if (command == "gs_on") {
-        if (shared_feeds::bs_feed != NULL){
-            //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
-            network::CameraControlMessage message = {
-                network::CameraControlMessage::Setting::GREYSCALE, // setting
-                //static_cast<uint8_t>(1), //setting
-                static_cast<bool>(true) //greyscale
-            };
-            network::publish(shared_feeds::bs_feed, &message);
+    }
+    else if (parts[0] == "gs_on") {
+        if (parts.size() == 1) {
+            if (shared_feeds::bs_feed != NULL){
+                //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
+                network::CameraControlMessage message = {
+                    network::CameraControlMessage::Setting::GREYSCALE, // setting
+                    //static_cast<uint8_t>(1), //setting
+                    static_cast<bool>(true) //greyscale
+                };
+                network::publish(shared_feeds::bs_feed, &message);
+            }
+        } else {
+            log("Invalid Input: \"gs_on\" expects no parameters.", 1, 0, 0);
         }
     } 
-    else if (command == "gs_off"){
-        if (shared_feeds::bs_feed != NULL){
-            //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
-            network::CameraControlMessage message = {
-                network::CameraControlMessage::Setting::GREYSCALE, // setting
-                static_cast<bool>(false) //greyscale
-            };
-            network::publish(shared_feeds::bs_feed, &message);
-        }   
+    else if (parts[0] == "gs_off") {
+        if (parts.size() == 1) {
+            if (shared_feeds::bs_feed != NULL){
+                //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
+                network::CameraControlMessage message = {
+                    network::CameraControlMessage::Setting::GREYSCALE, // setting
+                    static_cast<bool>(false) //greyscale
+                };
+                network::publish(shared_feeds::bs_feed, &message);
+            }
+        }
+        else {
+            log("Invalid Input: \"gs_off\" expects no parameters.", 1, 0, 0);
+        }
     } 
-    else if (command.substr(0,12) == "jpeg_quality"){
+    else if (parts[0] == "jpeg_quality") {
         int space = 0;
         space = command.substr(0).find(" ");
         int value = atoi(command.substr(space+1,command.size()).c_str()); 
@@ -151,34 +161,35 @@ void command_callback(std::string command, Session *bs_session) {
             log("Invalid command.", 1, 0, 0);
         }
     }
-    else if (command.substr(0,4) == "move") {
-        if (parts.size() != 3) {
-            return;
+    else if (parts[0] == "move") {
+        if (parts.size() == 3) {
+            char left_direction_char = parts[1][0];
+            int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
+
+            char right_direction_char = parts[2][0];
+            int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
+
+            bs_session->last_movement_message.left = left_speed;
+            bs_session->last_movement_message.right = right_speed;
+
+            if (left_direction_char == 'b') {
+                bs_session->last_movement_message.left *= -1;
+            }
+
+            if (right_direction_char == 'b') {
+                bs_session->last_movement_message.right *= -1;
+            }
+
+            logger::log(
+                logger::DEBUG,
+                "> Update movement to %d, %d",
+                bs_session->last_movement_message.left,
+                bs_session->last_movement_message.right);
+        } else {
+            log("Invalid Input: \"move\" expects two integers.", 1, 0, 0);
         }
-        char left_direction_char = parts[1][0];
-        int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
-
-        char right_direction_char = parts[2][0];
-        int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
-
-        bs_session->last_movement_message.left = left_speed;
-        bs_session->last_movement_message.right = right_speed;
-
-        if (left_direction_char == 'b') {
-            bs_session->last_movement_message.left *= -1;
-        }
-
-        if (right_direction_char == 'b') {
-            bs_session->last_movement_message.right *= -1;
-        }
-
-        logger::log(
-            logger::DEBUG,
-            "> Update movement to %d, %d",
-            bs_session->last_movement_message.left,
-            bs_session->last_movement_message.right);
     }
-    else if (command.substr(0,4) == "mode") {
+    else if (parts[0] == "mode") {
         if (parts.size() != 2) return;
         //TODO: Print something to the debug console when this fails?
 
