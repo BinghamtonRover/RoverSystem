@@ -30,10 +30,6 @@ Change directories to the simulator folder:
 ```
 cd scratch/simulator
 ```
-Make a top level bin folder:
-```
-mkdir bin
-```
 Run make:
 ```
 make
