@@ -63,6 +63,14 @@ Run the simulator (you don't need to be connected to robot or anything; all you 
 ```
 ../../bin/simulator test.toml
 ```
+    NOTE: If the following error message appears when attempting to run the simulator...
+    ```
+    ../../bin/simulator: error while loading shared libraries: libGLEW.so.2.1: cannot open shared object file: No such file or directory
+    ```
+    You need to install glew utils:
+    ```
+    sudo apt-get install glew-utils
+    ```
 To move around the simulator, either scroll in or out; or click and drag to move the screen.
 
 To edit the obstacles, edit the coordinates in test.toml.
