@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 namespace gui {
 namespace debug_console {
@@ -84,19 +85,18 @@ void command_callback(std::string command, Session *bs_session) {
     } 
     else if (parts[0] == "aw") {
         if (parts.size() == 3) {
-            std::vector<double> wps;
-            int space = 0;
-            space = command.substr(3).find(" ");
-            if(space <= 3) {
-                log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
-            } else {
-                float lat = atof(command.substr(3, space).c_str());
-                float lon = atof(command.substr(space+4).c_str());
+            try {
+                float lat = std::stof(parts[1], nullptr);
+                float lon = std::stof(parts[2], nullptr);
                 waypoint::add_waypoint(lat,lon);
                 log("Waypoint [" + std::to_string(lat) + ", " + std::to_string(lon) + "] added.", 1, 0, 1);
+            } catch (const std::invalid_argument& ia) {
+                log("Invalid Input: \"aw\" requires two doubles, but something else was provided. Example: \"aw 42.2 75.3\"", 1, 0, 0);
+            } catch (const std::out_of_range& oor) {
+                log("Invalid Input: a provided double was out of range", 1, 0, 0);
             }
         } else {
-            log("Invalid Input: \"aw\" takes two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
+            log("Invalid Input: \"aw\" requires two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
         }
     } 
     else if (parts[0] == "lw") {
@@ -150,28 +150,26 @@ void command_callback(std::string command, Session *bs_session) {
         }
     } 
     else if (parts[0] == "jpeg_quality") {
-        int space = 0;
-        space = command.substr(0).find(" ");
-        int value = atoi(command.substr(space+1,command.size()).c_str()); 
-        if (space < 12 || (command.substr(space+1,command.size()).size() >= 3 && command.substr(space+1,command.size()) != "100")){
-            log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
-        }
-        else if (value < 0) {
-            log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
-        } else if (value >= 0) {
-            //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
-            if (shared_feeds::bs_feed != NULL){
-                network::CameraControlMessage message = {
-                    network::CameraControlMessage::Setting::GREYSCALE, // setting
-                    static_cast<uint8_t>(value) //jpegQuality
-                };
-                network::publish(shared_feeds::bs_feed, &message);
-            }
-            else {
-                
+        if (parts.size() == 2) {
+            try {
+                int value = std::stoi(parts[1], nullptr);
+                if (value >= 0 && value <= 100) {
+                    //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
+                    if (shared_feeds::bs_feed != NULL){
+                        network::CameraControlMessage message = {
+                            network::CameraControlMessage::Setting::GREYSCALE, // setting
+                            static_cast<uint8_t>(value) //jpegQuality
+                        };
+                        network::publish(shared_feeds::bs_feed, &message);
+                    }
+                } else {
+                    log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
+                }
+            } catch (const std::logic_error& ia) {
+                log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, but the provided value wasn't a valid integer. Example: \"jpeg_quality 30\"",1,0,0);
             }
         } else {
-            log("Invalid command.", 1, 0, 0);
+            log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
         }
     }
     else if (parts[0] == "move") {
