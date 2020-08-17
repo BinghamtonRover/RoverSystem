@@ -1,4 +1,4 @@
-all: base_station rover
+all: base_station rover video_computer
 
 bin:
 	mkdir bin
@@ -23,6 +23,9 @@ base_station: bin network simple_config logger
 
 rover: bin network simple_config logger rocs
 	make -C src/rover
+
+video_computer: bin network simple_config logger
+	make -C src/video_computer
 
 clean:
 	rm bin/*

@@ -1,10 +1,13 @@
 #include "../network/network.hpp"
 #include "../logger/logger.hpp"
+#include "../simple_config/simpleconfig.h"
+#include "../util/util.hpp"
 
 #include "camera.hpp"
 
 #include <turbojpeg.h>
 #include <cstring>
+#include <iostream>
 
 const int MAX_STREAMS = 9;
 const unsigned int CAMERA_WIDTH = 1280;
@@ -14,7 +17,87 @@ const int CAMERA_UPDATE_INTERVAL = 5000;
 
 const int CAMERA_FRAME_INTERVAL = 1000 / 15;
 
+const int TICK_INTERVAL = 1000;
+
+const int NETWORK_UPDATE_INTERVAL = 1000 / 2;
+
+const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
+
+
 util::Clock global_clock;
+
+struct Config
+{
+    int base_station_port;
+    int rover_port;
+
+    char base_station_multicast_group[16];
+    char rover_multicast_group[16];
+    char interface[16];
+
+    // For now, this is dynamically-sized.
+    char* gps_serial_id;
+};
+
+Config load_config(const char* filename) {
+    Config config;
+
+    sc::SimpleConfig* sc_config;
+
+    auto err = sc::parse(filename, &sc_config);
+    if (err != sc::Error::OK) {
+        logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
+        exit(1);
+    }
+
+    char* rover_port = sc::get(sc_config, "rover_port");
+    if (!rover_port) {
+        logger::log(logger::ERROR, "Config file missing 'rover_port'!");
+        exit(1);
+    }
+    config.rover_port = atoi(rover_port);
+
+    char* base_station_port = sc::get(sc_config, "base_station_port");
+    if (!base_station_port) {
+        logger::log(logger::ERROR, "Config file missing 'base_station_port'!");
+        exit(1);
+    }
+    config.base_station_port = atoi(base_station_port);
+
+    char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
+    if (!base_station_multicast_group) {
+        logger::log(logger::ERROR, "Config file missing 'base_station_multicast_group'!");
+        exit(1);
+    }
+    strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
+
+    char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
+    if (!rover_multicast_group) {
+        logger::log(logger::ERROR, "Config file missing 'rover_multicast_group'!");
+        exit(1);
+    }
+    strncpy(config.rover_multicast_group, rover_multicast_group, 16);
+
+    char* interface = sc::get(sc_config, "interface");
+    if (!interface) {
+        // Default.
+        strncpy(config.interface, "0.0.0.0", 16);
+    } else {
+        strncpy(config.interface, interface, 16);
+    }
+
+    char* gps_serial_id = sc::get(sc_config, "gps_serial_id");
+    if (!gps_serial_id) {
+        logger::log(logger::ERROR, "Config file missing 'gps_serial_id'!");
+
+        exit(1);
+    }
+    config.gps_serial_id = strdup(gps_serial_id);
+
+    sc::free(sc_config);
+
+    return config;
+}
 
 int updateCameraStatus(camera::CaptureSession **streams) {
     /**
@@ -130,8 +213,243 @@ int updateCameraStatus(camera::CaptureSession **streams) {
     return numOpen;
 }
 
+void stderr_handler(logger::Level leve, std::string message) {
+    fprintf(stderr, "%s\n", message.c_str());
+}
+
 int main(){
+    logger::register_handler(stderr_handler);
+
+    util::Clock::init(&global_clock);
+
+    Config config = load_config("res/r.sconfig");
+
+    unsigned int frame_counter = 0;
+    
     // Camera streams
     camera::CaptureSession * streams[MAX_STREAMS] = {0};
     updateCameraStatus(streams);
+
+    // Two feeds: incoming base station and outgoing rover.
+    network::Feed r_feed, bs_feed;
+
+    {
+        auto err = network::init(
+            &r_feed,
+            network::FeedType::OUT,
+            config.interface,
+            config.rover_multicast_group,
+            config.rover_port,
+            &global_clock);
+
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "[!] Failed to start rover feed: %s", network::get_error_string(err));
+            exit(1);
+        }
+    }
+
+    {
+        auto err = network::init(
+            &bs_feed,
+            network::FeedType::IN,
+            config.interface,
+            config.base_station_multicast_group,
+            config.base_station_port,
+            &global_clock);
+
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "[!] Failed to subscribe to base station feed: %s", network::get_error_string(err));
+            exit(1);
+        }
+    }
+
+    util::Timer camera_update_timer;
+    util::Timer::init(&camera_update_timer, CAMERA_UPDATE_INTERVAL, &global_clock);
+
+    util::Timer tick_timer;
+    util::Timer::init(&tick_timer, TICK_INTERVAL, &global_clock);
+
+    util::Timer network_update_timer;
+    util::Timer::init(&network_update_timer, NETWORK_UPDATE_INTERVAL, &global_clock);
+
+    uint32_t ticks = 0;
+
+    auto compressor = tjInitCompress();
+    auto decompressor = tjInitDecompress();
+
+    // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
+    unsigned int jpeg_quality = 30;
+    bool greyscale = false;
+    network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
+    // Set the starting 2 
+    for(int i = 0; i < 2; i++) {
+        streamTypes[i] = network::CameraControlMessage::sendType::SEND;
+    }
+    for(size_t i = 2; i < MAX_STREAMS; i++) {
+        streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
+    }
+
+    while (true) {
+        std::cout << "loop" << std::endl;
+        for (size_t i = 1; i < MAX_STREAMS; i++) {
+            camera::CaptureSession* cs = streams[i];
+            if(cs == nullptr) continue;
+            if(streamTypes[i] == network::CameraControlMessage::sendType::DONT_SEND) continue;
+
+            // Grab a frame.
+            uint8_t* frame_buffer;
+            size_t frame_size;
+            {
+                camera::Error err = camera::grab_frame(cs, &frame_buffer, &frame_size);
+                if (err != camera::Error::OK) {
+                    if (err == camera::Error::AGAIN)
+                        continue;
+
+                    logger::log(logger::DEBUG, "Deleting camera %d, because it errored", streams[i]->dev_video_id);
+                    camera::close(cs);
+                    delete cs;
+                    streams[i] = nullptr;
+                    continue;
+                }
+            }
+
+            long unsigned int long_frame_size = frame_size;
+
+            // Decode the frame and encode it again to set our desired quality.
+            static uint8_t raw_buffer[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
+
+            // Decompress into a raw frame.
+
+            tjDecompress2(
+                decompressor,
+                frame_buffer,
+                frame_size,
+                raw_buffer,
+                CAMERA_WIDTH,
+                3 * CAMERA_WIDTH,
+                CAMERA_HEIGHT,
+                TJPF_RGB,
+                0);
+
+            // Recompress into jpeg buffer.
+            if (greyscale) {
+                tjCompress2(
+                    compressor,
+                    raw_buffer,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
+                    TJPF_RGB,
+                    &frame_buffer,
+                    &long_frame_size,
+                    TJSAMP_GRAY,
+                    jpeg_quality,
+                    TJFLAG_NOREALLOC);
+            } else {
+                tjCompress2(
+                    compressor,
+                    raw_buffer,
+                    CAMERA_WIDTH,
+                    3 * CAMERA_WIDTH,
+                    CAMERA_HEIGHT,
+                    TJPF_RGB,
+                    &frame_buffer,
+                    &long_frame_size,
+                    TJSAMP_420,
+                    jpeg_quality,
+                    TJFLAG_NOREALLOC);
+            }
+
+            /*
+                    2. Send out packets
+                            - Create camera messages and send Camera packets
+            */
+
+            // Send the frame.
+            // Calculate how many buffers we will need to send the entire frame
+            uint8_t num_buffers = (frame_size / CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE) + 1;
+
+            for (uint8_t j = 0; j < num_buffers; j++) {
+                // This accounts for the last buffer that is not completely divisible
+                // by the defined buffer size, by using up the remaining space calculated
+                // with modulus    -yu
+                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE :
+                                                                frame_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
+
+                network::CameraMessage message = {
+                    static_cast<uint8_t>(i), // stream_index
+                    static_cast<uint16_t>(frame_counter), // frame_index
+                    static_cast<uint8_t>(j), // section_index
+                    num_buffers, // section_count
+                    buffer_size, // size
+                    frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
+                };
+
+                network::publish(&r_feed, &message);
+            }
+
+            camera::return_buffer(cs);
+        }
+
+        if (camera_update_timer.ready()) {
+            updateCameraStatus(streams);
+        }
+
+        // Increment global (across all streams) frame counter. Should be ok. Should...
+        frame_counter++;
+
+        // Receive incoming messages
+        network::IncomingMessage message;
+
+        while (true) {
+            auto neterr = network::receive(&bs_feed, &message);
+            if (neterr != network::Error::OK) {
+                if (neterr == network::Error::NOMORE) {
+                    break;
+                }
+
+                logger::log(logger::DEBUG, "Network error on receive!");
+
+                break;
+            }
+            switch (message.type) {
+                case network::MessageType::CAMERA_CONTROL: {
+                    network::CameraControlMessage quality;
+                    network::deserialize(&message.buffer, &quality);
+                    network::CameraControlMessage::Setting setting = quality.setting;
+
+                    switch(setting) {
+                        case network::CameraControlMessage::Setting::JPEG_QUALITY:
+                            jpeg_quality = quality.jpegQuality;
+                            break;
+                        case network::CameraControlMessage::Setting::GREYSCALE:
+                            greyscale = quality.greyscale;
+                            break;
+                        case network::CameraControlMessage::Setting::DISPLAY_STATE:
+                            streamTypes[quality.resolution.stream_index] = quality.resolution.sending;
+                            break;
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        if (network_update_timer.ready()) {
+            // Update feed statuses.
+            network::update_status(&r_feed);
+            network::update_status(&bs_feed);
+        }
+
+        // Tick.
+        ticks++;
+        uint32_t last_tick_interval;
+        if (tick_timer.ready(&last_tick_interval)) {
+            network::TickMessage message;
+            message.ticks_per_second = (ticks * TICK_INTERVAL) / (float)last_tick_interval;
+            network::publish(&r_feed, &message);
+
+            ticks = 0;
+        }
+    }
 }
