@@ -290,7 +290,6 @@ int main(){
     }
 
     while (true) {
-        std::cout << "loop" << std::endl;
         for (size_t i = 1; i < MAX_STREAMS; i++) {
             camera::CaptureSession* cs = streams[i];
             if(cs == nullptr) continue;
