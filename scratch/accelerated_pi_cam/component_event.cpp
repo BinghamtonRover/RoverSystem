@@ -14,6 +14,8 @@ ComponentEvent get_event_flags(OMX_IN OMX_EVENTTYPE event, OMX_IN OMX_U32 data) 
 					return ComponentEvent::FLUSH;
 				case OMX_CommandMarkBuffer:
 					return ComponentEvent::MARK_BUFFER;
+				default:
+					break;
 			}
 			break;
 		case OMX_EventError:
@@ -30,6 +32,8 @@ ComponentEvent get_event_flags(OMX_IN OMX_EVENTTYPE event, OMX_IN OMX_U32 data) 
 			return ComponentEvent::RESOURCES_ACQUIRED;
 		case OMX_EventDynamicResourcesAvailable:
 			return ComponentEvent::DYNAMIC_RESOURCES_AVAILABLE;
+		default:
+			break;
 	}
 	return (ComponentEvent) 0;
 }
