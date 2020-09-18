@@ -32,6 +32,7 @@ public:
 		OMX_IN OMX_PTR app_data, 
 		OMX_IN OMX_BUFFERHEADERTYPE* buffer
 	);
+	static const char* get_error_name(OMX_ERRORTYPE error);
 	// TODO: Better encapsulation for these types
 	OMX_STRING name;
 	OMX_HANDLETYPE handle;
