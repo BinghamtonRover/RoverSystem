@@ -1,3 +1,6 @@
+#ifndef COMPONENT_EVENT_H
+#define COMPONENT_EVENT_H
+
 #include <IL/OMX_Broadcom.h>
 
 enum ComponentEvent {
@@ -18,3 +21,5 @@ enum ComponentEvent {
 };
 
 ComponentEvent get_event_flags(OMX_IN OMX_EVENTTYPE event, OMX_IN OMX_U32 data);
+
+#endif

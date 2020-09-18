@@ -1,3 +1,6 @@
+#ifndef OMX_VIDEO_COMPONENT_H
+#define OMX_VIDEO_COMPONENT_H
+
 #include <IL/OMX_Broadcom.h>
 #include <interface/vcos/vcos.h>
 
@@ -34,3 +37,5 @@ public:
 	OMX_HANDLETYPE handle;
 	VCOS_EVENT_FLAGS_T flags;
 };
+
+#endif
