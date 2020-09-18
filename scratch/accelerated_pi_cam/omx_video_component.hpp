@@ -8,7 +8,6 @@
 
 class OMXVideoComponent {
 private:
-	void wait_event(VCOS_UNSIGNED events, VCOS_UNSIGNED *retrieved_events);
 	void received_event(ComponentEvent event);
 	
 	bool initialized = false;
@@ -19,6 +18,7 @@ public:
 	~OMXVideoComponent();
 	bool init();
 	void deinit();
+	void wait_event(VCOS_UNSIGNED events, VCOS_UNSIGNED *retrieved_events);
 	static OMX_ERRORTYPE event_handler(
 		OMX_IN OMX_HANDLETYPE comp, 
 		OMX_IN OMX_PTR app_data, 
