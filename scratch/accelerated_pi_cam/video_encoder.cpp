@@ -12,32 +12,6 @@ VideoEncoder::VideoEncoder() {
 	null_sink.name = (char*) "OMX.broadcom.null_sink";
 }
 
-void VideoEncoder::load_camera_drivers() {
-	OMX_ERRORTYPE error;
-	
-	OMX_CONFIG_REQUESTCALLBACKTYPE cbs;
-	OMX_INIT_STRUCTURE(cbs);
-	cbs.nPortIndex = OMX_ALL;
-	cbs.nIndex = OMX_IndexParamCameraDeviceNumber;
-	cbs.bEnable = OMX_TRUE;
-	
-	if (OMX_SetConfig(camera.handle, OMX_IndexConfigRequestCallback, &cbs)) {
-		std::cout << "Error loading camera drivers (set config)" << std::endl;
-		return;
-	}
-	
-	OMX_PARAM_U32TYPE dev;
-	OMX_INIT_STRUCTURE(dev);
-	dev.nPortIndex = OMX_ALL;
-	dev.nU32 = 0;
-	if (OMX_SetParameter(camera.handle, OMX_IndexParamCameraDeviceNumber, &dev)) {
-		std::cout << "Error loading camera drivers (set parameter)" << std::endl;
-		return;
-	}
-	camera.wait_event(ComponentEvent::PARAM_OR_CONFIG_CHANGED, 0);
-	
-}
-
 void VideoEncoder::init_camera_system() {
 	bcm_host_init();
 	
@@ -63,7 +37,7 @@ void VideoEncoder::init_camera_system() {
 		return;
 	}
 	
-	load_camera_drivers();
+	camera.load_drivers();
 	
 	
 }
