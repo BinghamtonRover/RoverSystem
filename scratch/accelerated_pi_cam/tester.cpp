@@ -5,7 +5,7 @@
 #include "video_system_exception.hpp"
 
 int main() {
-	int fd = open("test_video.h264", O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, 0666);
+	int fd = open("video.h264", O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, 0666);
 	if (fd == -1) return -1;
 	try {
 		VideoEncoder v;
@@ -17,11 +17,8 @@ int main() {
 		long end = now + 3000;
 		
 		for (;;) {
-			std::cout << "soup" << std::endl;
 			OMX_BUFFERHEADERTYPE *frame = v.get_frame();
-			std::cout << "loup" << std::endl;
 			pwrite(fd, frame->pBuffer, frame->nFilledLen, frame->nOffset);
-			break;
 			clock_gettime(CLOCK_MONOTONIC, &spec);
 			if (spec.tv_sec*1000 + spec.tv_nsec/1.0e6 >= end) break;
 		}

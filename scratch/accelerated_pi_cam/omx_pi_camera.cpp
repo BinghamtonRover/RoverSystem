@@ -137,7 +137,7 @@ void OMXPiCamera::apply_settings(const CameraSettings& settings) {
 	VideoSystemException::omx_error_check("camera settings", "stabilization", OMX_SetConfig(handle, OMX_IndexConfigCommonFrameStabilisation, &frame_stabilization_st));
 	
 	OMX_CONFIG_WHITEBALCONTROLTYPE white_balance_st;
-	OMX_INIT_STRUCTURE(exposure_control_st);
+	OMX_INIT_STRUCTURE(white_balance_st);
 	white_balance_st.nPortIndex = OMX_ALL;
 	white_balance_st.eWhiteBalControl = settings.white_balance;
 	VideoSystemException::omx_error_check("camera settings", "white balance", OMX_SetConfig(handle, OMX_IndexConfigCommonWhiteBalance, &white_balance_st));

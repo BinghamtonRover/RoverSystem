@@ -104,6 +104,7 @@ void OMXEncoder::enable_output_port() {
 	port_st.nPortIndex = 201;
 	VideoSystemException::omx_error_check("encoder", "get buffer", OMX_GetParameter(handle, OMX_IndexParamPortDefinition, &port_st));
 	VideoSystemException::omx_error_check("encoder", "allocate buffer", OMX_AllocateBuffer(handle, &output_buffer, 201, 0, port_st.nBufferSize));
+	wait_event(ComponentEvent::PORT_ENABLE);
 	
 }
 
