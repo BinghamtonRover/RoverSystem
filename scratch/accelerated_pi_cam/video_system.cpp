@@ -69,6 +69,42 @@ void VideoSystem::start_video() {
 	camera.start_video_capture();
 }
 
+void VideoSystem::stop_video() {
+	camera.change_state(OMX_StateIdle);
+	camera.wait_event(ComponentEvent::STATE_SET);
+	encoder.change_state(OMX_StateIdle);
+	encoder.wait_event(ComponentEvent::STATE_SET);
+	null_sink.change_state(OMX_StateIdle);
+	null_sink.wait_event(ComponentEvent::STATE_SET);
+	
+	camera.disable_port(71);
+	camera.wait_event(ComponentEvent::PORT_DISABLE);
+	camera.disable_port(70);
+	camera.wait_event(ComponentEvent::PORT_DISABLE);
+	null_sink.disable_port(240);
+	null_sink.wait_event(ComponentEvent::PORT_DISABLE);
+	encoder.disable_port(200);
+	encoder.wait_event(ComponentEvent::PORT_DISABLE);
+	encoder.disable_output_port();
+	
+	camera.change_state(OMX_StateLoaded);
+	camera.wait_event(ComponentEvent::STATE_SET);
+	encoder.change_state(OMX_StateLoaded);
+	encoder.wait_event(ComponentEvent::STATE_SET);
+	null_sink.change_state(OMX_StateLoaded);
+	null_sink.wait_event(ComponentEvent::STATE_SET);
+}
+
+void VideoSystem::deinit() {
+	camera.deinit();
+	encoder.deinit();
+	null_sink.deinit();
+	
+	VideoSystemException::omx_error_check("video system", "deinit", OMX_Deinit());
+	
+	bcm_host_deinit();
+}
+
 OMX_BUFFERHEADERTYPE* VideoSystem::get_frame() {
 	encoder.fill_output_buffer();
 	encoder.wait_event(ComponentEvent::FILL_BUFFER_DONE);

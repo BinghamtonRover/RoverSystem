@@ -15,27 +15,19 @@
   (x).nVersion.s.nStep = OMX_VERSION_STEP
 
 void OMXPiCamera::load_drivers() {
-	OMX_ERRORTYPE error;
-	
 	OMX_CONFIG_REQUESTCALLBACKTYPE cbs;
 	OMX_INIT_STRUCTURE(cbs);
 	cbs.nPortIndex = OMX_ALL;
 	cbs.nIndex = OMX_IndexParamCameraDeviceNumber;
 	cbs.bEnable = OMX_TRUE;
 	
-	if (OMX_SetConfig(handle, OMX_IndexConfigRequestCallback, &cbs)) {
-		std::cout << "Error loading camera drivers (set config)" << std::endl;
-		return;
-	}
+	VideoSystemException::omx_error_check("camera", "load drivers callback", OMX_SetConfig(handle, OMX_IndexConfigRequestCallback, &cbs));
 	
 	OMX_PARAM_U32TYPE dev;
 	OMX_INIT_STRUCTURE(dev);
 	dev.nPortIndex = OMX_ALL;
 	dev.nU32 = 0;
-	if (OMX_SetParameter(handle, OMX_IndexParamCameraDeviceNumber, &dev)) {
-		std::cout << "Error loading camera drivers (set parameter)" << std::endl;
-		return;
-	}
+	VideoSystemException::omx_error_check("camera", "load drivers device", OMX_SetParameter(handle, OMX_IndexParamCameraDeviceNumber, &dev));
 	wait_event(ComponentEvent::PARAM_OR_CONFIG_CHANGED, 0);
 }
 
@@ -43,11 +35,7 @@ void OMXPiCamera::set_port_definitions(const CameraSettings& settings) {
 	OMX_PARAM_PORTDEFINITIONTYPE port_st;
 	OMX_INIT_STRUCTURE(port_st);
 	port_st.nPortIndex = 71;
-	OMX_ERRORTYPE error = OMX_GetParameter(handle, OMX_IndexParamPortDefinition, &port_st);
-	if (error) {
-		std::cout << "Error applying camera settings: (loading current settings)" << get_error_name(error) << std::endl;
-		return;
-	}
+	VideoSystemException::omx_error_check("camera", "get port", OMX_GetParameter(handle, OMX_IndexParamPortDefinition, &port_st));
 	
 	port_st.format.video.nFrameWidth = settings.width;
 	port_st.format.video.nFrameHeight = settings.height;
@@ -56,35 +44,19 @@ void OMXPiCamera::set_port_definitions(const CameraSettings& settings) {
 	port_st.format.video.eCompressionFormat = OMX_VIDEO_CodingUnused;
 	port_st.format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
 	
-	error = OMX_SetParameter(handle, OMX_IndexParamPortDefinition, &port_st);
-	if (error) {
-		std::cout << "Error applying camera settings: (saving settings)" << get_error_name(error) << std::endl;
-		return;
-	}
+	VideoSystemException::omx_error_check("camera", "set port", OMX_SetParameter(handle, OMX_IndexParamPortDefinition, &port_st));
 	
 	port_st.nPortIndex = 70;
-	error = OMX_SetParameter(handle, OMX_IndexParamPortDefinition, &port_st);
-	if (error) {
-		std::cout << "Error applying camera settings: (saving settings preview)" << get_error_name(error) << std::endl;
-		return;
-	}
+	VideoSystemException::omx_error_check("camera", "set preview port", OMX_SetParameter(handle, OMX_IndexParamPortDefinition, &port_st));
 	
 	OMX_CONFIG_FRAMERATETYPE framerate_st;
 	OMX_INIT_STRUCTURE(framerate_st);
 	framerate_st.nPortIndex = 71;
 	framerate_st.xEncodeFramerate = port_st.format.video.xFramerate;
-	error = OMX_SetConfig(handle, OMX_IndexConfigVideoFramerate, &framerate_st);
-	if (error) {
-		std::cout << "Error applying camera settings: (framerate settings)" << get_error_name(error) << std::endl;
-		return;
-	}
+	VideoSystemException::omx_error_check("camera", "set framerate", OMX_SetConfig(handle, OMX_IndexConfigVideoFramerate, &framerate_st));
 	
 	framerate_st.nPortIndex = 70;
-	error = OMX_SetConfig(handle, OMX_IndexConfigVideoFramerate, &framerate_st);
-	if (error) {
-		std::cout << "Error applying camera settings: (framerate settings preview)" << get_error_name(error) << std::endl;
-		return;
-	}
+	VideoSystemException::omx_error_check("camera", "set preview framerate", OMX_SetConfig(handle, OMX_IndexConfigVideoFramerate, &framerate_st));
 }
 
 void OMXPiCamera::apply_settings(const CameraSettings& settings) {
@@ -203,4 +175,11 @@ void OMXPiCamera::start_video_capture() {
 	capture_st.nPortIndex = 71;
 	capture_st.bEnabled = OMX_TRUE;
 	VideoSystemException::omx_error_check("camera", "start video", OMX_SetConfig(handle, OMX_IndexConfigPortCapturing, &capture_st));
+}
+
+void OMXPiCamera::stop_video_capture() {
+	OMX_CONFIG_PORTBOOLEANTYPE capture_st;
+	VideoSystemException::omx_error_check("camera", "stop video get", OMX_GetConfig(handle, OMX_IndexConfigPortCapturing, &capture_st));
+	capture_st.bEnabled = OMX_FALSE;
+	VideoSystemException::omx_error_check("camera", "stop video set", OMX_SetConfig(handle, OMX_IndexConfigPortCapturing, &capture_st));
 }

@@ -30,6 +30,10 @@ int main() {
 			
 			if (std::chrono::system_clock::now() >= end_time) break;
 		}
+		
+		video_system.stop_video();	// Stop the video components (makes idle)
+		video_system.deinit();	// Deinitialize components, OMX, drivers
+		
 		video_out_file.close();
 		return 0;
 		

@@ -10,6 +10,7 @@ public:
 	void set_port_definitions(const CameraSettings& settings);
 	void apply_settings(const CameraSettings& settings);
 	void start_video_capture();
+	void stop_video_capture();
 };
 
 #endif

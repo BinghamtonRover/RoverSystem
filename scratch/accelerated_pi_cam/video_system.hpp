@@ -18,8 +18,10 @@ public:
 	
 	// TODO: Options for multiplexed cameras
 	void init();
+	void deinit();
 	void init(CameraSettings& cam_settings, H264Settings& encoder_settings);
 	void start_video();
+	void stop_video();
 	OMX_BUFFERHEADERTYPE* get_frame();
 };
 
