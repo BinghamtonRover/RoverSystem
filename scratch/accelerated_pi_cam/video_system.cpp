@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include "component_event.hpp"
-#include "h264_settings.hpp"
 #include "video_system_exception.hpp"
 
 VideoSystem::VideoSystem() {
@@ -15,6 +14,12 @@ VideoSystem::VideoSystem() {
 }
 
 void VideoSystem::init() {
+	CameraSettings cam_settings_default;
+	H264Settings encoder_settings_default;
+	init(cam_settings_default, encoder_settings_default);
+}
+
+void VideoSystem::init(CameraSettings& cam_settings, H264Settings& encoder_settings) {
 	bcm_host_init();
 	VideoSystemException::omx_error_check("OMX", "init", OMX_Init());
 	
@@ -23,11 +28,9 @@ void VideoSystem::init() {
 	null_sink.init();
 	
 	camera.load_drivers();
-	CameraSettings cam_settings;
 	camera.set_port_definitions(cam_settings);
 	camera.apply_settings(cam_settings);
 	
-	H264Settings encoder_settings;
 	encoder.set_port_definitions(cam_settings);
 	encoder.set_h264(encoder_settings);
 	

@@ -5,6 +5,7 @@
 #include "omx_pi_camera.hpp"
 #include "omx_encoder.hpp"
 #include "camera_settings.hpp"
+#include "h264_settings.hpp"
 
 class VideoSystem {
 private:
@@ -15,8 +16,9 @@ private:
 public:
 	VideoSystem();
 	
-	// TODO: Options for multiplexed cameras, picture settings
+	// TODO: Options for multiplexed cameras
 	void init();
+	void init(CameraSettings& cam_settings, H264Settings& encoder_settings);
 	void start_video();
 	OMX_BUFFERHEADERTYPE* get_frame();
 };
