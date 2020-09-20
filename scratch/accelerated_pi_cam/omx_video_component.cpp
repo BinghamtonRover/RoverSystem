@@ -3,6 +3,8 @@
 #include <bcm_host.h>
 #include <iostream>
 
+#include "video_system_exception.hpp"
+
 #define DUMP_CASE(x) case x: return #x;
 
 #define OMX_INIT_STRUCTURE(x) \
@@ -86,6 +88,18 @@ void OMXVideoComponent::deinit() {
 	initialized = false;
 	vcos_event_flags_delete(&flags);
 	OMX_FreeHandle(handle);
+}
+
+void OMXVideoComponent::change_state(OMX_STATETYPE state) {
+	VideoSystemException::omx_error_check("component", "change state", OMX_SendCommand(handle, OMX_CommandStateSet, state, 0));
+}
+
+void OMXVideoComponent::enable_port(OMX_U32 port) {
+	VideoSystemException::omx_error_check("component", "enable port", OMX_SendCommand(handle, OMX_CommandPortEnable, port, 0));
+}
+
+void OMXVideoComponent::disable_port(OMX_U32 port) {
+	VideoSystemException::omx_error_check("component", "disable port", OMX_SendCommand(handle, OMX_CommandPortDisable, port, 0));
 }
 
 const char* OMXVideoComponent::get_error_name(OMX_ERRORTYPE error) {

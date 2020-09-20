@@ -19,6 +19,10 @@ public:
 	bool init();
 	void deinit();
 	void wait_event(VCOS_UNSIGNED events, VCOS_UNSIGNED *retrieved_events);
+	inline void wait_event(VCOS_UNSIGNED events) { wait_event(events, 0); }
+	void change_state(OMX_STATETYPE state);
+	void enable_port(OMX_U32 port);
+	void disable_port(OMX_U32 port);
 	static OMX_ERRORTYPE event_handler(
 		OMX_IN OMX_HANDLETYPE comp, 
 		OMX_IN OMX_PTR app_data, 
