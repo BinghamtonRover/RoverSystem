@@ -51,17 +51,12 @@ void OMXVideoComponent::received_event(ComponentEvent event) {
 	vcos_event_flags_set(&flags, event, VCOS_OR);
 }
 
-bool OMXVideoComponent::init() {
+void OMXVideoComponent::init() {
 	if (vcos_event_flags_create(&flags, "component")) {
-		std::cout << "Component error: vcos_event_flags_create" << std::endl;
-		return false;
+		throw VideoSystemException("component flags create", name, OMX_ErrorNone);
 	}
 	
-	OMX_ERRORTYPE error = OMX_GetHandle(&handle, name, this, &callbacks);
-	if (error) {
-		std::cout << "Component error: GetHandle: " << get_error_name(error) << std::endl;
-		return false;
-	}
+	VideoSystemException::omx_error_check("component get handle", name, OMX_GetHandle(&handle, name, this, &callbacks));
 	
 	OMX_INDEXTYPE types[] = { OMX_IndexParamAudioInit, OMX_IndexParamVideoInit, OMX_IndexParamImageInit, OMX_IndexParamOtherInit };
 	OMX_PORT_PARAM_TYPE ports;
@@ -69,19 +64,14 @@ bool OMXVideoComponent::init() {
 	OMX_INIT_STRUCTURE(ports);
 	
 	for (size_t i = 0; i < 4; ++i) {
-		if ((error = OMX_GetParameter(handle, types[i], &ports))) {
-			std::cout << "Component error: GetParameter: " << get_error_name(error) << std::endl;
-			return false;
-		}
+		VideoSystemException::omx_error_check("component get ports", name, OMX_GetParameter(handle, types[i], &ports));
 		
-		// From the example: I'm not sure why all ports get disabled
 		for (OMX_U32 p = ports.nStartPortNumber; p < ports.nStartPortNumber + ports.nPorts; ++p) {
 			OMX_SendCommand(handle, OMX_CommandPortDisable, p, 0);
 			wait_event(ComponentEvent::PORT_DISABLE, nullptr);
 		}
 	}
 	initialized = true;
-	return true;
 }
 
 void OMXVideoComponent::deinit() {

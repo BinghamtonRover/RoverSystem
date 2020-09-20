@@ -16,7 +16,7 @@ private:
 public:
 	
 	~OMXVideoComponent();
-	bool init();
+	void init();
 	void deinit();
 	void wait_event(VCOS_UNSIGNED events, VCOS_UNSIGNED *retrieved_events);
 	inline void wait_event(VCOS_UNSIGNED events) { wait_event(events, 0); }
