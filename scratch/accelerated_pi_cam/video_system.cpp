@@ -1,4 +1,4 @@
-#include "video_encoder.hpp"
+#include "video_system.hpp"
 
 #include <bcm_host.h>
 #include <IL/OMX_Broadcom.h>
@@ -8,36 +8,19 @@
 #include "h264_settings.hpp"
 #include "video_system_exception.hpp"
 
-VideoEncoder::VideoEncoder() {
+VideoSystem::VideoSystem() {
 	camera.name = (char*) "OMX.broadcom.camera";
 	encoder.name = (char*) "OMX.broadcom.video_encode";
 	null_sink.name = (char*) "OMX.broadcom.null_sink";
 }
 
-void VideoEncoder::init() {
+void VideoSystem::init() {
 	bcm_host_init();
+	VideoSystemException::omx_error_check("OMX", "init", OMX_Init());
 	
-	OMX_ERRORTYPE error = OMX_Init();
-	
-	if (error) {
-		std::cout << "Error initializing OMX: " << OMXVideoComponent::get_error_name(error) << std::endl;
-		return;
-	}
-	
-	if (!camera.init()) {
-		std::cout << "Error initializing component: camera." << std::endl;
-		return;
-	}
-		
-	if (!encoder.init()) {
-		std::cout << "Error initializing component: encoder." << std::endl;
-		return;
-	}
-	
-	if (!null_sink.init()) {
-		std::cout << "Error initializing component: null_sink." << std::endl;
-		return;
-	}
+	camera.init();
+	encoder.init();
+	null_sink.init();
 	
 	camera.load_drivers();
 	CameraSettings cam_settings;
@@ -61,7 +44,7 @@ void VideoEncoder::init() {
 	
 }
 
-void VideoEncoder::start_video() {
+void VideoSystem::start_video() {
 	camera.enable_port(71);
 	camera.wait_event(ComponentEvent::PORT_ENABLE);
 	camera.enable_port(70);
@@ -83,7 +66,7 @@ void VideoEncoder::start_video() {
 	camera.start_video_capture();
 }
 
-OMX_BUFFERHEADERTYPE* VideoEncoder::get_frame() {
+OMX_BUFFERHEADERTYPE* VideoSystem::get_frame() {
 	encoder.fill_output_buffer();
 	encoder.wait_event(ComponentEvent::FILL_BUFFER_DONE);
 	return encoder.get_output_buffer();

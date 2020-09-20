@@ -2,7 +2,7 @@
 #include <fstream>
 #include <chrono>
 
-#include "video_encoder.hpp"
+#include "video_system.hpp"
 #include "video_system_exception.hpp"
 
 /*
@@ -17,7 +17,7 @@ int main() {
 	
 	try {
 		
-		VideoEncoder video_system;
+		VideoSystem video_system;
 		video_system.init();	// Load drivers, connect camera and encoder together
 		video_system.start_video();	// Activate the video components (does not output anything)
 	

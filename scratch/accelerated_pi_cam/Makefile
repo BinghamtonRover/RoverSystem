@@ -6,8 +6,8 @@ INCLUDES = -I/opt/vc/include
 
 all: Tester
 
-Tester:	omx_encoder.o video_system_exception.o component_event.o omx_video_component.o omx_pi_camera.o video_encoder.o tester.o
-	$(CXX) omx_encoder.o video_system_exception.o component_event.o omx_video_component.o omx_pi_camera.o video_encoder.o tester.o $(LDFLAGS) -o $@
+Tester:	omx_encoder.o video_system_exception.o component_event.o omx_video_component.o omx_pi_camera.o video_system.o tester.o
+	$(CXX) omx_encoder.o video_system_exception.o component_event.o omx_video_component.o omx_pi_camera.o video_system.o tester.o $(LDFLAGS) -o $@
 
 tester.o:	tester.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c tester.cpp -o tester.o
@@ -15,8 +15,8 @@ tester.o:	tester.cpp
 omx_video_component.o:	omx_video_component.hpp omx_video_component.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c omx_video_component.cpp -o omx_video_component.o
 
-video_encoder.o:	video_encoder.hpp video_encoder.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c video_encoder.cpp -o video_encoder.o
+video_system.o:	video_system.hpp video_system.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c video_system.cpp -o video_system.o
 
 component_event.o:	component_event.hpp component_event.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c component_event.cpp -o component_event.o
