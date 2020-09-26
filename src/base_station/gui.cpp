@@ -7,6 +7,7 @@
 #include "log_view.hpp"
 
 #include <GL/gl.h>
+#include <iostream>
 
 #include <math.h>
 #include <stdio.h>
@@ -1057,6 +1058,23 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             gui::debug_console::handle_keypress(key, mods, bs_session);
         }
     } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+        switch(key){
+            case GLFW_KEY_0:
+                bs_session->focus_mode = FocusMode::GENERAL;
+                break;
+            case GLFW_KEY_1:
+                bs_session->focus_mode = FocusMode::DRIVE;
+                break;
+            case GLFW_KEY_2:
+                bs_session->focus_mode = FocusMode::ARM;
+                break;
+            case GLFW_KEY_3:
+                bs_session->focus_mode = FocusMode::SCIENCE;
+                break;
+            case GLFW_KEY_4:
+                bs_session->focus_mode = FocusMode::AUTONOMY;
+                break;
+        }
         // We open the menu on release to prevent the D key from being detected
         // in the character callback upon release.
         if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
@@ -1091,6 +1109,10 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             bs_session->dont_send_invalid();
         } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             gui::state.input_state = gui::InputState::CAMERA_MOVE;
+        }
+        else if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
+            gui::state.show_debug_console = true;
+            gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {

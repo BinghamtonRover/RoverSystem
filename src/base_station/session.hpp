@@ -58,7 +58,18 @@ enum class ControllerMode {
     ARM
 };
 
-enum class StopwatchState { STOPPED, PAUSED, RUNNING };
+enum class FocusMode{
+    GENERAL,
+    DRIVE,
+    ARM,
+    SCIENCE,
+    AUTONOMY
+};
+
+enum class StopwatchState { 
+    STOPPED,
+    PAUSED,
+    RUNNING };
 
 struct StopwatchStruct {
     StopwatchState state;
@@ -89,6 +100,9 @@ public:
     // Network feeds.cd 
     network::Feed r_feed;
     network::Feed bs_feed;
+
+    //Initialize Focus Mode
+    FocusMode focus_mode = FocusMode::GENERAL;
 
     unsigned int map_texture_id;
 

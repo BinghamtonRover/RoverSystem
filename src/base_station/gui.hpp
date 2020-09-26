@@ -24,7 +24,7 @@ enum class InputState {
     CAMERA_MOVE_TARGET,
 
     AUTONOMY_CONTROL,
-    AUTONOMY_EDIT_TARGET
+    AUTONOMY_EDIT_TARGET,
 };
 
 struct Font {
