@@ -214,7 +214,7 @@ int main() {
     debug_commands.push_back("'aw <number> <number>': adds a waypoint (in latitude and longitude)");
     debug_commands.push_back("'gs_on': Changes camera feeds to greyscale");
     debug_commands.push_back("'gs_off': Changes camera feeds to RGB");
-    debug_commands.push_back("'jpeg_quality <0-100>: Changes the quality of the cameras");
+    debug_commands.push_back("'jpeg_quality <0-95>: Changes the quality of the cameras");
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();

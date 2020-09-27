@@ -384,7 +384,7 @@ int main() {
     auto compressor = tjInitCompress();
     auto decompressor = tjInitDecompress();
 
-    // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
+    // jpeg_quality ranges from 0 - 95, and dictates the level of compression.
     unsigned int jpeg_quality = 30;
     bool greyscale = false;
     network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];

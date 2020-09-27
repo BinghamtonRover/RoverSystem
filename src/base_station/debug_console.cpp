@@ -153,7 +153,7 @@ void command_callback(std::string command, Session *bs_session) {
         if (parts.size() == 2) {
             try {
                 int value = std::stoi(parts[1], nullptr);
-                if (value >= 0 && value <= 100) {
+                if (value >= 0 && value <= 95) {
                     //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                     if (shared_feeds::bs_feed != NULL){
                         network::CameraControlMessage message = {
@@ -163,13 +163,13 @@ void command_callback(std::string command, Session *bs_session) {
                         network::publish(shared_feeds::bs_feed, &message);
                     }
                 } else {
-                    log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
+                    log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 95, for example: \"jpeg_quality 30\"",1,0,0);
                 }
             } catch (const std::logic_error& ia) {
-                log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, but the provided value wasn't a valid integer. Example: \"jpeg_quality 30\"",1,0,0);
+                log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 95, but the provided value wasn't a valid integer. Example: \"jpeg_quality 30\"",1,0,0);
             }
         } else {
-            log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
+            log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 95, for example: \"jpeg_quality 30\"",1,0,0);
         }
     }
     else if (parts[0] == "move") {
