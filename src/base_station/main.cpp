@@ -186,9 +186,8 @@ int main() {
 
     // Init the controller.
     // TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
-    bool controller_loaded = false;
     if (controller::init("/dev/input/js0") == controller::Error::OK) {
-        controller_loaded = true;
+        bs_session.controller_loaded = true;
         logger::log(logger::INFO, "Controller connected.");
     } else {
         logger::log(logger::WARNING, "No controller connected!");
@@ -385,7 +384,7 @@ int main() {
             bs_session.bs_feed.bytes_transferred = 0;
         }
 
-        if (controller_loaded) {
+        if (bs_session.controller_loaded) {
             // Process controller input.
             controller::Event event;
             controller::Error err;
@@ -419,9 +418,16 @@ int main() {
             }
 
             if (err != controller::Error::DONE) {
-                logger::log(logger::ERROR, "Failed to read from the controller! Disabling");
-                controller_loaded = false;
+                logger::log(logger::ERROR, "Failed to read from the controller! Disabling until reconnect.");
+                bs_session.controller_loaded = false;
             }
+        }
+
+        if(!bs_session.controller_loaded){
+            if (controller::init("/dev/input/js0") == controller::Error::OK) {
+                bs_session.controller_loaded = true;
+                logger::log(logger::INFO, "Controller reconnected.");
+            }  
         }
 
         if (movement_send_timer.ready()) {
