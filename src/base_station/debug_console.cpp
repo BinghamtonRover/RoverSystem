@@ -157,7 +157,7 @@ void command_callback(std::string command, Session *bs_session) {
                     //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                     if (shared_feeds::bs_feed != NULL){
                         network::CameraControlMessage message = {
-                            network::CameraControlMessage::Setting::GREYSCALE, // setting
+                            network::CameraControlMessage::Setting::JPEG_QUALITY, // setting
                             static_cast<uint8_t>(value) //jpegQuality
                         };
                         network::publish(shared_feeds::bs_feed, &message);

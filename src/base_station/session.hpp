@@ -118,6 +118,7 @@ public:
     int secondary_feed;
     int feed_to_move;
 
+    bool controller_loaded;
     ControllerMode controller_mode;
 
     std::vector<uint16_t> lidar_points;
