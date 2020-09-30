@@ -137,3 +137,31 @@ void Session::dont_send_invalid() {
     }
     return;
 }
+
+void Session::update_focus_mode(int input_mode){
+    switch (input_mode)
+    {
+    case (int)FocusMode::GENERAL:
+        this->focus_mode = FocusMode::GENERAL;
+        break;
+    case (int)FocusMode::DRIVE:
+        this->focus_mode = FocusMode::DRIVE;
+        break;
+    case (int)FocusMode::ARM:
+        this->focus_mode = FocusMode::ARM;
+        break;
+    case (int)FocusMode::SCIENCE:
+        this->focus_mode = FocusMode::SCIENCE;
+        break;
+    case (int)FocusMode::AUTONOMY:
+        this->focus_mode = FocusMode::AUTONOMY;
+        break;
+    default:
+    logger::log(logger::ERROR, "Base Station: Invalid Focus Mode.");
+        break;
+    }
+}
+
+FocusMode Session::get_focus_mode(){
+    return this->focus_mode;
+}
