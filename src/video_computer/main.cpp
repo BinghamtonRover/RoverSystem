@@ -1,14 +1,16 @@
-#include "../network/network.hpp"
-#include "../logger/logger.hpp"
-#include "../simple_config/simpleconfig.h"
-#include "../util/util.hpp"
+//#include "../network/network.hpp"
+//#include "../logger/logger.hpp"
+//#include "../simple_config/simpleconfig.h"
+//#include "../util/util.hpp"
 
-#include "camera.hpp"
+//#include "camera.hpp"
+#include "session.hpp"
 
-#include <turbojpeg.h>
-#include <cstring>
-#include <iostream>
+//#include <turbojpeg.h>
+//#include <cstring>
+//#include <iostream>
 
+/*
 const int MAX_STREAMS = 9;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
@@ -98,13 +100,14 @@ Config load_config(const char* filename) {
 
     return config;
 }
-
+*/
+/*
 int updateCameraStatus(camera::CaptureSession **streams) {
-    /**
-     * We need 2 arrays to keep track of all of our data.
-     * 1. An array for new cameras found
-     * 2. An array for which camera indices still exist
-     **/
+    //
+    // We need 2 arrays to keep track of all of our data.
+    // 1. An array for new cameras found
+    // 2. An array for which camera indices still exist
+    // 
     int camerasFound[MAX_STREAMS] = {-1};
     int existingCameras[MAX_STREAMS] = {-1};
     int cntr = 0;
@@ -129,25 +132,25 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         cntr++;
     }
 
-    /**
-     * There are 3 steps here.
-     *
-     * 1. Check which cameras exist in the file system.
-     *
-     * 2. Iterate through our cameras adding any extras that do exist.
-     *
-     * 3. Remove any cameras that don't exist,
-     **/
+    //
+    // There are 3 steps here.
+    //
+    // 1. Check which cameras exist in the file system.
+    //
+    // 2. Iterate through our cameras adding any extras that do exist.
+    //
+    // 3. Remove any cameras that don't exist,
+    //
 
     for(int i = 0; i < cntr; i++) {
-        /* 1.  Check which cameras exist in the file system. */
+        // 1.  Check which cameras exist in the file system. 
         for(int j = 1; j < MAX_STREAMS; j++) {
             if(streams[j] != nullptr) {
                 if(camerasFound[i] == streams[j]->dev_video_id) {
-                    /**
-                     * Use -1 to say this camera is being used,
-                     * so we don't need to do anything.
-                     **/
+                    //
+                    // Use -1 to say this camera is being used,
+                    // so we don't need to do anything.
+                    //
                     camerasFound[i] = -1;
                     existingCameras[j] = i;
                     break;
@@ -155,7 +158,7 @@ int updateCameraStatus(camera::CaptureSession **streams) {
             }
         }
 
-        /* Don't initialize this camera, as it exists */
+        // Don't initialize this camera, as it exists
         if (camerasFound[i] == -1) {
             continue;
         }
@@ -188,9 +191,9 @@ int updateCameraStatus(camera::CaptureSession **streams) {
             continue;
         }
 
-        /** 
-          * 2. Iterate through our cameras adding any extras that do exist.
-         **/
+        // 
+        // 2. Iterate through our cameras adding any extras that do exist.
+        //
         streams[open] = cs;
     }
 
@@ -200,7 +203,7 @@ int updateCameraStatus(camera::CaptureSession **streams) {
         }
     }
 
-    /* 3. Remove any cameras that don't exist. */
+    // 3. Remove any cameras that don't exist. 
     for(int j = 1; j < MAX_STREAMS; j++) {
         if(existingCameras[j] == -1 && streams[j] != nullptr) {
             logger::log(logger::INFO, "Camera %d disconnected.", j);
@@ -213,34 +216,39 @@ int updateCameraStatus(camera::CaptureSession **streams) {
     return numOpen;
 }
 
-void stderr_handler(logger::Level leve, std::string message) {
+void stderr_handler(logger::Level level, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());
 }
-
+*/
 int main(){
-    logger::register_handler(stderr_handler);
+    Session video_session;
 
-    util::Clock::init(&global_clock);
+    //logger::register_handler(stderr_handler);
+    logger::register_handler(logger::stderr_handler);
 
-    Config config = load_config("res/r.sconfig");
+    //util::Clock::init(&global_clock);
+    util::Clock::init(&video_session.global_clock);
 
-    unsigned int frame_counter = 0;
+    //Config config = load_config("res/r.sconfig");
+    video_session.config = video_session.load_config("res/r.sconfig");
+
+    //unsigned int frame_counter = 0;
     
     // Camera streams
-    camera::CaptureSession * streams[MAX_STREAMS] = {0};
+    //camera::CaptureSession * streams[MAX_STREAMS] = {0};
     updateCameraStatus(streams);
 
     // Two feeds: incoming base station and outgoing rover.
-    network::Feed r_feed, bs_feed;
+    //network::Feed r_feed, bs_feed;
 
     {
         auto err = network::init(
-            &r_feed,
+            &video_session.r_feed,
             network::FeedType::OUT,
             config.interface,
             config.rover_multicast_group,
             config.rover_port,
-            &global_clock);
+            &video_session.global_clock);
 
         if (err != network::Error::OK) {
             logger::log(logger::ERROR, "[!] Failed to start rover feed: %s", network::get_error_string(err));
@@ -250,12 +258,12 @@ int main(){
 
     {
         auto err = network::init(
-            &bs_feed,
+            &video_session.bs_feed,
             network::FeedType::IN,
             config.interface,
             config.base_station_multicast_group,
             config.base_station_port,
-            &global_clock);
+            &video_session.global_clock);
 
         if (err != network::Error::OK) {
             logger::log(logger::ERROR, "[!] Failed to subscribe to base station feed: %s", network::get_error_string(err));
@@ -263,37 +271,45 @@ int main(){
         }
     }
 
-    util::Timer camera_update_timer;
-    util::Timer::init(&camera_update_timer, CAMERA_UPDATE_INTERVAL, &global_clock);
+    //util::Timer camera_update_timer;
+    //util::Timer::init(&camera_update_timer, CAMERA_UPDATE_INTERVAL, &global_clock);
+    util::Timer::init(&video_session.camera_update_timer, CAMERA_UPDATE_INTERVAL, &video_session.global_clock);
 
-    util::Timer tick_timer;
-    util::Timer::init(&tick_timer, TICK_INTERVAL, &global_clock);
+    //util::Timer tick_timer;
+    //util::Timer::init(&tick_timer, TICK_INTERVAL, &global_clock);
+    util::Timer::init(&video_stream.tick_timer, TICK_INTERVAL, &video_stream.global_clock);
 
-    util::Timer network_update_timer;
-    util::Timer::init(&network_update_timer, NETWORK_UPDATE_INTERVAL, &global_clock);
+    //util::Timer network_update_timer;
+    //util::Timer::init(&network_update_timer, NETWORK_UPDATE_INTERVAL, &global_clock);
+    util::Timer::init(&video_stream.network_update_timer, NETWORK_UPDATE_INTERVAL, &video_stream.global_clock);
 
-    uint32_t ticks = 0;
+    //uint32_t ticks = 0;
 
-    auto compressor = tjInitCompress();
-    auto decompressor = tjInitDecompress();
+    //auto compressor = tjInitCompress();
+    //auto decompressor = tjInitDecompress();
 
     // jpeg_quality ranges from 0 - 100, and dictates the level of compression.
-    unsigned int jpeg_quality = 30;
-    bool greyscale = false;
-    network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
+    //unsigned int jpeg_quality = 30;
+    //bool greyscale = false;
+    //network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
+    
     // Set the starting 2 
     for(int i = 0; i < 2; i++) {
-        streamTypes[i] = network::CameraControlMessage::sendType::SEND;
+        //streamTypes[i] = network::CameraControlMessage::sendType::SEND;
+        video_stream.streamTypes[i] = network::CameraControlMessage::sendType::SEND;
     }
     for(size_t i = 2; i < MAX_STREAMS; i++) {
-        streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
+        //streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
+        video_stream.streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
     }
 
     while (true) {
         for (size_t i = 1; i < MAX_STREAMS; i++) {
-            camera::CaptureSession* cs = streams[i];
+            //camera::CaptureSession* cs = streams[i];
+            camera::CaptureSession* cs = video_session.streams[i];
             if(cs == nullptr) continue;
-            if(streamTypes[i] == network::CameraControlMessage::sendType::DONT_SEND) continue;
+            //if(streamTypes[i] == network::CameraControlMessage::sendType::DONT_SEND) continue;
+            if(video_session.streamTypes[i] == network::CameraControlMessage::sendType::DONT_SEND) continue;
 
             // Grab a frame.
             uint8_t* frame_buffer;
@@ -304,10 +320,12 @@ int main(){
                     if (err == camera::Error::AGAIN)
                         continue;
 
-                    logger::log(logger::DEBUG, "Deleting camera %d, because it errored", streams[i]->dev_video_id);
+                    //logger::log(logger::DEBUG, "Deleting camera %d, because it errored", streams[i]->dev_video_id);
+                    logger::log(logger::DEBUG, "Deleting camera %d, because it errored", video_session..streams[i]->dev_video_id);
                     camera::close(cs);
                     delete cs;
-                    streams[i] = nullptr;
+                    //streams[i] = nullptr;
+                    video_session.streams[i] = nullptr;
                     continue;
                 }
             }
@@ -320,7 +338,7 @@ int main(){
             // Decompress into a raw frame.
 
             tjDecompress2(
-                decompressor,
+                video_session.decompressor,
                 frame_buffer,
                 frame_size,
                 raw_buffer,
@@ -333,7 +351,7 @@ int main(){
             // Recompress into jpeg buffer.
             if (greyscale) {
                 tjCompress2(
-                    compressor,
+                    video_session.compressor,
                     raw_buffer,
                     CAMERA_WIDTH,
                     3 * CAMERA_WIDTH,
@@ -342,11 +360,11 @@ int main(){
                     &frame_buffer,
                     &long_frame_size,
                     TJSAMP_GRAY,
-                    jpeg_quality,
+                    video_session.jpeg_quality,
                     TJFLAG_NOREALLOC);
             } else {
                 tjCompress2(
-                    compressor,
+                    video_session.compressor,
                     raw_buffer,
                     CAMERA_WIDTH,
                     3 * CAMERA_WIDTH,
@@ -355,7 +373,7 @@ int main(){
                     &frame_buffer,
                     &long_frame_size,
                     TJSAMP_420,
-                    jpeg_quality,
+                    video_session.jpeg_quality,
                     TJFLAG_NOREALLOC);
             }
 
@@ -377,31 +395,35 @@ int main(){
 
                 network::CameraMessage message = {
                     static_cast<uint8_t>(i), // stream_index
-                    static_cast<uint16_t>(frame_counter), // frame_index
+                    static_cast<uint16_t>(video_session.frame_counter), // frame_index
                     static_cast<uint8_t>(j), // section_index
                     num_buffers, // section_count
                     buffer_size, // size
                     frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
 
-                network::publish(&r_feed, &message);
+                //network::publish(&r_feed, &message);
+                network::publish(&video_session.r_feed, &message);
             }
 
             camera::return_buffer(cs);
         }
 
         if (camera_update_timer.ready()) {
-            updateCameraStatus(streams);
+            //updateCameraStatus(streams);
+            updateCameraStatus(video_session.streams);
         }
 
         // Increment global (across all streams) frame counter. Should be ok. Should...
-        frame_counter++;
+        //frame_counter++;
+        video_session.frame_counter++;
 
         // Receive incoming messages
         network::IncomingMessage message;
 
         while (true) {
-            auto neterr = network::receive(&bs_feed, &message);
+            //auto neterr = network::receive(&bs_feed, &message);
+            auto neterr = network::receive(&video_session.bs_feed, &message);
             if (neterr != network::Error::OK) {
                 if (neterr == network::Error::NOMORE) {
                     break;
@@ -419,13 +441,16 @@ int main(){
 
                     switch(setting) {
                         case network::CameraControlMessage::Setting::JPEG_QUALITY:
-                            jpeg_quality = quality.jpegQuality;
+                            //jpeg_quality = quality.jpegQuality;
+                            video_session.jpeg_quality = quality.jpegQuality;
                             break;
                         case network::CameraControlMessage::Setting::GREYSCALE:
-                            greyscale = quality.greyscale;
+                            //greyscale = quality.greyscale;
+                            video_session.greyscale = quality.greyscale;
                             break;
                         case network::CameraControlMessage::Setting::DISPLAY_STATE:
-                            streamTypes[quality.resolution.stream_index] = quality.resolution.sending;
+                            //streamTypes[quality.resolution.stream_index] = quality.resolution.sending;
+                            video_session.streamTypes[quality.resolution.stream_index] = quality.resolution.sending;
                             break;
                     }
                     break;
@@ -434,21 +459,28 @@ int main(){
                     break;
             }
         }
-        if (network_update_timer.ready()) {
+        //if (network_update_timer.ready()) {
+        if (video_session.network_update_timer.ready()) {
             // Update feed statuses.
-            network::update_status(&r_feed);
-            network::update_status(&bs_feed);
+            //network::update_status(&r_feed);
+            //network::update_status(&bs_feed);
+            network::update_status(&video_session.r_feed);
+            network::update_status(&video_session.bs_feed);
         }
 
         // Tick.
-        ticks++;
+        //ticks++;
+        video_session.ticks++;
         uint32_t last_tick_interval;
         if (tick_timer.ready(&last_tick_interval)) {
             network::TickMessage message;
-            message.ticks_per_second = (ticks * TICK_INTERVAL) / (float)last_tick_interval;
-            network::publish(&r_feed, &message);
+            //message.ticks_per_second = (ticks * TICK_INTERVAL) / (float)last_tick_interval;
+            //network::publish(&r_feed, &message);
+            message.ticks_per_second = (video_session.ticks * TICK_INTERVAL) / (float)last_tick_interval;
+            network::publish(&video_session.r_feed, &message);
 
-            ticks = 0;
+            //ticks = 0;
+            video_session.ticks = 0;
         }
     }
 }
