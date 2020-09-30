@@ -7,7 +7,6 @@
 #include "log_view.hpp"
 
 #include <GL/gl.h>
-#include <iostream>
 
 #include <math.h>
 #include <stdio.h>
@@ -1092,10 +1091,6 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             bs_session->dont_send_invalid();
         } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             gui::state.input_state = gui::InputState::CAMERA_MOVE;
-        }
-        else if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
-            gui::state.show_debug_console = true;
-            gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
