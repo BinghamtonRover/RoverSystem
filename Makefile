@@ -1,4 +1,4 @@
-all: base_station rover
+all: base_station rover subsystems_computer
 
 bin:
 	mkdir bin
@@ -24,6 +24,9 @@ base_station: bin network simple_config logger
 rover: bin network simple_config logger rocs
 	make -C src/rover
 
+subsystems_computer: bin network simple_config logger
+	make -C src/subsystems_computer
+
 clean:
 	rm bin/*
 
@@ -37,4 +40,4 @@ archive:
 send: archive
 	scp RoverSystem.zip pi@192.168.1.20:/home/pi/RoverSystem.zip
 
-.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs, autonomy
+.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs, autonomy, subsystems_computer
