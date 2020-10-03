@@ -4,7 +4,7 @@ int main(){
     Session video_session;
     logger::register_handler(logger::stderr_handler);
     util::Clock::init(&video_session.global_clock);
-    video_session.config = video_session.load_config("res/r.sconfig");
+    video_session.load_config("res/r.sconfig");
     video_session.updateCameraStatus();
 
     // Two feeds: incoming base station and outgoing rover.
@@ -183,7 +183,6 @@ int main(){
             network::update_status(&video_session.bs_feed);
         }
         // Tick.
-        //ticks++;
         video_session.ticks++;
         uint32_t last_tick_interval;
         if (video_session.tick_timer.ready(&last_tick_interval)) {

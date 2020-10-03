@@ -18,9 +18,7 @@ void Session::stderr_handler(logger::Level leve, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());
 }
 
-Config2 Session::load_config(const char* filename) {
-    Config2 config;
-
+void Session::load_config(const char* filename) {
     sc::SimpleConfig* sc_config;
 
     auto err = sc::parse(filename, &sc_config);
@@ -34,35 +32,35 @@ Config2 Session::load_config(const char* filename) {
         logger::log(logger::ERROR, "Config file missing 'rover_port'!");
         exit(1);
     }
-    config.rover_port = atoi(rover_port);
+    this->config.rover_port = atoi(rover_port);
 
     char* base_station_port = sc::get(sc_config, "base_station_port");
     if (!base_station_port) {
         logger::log(logger::ERROR, "Config file missing 'base_station_port'!");
         exit(1);
     }
-    config.base_station_port = atoi(base_station_port);
+    this->config.base_station_port = atoi(base_station_port);
 
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config file missing 'base_station_multicast_group'!");
         exit(1);
     }
-    strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
+    strncpy(this->config.base_station_multicast_group, base_station_multicast_group, 16);
 
     char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
     if (!rover_multicast_group) {
         logger::log(logger::ERROR, "Config file missing 'rover_multicast_group'!");
         exit(1);
     }
-    strncpy(config.rover_multicast_group, rover_multicast_group, 16);
+    strncpy(this->config.rover_multicast_group, rover_multicast_group, 16);
 
     char* interface = sc::get(sc_config, "interface");
     if (!interface) {
         // Default.
-        strncpy(config.interface, "0.0.0.0", 16);
+        strncpy(this->config.interface, "0.0.0.0", 16);
     } else {
-        strncpy(config.interface, interface, 16);
+        strncpy(this->config.interface, interface, 16);
     }
 
     char* gps_serial_id = sc::get(sc_config, "gps_serial_id");
@@ -71,11 +69,9 @@ Config2 Session::load_config(const char* filename) {
 
         exit(1);
     }
-    config.gps_serial_id = strdup(gps_serial_id);
+    gps_serial_id = strdup(gps_serial_id);
 
     sc::free(sc_config);
-
-    return config;
 }
 
 int Session::updateCameraStatus() {
