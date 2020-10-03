@@ -32,9 +32,6 @@ struct Config
     char base_station_multicast_group[16];
     char rover_multicast_group[16];
     char interface[16];
-
-    // For now, this is dynamically-sized.
-    char* gps_serial_id;
 };
 
 class Session{

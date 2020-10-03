@@ -62,14 +62,6 @@ void Session::load_config(const char* filename) {
         strncpy(this->config.interface, interface, 16);
     }
 
-    char* gps_serial_id = sc::get(sc_config, "gps_serial_id");
-    if (!gps_serial_id) {
-        logger::log(logger::ERROR, "Config file missing 'gps_serial_id'!");
-
-        exit(1);
-    }
-    gps_serial_id = strdup(gps_serial_id);
-
     sc::free(sc_config);
 }
 
