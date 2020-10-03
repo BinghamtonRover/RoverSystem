@@ -1,10 +1,11 @@
 #include "session.hpp"
 
+#include <iostream>
 #include <cstring>
 
 Session::Session(){
     this->frame_counter = 0;
-    this->streams[MAX_STREAMS] = {0};
+    //this->streams;
     this->ticks = 0;
     this->compressor = tjInitCompress();
     this->decompressor = tjInitDecompress();
@@ -18,8 +19,8 @@ void Session::stderr_handler(logger::Level leve, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());
 }
 
-Config Session::load_config(const char* filename) {
-    Config config;
+Config2 Session::load_config(const char* filename) {
+    Config2 config;
 
     sc::SimpleConfig* sc_config;
 
@@ -78,7 +79,8 @@ Config Session::load_config(const char* filename) {
     return config;
 }
 
-int Session::updateCameraStatus(camera::CaptureSession **streams) {
+int Session::updateCameraStatus() {
+    std::cout << "EXE" << std::endl;
     /**
      * We need 2 arrays to keep track of all of our data.
      * 1. An array for new cameras found
@@ -107,7 +109,6 @@ int Session::updateCameraStatus(camera::CaptureSession **streams) {
         camerasFound[cntr] = i;
         cntr++;
     }
-
     /**
      * There are 3 steps here.
      *
@@ -117,12 +118,12 @@ int Session::updateCameraStatus(camera::CaptureSession **streams) {
      *
      * 3. Remove any cameras that don't exist,
      **/
-
     for(int i = 0; i < cntr; i++) {
         /* 1.  Check which cameras exist in the file system. */
         for(int j = 1; j < MAX_STREAMS; j++) {
-            if(streams[j] != nullptr) {
-                if(camerasFound[i] == streams[j]->dev_video_id) {
+            if(this->streams[j] != nullptr) { //////////////////////////////////Segmentation fault occurs here
+                 
+                if(camerasFound[i] == this->streams[j]->dev_video_id) {
                     /**
                      * Use -1 to say this camera is being used,
                      * so we don't need to do anything.
@@ -140,7 +141,7 @@ int Session::updateCameraStatus(camera::CaptureSession **streams) {
         }
         numOpen++;
 
-        while(streams[open] != nullptr)
+        while(this->streams[open] != nullptr)
             open++;
 
         char filename_buffer[13]; // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
@@ -170,9 +171,9 @@ int Session::updateCameraStatus(camera::CaptureSession **streams) {
         /** 
           * 2. Iterate through our cameras adding any extras that do exist.
          **/
-        streams[open] = cs;
+        this->streams[open] = cs;
     }
-
+    
     for(int i = 0; i < cntr; i++) {
         if (camerasFound[i] != -1) {
             logger::log(logger::INFO, "Connected new camera at /dev/video%d", camerasFound[i]);
@@ -181,14 +182,13 @@ int Session::updateCameraStatus(camera::CaptureSession **streams) {
 
     /* 3. Remove any cameras that don't exist. */
     for(int j = 1; j < MAX_STREAMS; j++) {
-        if(existingCameras[j] == -1 && streams[j] != nullptr) {
+        if(existingCameras[j] == -1 && this->streams[j] != nullptr) {
             logger::log(logger::INFO, "Camera %d disconnected.", j);
-            camera::close(streams[j]);
-            delete streams[j];
-            streams[j] = nullptr;
+            camera::close(this->streams[j]);
+            delete this->streams[j];
+            this->streams[j] = nullptr;
         }
     }
-
     return numOpen;
 }
 

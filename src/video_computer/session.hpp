@@ -24,7 +24,7 @@ const int NETWORK_UPDATE_INTERVAL = 1000 / 2;
 
 const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
 
-struct Config
+struct Config2
 {
     int base_station_port;
     int rover_port;
@@ -41,10 +41,10 @@ class Session{
 private:
 public:
     util::Clock global_clock;
-    Config config;
+    Config2 config;
 
     unsigned int frame_counter;
-    camera::CaptureSession* streams[MAX_STREAMS];
+    camera::CaptureSession* streams[MAX_STREAMS] = {0};
 
     network::Feed r_feed;
     network::Feed bs_feed;
@@ -66,8 +66,8 @@ public:
     ~Session();
 
     void stderr_handler(logger::Level level, std::string message);
-    Config load_config(const char* filename);
-    int updateCameraStatus(camera::CaptureSession **streams);
+    Config2 load_config(const char* filename);
+    int updateCameraStatus();
 };
 
 #endif

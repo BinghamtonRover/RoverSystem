@@ -14,72 +14,54 @@
 const int MAX_STREAMS = 9;
 const unsigned int CAMERA_WIDTH = 1280;
 const unsigned int CAMERA_HEIGHT = 720;
-
 const int CAMERA_UPDATE_INTERVAL = 5000;
-
 const int CAMERA_FRAME_INTERVAL = 1000 / 15;
-
 const int TICK_INTERVAL = 1000;
-
 const int NETWORK_UPDATE_INTERVAL = 1000 / 2;
-
 const int CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE = network::MAX_MESSAGE_SIZE - network::CameraMessage::HEADER_SIZE;
-
-
 util::Clock global_clock;
-
 struct Config
 {
     int base_station_port;
     int rover_port;
-
     char base_station_multicast_group[16];
     char rover_multicast_group[16];
     char interface[16];
-
     // For now, this is dynamically-sized.
     char* gps_serial_id;
 };
-
 Config load_config(const char* filename) {
     Config config;
-
     sc::SimpleConfig* sc_config;
-
     auto err = sc::parse(filename, &sc_config);
     if (err != sc::Error::OK) {
         logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
         exit(1);
     }
-
     char* rover_port = sc::get(sc_config, "rover_port");
     if (!rover_port) {
         logger::log(logger::ERROR, "Config file missing 'rover_port'!");
         exit(1);
     }
     config.rover_port = atoi(rover_port);
-
     char* base_station_port = sc::get(sc_config, "base_station_port");
     if (!base_station_port) {
         logger::log(logger::ERROR, "Config file missing 'base_station_port'!");
         exit(1);
     }
     config.base_station_port = atoi(base_station_port);
-
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config file missing 'base_station_multicast_group'!");
         exit(1);
     }
     strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
-
     char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
     if (!rover_multicast_group) {
         logger::log(logger::ERROR, "Config file missing 'rover_multicast_group'!");
         exit(1);
     }
     strncpy(config.rover_multicast_group, rover_multicast_group, 16);
-
     char* interface = sc::get(sc_config, "interface");
     if (!interface) {
         // Default.
@@ -87,17 +69,13 @@ Config load_config(const char* filename) {
     } else {
         strncpy(config.interface, interface, 16);
     }
-
     char* gps_serial_id = sc::get(sc_config, "gps_serial_id");
     if (!gps_serial_id) {
         logger::log(logger::ERROR, "Config file missing 'gps_serial_id'!");
-
         exit(1);
     }
     config.gps_serial_id = strdup(gps_serial_id);
-
     sc::free(sc_config);
-
     return config;
 }
 */
@@ -113,25 +91,18 @@ int updateCameraStatus(camera::CaptureSession **streams) {
     int cntr = 0;
     uint8_t open = 1;
     int numOpen = 0;
-
     for (int i = 0; true; i++) {
-
         char name_filename_buffer[100];
         sprintf(name_filename_buffer, "/sys/class/video4linux/video%d/name", i);
         FILE* name_file = fopen(name_filename_buffer, "r");
-
         // We have found a USB file that doesn't exist, therefore no more exist.
         if (!name_file) break;
-
         fscanf(name_file, "%s\n", name_filename_buffer);
         fclose(name_file);
-
         if (strncmp("ZED", name_filename_buffer, 3) == 0) continue;
-
         camerasFound[cntr] = i;
         cntr++;
     }
-
     //
     // There are 3 steps here.
     //
@@ -141,7 +112,6 @@ int updateCameraStatus(camera::CaptureSession **streams) {
     //
     // 3. Remove any cameras that don't exist,
     //
-
     for(int i = 0; i < cntr; i++) {
         // 1.  Check which cameras exist in the file system. 
         for(int j = 1; j < MAX_STREAMS; j++) {
@@ -157,19 +127,15 @@ int updateCameraStatus(camera::CaptureSession **streams) {
                 }
             }
         }
-
         // Don't initialize this camera, as it exists
         if (camerasFound[i] == -1) {
             continue;
         }
         numOpen++;
-
         while(streams[open] != nullptr)
             open++;
-
         char filename_buffer[13]; // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
         sprintf(filename_buffer, "/dev/video%d", camerasFound[i]);
-
         camera::CaptureSession* cs = new camera::CaptureSession;
         logger::log(logger::DEBUG, "Opening camera %d", camerasFound[i]);
         camera::Error err = camera::open(cs, filename_buffer, CAMERA_WIDTH, CAMERA_HEIGHT, camerasFound[i], &global_clock, CAMERA_FRAME_INTERVAL);
@@ -180,7 +146,6 @@ int updateCameraStatus(camera::CaptureSession **streams) {
             delete cs;
             continue;
         }
-
         // Start the camera.
         err = camera::start(cs);
         if (err != camera::Error::OK) {
@@ -190,19 +155,16 @@ int updateCameraStatus(camera::CaptureSession **streams) {
             delete cs;
             continue;
         }
-
         // 
         // 2. Iterate through our cameras adding any extras that do exist.
         //
         streams[open] = cs;
     }
-
     for(int i = 0; i < cntr; i++) {
         if (camerasFound[i] != -1) {
             logger::log(logger::INFO, "Connected new camera at /dev/video%d", camerasFound[i]);
         }
     }
-
     // 3. Remove any cameras that don't exist. 
     for(int j = 1; j < MAX_STREAMS; j++) {
         if(existingCameras[j] == -1 && streams[j] != nullptr) {
@@ -212,10 +174,8 @@ int updateCameraStatus(camera::CaptureSession **streams) {
             streams[j] = nullptr;
         }
     }
-
     return numOpen;
 }
-
 void stderr_handler(logger::Level level, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());
 }
@@ -236,7 +196,8 @@ int main(){
     
     // Camera streams
     //camera::CaptureSession * streams[MAX_STREAMS] = {0};
-    updateCameraStatus(streams);
+    //updateCameraStatus(streams);
+    video_session.updateCameraStatus();
 
     // Two feeds: incoming base station and outgoing rover.
     //network::Feed r_feed, bs_feed;
@@ -245,9 +206,9 @@ int main(){
         auto err = network::init(
             &video_session.r_feed,
             network::FeedType::OUT,
-            config.interface,
-            config.rover_multicast_group,
-            config.rover_port,
+            video_session.config.interface,
+            video_session.config.rover_multicast_group,
+            video_session.config.rover_port,
             &video_session.global_clock);
 
         if (err != network::Error::OK) {
@@ -260,9 +221,9 @@ int main(){
         auto err = network::init(
             &video_session.bs_feed,
             network::FeedType::IN,
-            config.interface,
-            config.base_station_multicast_group,
-            config.base_station_port,
+            video_session.config.interface,
+            video_session.config.base_station_multicast_group,
+            video_session.config.base_station_port,
             &video_session.global_clock);
 
         if (err != network::Error::OK) {
@@ -277,11 +238,11 @@ int main(){
 
     //util::Timer tick_timer;
     //util::Timer::init(&tick_timer, TICK_INTERVAL, &global_clock);
-    util::Timer::init(&video_stream.tick_timer, TICK_INTERVAL, &video_stream.global_clock);
+    util::Timer::init(&video_session.tick_timer, TICK_INTERVAL, &video_session.global_clock);
 
     //util::Timer network_update_timer;
     //util::Timer::init(&network_update_timer, NETWORK_UPDATE_INTERVAL, &global_clock);
-    util::Timer::init(&video_stream.network_update_timer, NETWORK_UPDATE_INTERVAL, &video_stream.global_clock);
+    util::Timer::init(&video_session.network_update_timer, NETWORK_UPDATE_INTERVAL, &video_session.global_clock);
 
     //uint32_t ticks = 0;
 
@@ -296,11 +257,11 @@ int main(){
     // Set the starting 2 
     for(int i = 0; i < 2; i++) {
         //streamTypes[i] = network::CameraControlMessage::sendType::SEND;
-        video_stream.streamTypes[i] = network::CameraControlMessage::sendType::SEND;
+        video_session.streamTypes[i] = network::CameraControlMessage::sendType::SEND;
     }
     for(size_t i = 2; i < MAX_STREAMS; i++) {
         //streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
-        video_stream.streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
+        video_session.streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
     }
 
     while (true) {
@@ -321,7 +282,7 @@ int main(){
                         continue;
 
                     //logger::log(logger::DEBUG, "Deleting camera %d, because it errored", streams[i]->dev_video_id);
-                    logger::log(logger::DEBUG, "Deleting camera %d, because it errored", video_session..streams[i]->dev_video_id);
+                    logger::log(logger::DEBUG, "Deleting camera %d, because it errored", video_session.streams[i]->dev_video_id);
                     camera::close(cs);
                     delete cs;
                     //streams[i] = nullptr;
@@ -349,7 +310,7 @@ int main(){
                 0);
 
             // Recompress into jpeg buffer.
-            if (greyscale) {
+            if (video_session.greyscale) {
                 tjCompress2(
                     video_session.compressor,
                     raw_buffer,
@@ -409,9 +370,9 @@ int main(){
             camera::return_buffer(cs);
         }
 
-        if (camera_update_timer.ready()) {
+        if (video_session.camera_update_timer.ready()) {
             //updateCameraStatus(streams);
-            updateCameraStatus(video_session.streams);
+            video_session.updateCameraStatus();
         }
 
         // Increment global (across all streams) frame counter. Should be ok. Should...
@@ -472,7 +433,7 @@ int main(){
         //ticks++;
         video_session.ticks++;
         uint32_t last_tick_interval;
-        if (tick_timer.ready(&last_tick_interval)) {
+        if (video_session.tick_timer.ready(&last_tick_interval)) {
             network::TickMessage message;
             //message.ticks_per_second = (ticks * TICK_INTERVAL) / (float)last_tick_interval;
             //network::publish(&r_feed, &message);
