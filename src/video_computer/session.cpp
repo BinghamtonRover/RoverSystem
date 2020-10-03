@@ -5,7 +5,6 @@
 
 Session::Session(){
     this->frame_counter = 0;
-    //this->streams;
     this->ticks = 0;
     this->compressor = tjInitCompress();
     this->decompressor = tjInitDecompress();
@@ -80,7 +79,6 @@ Config2 Session::load_config(const char* filename) {
 }
 
 int Session::updateCameraStatus() {
-    std::cout << "EXE" << std::endl;
     /**
      * We need 2 arrays to keep track of all of our data.
      * 1. An array for new cameras found
@@ -91,51 +89,41 @@ int Session::updateCameraStatus() {
     int cntr = 0;
     uint8_t open = 1;
     int numOpen = 0;
-
+    
     for (int i = 0; true; i++) {
-
         char name_filename_buffer[100];
         sprintf(name_filename_buffer, "/sys/class/video4linux/video%d/name", i);
         FILE* name_file = fopen(name_filename_buffer, "r");
-
         // We have found a USB file that doesn't exist, therefore no more exist.
-        if (!name_file) break;
-
+        if (!name_file){
+            break;
+        } 
         fscanf(name_file, "%s\n", name_filename_buffer);
         fclose(name_file);
-
-        if (strncmp("ZED", name_filename_buffer, 3) == 0) continue;
-
+        if (strncmp("ZED", name_filename_buffer, 3) == 0){
+            continue;
+        }
         camerasFound[cntr] = i;
         cntr++;
     }
-    /**
-     * There are 3 steps here.
-     *
-     * 1. Check which cameras exist in the file system.
-     *
-     * 2. Iterate through our cameras adding any extras that do exist.
-     *
-     * 3. Remove any cameras that don't exist,
-     **/
+    // There are 3 steps here.
+    // 1. Check which cameras exist in the file system.
+    // 2. Iterate through our cameras adding any extras that do exist.
+    // 3. Remove any cameras that don't exist,
     for(int i = 0; i < cntr; i++) {
-        /* 1.  Check which cameras exist in the file system. */
+        // 1.  Check which cameras exist in the file system.
         for(int j = 1; j < MAX_STREAMS; j++) {
-            if(this->streams[j] != nullptr) { //////////////////////////////////Segmentation fault occurs here
-                 
+            if(this->streams[j] != nullptr) { 
                 if(camerasFound[i] == this->streams[j]->dev_video_id) {
-                    /**
-                     * Use -1 to say this camera is being used,
-                     * so we don't need to do anything.
-                     **/
+                    // Use -1 to say this camera is being used,
+                    // so we don't need to do anything.
                     camerasFound[i] = -1;
                     existingCameras[j] = i;
                     break;
                 }
             }
         }
-
-        /* Don't initialize this camera, as it exists */
+        // Don't initialize this camera, as it exists 
         if (camerasFound[i] == -1) {
             continue;
         }
@@ -144,7 +132,8 @@ int Session::updateCameraStatus() {
         while(this->streams[open] != nullptr)
             open++;
 
-        char filename_buffer[13]; // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
+        // "/dev/video" is 10 chars long, leave 2 for numbers, and one for null terminator.
+        char filename_buffer[13]; 
         sprintf(filename_buffer, "/dev/video%d", camerasFound[i]);
 
         camera::CaptureSession* cs = new camera::CaptureSession;
@@ -167,20 +156,15 @@ int Session::updateCameraStatus() {
             delete cs;
             continue;
         }
-
-        /** 
-          * 2. Iterate through our cameras adding any extras that do exist.
-         **/
+        // 2. Iterate through our cameras adding any extras that do exist.
         this->streams[open] = cs;
     }
-    
     for(int i = 0; i < cntr; i++) {
         if (camerasFound[i] != -1) {
             logger::log(logger::INFO, "Connected new camera at /dev/video%d", camerasFound[i]);
         }
     }
-
-    /* 3. Remove any cameras that don't exist. */
+    // 3. Remove any cameras that don't exist.
     for(int j = 1; j < MAX_STREAMS; j++) {
         if(existingCameras[j] == -1 && this->streams[j] != nullptr) {
             logger::log(logger::INFO, "Camera %d disconnected.", j);
