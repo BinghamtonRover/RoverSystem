@@ -1,6 +1,5 @@
 #include "session.hpp"
 
-#include <iostream>
 #include <cstring>
 
 Session::Session(){
