@@ -36,7 +36,7 @@ int main() {
     gui::debug_console::set_callback(gui::debug_console::command_callback);
 
     // Load config.
-    bs_session.config = bs_session.load_config("res/bs.sconfig");
+    bs_session.load_config("res/bs.sconfig");
 
     // Clear the stopwatch.
     bs_session.stopwatch.state = StopwatchState::STOPPED;
