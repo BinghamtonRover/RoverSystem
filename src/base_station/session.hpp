@@ -143,7 +143,7 @@ public:
     Session();
     ~Session();
 
-    Config load_config(const char* filename);
+    void load_config(const char* filename);
 
     void send_feed(uint8_t stream_indx);
     void send_all_feeds();
