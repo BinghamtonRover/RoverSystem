@@ -333,29 +333,29 @@ int main() {
                 }
 
                 switch (message.type) {
-                    case network::MessageType::CAMERA: {
-                        // Static buffer so we don't have to allocate and reallocate every
-                        // frame.
-                        static uint8_t camera_message_buffer[camera_feed::CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
-                    
-                        network::CameraMessage camera_message;
-                        camera_message.data = camera_message_buffer;
-                        network::deserialize(&message.buffer, &camera_message);
-                    
-                        auto camerr = camera_feed::handle_section(
-                            bs_session.camera_feeds + camera_message.stream_index,
-                            camera_message.data,
-                            camera_message.size,
-                            camera_message.section_index,
-                            camera_message.section_count,
-                            camera_message.frame_index);
-                    
-                        if (camerr != camera_feed::Error::OK) {
-                            logger::log(logger::WARNING, "Failed to handle video frame section!");
-                        }
-                    
-                        break;
-                    }
+                //    case network::MessageType::CAMERA: {
+                //        // Static buffer so we don't have to allocate and reallocate every
+                //        // frame.
+                //        static uint8_t camera_message_buffer[camera_feed::CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+                //    
+                //        network::CameraMessage camera_message;
+                //        camera_message.data = camera_message_buffer;
+                //        network::deserialize(&message.buffer, &camera_message);
+                //    
+                //        auto camerr = camera_feed::handle_section(
+                //            bs_session.camera_feeds + camera_message.stream_index,
+                //            camera_message.data,
+                //            camera_message.size,
+                //            camera_message.section_index,
+                //            camera_message.section_count,
+                //            camera_message.frame_index);
+                //    
+                //        if (camerr != camera_feed::Error::OK) {
+                //            logger::log(logger::WARNING, "Failed to handle video frame section!");
+                //        }
+                //    
+                //        break;
+                //    }
                     case network::MessageType::LIDAR: {
                         bs_session.lidar_points.clear();
 
