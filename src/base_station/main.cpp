@@ -172,7 +172,31 @@ int main() {
 
         
     }
-    
+////////////////// VIDEO FEED INIT
+    {
+        auto err = network::init(
+            &bs_session.v_feed,
+            network::FeedType::IN,
+            bs_session.config.interface,
+            bs_session.config.video_multicast_group,
+            bs_session.config.video_port,
+            &bs_session.global_clock);
+
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
+            return 1;
+        }
+
+        logger::log(
+            logger::INFO,
+            "Network: subscribed to video computer feed on %s:%d",
+            bs_session.config.video_multicast_group,
+            bs_session.config.video_port);
+
+        
+    }
+////////////////// VIDEO FEED INIT
+
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
     util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &bs_session.global_clock);
@@ -292,88 +316,137 @@ int main() {
         }
 
         // Handle incoming network messages from the rover feed.
-        network::IncomingMessage message;
-        while (true) {
-            auto neterr = network::receive(&bs_session.r_feed, &message);
-            if (neterr != network::Error::OK) {
-                if (neterr == network::Error::NOMORE) {
-                    break;
-                } else {
-                    logger::log(
-                        logger::WARNING,
-                        "Failed to read network packets: %s",
-                        network::get_error_string(neterr));
-                    break;
+        {
+            network::IncomingMessage message;
+            while (true) {
+                auto neterr = network::receive(&bs_session.r_feed, &message);
+                if (neterr != network::Error::OK) {
+                    if (neterr == network::Error::NOMORE) {
+                        break;
+                    } else {
+                        logger::log(
+                            logger::WARNING,
+                            "Failed to read network packets: %s",
+                            network::get_error_string(neterr));
+                        break;
+                    }
+                }
+
+                switch (message.type) {
+                    case network::MessageType::CAMERA: {
+                        // Static buffer so we don't have to allocate and reallocate every
+                        // frame.
+                        static uint8_t camera_message_buffer[camera_feed::CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+                    
+                        network::CameraMessage camera_message;
+                        camera_message.data = camera_message_buffer;
+                        network::deserialize(&message.buffer, &camera_message);
+                    
+                        auto camerr = camera_feed::handle_section(
+                            bs_session.camera_feeds + camera_message.stream_index,
+                            camera_message.data,
+                            camera_message.size,
+                            camera_message.section_index,
+                            camera_message.section_count,
+                            camera_message.frame_index);
+                    
+                        if (camerr != camera_feed::Error::OK) {
+                            logger::log(logger::WARNING, "Failed to handle video frame section!");
+                        }
+                    
+                        break;
+                    }
+                    case network::MessageType::LIDAR: {
+                        bs_session.lidar_points.clear();
+
+                        network::LidarMessage lidar_message;
+                        network::deserialize(&message.buffer, &lidar_message);
+
+                        for (int i = 0; i < network::LidarMessage::NUM_LIDAR_POINTS; i++) {
+                            bs_session.lidar_points.push_back(lidar_message.points[i]);
+                        }
+
+                        break;
+                    }
+                    case network::MessageType::TICK: {
+                        network::TickMessage tick_message;
+                        network::deserialize(&message.buffer, &tick_message);
+
+                        bs_session.last_rover_tick = tick_message.ticks_per_second;
+                        break;
+                    }
+                    case network::MessageType::LOCATION: {
+                        network::LocationMessage location_message;
+                        network::deserialize(&message.buffer,&location_message);
+                        waypoint::set_rover_coordinates(location_message.latitude,location_message.longitude);
+                        waypoint::rover_fix = location_message.fix_status;
+                        //waypoint::rover_latitude = location_message.latitude;
+                        //rover_longitude = location_message.longitude;
+
+                        break;
+                    }
+                    case network::MessageType::MODE: {
+                        network::ModeMessage mode_message;
+                        network::deserialize(&message.buffer, &mode_message);
+                        bs_session.mode = mode_message.mode;
+                        break;
+                    }
+                    default:
+                        break;
                 }
             }
-
-            switch (message.type) {
-                case network::MessageType::CAMERA: {
-                    // Static buffer so we don't have to allocate and reallocate every
-                    // frame.
-                    static uint8_t camera_message_buffer[camera_feed::CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
-
-                    network::CameraMessage camera_message;
-                    camera_message.data = camera_message_buffer;
-                    network::deserialize(&message.buffer, &camera_message);
-
-                    auto camerr = camera_feed::handle_section(
-                        bs_session.camera_feeds + camera_message.stream_index,
-                        camera_message.data,
-                        camera_message.size,
-                        camera_message.section_index,
-                        camera_message.section_count,
-                        camera_message.frame_index);
-
-                    if (camerr != camera_feed::Error::OK) {
-                        logger::log(logger::WARNING, "Failed to handle video frame section!");
+        }
+        // Handle incoming network messages from the video computer feed.
+        {
+            network::IncomingMessage message;
+            while (true) {
+                auto neterr = network::receive(&bs_session.v_feed, &message);
+                if (neterr != network::Error::OK) {
+                    if (neterr == network::Error::NOMORE) {
+                        break;
+                    } else {
+                        logger::log(
+                            logger::WARNING,
+                            "Failed to read network packets: %s",
+                            network::get_error_string(neterr));
+                        break;
                     }
-
-                    break;
                 }
-                case network::MessageType::LIDAR: {
-                    bs_session.lidar_points.clear();
 
-                    network::LidarMessage lidar_message;
-                    network::deserialize(&message.buffer, &lidar_message);
-
-                    for (int i = 0; i < network::LidarMessage::NUM_LIDAR_POINTS; i++) {
-                        bs_session.lidar_points.push_back(lidar_message.points[i]);
+                switch (message.type) {
+                    case network::MessageType::CAMERA: {
+                        // Static buffer so we don't have to allocate and reallocate every
+                        // frame.
+                        static uint8_t camera_message_buffer[camera_feed::CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
+                    
+                        network::CameraMessage camera_message;
+                        camera_message.data = camera_message_buffer;
+                        network::deserialize(&message.buffer, &camera_message);
+                    
+                        auto camerr = camera_feed::handle_section(
+                            bs_session.camera_feeds + camera_message.stream_index,
+                            camera_message.data,
+                            camera_message.size,
+                            camera_message.section_index,
+                            camera_message.section_count,
+                            camera_message.frame_index);
+                    
+                        if (camerr != camera_feed::Error::OK) {
+                            logger::log(logger::WARNING, "Failed to handle video frame section!");
+                        }
+                    
+                        break;
                     }
-
-                    break;
+                    default:
+                        break;
                 }
-                case network::MessageType::TICK: {
-                    network::TickMessage tick_message;
-                    network::deserialize(&message.buffer, &tick_message);
-
-                    bs_session.last_rover_tick = tick_message.ticks_per_second;
-                    break;
-                }
-                case network::MessageType::LOCATION: {
-                    network::LocationMessage location_message;
-                    network::deserialize(&message.buffer,&location_message);
-                    waypoint::set_rover_coordinates(location_message.latitude,location_message.longitude);
-                    waypoint::rover_fix = location_message.fix_status;
-                    //waypoint::rover_latitude = location_message.latitude;
-                    //rover_longitude = location_message.longitude;
-
-                    break;
-                }
-                case network::MessageType::MODE: {
-                    network::ModeMessage mode_message;
-                    network::deserialize(&message.buffer, &mode_message);
-                    bs_session.mode = mode_message.mode;
-                    break;
-                }
-                default:
-                    break;
             }
         }
 
         // Update network stuff.
         network::update_status(&bs_session.r_feed);
         network::update_status(&bs_session.bs_feed);
+        network::update_status(&bs_session.v_feed);
 
         if (network_stats_timer.ready()) {
             bs_session.r_tp = (float) bs_session.r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
