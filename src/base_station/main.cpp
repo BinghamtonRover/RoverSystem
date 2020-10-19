@@ -149,7 +149,6 @@ int main() {
             bs_session.config.base_station_multicast_group,
             bs_session.config.base_station_port);
     }
-
     {
         auto err = network::init(
             &bs_session.r_feed,

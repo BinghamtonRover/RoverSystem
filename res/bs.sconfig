@@ -1,11 +1,11 @@
 rover_multicast_group = 239.255.123.123
 rover_port = 45566
 
-video_multicast_group = 239.255.123.123
-video_port = 45567
-
 base_station_multicast_group = 239.255.123.123
 base_station_port = 45565
+
+video_multicast_group = 239.255.123.123
+video_port = 45567
 
 ## Identifies the network interface connected to the basestation-rover local network.
 ## The interface is identified by this computer's IP address on that network.
