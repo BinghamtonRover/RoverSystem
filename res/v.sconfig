@@ -1,0 +1,20 @@
+rover_multicast_group = 239.255.123.123
+rover_port = 45566
+
+base_station_multicast_group = 239.255.123.123
+base_station_port = 45565
+
+video_multicast_group = 239.255.123.123
+video_port = 45567
+
+## Identifies the network interface connected to the basestation-rover local network.
+## The interface is identified by this computer's IP address on that network.
+## 
+## If both the base station and rover programs are run on the same computer, this can
+## be left unset. However, if the programs are running on two different machines,
+## this must be set to ensure that the multicast groups are opened on the correct network.
+## 
+## On the actual basestation-rover network and hardware, this should be the assigned
+## static IP address of the rover.
+##
+# interface = 192.168.1.22
