@@ -4,20 +4,20 @@ int main(){
     Session video_session;
     logger::register_handler(logger::stderr_handler);
     util::Clock::init(&video_session.global_clock);
-    video_session.load_config("res/r.sconfig");
+    video_session.load_config("res/v.sconfig");
     video_session.updateCameraStatus();
 
-    // Two feeds: incoming base station and outgoing rover.
+    //Three feeds: base station, subsystem computer, and video computer.
     {
         auto err = network::init(
             &video_session.r_feed,
-            network::FeedType::OUT,
+            network::FeedType::IN,
             video_session.config.interface,
             video_session.config.rover_multicast_group,
             video_session.config.rover_port,
             &video_session.global_clock);
         if (err != network::Error::OK) {
-            logger::log(logger::ERROR, "[!] Failed to start rover feed: %s", network::get_error_string(err));
+            logger::log(logger::ERROR, "[!] Failed to subscribe to subsystems feed: %s", network::get_error_string(err));
             exit(1);
         }
     }
@@ -34,6 +34,19 @@ int main(){
             exit(1);
         }
     }
+    {
+        auto err = network::init(
+            &video_session.v_feed,
+            network::FeedType::OUT,
+            video_session.config.interface,
+            video_session.config.video_multicast_group,
+            video_session.config.video_port,
+            &video_session.global_clock);
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "[!] Failed to start video feed: %s", network::get_error_string(err));
+            exit(1);
+        }
+    }
 
     util::Timer::init(&video_session.camera_update_timer, CAMERA_UPDATE_INTERVAL, &video_session.global_clock);
     util::Timer::init(&video_session.tick_timer, TICK_INTERVAL, &video_session.global_clock);
@@ -41,11 +54,9 @@ int main(){
     
     // Set the starting 2 
     for(int i = 0; i < 2; i++) {
-        //streamTypes[i] = network::CameraControlMessage::sendType::SEND;
         video_session.streamTypes[i] = network::CameraControlMessage::sendType::SEND;
     }
     for(size_t i = 2; i < MAX_STREAMS; i++) {
-        //streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
         video_session.streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
     }
     while (true) {
@@ -131,7 +142,7 @@ int main(){
                     buffer_size, // size
                     frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
                 };
-                network::publish(&video_session.r_feed, &message);
+                network::publish(&video_session.v_feed, &message);
             }
             camera::return_buffer(cs);
         }
@@ -181,6 +192,7 @@ int main(){
             // Update feed statuses.
             network::update_status(&video_session.r_feed);
             network::update_status(&video_session.bs_feed);
+            network::update_status(&video_session.v_feed);
         }
         // Tick.
         video_session.ticks++;
@@ -188,7 +200,7 @@ int main(){
         if (video_session.tick_timer.ready(&last_tick_interval)) {
             network::TickMessage message;
             message.ticks_per_second = (video_session.ticks * TICK_INTERVAL) / (float)last_tick_interval;
-            network::publish(&video_session.r_feed, &message);
+            network::publish(&video_session.v_feed, &message);
             video_session.ticks = 0;
         }
     }

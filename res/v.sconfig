@@ -7,8 +7,6 @@ base_station_port = 45565
 video_multicast_group = 239.255.123.123
 video_port = 45567
 
-gps_serial_id = usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
-
 ## Identifies the network interface connected to the basestation-rover local network.
 ## The interface is identified by this computer's IP address on that network.
 ## 
@@ -19,4 +17,4 @@ gps_serial_id = usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-
 ## On the actual basestation-rover network and hardware, this should be the assigned
 ## static IP address of the rover.
 ##
-# interface = 192.168.1.20
+# interface = 192.168.1.22

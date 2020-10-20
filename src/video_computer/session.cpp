@@ -40,6 +40,13 @@ void Session::load_config(const char* filename) {
     }
     this->config.base_station_port = atoi(base_station_port);
 
+    char* video_port = sc::get(sc_config, "video_port");
+    if (!video_port) {
+        logger::log(logger::ERROR, "Config file missing 'video_port'!");
+        exit(1);
+    }
+    this->config.video_port = atoi(video_port);
+
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config file missing 'base_station_multicast_group'!");
@@ -53,6 +60,13 @@ void Session::load_config(const char* filename) {
         exit(1);
     }
     strncpy(this->config.rover_multicast_group, rover_multicast_group, 16);
+
+    char* video_multicast_group = sc::get(sc_config, "video_multicast_group");
+    if (!video_multicast_group) {
+        logger::log(logger::ERROR, "Config file missing 'video_multicast_group'!");
+        exit(1);
+    }
+    strncpy(this->config.video_multicast_group, video_multicast_group, 16);
 
     char* interface = sc::get(sc_config, "interface");
     if (!interface) {
