@@ -198,6 +198,8 @@ Error init(Feed* out_feed, FeedType type, const char* interface, const char* gro
 
     uint8_t ttl = MULTICAST_TTL;
     setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+    int reuse_addr = 1;
+    setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 
     switch (type) {
         case FeedType::IN: {
