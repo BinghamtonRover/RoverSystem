@@ -8,19 +8,19 @@ int main(){
     video_session.updateCameraStatus();
 
     //Three feeds: base station, subsystem computer, and video computer.
-    //{
-    //    auto err = network::init(
-    //        &video_session.r_feed,
-    //        network::FeedType::OUT,
-    //        video_session.config.interface,
-    //        video_session.config.rover_multicast_group,
-    //        video_session.config.rover_port,
-    //        &video_session.global_clock);
-    //    if (err != network::Error::OK) {
-    //        logger::log(logger::ERROR, "[!] Failed to subscribe to subsystems feed: %s", network::get_error_string(err));
-    //        exit(1);
-    //    }
-    //}
+    {
+        auto err = network::init(
+            &video_session.r_feed,
+            network::FeedType::IN,
+            video_session.config.interface,
+            video_session.config.rover_multicast_group,
+            video_session.config.rover_port,
+            &video_session.global_clock);
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "[!] Failed to subscribe to subsystems feed: %s", network::get_error_string(err));
+            exit(1);
+        }
+    }
     {
         auto err = network::init(
             &video_session.bs_feed,
@@ -190,7 +190,7 @@ int main(){
         }
         if (video_session.network_update_timer.ready()) {
             // Update feed statuses.
-            //network::update_status(&video_session.r_feed);
+            network::update_status(&video_session.r_feed);
             network::update_status(&video_session.bs_feed);
             network::update_status(&video_session.v_feed);
         }

@@ -162,7 +162,6 @@ int main() {
             logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
             return 1;
         }
-
         logger::log(
             logger::INFO,
             "Network: subscribed to rover feed on %s:%d",
@@ -171,7 +170,6 @@ int main() {
 
         
     }
-////////////////// VIDEO FEED INIT
     {
         auto err = network::init(
             &bs_session.v_feed,
@@ -185,7 +183,6 @@ int main() {
             logger::log(logger::ERROR, "Failed to init rover feed: %s", network::get_error_string(err));
             return 1;
         }
-
         logger::log(
             logger::INFO,
             "Network: subscribed to video computer feed on %s:%d",
@@ -194,7 +191,6 @@ int main() {
 
         
     }
-////////////////// VIDEO FEED INIT
 
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
