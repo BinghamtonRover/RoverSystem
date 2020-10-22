@@ -28,9 +28,11 @@ struct Config
 {
     int base_station_port;
     int rover_port;
+    int video_port;
 
     char base_station_multicast_group[16];
     char rover_multicast_group[16];
+    char video_multicast_group[16];
     char interface[16];
 };
 
@@ -45,6 +47,7 @@ public:
 
     network::Feed r_feed;
     network::Feed bs_feed;
+    network::Feed v_feed;
 
     util::Timer camera_update_timer;
     util::Timer tick_timer;

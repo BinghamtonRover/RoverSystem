@@ -60,9 +60,11 @@ struct Config
 {
     int base_station_port;
     int rover_port;
+    int video_port;
 
     char base_station_multicast_group[16];
     char rover_multicast_group[16];
+    char video_multicast_group[16];
     char interface[16];
 
     // For now, this is dynamically-sized.
@@ -94,6 +96,13 @@ Config load_config(const char* filename) {
     }
     config.base_station_port = atoi(base_station_port);
 
+    char* video_port = sc::get(sc_config, "video_port");
+    if (!video_port) {
+        logger::log(logger::ERROR, "Config file missing 'video_port'!");
+        exit(1);
+    }
+    config.video_port = atoi(video_port);
+
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config file missing 'base_station_multicast_group'!");
@@ -107,6 +116,13 @@ Config load_config(const char* filename) {
         exit(1);
     }
     strncpy(config.rover_multicast_group, rover_multicast_group, 16);
+
+    char* video_multicast_group = sc::get(sc_config, "video_multicast_group");
+    if (!video_multicast_group) {
+        logger::log(logger::ERROR, "Config file missing 'video_multicast_group'!");
+        exit(1);
+    }
+    strncpy(config.video_multicast_group, video_multicast_group, 16);
 
     char* interface = sc::get(sc_config, "interface");
     if (!interface) {
@@ -322,7 +338,7 @@ int main() {
     }
 
     // Two feeds: incoming base station and outgoing rover.
-    network::Feed r_feed, bs_feed;
+    network::Feed r_feed, bs_feed, v_feed;
 
     {
         auto err = network::init(
@@ -331,6 +347,21 @@ int main() {
             config.interface,
             config.rover_multicast_group,
             config.rover_port,
+            &global_clock);
+
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "[!] Failed to start rover feed: %s", network::get_error_string(err));
+            exit(1);
+        }
+    }
+
+    {
+        auto err = network::init(
+            &v_feed,
+            network::FeedType::IN,
+            config.interface,
+            config.video_multicast_group,
+            config.video_port,
             &global_clock);
 
         if (err != network::Error::OK) {
