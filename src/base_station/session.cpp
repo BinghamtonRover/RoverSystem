@@ -33,9 +33,7 @@ Session::Session(){
 
 Session::~Session() {};
 
-Config Session::load_config(const char* filename) {
-    Config config;
-
+void Session::load_config(const char* filename) {
     sc::SimpleConfig* sc_config;
 
     auto err = sc::parse(filename, &sc_config);
@@ -47,53 +45,68 @@ Config Session::load_config(const char* filename) {
         exit(1);
     }
 
+    //Configure ports
     char* rover_port = sc::get(sc_config, "rover_port");
     if (!rover_port) {
         logger::log(logger::ERROR, "Config missing 'rover_port'!");
         exit(1);
     }
-    config.rover_port = atoi(rover_port);
+    this->config.rover_port = atoi(rover_port);
 
     char* base_station_port = sc::get(sc_config, "base_station_port");
     if (!base_station_port) {
         logger::log(logger::ERROR, "Config missing 'base_station_port'!");
         exit(1);
     }
-    config.base_station_port = atoi(base_station_port);
+    this->config.base_station_port = atoi(base_station_port);
 
+    char* video_port = sc::get(sc_config, "video_port");
+    if (!video_port) {
+        logger::log(logger::ERROR, "Config missing 'video_port'!");
+        exit(1);
+    }
+    this->config.video_port = atoi(video_port);
+
+    //Configure multicast group 
     char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
     if (!rover_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'rover_multicast_group'!");
         exit(1);
     }
-    strncpy(config.rover_multicast_group, rover_multicast_group, 16);
+    strncpy(this->config.rover_multicast_group, rover_multicast_group, 16);
 
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'base_station_multicast_group'!");
         exit(1);
     }
-    strncpy(config.base_station_multicast_group, base_station_multicast_group, 16);
+    strncpy(this->config.base_station_multicast_group, base_station_multicast_group, 16);
 
+    char* video_multicast_group = sc::get(sc_config, "video_multicast_group");
+    if (!video_multicast_group) {
+        logger::log(logger::ERROR, "Config missing 'video_multicast_group'!");
+        exit(1);
+    }
+    strncpy(this->config.video_multicast_group, video_multicast_group, 16);
+
+    //Configure base station interface
     char* interface = sc::get(sc_config, "interface");
     if (!interface) {
         // Default.
-        strncpy(config.interface, "0.0.0.0", 16);
+        strncpy(this->config.interface, "0.0.0.0", 16);
     } else {
-        strncpy(config.interface, interface, 16);
+        strncpy(this->config.interface, interface, 16);
     }
 
     char* preferred_monitor = sc::get(sc_config, "preferred_monitor");
     if (!preferred_monitor) {
         // Default: empty string means primary monitor.
-        config.preferred_monitor[0] = 0;
+        this->config.preferred_monitor[0] = 0;
     } else {
-        strncpy(config.preferred_monitor, preferred_monitor, Config::MAX_PREFERRED_MONITOR_LEN + 1);
+        strncpy(this->config.preferred_monitor, preferred_monitor, Config::MAX_PREFERRED_MONITOR_LEN + 1);
     }
 
     sc::free(sc_config);
-
-    return config;
 }
 
 void Session::send_feed(uint8_t stream_indx) {
@@ -136,4 +149,32 @@ void Session::dont_send_invalid() {
         }
     }
     return;
+}
+
+void Session::update_focus_mode(int input_mode){
+    switch (input_mode)
+    {
+    case (int)FocusMode::GENERAL:
+        this->focus_mode = FocusMode::GENERAL;
+        break;
+    case (int)FocusMode::DRIVE:
+        this->focus_mode = FocusMode::DRIVE;
+        break;
+    case (int)FocusMode::ARM:
+        this->focus_mode = FocusMode::ARM;
+        break;
+    case (int)FocusMode::SCIENCE:
+        this->focus_mode = FocusMode::SCIENCE;
+        break;
+    case (int)FocusMode::AUTONOMY:
+        this->focus_mode = FocusMode::AUTONOMY;
+        break;
+    default:
+    logger::log(logger::ERROR, "Base Station: Invalid Focus Mode.");
+        break;
+    }
+}
+
+FocusMode Session::get_focus_mode(){
+    return this->focus_mode;
 }

@@ -1084,6 +1084,26 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                     bs_session->controller_mode = ControllerMode::DRIVE;
                     break;
             }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+            if(mods & GLFW_MOD_SHIFT) {
+                bs_session->focus_mode = FocusMode::GENERAL;
+            }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_2) {
+            if(mods & GLFW_MOD_SHIFT) {
+                bs_session->focus_mode = FocusMode::DRIVE;
+            }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_3) {
+            if(mods & GLFW_MOD_SHIFT) {
+                bs_session->focus_mode = FocusMode::ARM;
+            }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_4) {
+            if(mods & GLFW_MOD_SHIFT) {
+                bs_session->focus_mode = FocusMode::SCIENCE;
+            }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_5) {
+            if(mods & GLFW_MOD_SHIFT) {
+                bs_session->focus_mode = FocusMode::AUTONOMY;
+            }
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {

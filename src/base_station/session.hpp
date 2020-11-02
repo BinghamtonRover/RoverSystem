@@ -58,7 +58,18 @@ enum class ControllerMode {
     ARM
 };
 
-enum class StopwatchState { STOPPED, PAUSED, RUNNING };
+enum class FocusMode{
+    GENERAL,
+    DRIVE,
+    ARM,
+    SCIENCE,
+    AUTONOMY
+};
+
+enum class StopwatchState { 
+    STOPPED,
+    PAUSED,
+    RUNNING };
 
 struct StopwatchStruct {
     StopwatchState state;
@@ -69,9 +80,12 @@ struct StopwatchStruct {
 struct Config {
     int rover_port;
     int base_station_port;
+    int video_port;
 
-    char rover_multicast_group[16]; // Max length of string ipv4 addr is 15, plus one for nt.
+    // Max length of string ipv4 addr is 15, plus one for nt.
+    char rover_multicast_group[16]; 
     char base_station_multicast_group[16];
+    char video_multicast_group[16];
     char interface[16];
 
     static const int MAX_PREFERRED_MONITOR_LEN = 32;
@@ -89,6 +103,16 @@ public:
     // Network feeds.cd 
     network::Feed r_feed;
     network::Feed bs_feed;
+    network::Feed v_feed;
+
+    //Network stats
+    float r_tp;
+    float bs_tp; 
+    float v_tp;
+    float t_tp;
+
+    //Initialize Focus Mode
+    FocusMode focus_mode = FocusMode::GENERAL;
 
     unsigned int map_texture_id;
 
@@ -98,11 +122,6 @@ public:
 
     //Declares stopwatch
     StopwatchStruct stopwatch;
-
-    //Network stats
-    float r_tp;
-    float bs_tp; 
-    float t_tp;
 
     // Clock!
     util::Clock global_clock;
@@ -129,13 +148,14 @@ public:
     Session();
     ~Session();
 
-    Config load_config(const char* filename);
+    void load_config(const char* filename);
 
     void send_feed(uint8_t stream_indx);
     void send_all_feeds();
     void dont_send_feed(uint8_t stream_indx);
     void dont_send_invalid();
-
+    void update_focus_mode(int input_mode);
+    FocusMode get_focus_mode();
 };
 
 #endif
