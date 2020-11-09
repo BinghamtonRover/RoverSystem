@@ -1,5 +1,5 @@
-SOURCES = main.cpp subsystem.cpp
-HEADERS = gps.hpp subsystem.hpp ../util/util.hpp lidar.hpp
+SOURCES = main.cpp subsystem.cpp session.cpp
+HEADERS = gps.hpp subsystem.hpp ../util/util.hpp lidar.hpp session.hpp
 LIBRARIES = ../../bin/libnetwork.a ../../bin/libsimpleconfig.a ../../bin/liblogger.a
 LFLAGS = -L../../bin -lnetwork -lsimpleconfig -llogger
 CFLAGS = -pthread -Wall -std=c++11 -g 
