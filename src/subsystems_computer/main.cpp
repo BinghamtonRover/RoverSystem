@@ -230,6 +230,21 @@ int main() {
         }
     }
 
+    {
+        auto err = network::init(
+            &subsys_session.v_feed,
+            network::FeedType::IN,
+            subsys_session.config.interface,
+            subsys_session.config.video_multicast_group,
+            subsys_session.config.video_port,
+            &subsys_session.global_clock);
+
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "[!] Failed to subscribe to base station feed: %s", network::get_error_string(err));
+            exit(1);
+        }
+    }
+
     //util::Timer location_send_timer;
     util::Timer::init(&subsys_session.location_send_timer,LOCATION_SEND_INTERVAL, &subsys_session.global_clock);
 
