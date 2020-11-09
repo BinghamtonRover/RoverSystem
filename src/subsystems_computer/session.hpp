@@ -2,7 +2,19 @@
 #include "../simple_config/simpleconfig.h"
 #include "../util/util.hpp"
 #include "../logger/logger.hpp"
+#include "../rocs/rocs.hpp"
 
+#include "gps.hpp"
+#include "subsystem.hpp"
+#include "suspension.hpp"
+#include "lidar.hpp"
+#include "gripper.hpp"
+#include "arm.hpp"
+
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <vector>
 
 
