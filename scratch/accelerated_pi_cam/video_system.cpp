@@ -105,8 +105,55 @@ void VideoSystem::deinit() {
 	bcm_host_deinit();
 }
 
-OMX_BUFFERHEADERTYPE* VideoSystem::get_frame() {
+OMX_BUFFERHEADERTYPE* VideoSystem::get_partial_frame() {
 	encoder.fill_output_buffer();
 	encoder.wait_event(ComponentEvent::FILL_BUFFER_DONE);
 	return encoder.get_output_buffer();
+}
+
+bool VideoSystem::get_partial_frame(OMX_BUFFERHEADERTYPE** buf) {
+	encoder.fill_output_buffer();
+	encoder.wait_event(ComponentEvent::FILL_BUFFER_DONE);
+	OMX_BUFFERHEADERTYPE* outbuf = encoder.get_output_buffer();
+	*buf = outbuf;
+	// H264 units begin with 0x00000001, comparison backwards for endianness
+	return outbuf->nFilledLen >= 4 && *((uint32_t*)(outbuf->pBuffer)) == 0x01000000;
+}
+
+bool VideoSystem::MessageBuilder::start_new_frame(network::CSICameraMessage& msg, uint8_t stream) {
+	msg.size = 0;
+	msg.stream_index = stream_index;
+	msg.frame_index = frame_index;
+	msg.section_index = 0;
+	if (!beginning_of_stream) {
+		// A message with no data will indicates its the last section
+		frame_index += 1;
+		stream_index = stream;
+		return true;
+	} else {
+		beginning_of_stream = false;
+		return false;
+	}
+
+}
+
+void VideoSystem::MessageBuilder::start_partial_frame(OMX_BUFFERHEADERTYPE* fptr) {
+	frame_ptr = fptr;
+	current_ptr = fptr->pBuffer;
+}
+
+void VideoSystem::MessageBuilder::fill_message(network::CSICameraMessage& msg) {
+	size_t remaining = frame_ptr->nFilledLen - (current_ptr - frame_ptr->pBuffer);
+	if (remaining > network::CSICameraMessage::MAX_DATA)
+		msg.size = network::CSICameraMessage::MAX_DATA;
+	else
+		msg.size = remaining;
+	msg.stream_index = stream_index;
+	msg.frame_index = frame_index;
+	msg.section_index = section_index;
+	msg.data = current_ptr;
+	section_index += 1;
+	
+	current_ptr += msg.size;
+	
 }

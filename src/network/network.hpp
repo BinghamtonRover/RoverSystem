@@ -153,7 +153,8 @@ enum class MessageType {
     ARM,
     MODE,
     AUTONOMY_STATUS,
-    AUTONOMY_COMMAND
+    AUTONOMY_COMMAND,
+	CSICAMERA
 };
 
 struct HeartbeatMessage {
@@ -228,6 +229,33 @@ struct CameraMessage {
         network::deserialize(buffer, &(this->size));
         network::deserialize(buffer, this->data, this->size);
     }
+};
+
+struct CSICameraMessage {
+	static const auto TYPE = MessageType::CSICAMERA;
+	static constexpr size_t MAX_DATA = MAX_MESSAGE_SIZE - (2*sizeof(uint16_t) + 2*sizeof(uint8_t) + sizeof(uint8_t*));
+	
+	uint16_t frame_index;
+	uint16_t size;
+	uint8_t section_index;
+	uint8_t stream_index;
+	uint8_t* data;
+	
+	void serialize(Buffer* buffer) {
+		network::serialize(buffer, this->frame_index);
+		network::serialize(buffer, this->size);
+		network::serialize(buffer, this->section_index);
+		network::serialize(buffer, this->stream_index);
+		network::serialize(buffer, this->data, this->size);
+	}
+	
+	void deserialize(Buffer* buffer) {
+		network::deserialize(buffer, &(this->frame_index));
+		network::deserialize(buffer, &(this->size));
+		network::deserialize(buffer, &(this->section_index));
+		network::deserialize(buffer, &(this->stream_index));
+		network::deserialize(buffer, this->data, this->size);
+	}
 };
 
 struct LogMessage {
