@@ -502,16 +502,16 @@ const char* get_stopwatch_text(Session *bs_session) {
     return buffer;
 }
 
-void do_info_panel(Layout* layout, Session *bs_session) {
+void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
     static char info_buffer[200];
 
     int x = layout->current_x;
     int y = layout->current_y;
 
-    int w = 445;
-    int h = 300;
+    //int w = 445;
+    //int h = 300;
 
-    do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+    do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
     sprintf(
         info_buffer,
@@ -582,16 +582,16 @@ void do_info_panel(Layout* layout, Session *bs_session) {
 
     strftime(info_buffer, sizeof(info_buffer), "%I:%M:%S", time_info);
 
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + h - 20 - 5, 20);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + height - 20 - 5, 20);
 
     auto stopwatch_buffer = get_stopwatch_text(bs_session);
 
     int stopwatch_text_width = text_width(&gui::state.global_font, stopwatch_buffer, 20);
 
-    draw_text(&gui::state.global_font, stopwatch_buffer, x + w - 5 - stopwatch_text_width, y + h - 20 - 5, 20);
+    draw_text(&gui::state.global_font, stopwatch_buffer, x + width - 5 - stopwatch_text_width, y + height - 20 - 5, 20);
 
     set_stopwatch_icon_color(bs_session);
-    fill_textured_rect_mix_color(x + w - 5 - stopwatch_text_width - 3 - 20, y + h - 20 - 5, 20, 20, bs_session->stopwatch_texture_id);
+    fill_textured_rect_mix_color(x + width - 5 - stopwatch_text_width - 3 - 20, y + height - 20 - 5, 20, 20, bs_session->stopwatch_texture_id);
 }
 
 void do_stopwatch_menu(Session *bs_session){
@@ -976,20 +976,20 @@ void do_autonomy_control(Session *bs_session) {
     y += 20 + 10;
 }
 
-void do_gui(Session *bs_session) {
+void do_drive(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     Layout layout{};
-
+    
     // Set margin.
     layout.advance_x(20);
     layout.advance_y(20);
     layout.push();
 
     // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
-    waypoint_map::do_waypoint_map(&layout,572,572);
+    waypoint_map::do_waypoint_map(&layout,590,590);
     
     layout.reset_x();
     layout.advance_y(10);
@@ -1008,22 +1008,28 @@ void do_gui(Session *bs_session) {
     layout.advance_y(10);
     layout.push();
 
-    // Draw the other camera feed.
-    layout.reset_y();
-    do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id);
+    //// Draw the other camera feed.
+    //layout.reset_y();
+    //do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id);
 
     layout.reset_y();
-    layout.advance_x(10);
+    layout.advance_x(200);
 
-    // Draw the lidar.
-    do_lidar(&layout, bs_session);
+    //// Draw the lidar.
+    //do_lidar(&layout, bs_session);
+
+    layout.reset_y();
+    layout.advance_x(150);
+
+    //Placeholder
+    do_info_panel(&layout, 520, 310, bs_session);
 
     layout.reset_y();
     layout.advance_x(10);
 
     // Draw the info panel.
-    do_info_panel(&layout, bs_session);
-
+    do_info_panel(&layout, 400, 310, bs_session);
+    
     int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
     glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
     draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
@@ -1038,6 +1044,31 @@ void do_gui(Session *bs_session) {
     do_camera_matrix(bs_session);
 
     do_autonomy_control(bs_session);
+}
+
+void do_gui(Session *bs_session) {
+    switch (bs_session->focus_mode)
+    {
+    case FocusMode::GENERAL:{
+        break;
+    }
+    case FocusMode::ARM:{
+        break;
+    }
+    case FocusMode::DRIVE:{
+        do_drive(bs_session);
+        break;
+    }
+    case FocusMode::SCIENCE:{
+        break;
+    } 
+    case FocusMode::AUTONOMY:{
+        break;
+    }
+    
+    default:
+        break;
+    }
 }
 
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {

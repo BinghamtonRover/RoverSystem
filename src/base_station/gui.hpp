@@ -14,6 +14,15 @@ namespace gui {
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
+const int LOG_VIEW_WIDTH = 590;
+const int LOG_VIEW_HEIGHT = 440;
+
+const int PRIMARY_FEED_WIDTH = 1280;
+const int PRIMARY_FEED_HEIGHT = 720;
+
+const int SECONDARY_FEED_WIDTH = 533;
+const int SECONDARY_FEED_HEIGHT = 300;
+
 enum class InputState {
     KEY_COMMAND,
     DEBUG_CONSOLE,
@@ -164,6 +173,8 @@ void do_camera_matrix(Session *bs_session);
 
 //Displays info during autonomous navigation
 void do_autonomy_control(Session *bs_session);
+
+void do_drive(Session *bs_session);
 
 //Draws the GUI in full
 void do_gui(Session *bs_session);
