@@ -174,6 +174,8 @@ void do_camera_matrix(Session *bs_session);
 //Displays info during autonomous navigation
 void do_autonomy_control(Session *bs_session);
 
+void do_general(Session *bs_session);
+
 void do_drive(Session *bs_session);
 
 //Draws the GUI in full

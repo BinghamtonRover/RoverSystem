@@ -976,6 +976,10 @@ void do_autonomy_control(Session *bs_session) {
     y += 20 + 10;
 }
 
+void do_general(Session *bs_session){
+    
+}
+
 void do_drive(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1050,6 +1054,7 @@ void do_gui(Session *bs_session) {
     switch (bs_session->focus_mode)
     {
     case FocusMode::GENERAL:{
+
         break;
     }
     case FocusMode::ARM:{
