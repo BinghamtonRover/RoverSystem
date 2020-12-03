@@ -1040,6 +1040,60 @@ void do_gui(Session *bs_session) {
     do_autonomy_control(bs_session);
 }
 
+void do_arm_mode(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    // PLACEHOLDER FOR SUBSYSTEM INFO WINDOW
+    do_solid_rect(&layout, 590, 510, 0, 192, 171);
+
+    //Resets x and sets a margin of 10px inbetween subsystem and log windows
+    layout.reset_x();
+    layout.advance_y(10);
+
+    //Sets log window to 590x510
+    log_view::do_log(&layout, 590, 510, &gui::state.global_font);
+
+    //Starts drawing from the top of the screen 10px to the right of the end of the log window
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed at 1280x720
+    do_textured_rect(&layout, 1280, 720, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+
+    //Setting drawing point to below main camera
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+    
+    //accounting for empty space
+    layout.advance_x(515);
+    layout.push();
+
+    // Renders the waypoint map at 310x310
+    waypoint_map::do_waypoint_map(&layout,310,310);
+
+    //Places space between waypoint map and status window
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the info panel.
+    do_info_panel(&layout, bs_session);
+
+    //Necessary for proper camera usage
+    do_camera_matrix(bs_session);
+}
+
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (codepoint < 128) {

@@ -168,6 +168,9 @@ void do_autonomy_control(Session *bs_session);
 //Draws the GUI in full
 void do_gui(Session *bs_session);
 
+//Draws the Arm mode GUI in full
+void do_arm_mode(Session *bs_session);
+
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint);
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
