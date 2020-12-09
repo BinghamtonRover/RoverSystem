@@ -120,21 +120,19 @@ bool VideoSystem::get_partial_frame(OMX_BUFFERHEADERTYPE** buf) {
 	return outbuf->nFilledLen >= 4 && *((uint32_t*)(outbuf->pBuffer)) == 0x01000000;
 }
 
-bool VideoSystem::MessageBuilder::start_new_frame(network::CSICameraMessage& msg, uint8_t stream) {
-	msg.size = 0;
-	msg.stream_index = stream_index;
-	msg.frame_index = frame_index;
-	msg.section_index = 0;
+bool VideoSystem::MessageBuilder::get_frame_delimiter(network::CSICameraMessage& msg, uint8_t stream) {
 	if (!beginning_of_stream) {
-		// A message with no data will indicates its the last section
+		msg.size = 0;
+		msg.stream_index = stream_index;
+		msg.frame_index = frame_index;
+		msg.section_index = section_index;
 		frame_index += 1;
-		stream_index = stream;
+		section_index = 0;
 		return true;
 	} else {
 		beginning_of_stream = false;
 		return false;
 	}
-
 }
 
 void VideoSystem::MessageBuilder::start_partial_frame(OMX_BUFFERHEADERTYPE* fptr) {
@@ -143,7 +141,7 @@ void VideoSystem::MessageBuilder::start_partial_frame(OMX_BUFFERHEADERTYPE* fptr
 }
 
 void VideoSystem::MessageBuilder::fill_message(network::CSICameraMessage& msg) {
-	size_t remaining = frame_ptr->nFilledLen - (current_ptr - frame_ptr->pBuffer);
+	size_t remaining = available();
 	if (remaining > network::CSICameraMessage::MAX_DATA)
 		msg.size = network::CSICameraMessage::MAX_DATA;
 	else

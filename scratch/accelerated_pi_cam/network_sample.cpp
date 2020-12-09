@@ -75,9 +75,12 @@ int main() {
 			OMX_BUFFERHEADERTYPE *frame;
 			network::CSICameraMessage msg;
 			
-			bool new_frame = video_system.get_partial_frame(&frame);
-			if (new_frame && message_builder.start_new_frame(msg)) {
-				simulate_publish(msg);
+			bool starting_new_frame = video_system.get_partial_frame(&frame);
+			if (starting_new_frame && std::chrono::system_clock::now() >= end_time) break;
+			if (starting_new_frame) {
+				if (message_builder.get_frame_delimiter(msg)) {
+					simulate_publish(msg);	// Old frame delimited by a size 0 message (setup by start_new_frame)
+				}
 			}
 			
 			message_builder.start_partial_frame(frame);
@@ -87,7 +90,6 @@ int main() {
 				simulate_publish(msg);
 			}
 			video_out_file.write( (char*)frame->pBuffer, frame->nFilledLen );
-			if (std::chrono::system_clock::now() >= end_time) break;
 		}
 		video_system.stop_video();	// Stop the video components (makes idle)
 		video_system.deinit();	// Deinitialize components, OMX, drivers

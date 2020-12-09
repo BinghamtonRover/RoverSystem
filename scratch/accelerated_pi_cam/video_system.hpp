@@ -25,21 +25,32 @@ public:
 	void start_video();
 	void stop_video();
 	OMX_BUFFERHEADERTYPE* get_partial_frame();
-	bool get_partial_frame(OMX_BUFFERHEADERTYPE** buf);	// Returns true if its a new frame, null buf is undefined behavior
+
+	/** fill buf with a partial frame.
+		returns true if it begins a new frame
+		returns false if frame in progress
+	*/
+	bool get_partial_frame(OMX_BUFFERHEADERTYPE** buf);
 	
+	/** Utility class for splitting frames into messages for the network library */
 	class MessageBuilder {
 	public:
-		bool start_new_frame(network::CSICameraMessage& msg, uint8_t stream=0);
+		/** Prepares to start a new frame.
+		If delimiter is necessary, returns true and sets up msg as a delimiter */
+		bool get_frame_delimiter(network::CSICameraMessage& msg, uint8_t stream=0);
+
+		/** Preparing to break a partial frame into messages */
 		void start_partial_frame(OMX_BUFFERHEADERTYPE* fptr);
-		inline bool available() {
-			return frame_ptr->pBuffer + frame_ptr->nFilledLen > current_ptr;
+
+		inline size_t available() {
+			return frame_ptr->nFilledLen - (current_ptr - frame_ptr->pBuffer);
 		}
 		void fill_message(network::CSICameraMessage& msg);
 	private:
 		OMX_BUFFERHEADERTYPE* frame_ptr;
 		uint16_t frame_index = 0;
-		uint8_t section_index;
-		uint8_t stream_index;
+		uint8_t section_index = 0;
+		uint8_t stream_index = 0;
 		uint8_t* current_ptr;
 		bool beginning_of_stream = true;
 	};
