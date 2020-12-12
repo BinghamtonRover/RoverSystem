@@ -156,6 +156,8 @@ const char* get_stopwatch_text(Session *bs_session);
 //Displays info about rover connection and controller mode
 void do_info_panel(Layout* layout, int width, int height, Session *bs_session);
 
+void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_session);
+
 //Sets up the window to display stopwatch information
 void do_stopwatch_menu(Session *bs_session);
 
@@ -174,8 +176,10 @@ void do_camera_matrix(Session *bs_session);
 //Displays info during autonomous navigation
 void do_autonomy_control(Session *bs_session);
 
+//update general mode GUI layout
 void do_general(Session *bs_session);
 
+//update drive mode GUI layout
 void do_drive(Session *bs_session);
 
 //Draws the GUI in full

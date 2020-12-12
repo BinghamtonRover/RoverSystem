@@ -594,6 +594,18 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
     fill_textured_rect_mix_color(x + width - 5 - stopwatch_text_width - 3 - 20, y + height - 20 - 5, 20, 20, bs_session->stopwatch_texture_id);
 }
 
+void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_session){
+    static char info_buffer[200];
+
+    int x = layout->current_x;
+    int y = layout->current_y;
+
+    //int w = 445;
+    //int h = 300;
+
+    do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+}
+
 void do_stopwatch_menu(Session *bs_session){
     const int w = 150;
     const int h = 110;
