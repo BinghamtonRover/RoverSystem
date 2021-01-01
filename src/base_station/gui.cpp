@@ -508,8 +508,9 @@ void do_info_panel(Layout* layout, Session *bs_session) {
     int x = layout->current_x;
     int y = layout->current_y;
 
-    int w = 445;
-    int h = 300;
+    int w = 680;
+    int h = 310;
+
 
     do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
@@ -727,7 +728,7 @@ void do_lidar(Layout* layout, Session *bs_session) {
     int wx = layout->current_x;
     int wy = layout->current_y;
 
-    do_solid_rect(layout, 300, 300, 0, 0, 0);
+    do_solid_rect(layout, 510, 510, 0, 0, 0);
 
     glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -1012,45 +1013,47 @@ void do_autonomy(Session *bs_session){
     Layout layout{};
 
     // Set margin.
-    layout.advance_x(70);
+    layout.advance_x(50);
     layout.advance_y(20);
-    layout.push();
-
-    // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
-    waypoint_map::do_waypoint_map(&layout,572,572);
-    
-    layout.reset_x();
-    layout.advance_y(10);
-
-    // Draw the log.
-    log_view::do_log(&layout, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT, &gui::state.global_font);
-
-    layout.reset_y();
-    layout.advance_x(10);
     layout.push();
 
     // Draw the main camera feed.
     do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
-
+    
+    //Reset X and advance Y to set up for Log Window
     layout.reset_x();
+    layout.advance_x(-40);
     layout.advance_y(10);
     layout.push();
+    
+    //Draw Log Window
+    log_view::do_log(&layout, 670, 310, &gui::state.global_font);
 
-    // Draw the other camera feed.
-    layout.reset_y();
-    do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id);
-
+    //Reset X and Y to set up for the status window
     layout.reset_y();
     layout.advance_x(10);
+    layout.push();
 
-    // Draw the lidar.
+    //Draw status window
+    do_info_panel(&layout, bs_session);
+
+    //Set X and Y for the Waypoint Map Window
+    layout.advance_y(-1040);
+    layout.advance_x(10);
+    layout.push();
+
+    //Draw Waypoint Map Window 
+    waypoint_map::do_waypoint_map(&layout,510,510);
+
+    //Set X and Y for the LIDAR Window
+    layout.reset_x();
+    layout.advance_y(20);
+    layout.push();
+
+    //Draw the LIDAR Window
     do_lidar(&layout, bs_session);
 
-    layout.reset_y();
-    layout.advance_x(10);
 
-    // Draw the info panel.
-    do_info_panel(&layout, bs_session);
 
     int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
     glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
