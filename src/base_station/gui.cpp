@@ -977,6 +977,98 @@ void do_autonomy_control(Session *bs_session) {
 }
 
 void do_gui(Session *bs_session) {
+    
+    switch (bs_session->focus_mode)
+    {
+    case FocusMode::GENERAL:{
+        do_general(bs_session);
+        break;
+    }
+    case FocusMode::ARM:{
+        break;
+    }
+    case FocusMode::DRIVE:}
+        do_drive(bs_session);
+        break;
+    }
+    case FocusMode::SCIENCE:{
+        do_science(bs_session);
+        break;
+    }
+    case FocusMode::AUTONOMY:{
+        do_autonomy(bs_session);
+        break;
+    }
+    default:
+        break;
+    } 
+}
+
+void do_autonomy(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
+    waypoint_map::do_waypoint_map(&layout,572,572);
+    
+    layout.reset_x();
+    layout.advance_y(10);
+
+    // Draw the log.
+    log_view::do_log(&layout, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT, &gui::state.global_font);
+
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed.
+    do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+
+    // Draw the other camera feed.
+    layout.reset_y();
+    do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id);
+
+    layout.reset_y();
+    layout.advance_x(10);
+
+    // Draw the lidar.
+    do_lidar(&layout, bs_session);
+
+    layout.reset_y();
+    layout.advance_x(10);
+
+    // Draw the info panel.
+    do_info_panel(&layout, bs_session);
+
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    // Draw the debug overlay.
+    layout = {};
+    debug_console::do_debug(&layout, &gui::state.global_font);
+
+    // Draw the camera matrix.
+    // Note: this currently needs to be called last here in order for the camera movement
+    // effects to work properly!
+    do_camera_matrix(bs_session);
+
+    do_autonomy_control(bs_session);
+}
+
+void do_general(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
