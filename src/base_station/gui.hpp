@@ -171,8 +171,11 @@ void do_gui(Session *bs_session);
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint);
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-} // namespace gui
+
+void do_general(Session *bs_session);
 
 void do_autonomy(Session *bs_session);
+
+} // namespace gui
 
 #endif

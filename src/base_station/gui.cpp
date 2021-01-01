@@ -987,12 +987,12 @@ void do_gui(Session *bs_session) {
     case FocusMode::ARM:{
         break;
     }
-    case FocusMode::DRIVE:}
-        do_drive(bs_session);
+    case FocusMode::DRIVE:{
+        //do_drive(bs_session);
         break;
     }
     case FocusMode::SCIENCE:{
-        do_science(bs_session);
+        //do_science(bs_session);
         break;
     }
     case FocusMode::AUTONOMY:{
@@ -1012,7 +1012,7 @@ void do_autonomy(Session *bs_session){
     Layout layout{};
 
     // Set margin.
-    layout.advance_x(20);
+    layout.advance_x(70);
     layout.advance_y(20);
     layout.push();
 
