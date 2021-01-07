@@ -177,10 +177,10 @@ void do_camera_matrix(Session *bs_session);
 void do_autonomy_control(Session *bs_session);
 
 //update general mode GUI layout
-void do_general(Session *bs_session);
+void do_general_gui(Session *bs_session);
 
 //update drive mode GUI layout
-void do_drive(Session *bs_session);
+void do_drive_gui(Session *bs_session);
 
 //Draws the GUI in full
 void do_gui(Session *bs_session);

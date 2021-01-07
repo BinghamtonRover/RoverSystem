@@ -1017,7 +1017,7 @@ void do_autonomy_control(Session *bs_session) {
     y += 20 + 10;
 }
 
-void do_general(Session *bs_session){
+void do_general_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1081,7 +1081,7 @@ void do_general(Session *bs_session){
     do_autonomy_control(bs_session);    
 }
 
-void do_drive(Session *bs_session){
+void do_drive_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -1155,14 +1155,14 @@ void do_gui(Session *bs_session) {
     switch (bs_session->focus_mode)
     {
     case FocusMode::GENERAL:{
-        do_general(bs_session);
+        do_general_gui(bs_session);
         break;
     }
     case FocusMode::ARM:{
         break;
     }
     case FocusMode::DRIVE:{
-        do_drive(bs_session);
+        do_drive_gui(bs_session);
         break;
     }
     case FocusMode::SCIENCE:{
