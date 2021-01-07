@@ -1040,7 +1040,7 @@ void do_gui(Session *bs_session) {
     do_autonomy_control(bs_session);
 }
 
-void do_arm_mode(Session *bs_session){
+void do_arm_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);

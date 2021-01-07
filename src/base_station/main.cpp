@@ -509,7 +509,7 @@ int main() {
         }
 
         // Update and draw GUI.
-        gui::do_arm_mode(&bs_session); //TODO: NEED TO BE CHANGED BACK TO do_gui
+        gui::do_gui(&bs_session);
 
         if (help_menu_up) gui::do_help_menu(commands, debug_commands, &bs_session);
 
