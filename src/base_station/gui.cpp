@@ -595,15 +595,44 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
 }
 
 void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_session){
-    static char info_buffer[200];
-
+    static char text_buffer[200];
+    
     int x = layout->current_x;
     int y = layout->current_y;
-
+    
     //int w = 445;
     //int h = 300;
-
+    
     do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+    switch(bs_session->focus_mode){
+        case FocusMode::GENERAL:{
+        }
+        case FocusMode::DRIVE:{
+        }
+        case FocusMode::ARM:{
+        }
+        case FocusMode::SCIENCE:{
+        }
+        case FocusMode::AUTONOMY:{
+        }
+        default:
+    }
+
+    //static char text_buffer[200];
+    //
+    //int x = layout->current_x;
+    //int y = layout->current_y;
+    //
+    ////int w = 445;
+    ////int h = 300;
+    //
+    //do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+    //sprintf(
+    //    text_buffer,
+    //    "Speed: %s",
+    //    "");
+    //glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    //draw_text(&gui::state.global_font, text_buffer, x + 5, y + 5, 15);
 }
 
 void do_stopwatch_menu(Session *bs_session){
@@ -1098,7 +1127,7 @@ void do_drive(Session *bs_session){
     layout.advance_x(150);
 
     //Placeholder
-    do_info_panel(&layout, 520, 310, bs_session);
+    do_subsystem_panel(&layout, 520, 310, bs_session);
 
     layout.reset_y();
     layout.advance_x(10);
