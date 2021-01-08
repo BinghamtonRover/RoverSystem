@@ -20,8 +20,8 @@ const int LOG_VIEW_HEIGHT = 440;
 const int PRIMARY_FEED_WIDTH = 1280;
 const int PRIMARY_FEED_HEIGHT = 720;
 
-const int SECONDARY_FEED_WIDTH = 533;
-const int SECONDARY_FEED_HEIGHT = 300;
+const int SECONDARY_FEED_WIDTH = 550;
+const int SECONDARY_FEED_HEIGHT = 310;
 
 enum class InputState {
     KEY_COMMAND,
@@ -181,6 +181,9 @@ void do_general_gui(Session *bs_session);
 
 //update drive mode GUI layout
 void do_drive_gui(Session *bs_session);
+
+//Draws the Arm mode GUI in full
+void do_arm_gui(Session *bs_session);
 
 //Draws the GUI in full
 void do_gui(Session *bs_session);

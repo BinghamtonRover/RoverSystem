@@ -576,6 +576,25 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
     }
     draw_text(&gui::state.global_font, info_buffer, x + 5, y + 100 + 5, 15);
 
+    double placeholder = 0.0;
+    
+    sprintf(info_buffer, "\nBattery Voltage: %.0f", placeholder);
+    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 140 + 5, 15);
+
+    sprintf(info_buffer, "Energy Usage: %.0f", placeholder);
+    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 160 + 5, 15);
+
+    sprintf(info_buffer, "Current Total Power Usage: %.0f", placeholder);
+    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 180 + 5, 15);
+
+    sprintf(info_buffer, "Battery Temperature: %.0f", placeholder);
+    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 200 + 5, 15);
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     time_t current_time;
     time(&current_time);
     struct tm* time_info = localtime(&current_time);
@@ -606,33 +625,24 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
     do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
     switch(bs_session->focus_mode){
         case FocusMode::GENERAL:{
+            break;
         }
         case FocusMode::DRIVE:{
+            break;
         }
         case FocusMode::ARM:{
+            break;
         }
         case FocusMode::SCIENCE:{
+            break;
         }
         case FocusMode::AUTONOMY:{
+            break;
         }
-        default:
-    }
+        default:{
 
-    //static char text_buffer[200];
-    //
-    //int x = layout->current_x;
-    //int y = layout->current_y;
-    //
-    ////int w = 445;
-    ////int h = 300;
-    //
-    //do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
-    //sprintf(
-    //    text_buffer,
-    //    "Speed: %s",
-    //    "");
-    //glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    //draw_text(&gui::state.global_font, text_buffer, x + 5, y + 5, 15);
+        }
+    }
 }
 
 void do_stopwatch_menu(Session *bs_session){
@@ -961,7 +971,6 @@ void do_autonomy_control(Session *bs_session) {
 
     char text_buffer[500];
 
-    
     const char* status_text;
     switch (bs_session->autonomy_info.status) {
         case network::AutonomyStatusMessage::Status::IDLE:
@@ -1030,7 +1039,8 @@ void do_general_gui(Session *bs_session){
     layout.push();
 
     // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
-    waypoint_map::do_waypoint_map(&layout,572,572);
+    //waypoint_map::do_waypoint_map(&layout,572,572);
+    waypoint_map::do_waypoint_map(&layout,590,590);
     
     layout.reset_x();
     layout.advance_y(10);
@@ -1063,7 +1073,7 @@ void do_general_gui(Session *bs_session){
     layout.advance_x(10);
 
     // Draw the info panel.
-    do_info_panel(&layout, 520, 310, bs_session);
+    do_info_panel(&layout, 400, 310, bs_session);
 
     int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
     glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
@@ -1113,11 +1123,7 @@ void do_drive_gui(Session *bs_session){
     layout.advance_y(10);
     layout.push();
 
-    //// Draw the other camera feed.
     //layout.reset_y();
-    //do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id);
-
-    layout.reset_y();
     layout.advance_x(200);
 
     //// Draw the lidar.
@@ -1126,7 +1132,7 @@ void do_drive_gui(Session *bs_session){
     layout.reset_y();
     layout.advance_x(150);
 
-    //Placeholder
+    //Drive Subsystem Info Window
     do_subsystem_panel(&layout, 520, 310, bs_session);
 
     layout.reset_y();
@@ -1148,7 +1154,66 @@ void do_drive_gui(Session *bs_session){
     // effects to work properly!
     do_camera_matrix(bs_session);
 
-    do_autonomy_control(bs_session);
+    //do_autonomy_control(bs_session);
+}
+
+void do_arm_gui(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    // PLACEHOLDER FOR SUBSYSTEM INFO WINDOW
+    //do_solid_rect(&layout, 590, 510, 0, 192, 171);
+    do_subsystem_panel(&layout, 590, 520, bs_session);
+
+    //Resets x and sets a margin of 10px inbetween subsystem and log windows
+    layout.reset_x();
+    layout.advance_y(10);
+
+    //Sets log window to 590x510
+    log_view::do_log(&layout, 590, 510, &gui::state.global_font);
+
+    //Starts drawing from the top of the screen 10px to the right of the end of the log window
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed at 1280x720
+    do_textured_rect(&layout, 1280, 720, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+
+    //Setting drawing point to below main camera
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+    
+    //accounting for empty space
+    layout.advance_x(560);
+    layout.push();
+
+    // Renders the waypoint map at 310x310
+    waypoint_map::do_waypoint_map(&layout,310,310);
+
+    //Places space between waypoint map and status window
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    // Draw the info panel.
+    do_info_panel(&layout, 400, 310, bs_session);
+
+    //Necessary for proper camera usage
+    do_camera_matrix(bs_session);
 }
 
 void do_gui(Session *bs_session) {
@@ -1159,6 +1224,7 @@ void do_gui(Session *bs_session) {
         break;
     }
     case FocusMode::ARM:{
+        do_arm_gui(bs_session);
         break;
     }
     case FocusMode::DRIVE:{
@@ -1171,7 +1237,6 @@ void do_gui(Session *bs_session) {
     case FocusMode::AUTONOMY:{
         break;
     }
-    
     default:
         break;
     }
