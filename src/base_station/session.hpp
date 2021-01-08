@@ -32,15 +32,6 @@ const int NETWORK_STATS_INTERVAL = 1000;
 
 const int ARM_SEND_INTERVAL = 1000 / 9;
 
-const int LOG_VIEW_WIDTH = 572;
-const int LOG_VIEW_HEIGHT = 458;
-
-const int PRIMARY_FEED_WIDTH = 1298;
-const int PRIMARY_FEED_HEIGHT = 730;
-
-const int SECONDARY_FEED_WIDTH = 533;
-const int SECONDARY_FEED_HEIGHT = 300;
-
 const int MAX_FEEDS = 9;
 
 struct autonomy_info_struct {

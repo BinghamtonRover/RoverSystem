@@ -14,6 +14,15 @@ namespace gui {
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
+const int LOG_VIEW_WIDTH = 590;
+const int LOG_VIEW_HEIGHT = 440;
+
+const int PRIMARY_FEED_WIDTH = 1280;
+const int PRIMARY_FEED_HEIGHT = 720;
+
+const int SECONDARY_FEED_WIDTH = 550;
+const int SECONDARY_FEED_HEIGHT = 310;
+
 enum class InputState {
     KEY_COMMAND,
     DEBUG_CONSOLE,
@@ -145,7 +154,9 @@ void set_stopwatch_icon_color(Session *bs_session);
 const char* get_stopwatch_text(Session *bs_session);
 
 //Displays info about rover connection and controller mode
-void do_info_panel(Layout* layout, Session *bs_session);
+void do_info_panel(Layout* layout, int width, int height, Session *bs_session);
+
+void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_session);
 
 //Sets up the window to display stopwatch information
 void do_stopwatch_menu(Session *bs_session);
@@ -165,16 +176,24 @@ void do_camera_matrix(Session *bs_session);
 //Displays info during autonomous navigation
 void do_autonomy_control(Session *bs_session);
 
+//update general mode GUI layout
+void do_general_gui(Session *bs_session);
+
+//update drive mode GUI layout
+void do_drive_gui(Session *bs_session);
+
+//Draws the Arm mode GUI in full
+void do_arm_gui(Session *bs_session);
+
+//Draws the Autonomy mode GUI in full
+void do_autonomy_gui(Session *bs_session);
+
 //Draws the GUI in full
 void do_gui(Session *bs_session);
 
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint);
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-void do_general(Session *bs_session);
-
-void do_autonomy(Session *bs_session);
 
 } // namespace gui
 
