@@ -1026,6 +1026,70 @@ void do_autonomy_control(Session *bs_session) {
     y += 20 + 10;
 }
 
+void do_autonomy_gui(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(50);
+    layout.advance_y(20);
+    layout.push();
+
+    // Draw the main camera feed.
+    do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+    
+    //Reset X and advance Y to set up for Log Window
+    layout.reset_x();
+    layout.advance_x(-40);
+    layout.advance_y(10);
+    layout.push();
+    
+    //Draw Log Window
+    log_view::do_log(&layout, 670, 310, &gui::state.global_font);
+
+    //Reset X and Y to set up for the status window
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    //Draw status window
+    do_subsystem_panel(&layout, 680, 310, bs_session);
+
+    //Set X and Y for the Waypoint Map Window
+    layout.advance_y(-1040);
+    layout.advance_x(10);
+    layout.push();
+
+    //Draw Waypoint Map Window 
+    waypoint_map::do_waypoint_map(&layout,510,510);
+
+    //Set X and Y for the LIDAR Window
+    layout.reset_x();
+    layout.advance_y(20);
+    layout.push();
+
+    //Draw the LIDAR Window
+    do_lidar(&layout, bs_session);
+
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    // Draw the debug overlay.
+    layout = {};
+    debug_console::do_debug(&layout, &gui::state.global_font);
+
+    // Draw the camera matrix.
+    // Note: this currently needs to be called last here in order for the camera movement
+    // effects to work properly!
+    do_camera_matrix(bs_session);
+
+    do_autonomy_control(bs_session);
+}
+
 void do_general_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1235,6 +1299,7 @@ void do_gui(Session *bs_session) {
         break;
     } 
     case FocusMode::AUTONOMY:{
+        do_autonomy_gui(bs_session);
         break;
     }
     default:
