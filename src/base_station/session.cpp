@@ -29,6 +29,12 @@ Session::Session(){
     //Controller info
     this->controller_loaded = false;
     this->controller_mode = ControllerMode::DRIVE;
+
+    //Initialize subsystem info registers
+    this->drive_sub_init();
+    this->arm_sub_init();
+    this->drive_sub_init();
+    this->autonomy_sub_init();
 }
 
 Session::~Session() {};
@@ -175,6 +181,95 @@ void Session::update_focus_mode(int input_mode){
     }
 }
 
-FocusMode Session::get_focus_mode(){
-    return this->focus_mode;
+void Session::drive_sub_init(){
+    std::pair<std::string, double> speed_stat;
+    speed_stat.first = "Speed (km/s)";
+    speed_stat.second = 0.0;
+    this->drive_sub_info.insert(speed_stat);
+
+    std::pair<std::string, double> direc_stat;
+    direc_stat.first = "Direction";
+    direc_stat.second = 0.0;
+    this->drive_sub_info.insert(direc_stat);
+
+    std::pair<std::string, double> accel_stat;
+    accel_stat.first = "Acceleration (m/s^2)";
+    accel_stat.second = 0.0;
+    this->drive_sub_info.insert(accel_stat);
+
+    std::pair<std::string, double> distt_stat;
+    distt_stat.first = "Distance Traveled (meters)";
+    distt_stat.second = 0.0;
+    this->drive_sub_info.insert(distt_stat);
+
+    std::pair<std::string, double> distw_stat;
+    distw_stat.first = "Distance to Waypoint (meters)";
+    distw_stat.second = 0.0;
+    this->drive_sub_info.insert(distw_stat);
+
+    std::pair<std::string, double> motor_stat;
+    motor_stat.first = "Motor Current (Amps)";
+    motor_stat.second = 0.0;
+    this->drive_sub_info.insert(motor_stat);
+}
+
+void Session::arm_sub_init(){
+    std::pair<std::string, double> xloca_stat;
+    xloca_stat.first = "X-Location (cm)";
+    xloca_stat.second = 0.0;
+    this->arm_sub_info.insert(xloca_stat);
+
+    std::pair<std::string, double> yloca_stat;
+    yloca_stat.first = "Y-Location (cm)";
+    yloca_stat.second = 0.0;
+    this->arm_sub_info.insert(yloca_stat);
+
+    std::pair<std::string, double> zloca_stat;
+    zloca_stat.first = "Z-Location (cm)";
+    zloca_stat.second = 0.0;
+    this->arm_sub_info.insert(zloca_stat);
+
+    std::pair<std::string, double> grpos_stat;
+    grpos_stat.first = "Gripper Position (deg)";
+    grpos_stat.second = 0.0;
+    this->arm_sub_info.insert(grpos_stat);
+}
+
+void Session::science_sub_init(){
+    std::pair<std::string, double> tempr_stat;
+    tempr_stat.first = "Temperature (C)";
+    tempr_stat.second = 0.0;
+    this->science_sub_info.insert(tempr_stat);
+
+    std::pair<std::string, double> metha_stat;
+    metha_stat.first = "Methane Levels (ppm)";
+    metha_stat.second = 0.0;
+    this->science_sub_info.insert(metha_stat);
+
+    std::pair<std::string, double> co2cn_stat;
+    co2cn_stat.first = "Methane Levels (ppm)";
+    co2cn_stat.second = 0.0;
+    this->science_sub_info.insert(co2cn_stat);
+
+    std::pair<std::string, double> humid_stat;
+    humid_stat.first = "Methane Levels (ppm)";
+    humid_stat.second = 0.0;
+    this->science_sub_info.insert(humid_stat);
+
+    std::pair<std::string, double> pHlev_stat;
+    pHlev_stat.first = "pH";
+    pHlev_stat.second = 0.0;
+    this->science_sub_info.insert(pHlev_stat);
+}
+
+void Session::autonomy_sub_init(){
+    std::pair<std::string, double> arloc_stat;
+    arloc_stat.first = "AR Marker Lock";
+    arloc_stat.second = 0.0;
+    this->autonomy_sub_info.insert(arloc_stat);
+
+    std::pair<std::string, double> distw_stat;
+    distw_stat.first = "Distance to Waypoint (meters)";
+    distw_stat.second = 0.0;
+    this->autonomy_sub_info.insert(distw_stat);
 }

@@ -623,22 +623,72 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
     //int h = 300;
     
     do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+
+    //Print contents of subsystem data registers into subsystem window by focus mode
+    std::unordered_map<std::string, double>::iterator itr;
+    int offset = 0;
     switch(bs_session->focus_mode){
-        case FocusMode::GENERAL:{
-            break;
-        }
         case FocusMode::DRIVE:{
+            sprintf(text_buffer, "Drive Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->drive_sub_info.begin();
+            while(itr != bs_session->drive_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
             break;
         }
         case FocusMode::ARM:{
+            sprintf(text_buffer, "Arm Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->arm_sub_info.begin();
+            while(itr != bs_session->arm_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
             break;
         }
         case FocusMode::SCIENCE:{
+            sprintf(text_buffer, "Science Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->science_sub_info.begin();
+            while(itr != bs_session->science_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
             break;
         }
         case FocusMode::AUTONOMY:{
+            sprintf(text_buffer, "Autonomy Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->autonomy_sub_info.begin();
+            while(itr != bs_session->autonomy_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
             break;
         }
+        case FocusMode::GENERAL:
         default:{
 
         }

@@ -1,13 +1,15 @@
 #ifndef GUI_HPP
 #define GUI_HPP
 
+#include "../network/network.hpp"
+#include "session.hpp"
+#include "camera_feed.hpp"
+
+#include <vector>
+#include <unordered_map>
 #include <string>
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
-#include "../network/network.hpp"
-#include <vector>
-#include "session.hpp"
-#include "camera_feed.hpp"
 
 namespace gui {
 
