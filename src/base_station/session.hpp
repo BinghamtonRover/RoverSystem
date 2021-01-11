@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <unordered_map>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -134,6 +135,12 @@ public:
     std::vector<uint16_t> lidar_points;
 
     Config config;
+    
+    //Subsystems information
+    std::unordered_map<std::string, double> drive_sub_info; 
+    std::unordered_map<std::string, double> arm_sub_info; 
+    std::unordered_map<std::string, double> science_sub_info;
+    std::unordered_map<std::string, double> autonomy_sub_info;  
 
     //Constructor & Destructor
     Session();
@@ -146,7 +153,11 @@ public:
     void dont_send_feed(uint8_t stream_indx);
     void dont_send_invalid();
     void update_focus_mode(int input_mode);
-    FocusMode get_focus_mode();
+    
+    void drive_sub_init();
+    void arm_sub_init();
+    void science_sub_init();
+    void autonomy_sub_init();
 };
 
 #endif
