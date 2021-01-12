@@ -32,7 +32,7 @@ void VideoSystem::init(CameraSettings& cam_settings, H264Settings& encoder_setti
 	camera.apply_settings(cam_settings);
 	
 	encoder.set_port_definitions(cam_settings);
-	encoder.set_h264(encoder_settings);
+	encoder.set_h264(encoder_settings, cam_settings);
 	
 	VideoSystemException::omx_error_check("system buffer tunnel", "camera->encoder", OMX_SetupTunnel(camera.handle, 71, encoder.handle, 200));
 	

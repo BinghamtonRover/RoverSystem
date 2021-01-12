@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -DOMX_SKIP64BIT -Wall -g
+CXXFLAGS = -DOMX_SKIP64BIT -Wall -O2
 LDFLAGS = -L/opt/vc/lib -lopenmaxil -lbcm_host -lvcos
 
 INCLUDES = -I/opt/vc/include -I../../src/network

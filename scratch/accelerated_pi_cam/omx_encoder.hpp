@@ -10,7 +10,7 @@ private:
 	OMX_BUFFERHEADERTYPE* output_buffer;
 public:
 	void set_port_definitions(const CameraSettings& settings);
-	void set_h264(const H264Settings& settings);
+	void set_h264(const H264Settings& settings, const CameraSettings& camera_settings);
 	void enable_output_port();
 	void disable_output_port();
 	void fill_output_buffer();

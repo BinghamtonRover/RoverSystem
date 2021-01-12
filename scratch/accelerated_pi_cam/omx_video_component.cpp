@@ -20,7 +20,7 @@ OMXVideoComponent::~OMXVideoComponent() {
 	if (initialized) deinit();
 }
 
-OMX_CALLBACKTYPE OMXVideoComponent::callbacks = { EventHandler: event_handler, FillBufferDone: fill_buffer_done };
+OMX_CALLBACKTYPE OMXVideoComponent::callbacks = { .EventHandler = event_handler, .FillBufferDone = fill_buffer_done };
 
 void OMXVideoComponent::wait_event(VCOS_UNSIGNED events, VCOS_UNSIGNED *retrieved_events) {
 	VCOS_UNSIGNED set;
