@@ -6,6 +6,10 @@
 
 #include "component_event.hpp"
 
+enum OMXBufferStatus {
+		STOPPED, FILLING, FINISHED
+};
+
 class OMXVideoComponent {
 private:
 	void received_event(ComponentEvent event);
@@ -13,16 +17,18 @@ private:
 	bool initialized = false;
 	
 	static OMX_CALLBACKTYPE callbacks;
+protected:
+	OMXBufferStatus buffer_status = OMXBufferStatus::STOPPED;
 public:
 	
 	~OMXVideoComponent();
 	void init();
 	void deinit();
-	void wait_event(VCOS_UNSIGNED events, VCOS_UNSIGNED *retrieved_events);
-	inline void wait_event(VCOS_UNSIGNED events) { wait_event(events, 0); }
+	void wait_event(VCOS_UNSIGNED events, VCOS_UNSIGNED *retrieved_events=nullptr);
 	void change_state(OMX_STATETYPE state);
 	void enable_port(OMX_U32 port);
 	void disable_port(OMX_U32 port);
+	inline OMXBufferStatus get_buffer_status() const { return buffer_status; }
 	static OMX_ERRORTYPE event_handler(
 		OMX_IN OMX_HANDLETYPE comp, 
 		OMX_IN OMX_PTR app_data, 

@@ -111,6 +111,7 @@ void OMXEncoder::disable_output_port() {
 }
 
 void OMXEncoder::fill_output_buffer() {
+	buffer_status = OMXBufferStatus::FILLING;
 	VideoSystemException::omx_error_check("encoder", "fill output buffer", OMX_FillThisBuffer(handle, output_buffer));
 }
 

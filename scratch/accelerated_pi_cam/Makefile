@@ -11,13 +11,16 @@ VID_OBJECTS = \
 	video_system_exception.o \
 	omx_encoder.o
 
-all: tester netsample
+all: tester netsample async_example
 
 tester:	$(VID_OBJECTS) tester.o
 	$(CXX) $(LDFLAGS) $(VID_OBJECTS) tester.o -o $@
 
 netsample: $(VID_OBJECTS) network_sample.o
 	$(CXX) $(LDFLAGS) $(VID_OBJECTS) network_sample.o -o network_sample
+
+async_example: $(VID_OBJECTS) async_example.o
+	$(CXX) $(LDFLAGS) $(VID_OBJECTS) async_example.o -o $@
 
 tester.o: tester.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c tester.cpp -o tester.o
@@ -42,6 +45,9 @@ video_system_exception.o: video_system_exception.hpp video_system_exception.cpp
 
 omx_encoder.o: omx_encoder.hpp omx_encoder.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c omx_encoder.cpp
+
+async_example.o: async_example.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $<
 
 clean:
 	rm -rf *.o tester network_sample video.h264

@@ -1,7 +1,6 @@
 #include "omx_video_component.hpp"
 
 #include <bcm_host.h>
-#include <iostream>
 
 #include "video_system_exception.hpp"
 
@@ -42,6 +41,7 @@ OMX_ERRORTYPE OMXVideoComponent::event_handler(OMX_IN OMX_HANDLETYPE comp, OMX_I
 OMX_ERRORTYPE OMXVideoComponent::fill_buffer_done(OMX_IN OMX_HANDLETYPE comp, OMX_IN OMX_PTR app_data, 
 	OMX_IN OMX_BUFFERHEADERTYPE* buffer){
 	OMXVideoComponent *component = (OMXVideoComponent*) app_data;
+	component->buffer_status = OMXBufferStatus::FINISHED;
 	component->received_event(ComponentEvent::FILL_BUFFER_DONE);
 
 	return OMX_ErrorNone;

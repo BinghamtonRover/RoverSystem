@@ -15,6 +15,9 @@ private:
 	OMXPiCamera camera;
 	OMXEncoder encoder;
 	OMXVideoComponent null_sink;
+	enum {
+		STOPPED, FILLING, FINISHED
+	} async_buffer_status;
 	
 public:
 	VideoSystem();
@@ -31,6 +34,21 @@ public:
 		returns false if frame in progress
 	*/
 	bool get_partial_frame(OMX_BUFFERHEADERTYPE** buf);
+	
+	/** begin filling the partial frame buffer
+	 *  returns immediately
+	 */
+	void fill_partial_frame_async();
+	
+	// returns true if the partial frame buffer is filled
+	bool partial_frame_available_async();
+	
+	/** same as get_partial_frame, but fill_partial_frame_async() should be called first
+	 *  Blocking: if buffer not filled, this will wait for it to fill
+	 *  Use partial_frame_available_async() to check before calling
+	 */
+	bool get_partial_frame_async(OMX_BUFFERHEADERTYPE** buf);
+	
 	
 	/** Utility class for splitting frames into messages for the network library */
 	class MessageBuilder {

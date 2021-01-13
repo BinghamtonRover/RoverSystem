@@ -120,6 +120,32 @@ bool VideoSystem::get_partial_frame(OMX_BUFFERHEADERTYPE** buf) {
 	return outbuf->nFilledLen >= 4 && *((uint32_t*)(outbuf->pBuffer)) == 0x01000000;
 }
 
+void VideoSystem::fill_partial_frame_async() {
+	auto buffer_status = encoder.get_buffer_status();
+	if (buffer_status == OMXBufferStatus::STOPPED || buffer_status == OMXBufferStatus::FINISHED) {
+		encoder.fill_output_buffer();
+	}
+}
+
+bool VideoSystem::partial_frame_available_async() {
+	return encoder.get_buffer_status() == OMXBufferStatus::FINISHED;
+}
+
+bool VideoSystem::get_partial_frame_async(OMX_BUFFERHEADERTYPE** buf) {
+	auto buffer_status = encoder.get_buffer_status();
+	switch (buffer_status) {
+		case OMXBufferStatus::STOPPED:
+			return get_partial_frame(buf);
+		case OMXBufferStatus::FILLING:
+			encoder.wait_event(ComponentEvent::FILL_BUFFER_DONE);
+			break;
+		default:
+			break;
+	}
+	*buf = encoder.get_output_buffer();
+	return (*buf)->nFilledLen >= 4 && *((uint32_t*)((*buf)->pBuffer)) == 0x01000000;
+}
+
 bool VideoSystem::MessageBuilder::get_frame_delimiter(network::CSICameraMessage& msg, uint8_t stream) {
 	if (!beginning_of_stream) {
 		msg.size = 0;
