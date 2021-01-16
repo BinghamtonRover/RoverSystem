@@ -34,6 +34,7 @@ Session::Session(){
     this->drive_sub_init();
     this->arm_sub_init();
     this->drive_sub_init();
+    this->science_sub_init();
     this->autonomy_sub_init();
 }
 
