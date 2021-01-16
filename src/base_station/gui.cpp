@@ -1330,6 +1330,57 @@ void do_arm_gui(Session *bs_session){
     do_camera_matrix(bs_session);
 }
 
+void do_science_gui(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    do_subsystem_panel(&layout, 590, 520, bs_session);
+
+    //Resets x and sets a margin of 10px inbetween subsystem and log windows
+    
+    layout.reset_x();
+    layout.advance_y(10);
+
+    //Draw log window
+    log_view::do_log(&layout, 590, 510, &gui::state.global_font);
+
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed
+    do_textured_rect(&layout, 1280, 720, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+
+    // Draw the secondary camera feed
+    do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id);
+
+    //layout.reset_y();
+    layout.reset_y();
+    layout.advance_x(330);
+
+    // Draw info panel window
+    do_info_panel(&layout, 400, 310, bs_session);
+
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    //Necessary for proper camera usage
+    do_camera_matrix(bs_session);
+}
+
 void do_gui(Session *bs_session) {
     switch (bs_session->focus_mode)
     {
@@ -1346,6 +1397,7 @@ void do_gui(Session *bs_session) {
         break;
     }
     case FocusMode::SCIENCE:{
+        do_science_gui(bs_session);
         break;
     } 
     case FocusMode::AUTONOMY:{
