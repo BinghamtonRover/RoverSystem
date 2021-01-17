@@ -16,7 +16,7 @@ namespace gui {
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
-const int LOG_VIEW_WIDTH = 590;
+const int LOG_VIEW_WIDTH = 585;
 const int LOG_VIEW_HEIGHT = 440;
 
 const int PRIMARY_FEED_WIDTH = 1280;

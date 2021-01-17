@@ -1098,23 +1098,29 @@ void do_autonomy_gui(Session *bs_session){
     layout.push();
     
     //Draw Log Window
-    log_view::do_log(&layout, 670, 310, &gui::state.global_font);
+    log_view::do_log(&layout, 590, 310, &gui::state.global_font);
 
     //Reset X and Y to set up for the status window
     layout.reset_y();
     layout.advance_x(10);
-    layout.push();
+    //layout.push();
 
     //Draw status window
-    do_subsystem_panel(&layout, 680, 310, bs_session);
+    do_subsystem_panel(&layout, 370, 310, bs_session);
 
+    layout.reset_y();
+    layout.advance_x(10);
+    
+    //Draw info panel window
+    do_info_panel(&layout, 380, 310, bs_session);
+    
     //Set X and Y for the Waypoint Map Window
     layout.advance_y(-1040);
     layout.advance_x(10);
     layout.push();
 
     //Draw Waypoint Map Window 
-    waypoint_map::do_waypoint_map(&layout,510,510);
+    waypoint_map::do_waypoint_map(&layout, 510, 510);
 
     //Set X and Y for the LIDAR Window
     layout.reset_x();
