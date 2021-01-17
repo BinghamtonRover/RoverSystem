@@ -34,6 +34,7 @@ Session::Session(){
     this->drive_sub_init();
     this->arm_sub_init();
     this->drive_sub_init();
+    this->science_sub_init();
     this->autonomy_sub_init();
 }
 
@@ -247,12 +248,12 @@ void Session::science_sub_init(){
     this->science_sub_info.insert(metha_stat);
 
     std::pair<std::string, double> co2cn_stat;
-    co2cn_stat.first = "Methane Levels (ppm)";
+    co2cn_stat.first = "CO2 Concentration (ppm)";
     co2cn_stat.second = 0.0;
     this->science_sub_info.insert(co2cn_stat);
 
     std::pair<std::string, double> humid_stat;
-    humid_stat.first = "Methane Levels (ppm)";
+    humid_stat.first = "Humidity (%)";
     humid_stat.second = 0.0;
     this->science_sub_info.insert(humid_stat);
 

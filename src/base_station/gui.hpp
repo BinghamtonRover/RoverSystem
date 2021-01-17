@@ -16,7 +16,7 @@ namespace gui {
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 
-const int LOG_VIEW_WIDTH = 590;
+const int LOG_VIEW_WIDTH = 585;
 const int LOG_VIEW_HEIGHT = 440;
 
 const int PRIMARY_FEED_WIDTH = 1280;
@@ -186,6 +186,9 @@ void do_drive_gui(Session *bs_session);
 
 //Draws the Arm mode GUI in full
 void do_arm_gui(Session *bs_session);
+
+//Draws the Science mode GUI in full
+void do_science_gui(Session *bs_session);
 
 //Draws the Autonomy mode GUI in full
 void do_autonomy_gui(Session *bs_session);
