@@ -575,24 +575,32 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
             break;
     }
     draw_text(&gui::state.global_font, info_buffer, x + 5, y + 100 + 5, 15);
+   
+//    sprintf(info_buffer, "\nBattery Voltage: %.0f", placeholder);
+//    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+//    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 140 + 5, 15);
+//
+//    sprintf(info_buffer, "Energy Usage: %.0f", placeholder);
+//    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+//    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 160 + 5, 15);
+//
+//    sprintf(info_buffer, "Current Total Power Usage: %.0f", placeholder);
+//    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+//    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 180 + 5, 15);
+//
+//    sprintf(info_buffer, "Battery Temperature: %.0f", placeholder);
+//    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+//    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 200 + 5, 15);
 
-    double placeholder = 0.0;
-    
-    sprintf(info_buffer, "\nBattery Voltage: %.0f", placeholder);
-    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 140 + 5, 15);
-
-    sprintf(info_buffer, "Energy Usage: %.0f", placeholder);
-    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 160 + 5, 15);
-
-    sprintf(info_buffer, "Current Total Power Usage: %.0f", placeholder);
-    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 180 + 5, 15);
-
-    sprintf(info_buffer, "Battery Temperature: %.0f", placeholder);
-    glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 200 + 5, 15);
+    int offset = 130;
+    std::unordered_map<std::string, double>::iterator itr = bs_session->power_sub_info.begin();
+    while(itr != bs_session->power_sub_info.end()){
+        sprintf(info_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+        glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + offset + 5, 15);
+        offset += 20;
+        itr++;
+    }
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     time_t current_time;
