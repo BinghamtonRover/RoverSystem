@@ -141,6 +141,7 @@ public:
     std::unordered_map<std::string, double> arm_sub_info; 
     std::unordered_map<std::string, double> science_sub_info;
     std::unordered_map<std::string, double> autonomy_sub_info;  
+    std::unordered_map<std::string, double> power_sub_info;
 
     //Constructor & Destructor
     Session();
@@ -158,6 +159,7 @@ public:
     void arm_sub_init();
     void science_sub_init();
     void autonomy_sub_init();
+    void power_sub_init();
 };
 
 #endif

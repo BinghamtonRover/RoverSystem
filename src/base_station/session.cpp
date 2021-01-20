@@ -33,9 +33,9 @@ Session::Session(){
     //Initialize subsystem info registers
     this->drive_sub_init();
     this->arm_sub_init();
-    this->drive_sub_init();
     this->science_sub_init();
     this->autonomy_sub_init();
+    this->power_sub_init();
 }
 
 Session::~Session() {};
@@ -273,4 +273,26 @@ void Session::autonomy_sub_init(){
     distw_stat.first = "Distance to Waypoint (meters)";
     distw_stat.second = 0.0;
     this->autonomy_sub_info.insert(distw_stat);
+}
+
+void Session::power_sub_init(){
+    std::pair<std::string, double> battvolt_stat;
+    battvolt_stat.first = "Battery Voltage (V)";
+    battvolt_stat.second = 0.0;
+    this->power_sub_info.insert(battvolt_stat);
+
+    std::pair<std::string, double> enerusag_stat;
+    enerusag_stat.first = "Energy Usage (W)";
+    enerusag_stat.second = 0.0;
+    this->power_sub_info.insert(enerusag_stat);
+
+    std::pair<std::string, double> currtotal_stat;
+    currtotal_stat.first = "Curent Total Power Usage (Amps)";
+    currtotal_stat.second = 0.0;
+    this->power_sub_info.insert(currtotal_stat);
+
+    std::pair<std::string, double> batttemp_stat;
+    batttemp_stat.first = "Battery Temperature (C)";
+    batttemp_stat.second = 0.0;
+    this->power_sub_info.insert(batttemp_stat);    
 }
