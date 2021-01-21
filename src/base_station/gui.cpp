@@ -1388,6 +1388,9 @@ void do_science_gui(Session *bs_session){
 }
 
 void do_gui(Session *bs_session) {
+    if (bs_session->log_file.is_open() && bs_session->log_interval_timer.ready()) {
+        bs_session->export_data();
+    }
     switch (bs_session->focus_mode)
     {
     case FocusMode::GENERAL:{

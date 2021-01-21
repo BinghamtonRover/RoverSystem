@@ -165,6 +165,7 @@ public:
     void stop_log();
     void export_data();
     std::ofstream log_file;
+    util::Timer log_interval_timer;
 };
 
 #endif

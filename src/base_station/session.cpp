@@ -278,6 +278,7 @@ void Session::autonomy_sub_init(){
 void Session::start_log(const char* filename) {
     log_file.open(filename);
     if (log_file.is_open()) {
+        util::Timer::init(&log_interval_timer, 500, &global_clock);
         log_file << "Timestamp,";
         auto itr = science_sub_info.begin();
         while (itr != science_sub_info.end()) {
@@ -297,6 +298,7 @@ void Session::stop_log() {
 
 void Session::export_data() {
     auto itr = science_sub_info.begin();
+    log_file << "TIME_WILL_GO_HERE,";
     while (itr != science_sub_info.end()) {
         log_file << itr->second;
         ++itr;
