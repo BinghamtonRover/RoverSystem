@@ -278,7 +278,7 @@ void Session::autonomy_sub_init(){
 void Session::start_log(const char* filename) {
     log_file.open(filename);
     if (log_file.is_open()) {
-        util::Timer::init(&log_interval_timer, 500, &global_clock);
+        util::Timer::init(&log_interval_timer, 1000, &global_clock);
         log_file << "Timestamp,";
         auto itr = science_sub_info.begin();
         while (itr != science_sub_info.end()) {
@@ -298,7 +298,17 @@ void Session::stop_log() {
 
 void Session::export_data() {
     auto itr = science_sub_info.begin();
-    log_file << "TIME_WILL_GO_HERE,";
+    
+    char time_str[24];
+    time_t current_time;
+    time(&current_time);
+    struct tm* time_info = localtime(&current_time);
+    strftime(time_str, 24, "%Y-%m-%d_%H:%M:%S.", time_info);
+    
+    std::string current_millis = std::to_string(global_clock.get_millis() % 1000);
+    strcpy(&time_str[20], current_millis.c_str());
+    
+    log_file << time_str << ',';
     while (itr != science_sub_info.end()) {
         log_file << itr->second;
         ++itr;
