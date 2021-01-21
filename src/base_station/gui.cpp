@@ -1479,6 +1479,12 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->focus_mode = FocusMode::AUTONOMY;
             }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_I) {
+            if (bs_session->log_file.is_open()) {
+                bs_session->stop_log();
+            } else {
+                bs_session->start_log("science_log.csv");
+            } 
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {

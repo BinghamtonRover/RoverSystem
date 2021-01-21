@@ -11,6 +11,7 @@
 #include <vector>
 #include <cstring>
 #include <unordered_map>
+#include <fstream>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -158,6 +159,12 @@ public:
     void arm_sub_init();
     void science_sub_init();
     void autonomy_sub_init();
+    
+    // Science data logging
+    void start_log(const char* filename);
+    void stop_log();
+    void export_data();
+    std::ofstream log_file;
 };
 
 #endif

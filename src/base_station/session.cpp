@@ -274,3 +274,35 @@ void Session::autonomy_sub_init(){
     distw_stat.second = 0.0;
     this->autonomy_sub_info.insert(distw_stat);
 }
+
+void Session::start_log(const char* filename) {
+    log_file.open(filename);
+    if (log_file.is_open()) {
+        log_file << "Timestamp,";
+        auto itr = science_sub_info.begin();
+        while (itr != science_sub_info.end()) {
+            log_file << itr->first;
+            ++itr;
+            if (itr != science_sub_info.end()) {
+                log_file << ',';
+            }
+        }
+        log_file << std::endl;
+    }
+}
+
+void Session::stop_log() {
+    log_file.close();
+}
+
+void Session::export_data() {
+    auto itr = science_sub_info.begin();
+    while (itr != science_sub_info.end()) {
+        log_file << itr->second;
+        ++itr;
+        if (itr != science_sub_info.end()) {
+            log_file << ',';
+        }
+    }
+    log_file << std::endl;
+}
