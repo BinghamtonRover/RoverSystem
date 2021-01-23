@@ -3,8 +3,8 @@
 
 //Create Session instance and initialize variables
 Session::Session(){
-    this->mode = network::ModeMessage::Mode::MANUAL;
-    this->last_rover_tick = 0;
+    this->last_subsystem_tick = 0;
+    this->last_video_tick = 0;
 
     //Network stats
     this->r_tp = 0;
@@ -29,6 +29,10 @@ Session::Session(){
     //Controller info
     this->controller_loaded = false;
     this->controller_mode = ControllerMode::DRIVE;
+
+    //Initialize rover computer default Focus modes
+    this->subsystem_focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
+    this->video_focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
 
     //Initialize subsystem info registers
     this->drive_sub_init();
@@ -162,19 +166,19 @@ void Session::update_focus_mode(int input_mode){
     switch (input_mode)
     {
     case (int)FocusMode::GENERAL:
-        this->focus_mode = FocusMode::GENERAL;
+        this->bs_focus_mode = FocusMode::GENERAL;
         break;
     case (int)FocusMode::DRIVE:
-        this->focus_mode = FocusMode::DRIVE;
+        this->bs_focus_mode = FocusMode::DRIVE;
         break;
     case (int)FocusMode::ARM:
-        this->focus_mode = FocusMode::ARM;
+        this->bs_focus_mode = FocusMode::ARM;
         break;
     case (int)FocusMode::SCIENCE:
-        this->focus_mode = FocusMode::SCIENCE;
+        this->bs_focus_mode = FocusMode::SCIENCE;
         break;
     case (int)FocusMode::AUTONOMY:
-        this->focus_mode = FocusMode::AUTONOMY;
+        this->bs_focus_mode = FocusMode::AUTONOMY;
         break;
     default:
     logger::log(logger::ERROR, "Base Station: Invalid Focus Mode.");

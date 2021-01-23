@@ -88,7 +88,8 @@ class Session {
 private:
 public:
     //Variables (Definitions)
-    network::ModeMessage::Mode mode;
+    network::FocusModeMessage::FocusMode subsystem_focus_mode;
+    network::FocusModeMessage::FocusMode video_focus_mode;
 
     autonomy_info_struct autonomy_info;
    
@@ -104,13 +105,15 @@ public:
     float t_tp;
 
     //Initialize Focus Mode
-    FocusMode focus_mode = FocusMode::GENERAL;
+    FocusMode bs_focus_mode = FocusMode::GENERAL;
 
     unsigned int map_texture_id;
 
     unsigned int stopwatch_texture_id;
 
-    float last_rover_tick;
+    // Rover TPS registers
+    float last_subsystem_tick;
+    float last_video_tick;
 
     //Declares stopwatch
     StopwatchStruct stopwatch;
