@@ -499,6 +499,10 @@ int main() {
         // Update and draw GUI.
         gui::do_gui(&bs_session);
 
+        if (bs_session.log_file.is_open() && bs_session.log_interval_timer.ready()) {
+            bs_session.export_data();
+        }
+
         if (help_menu_up) gui::do_help_menu(commands, debug_commands, &bs_session);
 
         if (stopwatch_menu_up) {
