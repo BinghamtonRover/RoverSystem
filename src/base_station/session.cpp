@@ -162,30 +162,6 @@ void Session::dont_send_invalid() {
     return;
 }
 
-void Session::update_focus_mode(int input_mode){
-    switch (input_mode)
-    {
-    case (int)FocusMode::GENERAL:
-        this->bs_focus_mode = FocusMode::GENERAL;
-        break;
-    case (int)FocusMode::DRIVE:
-        this->bs_focus_mode = FocusMode::DRIVE;
-        break;
-    case (int)FocusMode::ARM:
-        this->bs_focus_mode = FocusMode::ARM;
-        break;
-    case (int)FocusMode::SCIENCE:
-        this->bs_focus_mode = FocusMode::SCIENCE;
-        break;
-    case (int)FocusMode::AUTONOMY:
-        this->bs_focus_mode = FocusMode::AUTONOMY;
-        break;
-    default:
-    logger::log(logger::ERROR, "Base Station: Invalid Focus Mode.");
-        break;
-    }
-}
-
 void Session::drive_sub_init(){
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";

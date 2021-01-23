@@ -200,25 +200,6 @@ void command_callback(std::string command, Session *bs_session) {
             log("Invalid Input: \"move\" expects two integers.", 1, 0, 0);
         }
     }
-    //else if (parts[0] == "mode") {
-    //    if (parts.size() == 2) {
-    //        network::ModeMessage::Mode m;
-    //        if (parts[1] == "auto") {
-    //            m = network::ModeMessage::Mode::AUTONOMOUS;    
-    //        } else if (parts[1] == "man") {
-    //            m = network::ModeMessage::Mode::MANUAL;    
-    //        } else {
-    //            log("Invalid Input: \"mode\" expects either \"man\" or \"auto\".", 1, 0, 0);
-    //            return;
-    //        }
-    //
-    //        network::ModeMessage message;
-    //        message.mode = m;
-    //        network::publish(&bs_session->bs_feed, &message);
-    //    } else {
-    //        log("Invalid Input: \"mode\" expects either \"man\" or \"auto\".", 1, 0, 0);
-    //    }
-    //}
     else if (parts[0].length() > 0) {
         log("Invalid Input: no matching command was found", 1, 0, 0);
     }

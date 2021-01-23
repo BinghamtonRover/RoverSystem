@@ -712,9 +712,6 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
     int x = layout->current_x;
     int y = layout->current_y;
     
-    //int w = 445;
-    //int h = 300;
-    
     do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
     //Print contents of subsystem data registers into subsystem window by focus mode

@@ -156,7 +156,6 @@ public:
     void send_all_feeds();
     void dont_send_feed(uint8_t stream_indx);
     void dont_send_invalid();
-    void update_focus_mode(int input_mode);
     
     void drive_sub_init();
     void arm_sub_init();
