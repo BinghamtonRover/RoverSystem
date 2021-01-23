@@ -88,7 +88,8 @@ class Session {
 private:
 public:
     //Variables (Definitions)
-    network::ModeMessage::Mode mode;
+    network::FocusModeMessage::FocusMode subsystem_focus_mode;
+    network::FocusModeMessage::FocusMode video_focus_mode;
 
     autonomy_info_struct autonomy_info;
    
@@ -104,13 +105,15 @@ public:
     float t_tp;
 
     //Initialize Focus Mode
-    FocusMode focus_mode = FocusMode::GENERAL;
+    FocusMode bs_focus_mode = FocusMode::GENERAL;
 
     unsigned int map_texture_id;
 
     unsigned int stopwatch_texture_id;
 
-    float last_rover_tick;
+    // Rover TPS registers
+    float last_subsystem_tick;
+    float last_video_tick;
 
     //Declares stopwatch
     StopwatchStruct stopwatch;
@@ -141,6 +144,7 @@ public:
     std::unordered_map<std::string, double> arm_sub_info; 
     std::unordered_map<std::string, double> science_sub_info;
     std::unordered_map<std::string, double> autonomy_sub_info;  
+    std::unordered_map<std::string, double> power_sub_info;
 
     //Constructor & Destructor
     Session();
@@ -152,12 +156,12 @@ public:
     void send_all_feeds();
     void dont_send_feed(uint8_t stream_indx);
     void dont_send_invalid();
-    void update_focus_mode(int input_mode);
     
     void drive_sub_init();
     void arm_sub_init();
     void science_sub_init();
     void autonomy_sub_init();
+    void power_sub_init();
 };
 
 #endif

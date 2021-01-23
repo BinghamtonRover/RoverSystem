@@ -54,7 +54,7 @@ struct Config
 class Session{
 private:
 public:
-    network::ModeMessage::Mode mode;
+    //network::ModeMessage::Mode mode;
     util::Clock global_clock;
     Config config;
 
@@ -78,6 +78,8 @@ public:
     network::MovementMessage last_movement_message = { 0, 0 };
 
     std::vector<long> lidar_points;
+
+    network::FocusModeMessage::FocusMode subsys_focus_mode;
 
     Session();
     ~Session();

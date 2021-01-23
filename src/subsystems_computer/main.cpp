@@ -188,23 +188,23 @@ int main() {
                     */
                     break;
                 }
-                case network::MessageType::MODE: {
-                    network::ModeMessage mode_message;
-                    network::deserialize(&message.buffer, &mode_message);
-                    subsys_session.mode = mode_message.mode;
+                case network::MessageType::FOCUS_MODE: {
+                    network::FocusModeMessage focus_mode_message;
+                    network::deserialize(&message.buffer, &focus_mode_message);
+                    subsys_session.subsys_focus_mode = focus_mode_message.focus_mode;
                     // Echo back to BS to verify mode change.
-                    network::publish(&subsys_session.r_feed, &mode_message);
+                    network::publish(&subsys_session.r_feed, &focus_mode_message);
                     break;
                 }
                 default:
                     break;
             }
         }
-
         if (subsys_session.network_update_timer.ready()) {
             // Update feed statuses.
             network::update_status(&subsys_session.r_feed);
             network::update_status(&subsys_session.bs_feed);
+            network::update_status(&subsys_session.v_feed);
         }
 
         if (subsys_session.suspension_update_timer.ready()) {

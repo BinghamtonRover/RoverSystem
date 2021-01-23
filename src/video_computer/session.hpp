@@ -62,6 +62,8 @@ public:
     bool greyscale;
     network::CameraControlMessage::sendType streamTypes[MAX_STREAMS];
 
+    network::FocusModeMessage::FocusMode video_focus_mode;
+
     Session();
     ~Session();
 
