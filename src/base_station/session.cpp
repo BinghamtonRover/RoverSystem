@@ -3,8 +3,8 @@
 
 //Create Session instance and initialize variables
 Session::Session(){
-    this->mode = network::ModeMessage::Mode::MANUAL;
-    this->last_rover_tick = 0;
+    this->last_subsystem_tick = 0;
+    this->last_video_tick = 0;
 
     //Network stats
     this->r_tp = 0;
@@ -30,12 +30,16 @@ Session::Session(){
     this->controller_loaded = false;
     this->controller_mode = ControllerMode::DRIVE;
 
+    //Initialize rover computer default Focus modes
+    this->subsystem_focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
+    this->video_focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
+
     //Initialize subsystem info registers
     this->drive_sub_init();
     this->arm_sub_init();
-    this->drive_sub_init();
     this->science_sub_init();
     this->autonomy_sub_init();
+    this->power_sub_init();
 }
 
 Session::~Session() {};
@@ -158,30 +162,6 @@ void Session::dont_send_invalid() {
     return;
 }
 
-void Session::update_focus_mode(int input_mode){
-    switch (input_mode)
-    {
-    case (int)FocusMode::GENERAL:
-        this->focus_mode = FocusMode::GENERAL;
-        break;
-    case (int)FocusMode::DRIVE:
-        this->focus_mode = FocusMode::DRIVE;
-        break;
-    case (int)FocusMode::ARM:
-        this->focus_mode = FocusMode::ARM;
-        break;
-    case (int)FocusMode::SCIENCE:
-        this->focus_mode = FocusMode::SCIENCE;
-        break;
-    case (int)FocusMode::AUTONOMY:
-        this->focus_mode = FocusMode::AUTONOMY;
-        break;
-    default:
-    logger::log(logger::ERROR, "Base Station: Invalid Focus Mode.");
-        break;
-    }
-}
-
 void Session::drive_sub_init(){
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";
@@ -273,6 +253,28 @@ void Session::autonomy_sub_init(){
     distw_stat.first = "Distance to Waypoint (meters)";
     distw_stat.second = 0.0;
     this->autonomy_sub_info.insert(distw_stat);
+}
+
+void Session::power_sub_init(){
+    std::pair<std::string, double> battvolt_stat;
+    battvolt_stat.first = "Battery Voltage (V)";
+    battvolt_stat.second = 0.0;
+    this->power_sub_info.insert(battvolt_stat);
+
+    std::pair<std::string, double> enerusag_stat;
+    enerusag_stat.first = "Energy Usage (W)";
+    enerusag_stat.second = 0.0;
+    this->power_sub_info.insert(enerusag_stat);
+
+    std::pair<std::string, double> currtotal_stat;
+    currtotal_stat.first = "Curent Total Power Usage (Amps)";
+    currtotal_stat.second = 0.0;
+    this->power_sub_info.insert(currtotal_stat);
+
+    std::pair<std::string, double> batttemp_stat;
+    batttemp_stat.first = "Battery Temperature (C)";
+    batttemp_stat.second = 0.0;
+    this->power_sub_info.insert(batttemp_stat);    
 }
 
 void Session::start_log(const char* filename) {
