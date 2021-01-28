@@ -328,29 +328,6 @@ int main() {
                 }
 
                 switch (message.type) {
-                //    case network::MessageType::CAMERA: {
-                //        // Static buffer so we don't have to allocate and reallocate every
-                //        // frame.
-                //        static uint8_t camera_message_buffer[camera_feed::CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE];
-                //    
-                //        network::CameraMessage camera_message;
-                //        camera_message.data = camera_message_buffer;
-                //        network::deserialize(&message.buffer, &camera_message);
-                //    
-                //        auto camerr = camera_feed::handle_section(
-                //            bs_session.camera_feeds + camera_message.stream_index,
-                //            camera_message.data,
-                //            camera_message.size,
-                //            camera_message.section_index,
-                //            camera_message.section_count,
-                //            camera_message.frame_index);
-                //    
-                //        if (camerr != camera_feed::Error::OK) {
-                //            logger::log(logger::WARNING, "Failed to handle video frame section!");
-                //        }
-                //    
-                //        break;
-                //    }
                     case network::MessageType::LIDAR: {
                         bs_session.lidar_points.clear();
 
@@ -366,8 +343,7 @@ int main() {
                     case network::MessageType::TICK: {
                         network::TickMessage tick_message;
                         network::deserialize(&message.buffer, &tick_message);
-
-                        bs_session.last_rover_tick = tick_message.ticks_per_second;
+                        bs_session.last_subsystem_tick = tick_message.ticks_per_second;
                         break;
                     }
                     case network::MessageType::LOCATION: {
@@ -375,15 +351,12 @@ int main() {
                         network::deserialize(&message.buffer,&location_message);
                         waypoint::set_rover_coordinates(location_message.latitude,location_message.longitude);
                         waypoint::rover_fix = location_message.fix_status;
-                        //waypoint::rover_latitude = location_message.latitude;
-                        //rover_longitude = location_message.longitude;
-
                         break;
                     }
-                    case network::MessageType::MODE: {
-                        network::ModeMessage mode_message;
-                        network::deserialize(&message.buffer, &mode_message);
-                        bs_session.mode = mode_message.mode;
+                    case network::MessageType::FOCUS_MODE: {
+                        network::FocusModeMessage focus_mode_message;
+                        network::deserialize(&message.buffer, &focus_mode_message);
+                        bs_session.subsystem_focus_mode = focus_mode_message.focus_mode;
                         break;
                     }
                     default:
@@ -432,6 +405,18 @@ int main() {
                     
                         break;
                     }
+                    case network::MessageType::TICK: {
+                        network::TickMessage tick_message;
+                        network::deserialize(&message.buffer, &tick_message);
+                        bs_session.last_video_tick = tick_message.ticks_per_second;
+                        break;
+                    }
+                    case network::MessageType::FOCUS_MODE: {
+                        network::FocusModeMessage focus_mode_message;
+                        network::deserialize(&message.buffer, &focus_mode_message);
+                        bs_session.video_focus_mode = focus_mode_message.focus_mode;
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -446,10 +431,12 @@ int main() {
         if (network_stats_timer.ready()) {
             bs_session.r_tp = (float) bs_session.r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
             bs_session.bs_tp = (float) bs_session.bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
-            bs_session.t_tp = bs_session.r_tp + bs_session.bs_tp;
+            bs_session.v_tp = (float) bs_session.v_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
+            bs_session.t_tp = bs_session.r_tp + bs_session.bs_tp + bs_session.v_tp;
 
             bs_session.r_feed.bytes_transferred = 0;
             bs_session.bs_feed.bytes_transferred = 0;
+            bs_session.v_feed.bytes_transferred = 0;
         }
 
         if (bs_session.controller_loaded) {
@@ -463,7 +450,8 @@ int main() {
                         int temp = bs_session.primary_feed;
                         bs_session.primary_feed = bs_session.secondary_feed;
                         bs_session.secondary_feed = temp;
-                    } else if (event.button == controller::Button::XBOX && event.value != 0) {
+                    } 
+                    else if (event.button == controller::Button::XBOX && event.value != 0) {
                         switch (bs_session.controller_mode) {
                             case ControllerMode::DRIVE:
                                 bs_session.controller_mode = ControllerMode::ARM;
