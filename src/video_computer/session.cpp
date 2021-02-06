@@ -11,7 +11,10 @@ Session::Session(){
     this->greyscale = false;
 }
 
-Session::~Session() {}
+Session::~Session() {
+    accel_video_system.stop_video();
+    accel_video_system.deinit();
+}
 
 void Session::stderr_handler(logger::Level leve, std::string message) {
     fprintf(stderr, "%s\n", message.c_str());

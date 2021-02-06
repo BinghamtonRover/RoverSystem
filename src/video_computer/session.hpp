@@ -7,6 +7,7 @@
 #include "../util/util.hpp"
 
 #include "camera.hpp"
+#include "accelerated_pi_cam/video_system.hpp"
 
 #include <turbojpeg.h>
 
@@ -44,6 +45,7 @@ public:
 
     unsigned int frame_counter;
     camera::CaptureSession* streams[MAX_STREAMS] = {0};
+    VideoSystem accel_video_system;
 
     network::Feed r_feed;
     network::Feed bs_feed;

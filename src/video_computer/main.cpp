@@ -48,6 +48,9 @@ int main(){
         }
     }
 
+    video_session.accel_video_system.init();
+    video_session.accel_video_system.start_video();
+
     util::Timer::init(&video_session.camera_update_timer, CAMERA_UPDATE_INTERVAL, &video_session.global_clock);
     util::Timer::init(&video_session.tick_timer, TICK_INTERVAL, &video_session.global_clock);
     util::Timer::init(&video_session.network_update_timer, NETWORK_UPDATE_INTERVAL, &video_session.global_clock);
@@ -153,6 +156,27 @@ int main(){
 
         // Increment global (across all streams) frame counter. Should be ok. Should...
         video_session.frame_counter++;
+
+        // Camera streams using accelerated CSI-attached cameras
+        static VideoSystem::MessageBuilder csi_message_builder;
+
+        if (video_session.accel_video_system.partial_frame_available_async()) {
+            OMX_BUFFERHEADERTYPE *frame;
+            network::CSICameraMessage csi_message;
+
+            bool starting_new_frame = video_session.accel_video_system.get_partial_frame_async(&frame);
+            if (starting_new_frame) {
+                if (csi_message_builder.get_frame_delimiter(csi_message)) {
+                    network::publish(&video_session.v_feed, &csi_message);
+                }
+            }
+
+            csi_message_builder.start_partial_frame(frame);
+            while (csi_message_builder.available()) {
+                csi_message_builder.fill_message(csi_message);
+                network::publish(&video_session.v_feed, &csi_message);
+            }
+        }
 
         // Receive incoming messages
         network::IncomingMessage message;
