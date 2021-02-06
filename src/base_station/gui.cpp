@@ -502,44 +502,48 @@ const char* get_stopwatch_text(Session *bs_session) {
     return buffer;
 }
 
-void do_info_panel(Layout* layout, Session *bs_session) {
+void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
     static char info_buffer[200];
 
     int x = layout->current_x;
     int y = layout->current_y;
 
-    int w = 445;
-    int h = 300;
+    //int w = 445;
+    //int h = 300;
 
-    do_solid_rect(layout, w, h, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+    do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
 
-    sprintf(
-        info_buffer,
-        "Rover net status: %s",
-        bs_session->r_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
-
-    if (bs_session->r_feed.status == network::FeedStatus::ALIVE) {
-        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
-    } else {
-        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-    }
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 5, 15);
-
-    sprintf(info_buffer,"Net thpt (r/bs/t): %.2f/%.2f/%.2f MiB/s", bs_session->r_tp, bs_session->bs_tp, bs_session->t_tp);
+    int y_offset = 5;
+    sprintf(info_buffer, "Subsystem Computer Net Status: %s", bs_session->r_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
+    (bs_session->r_feed.status == network::FeedStatus::ALIVE) ? glColor4f(0.0f, 1.0f, 0.0f, 1.0f) : glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+    
+    y_offset += 15;
+    sprintf(info_buffer, "Video Computer Net Status: %s", bs_session->v_feed.status == network::FeedStatus::ALIVE ? "alive" : "dead");
+    (bs_session->v_feed.status == network::FeedStatus::ALIVE) ? glColor4f(0.0f, 1.0f, 0.0f, 1.0f) : glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 20 + 5, 15);
 
+    y_offset += 25;
+    sprintf(info_buffer, "Net Thpt (bs/r/v): %.2f/%.2f/%.2f MiB/s", bs_session->bs_tp, bs_session->r_tp, bs_session->v_tp);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+
+    y_offset += 15;
+    sprintf(info_buffer, "Total Net Thpt: %.2f MiB/s", bs_session->t_tp);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+
+    y_offset += 25;
     switch (waypoint::rover_fix) {
         case network::LocationMessage::FixStatus::NONE:
             glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
             sprintf(info_buffer, "No GPS fix!");
-            draw_text(&gui::state.global_font, info_buffer, x + 5, y + 40 + 5, 15);
+            draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
             break;
         case network::LocationMessage::FixStatus::STABILIZING:
             glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
             sprintf(info_buffer, "Rover lat/lon: %.6f,%.6f", waypoint::rover_latitude, waypoint::rover_longitude);
-            draw_text(&gui::state.global_font, info_buffer, x + 5, y + 40 + 5, 15);
+            draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
             break;
         case network::LocationMessage::FixStatus::FIXED:
             glColor4f(1.0f, 1.0f, 1.0f, 1.0f);        
@@ -549,49 +553,236 @@ void do_info_panel(Layout* layout, Session *bs_session) {
             assert(false);
             break;
     }
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 40 + 5, 15);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+
+    y_offset += 25;
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    sprintf(info_buffer, "Subsystem CPU TPS: %.0f", bs_session->last_subsystem_tick);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+
+    y_offset += 15;
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    sprintf(info_buffer, "Video CPU TPS: %.0f", bs_session->last_video_tick);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+
+    y_offset += 25;
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    switch (bs_session->bs_focus_mode){
+    case FocusMode::GENERAL:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "BS Focus Mode: General");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case FocusMode::DRIVE:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "BS Focus Mode: Drive");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case FocusMode::ARM:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "BS Focus Mode: Arm");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case FocusMode::SCIENCE:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "BS Focus Mode: Science");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case FocusMode::AUTONOMY:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "BS Focus Mode: Autonomy");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    default:
+        break;
+    }
+
+    y_offset += 15;
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    switch (bs_session->subsystem_focus_mode){
+    case network::FocusModeMessage::FocusMode::GENERAL:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Subsystem CPU Focus Mode: General");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::DRIVE:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Subsystem CPU Focus Mode: Drive");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::ARM:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Subsystem CPU Focus Mode: Arm");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::SCIENCE:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Subsystem CPU Focus Mode: Science");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::AUTONOMY:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Subsystem CPU Focus Mode: Autonomy");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    default:
+        break;
+    }
+
+    y_offset += 15;
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    switch (bs_session->video_focus_mode){
+    case network::FocusModeMessage::FocusMode::GENERAL:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Video CPU Focus Mode: General");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::DRIVE:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Video CPU Focus Mode: Drive");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::ARM:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Video CPU Focus Mode: Arm");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::SCIENCE:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Video CPU Focus Mode: Science");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    case network::FocusModeMessage::FocusMode::AUTONOMY:{
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        sprintf(info_buffer, "Video CPU Focus Mode: Autonomy");
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        break;
+    }
+    default:
+        break;
+    }
+
+
+    y_offset += 25;
+    std::unordered_map<std::string, double>::iterator itr = bs_session->power_sub_info.begin();
+    while(itr != bs_session->power_sub_info.end()){
+        sprintf(info_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+        glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+        draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
+        y_offset += 15;
+        itr++;
+    }
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-    sprintf(info_buffer, "Rover tps: %.0f", bs_session->last_rover_tick);
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 60 + 5, 15);
-
-    switch (bs_session->mode) {
-        case network::ModeMessage::Mode::MANUAL:
-            sprintf(info_buffer, "Rover Mode: manual");
-            break;
-        case network::ModeMessage::Mode::AUTONOMOUS:
-            sprintf(info_buffer, "Rover Mode: autonomous");
-            break;
-    }
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 80 + 5, 15);
-
-    switch (bs_session->controller_mode) {
-        case ControllerMode::DRIVE:
-            sprintf(info_buffer, "Controller Mode: drive");
-            break;
-        case ControllerMode::ARM:
-            sprintf(info_buffer, "Controller Mode: arm");
-            break;
-    }
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + 100 + 5, 15);
-
     time_t current_time;
     time(&current_time);
     struct tm* time_info = localtime(&current_time);
 
     strftime(info_buffer, sizeof(info_buffer), "%I:%M:%S", time_info);
 
-    draw_text(&gui::state.global_font, info_buffer, x + 5, y + h - 20 - 5, 20);
+    draw_text(&gui::state.global_font, info_buffer, x + 5, y + height - 20 - 5, 20);
 
     auto stopwatch_buffer = get_stopwatch_text(bs_session);
 
     int stopwatch_text_width = text_width(&gui::state.global_font, stopwatch_buffer, 20);
 
-    draw_text(&gui::state.global_font, stopwatch_buffer, x + w - 5 - stopwatch_text_width, y + h - 20 - 5, 20);
+    draw_text(&gui::state.global_font, stopwatch_buffer, x + width - 5 - stopwatch_text_width, y + height - 20 - 5, 20);
 
     set_stopwatch_icon_color(bs_session);
-    fill_textured_rect_mix_color(x + w - 5 - stopwatch_text_width - 3 - 20, y + h - 20 - 5, 20, 20, bs_session->stopwatch_texture_id);
+    fill_textured_rect_mix_color(x + width - 5 - stopwatch_text_width - 3 - 20, y + height - 20 - 5, 20, 20, bs_session->stopwatch_texture_id);
+}
+
+void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_session){
+    static char text_buffer[200];
+    
+    int x = layout->current_x;
+    int y = layout->current_y;
+    
+    do_solid_rect(layout, width, height, 68.0f / 255.0f, 68.0f / 255.0f, 68.0f / 255.0f);
+
+    //Print contents of subsystem data registers into subsystem window by focus mode
+    std::unordered_map<std::string, double>::iterator itr;
+    int offset = 0;
+    switch(bs_session->bs_focus_mode){
+        case FocusMode::DRIVE:{
+            sprintf(text_buffer, "Drive Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->drive_sub_info.begin();
+            while(itr != bs_session->drive_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
+            break;
+        }
+        case FocusMode::ARM:{
+            sprintf(text_buffer, "Arm Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->arm_sub_info.begin();
+            while(itr != bs_session->arm_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
+            break;
+        }
+        case FocusMode::SCIENCE:{
+            sprintf(text_buffer, "Science Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->science_sub_info.begin();
+            while(itr != bs_session->science_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
+            break;
+        }
+        case FocusMode::AUTONOMY:{
+            sprintf(text_buffer, "Autonomy Subsystem Info");
+            glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
+            draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
+            offset += 30;
+            itr = bs_session->autonomy_sub_info.begin();
+            while(itr != bs_session->autonomy_sub_info.end()){
+                sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
+                glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
+                draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 15);
+                offset += 20;
+                itr++;
+            }
+            break;
+        }
+        case FocusMode::GENERAL:
+        default:{
+
+        }
+    }
 }
 
 void do_stopwatch_menu(Session *bs_session){
@@ -920,7 +1111,6 @@ void do_autonomy_control(Session *bs_session) {
 
     char text_buffer[500];
 
-    
     const char* status_text;
     switch (bs_session->autonomy_info.status) {
         case network::AutonomyStatusMessage::Status::IDLE:
@@ -976,7 +1166,77 @@ void do_autonomy_control(Session *bs_session) {
     y += 20 + 10;
 }
 
-void do_gui(Session *bs_session) {
+void do_autonomy_gui(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(50);
+    layout.advance_y(20);
+    layout.push();
+
+    // Draw the main camera feed.
+    do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+    
+    //Reset X and advance Y to set up for Log Window
+    layout.reset_x();
+    layout.advance_x(-40);
+    layout.advance_y(10);
+    layout.push();
+    
+    //Draw Log Window
+    log_view::do_log(&layout, 590, 310, &gui::state.global_font);
+
+    //Reset X and Y to set up for the status window
+    layout.reset_y();
+    layout.advance_x(10);
+    //layout.push();
+
+    //Draw status window
+    do_subsystem_panel(&layout, 370, 310, bs_session);
+
+    layout.reset_y();
+    layout.advance_x(10);
+    
+    //Draw info panel window
+    do_info_panel(&layout, 380, 310, bs_session);
+    
+    //Set X and Y for the Waypoint Map Window
+    layout.advance_y(-1040);
+    layout.advance_x(10);
+    layout.push();
+
+    //Draw Waypoint Map Window 
+    waypoint_map::do_waypoint_map(&layout, 510, 510);
+
+    //Set X and Y for the LIDAR Window
+    layout.reset_x();
+    layout.advance_y(20);
+    layout.push();
+
+    //Draw the LIDAR Window
+    do_lidar(&layout, bs_session);
+
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    // Draw the debug overlay.
+    layout = {};
+    debug_console::do_debug(&layout, &gui::state.global_font);
+
+    // Draw the camera matrix.
+    // Note: this currently needs to be called last here in order for the camera movement
+    // effects to work properly!
+    do_camera_matrix(bs_session);
+
+    do_autonomy_control(bs_session);
+}
+
+void do_general_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -989,7 +1249,8 @@ void do_gui(Session *bs_session) {
     layout.push();
 
     // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
-    waypoint_map::do_waypoint_map(&layout,572,572);
+    //waypoint_map::do_waypoint_map(&layout,572,572);
+    waypoint_map::do_waypoint_map(&layout,590,590);
     
     layout.reset_x();
     layout.advance_y(10);
@@ -1022,7 +1283,7 @@ void do_gui(Session *bs_session) {
     layout.advance_x(10);
 
     // Draw the info panel.
-    do_info_panel(&layout, bs_session);
+    do_info_panel(&layout, 400, 310, bs_session);
 
     int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
     glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
@@ -1037,7 +1298,211 @@ void do_gui(Session *bs_session) {
     // effects to work properly!
     do_camera_matrix(bs_session);
 
-    do_autonomy_control(bs_session);
+    do_autonomy_control(bs_session);    
+}
+
+void do_drive_gui(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+    
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    // Renders a map that shows where the rover is relative to other waypoints, the current waypoints, and its orientation
+    waypoint_map::do_waypoint_map(&layout,590,590);
+    
+    layout.reset_x();
+    layout.advance_y(10);
+
+    // Draw the log.
+    log_view::do_log(&layout, LOG_VIEW_WIDTH, LOG_VIEW_HEIGHT, &gui::state.global_font);
+
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed.
+    do_textured_rect(&layout, PRIMARY_FEED_WIDTH, PRIMARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+
+    //layout.reset_y();
+    layout.advance_x(200);
+
+    //// Draw the lidar.
+    //do_lidar(&layout, bs_session);
+
+    layout.reset_y();
+    layout.advance_x(150);
+
+    //Drive Subsystem Info Window
+    do_subsystem_panel(&layout, 520, 310, bs_session);
+
+    layout.reset_y();
+    layout.advance_x(10);
+
+    // Draw the info panel.
+    do_info_panel(&layout, 400, 310, bs_session);
+    
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    // Draw the debug overlay.
+    layout = {};
+    debug_console::do_debug(&layout, &gui::state.global_font);
+
+    // Draw the camera matrix.
+    // Note: this currently needs to be called last here in order for the camera movement
+    // effects to work properly!
+    do_camera_matrix(bs_session);
+
+    //do_autonomy_control(bs_session);
+}
+
+void do_arm_gui(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    // PLACEHOLDER FOR SUBSYSTEM INFO WINDOW
+    //do_solid_rect(&layout, 590, 510, 0, 192, 171);
+    do_subsystem_panel(&layout, 590, 520, bs_session);
+
+    //Resets x and sets a margin of 10px inbetween subsystem and log windows
+    layout.reset_x();
+    layout.advance_y(10);
+
+    //Sets log window to 590x510
+    log_view::do_log(&layout, 590, 510, &gui::state.global_font);
+
+    //Starts drawing from the top of the screen 10px to the right of the end of the log window
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed at 1280x720
+    do_textured_rect(&layout, 1280, 720, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+
+    //Setting drawing point to below main camera
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+    
+    //accounting for empty space
+    layout.advance_x(560);
+    layout.push();
+
+    // Renders the waypoint map at 310x310
+    waypoint_map::do_waypoint_map(&layout,310,310);
+
+    //Places space between waypoint map and status window
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    // Draw the info panel.
+    do_info_panel(&layout, 400, 310, bs_session);
+
+    //Necessary for proper camera usage
+    do_camera_matrix(bs_session);
+}
+
+void do_science_gui(Session *bs_session){
+    // Clear the screen to a modern dark gray.
+    glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    Layout layout{};
+
+    // Set margin.
+    layout.advance_x(20);
+    layout.advance_y(20);
+    layout.push();
+
+    do_subsystem_panel(&layout, 590, 520, bs_session);
+
+    //Resets x and sets a margin of 10px inbetween subsystem and log windows
+    
+    layout.reset_x();
+    layout.advance_y(10);
+
+    //Draw log window
+    log_view::do_log(&layout, 590, 510, &gui::state.global_font);
+
+    layout.reset_y();
+    layout.advance_x(10);
+    layout.push();
+
+    // Draw the main camera feed
+    do_textured_rect(&layout, 1280, 720, bs_session->camera_feeds[bs_session->primary_feed].gl_texture_id);
+
+    layout.reset_x();
+    layout.advance_y(10);
+    layout.push();
+
+    // Draw the secondary camera feed
+    do_textured_rect(&layout, SECONDARY_FEED_WIDTH, SECONDARY_FEED_HEIGHT, bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id);
+
+    //layout.reset_y();
+    layout.reset_y();
+    layout.advance_x(330);
+
+    // Draw info panel window
+    do_info_panel(&layout, 400, 310, bs_session);
+
+    int help_text_width = text_width(&gui::state.global_font, "Press 'h' for help", 15);
+    glColor4f(0.0f, 0.5f, 0.0f, 1.0f);
+    draw_text(&gui::state.global_font, "Press 'h' for help", WINDOW_WIDTH - help_text_width - 2, WINDOW_HEIGHT - 18, 15);
+
+    //Necessary for proper camera usage
+    do_camera_matrix(bs_session);
+}
+
+void do_gui(Session *bs_session) {
+    switch (bs_session->bs_focus_mode)
+    {
+    case FocusMode::GENERAL:{
+        do_general_gui(bs_session);
+        break;
+    }
+    case FocusMode::ARM:{
+        do_arm_gui(bs_session);
+        break;
+    }
+    case FocusMode::DRIVE:{
+        do_drive_gui(bs_session);
+        break;
+    }
+    case FocusMode::SCIENCE:{
+        do_science_gui(bs_session);
+        break;
+    } 
+    case FocusMode::AUTONOMY:{
+        do_autonomy_gui(bs_session);
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
@@ -1056,7 +1521,8 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             gui::debug_console::handle_keypress(key, mods, bs_session);
         }
-    } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+    } 
+    else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
         // We open the menu on release to prevent the D key from being detected
         // in the character callback upon release.
         if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
@@ -1071,11 +1537,14 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 bs_session->primary_feed = bs_session->secondary_feed;
                 bs_session->secondary_feed = temp;
             }
-        } else if (z_on && action == GLFW_RELEASE && key == GLFW_KEY_G){
+        } 
+        else if (z_on && action == GLFW_RELEASE && key == GLFW_KEY_G){
             gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
+        } 
+        else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+        } 
+        else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             switch (bs_session->controller_mode) {
                 case ControllerMode::DRIVE:
                     bs_session->controller_mode = ControllerMode::ARM;
@@ -1084,25 +1553,43 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                     bs_session->controller_mode = ControllerMode::DRIVE;
                     break;
             }
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+        } 
+        else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
             if(mods & GLFW_MOD_SHIFT) {
-                bs_session->focus_mode = FocusMode::GENERAL;
+                bs_session->bs_focus_mode = FocusMode::GENERAL;
+                network::FocusModeMessage message;
+                message.focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
+                network::publish(&bs_session->bs_feed, &message);
             }
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_2) {
+        } 
+        else if (action == GLFW_PRESS && key == GLFW_KEY_2) {
             if(mods & GLFW_MOD_SHIFT) {
-                bs_session->focus_mode = FocusMode::DRIVE;
+                bs_session->bs_focus_mode = FocusMode::DRIVE;
+                network::FocusModeMessage message;
+                message.focus_mode = network::FocusModeMessage::FocusMode::DRIVE;
+                network::publish(&bs_session->bs_feed, &message);
             }
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_3) {
+        } 
+        else if (action == GLFW_PRESS && key == GLFW_KEY_3) {
             if(mods & GLFW_MOD_SHIFT) {
-                bs_session->focus_mode = FocusMode::ARM;
+                bs_session->bs_focus_mode = FocusMode::ARM;
+                network::FocusModeMessage message;
+                message.focus_mode = network::FocusModeMessage::FocusMode::ARM;
+                network::publish(&bs_session->bs_feed, &message);
             }
         } else if (action == GLFW_PRESS && key == GLFW_KEY_4) {
             if(mods & GLFW_MOD_SHIFT) {
-                bs_session->focus_mode = FocusMode::SCIENCE;
+                bs_session->bs_focus_mode = FocusMode::SCIENCE;
+                network::FocusModeMessage message;
+                message.focus_mode = network::FocusModeMessage::FocusMode::SCIENCE;
+                network::publish(&bs_session->bs_feed, &message);
             }
         } else if (action == GLFW_PRESS && key == GLFW_KEY_5) {
             if(mods & GLFW_MOD_SHIFT) {
-                bs_session->focus_mode = FocusMode::AUTONOMY;
+                bs_session->bs_focus_mode = FocusMode::AUTONOMY;
+                network::FocusModeMessage message;
+                message.focus_mode = network::FocusModeMessage::FocusMode::AUTONOMY;
+                network::publish(&bs_session->bs_feed, &message);
             }
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {

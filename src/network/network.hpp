@@ -151,7 +151,7 @@ enum class MessageType {
     TICK,
     SUBSYSTEM,
     ARM,
-    MODE,
+    FOCUS_MODE,
     AUTONOMY_STATUS,
     AUTONOMY_COMMAND,
 	CSICAMERA
@@ -483,22 +483,25 @@ struct ArmMessage {
     }
 };
 
-struct ModeMessage {
-    static const auto TYPE = MessageType::MODE;
+struct FocusModeMessage {
+    static const auto TYPE = MessageType::FOCUS_MODE;
 
-    enum class Mode : uint8_t {
-        MANUAL,
-        AUTONOMOUS
+    enum class FocusMode : uint8_t {
+        GENERAL,
+        DRIVE,
+        ARM,
+        SCIENCE,
+        AUTONOMY
     };
 
-    Mode mode;
+    FocusMode focus_mode;
 
     void serialize(Buffer* buffer) {
-        network::serialize(buffer, static_cast<uint8_t>(this->mode));
+        network::serialize(buffer, static_cast<uint8_t>(this->focus_mode));
     }
 
     void deserialize(Buffer* buffer) {
-        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->mode)));
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->focus_mode)));
     }
 };
 

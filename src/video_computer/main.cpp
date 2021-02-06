@@ -208,6 +208,14 @@ int main(){
                     }
                     break;
                 }
+                case network::MessageType::FOCUS_MODE: {
+                    network::FocusModeMessage focus_mode_message;
+                    network::deserialize(&message.buffer, &focus_mode_message);
+                    video_session.video_focus_mode = focus_mode_message.focus_mode;
+                    // Echo back to BS to verify mode change.
+                    network::publish(&video_session.v_feed, &focus_mode_message);
+                    break;
+                }
                 default:
                     break;
             }
