@@ -1,7 +1,7 @@
 #ifndef VIDEO_SYSTEM_H
 #define VIDEO_SYSTEM_H
 
-#include <network.hpp>
+#include "../../network/network.hpp"
 #include <iostream>
 #include "omx_video_component.hpp"
 #include "omx_pi_camera.hpp"
