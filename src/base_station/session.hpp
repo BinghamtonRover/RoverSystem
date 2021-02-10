@@ -6,6 +6,7 @@
 #include "shared_feeds.hpp" 
 #include "camera_feed.hpp"
 #include "stb_truetype.h"
+#include "h264_camera_feed.hpp"
 
 #include <string>
 #include <vector>
@@ -131,6 +132,8 @@ public:
     int primary_feed;
     int secondary_feed;
     int feed_to_move;
+
+    camera_feed::H264Feed h264_feed;
 
     bool controller_loaded;
     ControllerMode controller_mode;

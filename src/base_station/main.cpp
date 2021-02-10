@@ -417,6 +417,15 @@ int main() {
                         bs_session.video_focus_mode = focus_mode_message.focus_mode;
                         break;
                     }
+                    case network::MessageType::CSICAMERA: {
+                        uint8_t* frame_data_buffer = new uint8_t[network::CSICameraMessage::MAX_DATA];
+                        network::CSICameraMessage camera_message;
+                        camera_message.data = frame_data_buffer;
+                        camera_message.deserialize(&message.buffer);
+                        
+                        bs_session.h264_feed.handle_message(camera_message);
+                        break;
+                    }
                     default:
                         break;
                 }
