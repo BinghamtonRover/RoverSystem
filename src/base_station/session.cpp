@@ -241,6 +241,12 @@ void Session::science_sub_init(){
     pHlev_stat.first = "pH";
     pHlev_stat.second = 0.0;
     this->science_sub_info.insert(pHlev_stat);
+
+    std::pair<std::string, double> atmP_stat;
+    atmP_stat.first = "Atmospheric Pressure (bar)";
+    atmP_stat.second = 0.0;
+    this->science_sub_info.insert(atmP_stat);
+
 }
 
 void Session::autonomy_sub_init(){
@@ -280,7 +286,7 @@ void Session::power_sub_init(){
 void Session::start_log(const char* filename) {
     log_file.open(filename);
     if (log_file.is_open()) {
-        util::Timer::init(&log_interval_timer, 1000, &global_clock);
+        util::Timer::init(&log_interval_timer, 3000, &global_clock);
         log_file << "Timestamp,";
         auto itr = science_sub_info.begin();
         while (itr != science_sub_info.end()) {
