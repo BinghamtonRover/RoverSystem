@@ -1478,6 +1478,10 @@ void do_science_gui(Session *bs_session){
 }
 
 void do_gui(Session *bs_session) {
+    //if (bs_session->log_file.is_open() && bs_session->log_interval_timer.ready()) {
+    //    bs_session->export_data();
+    //}
+    //switch (bs_session->focus_mode)
     switch (bs_session->bs_focus_mode)
     {
     case FocusMode::GENERAL:{
@@ -1591,6 +1595,22 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 message.focus_mode = network::FocusModeMessage::FocusMode::AUTONOMY;
                 network::publish(&bs_session->bs_feed, &message);
             }
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_I) {
+            if (bs_session->log_file.is_open()) {
+                bs_session->stop_log();
+            } else {
+                char time_str[32];
+                time_t current_time;
+                time(&current_time);
+                struct tm* time_info = localtime(&current_time);
+                strftime(time_str, 24, "%Y-%m-%d_%H:%M:%S.", time_info);
+                
+                std::string current_millis = std::to_string(bs_session->global_clock.get_millis() % 1000);
+                strcpy(&time_str[20], current_millis.c_str());
+                strcpy(&time_str[23], "_LOG.csv");
+                
+                bs_session->start_log(time_str);
+            } 
         }
     } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {

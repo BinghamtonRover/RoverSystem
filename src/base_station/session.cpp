@@ -241,6 +241,12 @@ void Session::science_sub_init(){
     pHlev_stat.first = "pH";
     pHlev_stat.second = 0.0;
     this->science_sub_info.insert(pHlev_stat);
+
+    std::pair<std::string, double> atmP_stat;
+    atmP_stat.first = "Atmospheric Pressure (bar)";
+    atmP_stat.second = 0.0;
+    this->science_sub_info.insert(atmP_stat);
+
 }
 
 void Session::autonomy_sub_init(){
@@ -275,4 +281,48 @@ void Session::power_sub_init(){
     batttemp_stat.first = "Battery Temperature (C)";
     batttemp_stat.second = 0.0;
     this->power_sub_info.insert(batttemp_stat);    
+}
+
+void Session::start_log(const char* filename) {
+    log_file.open(filename);
+    if (log_file.is_open()) {
+        util::Timer::init(&log_interval_timer, 3000, &global_clock);
+        log_file << "Timestamp,";
+        auto itr = science_sub_info.begin();
+        while (itr != science_sub_info.end()) {
+            log_file << itr->first;
+            ++itr;
+            if (itr != science_sub_info.end()) {
+                log_file << ',';
+            }
+        }
+        log_file << std::endl;
+    }
+}
+
+void Session::stop_log() {
+    log_file.close();
+}
+
+void Session::export_data() {
+    auto itr = science_sub_info.begin();
+    
+    char time_str[24];
+    time_t current_time;
+    time(&current_time);
+    struct tm* time_info = localtime(&current_time);
+    strftime(time_str, 24, "%Y-%m-%d_%H:%M:%S.", time_info);
+    
+    std::string current_millis = std::to_string(global_clock.get_millis() % 1000);
+    strcpy(&time_str[20], current_millis.c_str());
+    
+    log_file << time_str << ',';
+    while (itr != science_sub_info.end()) {
+        log_file << itr->second;
+        ++itr;
+        if (itr != science_sub_info.end()) {
+            log_file << ',';
+        }
+    }
+    log_file << std::endl;
 }
