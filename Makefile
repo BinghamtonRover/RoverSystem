@@ -42,7 +42,12 @@ format:
 archive:
 	git ls-files -z | xargs -0 zip RoverSystem.zip
 
-send: archive
+#send source code to subsystem computer
+send_s: archive
 	scp RoverSystem.zip pi@192.168.1.20:/home/pi/RoverSystem.zip
+
+#send source code to video computer
+send_v: archive
+	scp RoverSystem.zip pi@192.168.1.23:/home/pi/RoverSystem.zip
 
 .PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs, autonomy, subsystems_computer
