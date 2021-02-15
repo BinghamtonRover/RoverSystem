@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <time.h>
+#include <vector>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -83,6 +84,12 @@ float prev_angle_to_path = 0;
 // For timing.
 long start_time;
 
+// to add obstacles dynamically
+bool adding_obstacle = false;
+std::vector<float> obstacle_coordinates;
+int run_time_obstacle_index = 0;
+std::vector<Obstacle> run_time_obstacles;
+
 static long timespec_to_millis(struct timespec* t) {
     return t->tv_sec * 1000 + t->tv_nsec / 1000000;
 }
@@ -118,6 +125,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     } */ 
     if (key == GLFW_KEY_ESCAPE) {
         exit(0);
+    } else if (key == GLFW_KEY_LEFT_CONTROL) {
+        if (action == GLFW_PRESS) {
+            adding_obstacle = true;
+        }
+        else if (action == GLFW_RELEASE) {
+            adding_obstacle = false;
+        }
     }
 }
 
@@ -160,6 +174,28 @@ static void cursor_position_callback(GLFWwindow* window, double x, double y) {
 
     last_cursor_x = x;
     last_cursor_y = y;
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+/*
+    Called when the mouse is clicked
+    If left-ctrl is being held and there is a left mouse click, a vertex will be added to the run-time obstacle
+*/
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        if (adding_obstacle == true) {
+            // get cursor click position
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+
+            // convert from click position relative to top left of screen to world coords
+            float world_x = (xpos - x_offset) / pixels_per_meter;
+            float world_y = (ypos - y_offset) / pixels_per_meter;
+
+            obstacle_coordinates.push_back(world_x);
+            obstacle_coordinates.push_back(-world_y); // for some reason clicks were reflected over x-axis so undo this
+        }
+    }
 }
 
 static void wtc(float wx, float wy, int* out_cx, int* out_cy) {
@@ -345,6 +381,13 @@ float getIntensity(float theta) {
     return (1.0f - control_curve) * dominant_curve + control_curve * levelout_curve;
 }
 
+void empty_obstacle_coordinates() {
+    while (!obstacle_coordinates.empty())
+        {
+            obstacle_coordinates.pop_back();
+        }
+}
+
 int main(int argc, char** argv) {
     init_clock();
 
@@ -407,6 +450,7 @@ int main(int argc, char** argv) {
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -493,9 +537,26 @@ int main(int argc, char** argv) {
         fill_target(&fill_program, &fill_model);
         render_grid(&grid_program, &cell_model);
         render_rover(&rover_program, &rover_model);
+        
+        // if at least 3 run-time vertices (3 x coords and 3 y coords) have been added, make a new obstacle once the left-ctrl is released
+        if (adding_obstacle == false && obstacle_coordinates.size() >= 6) {
+            // Load obstacles.
+            float* obstacle_coordinates_array = obstacle_coordinates.data();
+
+            Obstacle run_time_obstacle = obstacle_create(&fill_program.prog, obstacle_coordinates_array, obstacle_coordinates.size() / 2);
+            run_time_obstacles.push_back(run_time_obstacle);
+        }
+        
+        // empty the run-time obstacle coordinates if not currently adding a new run-time obstacle
+        if (adding_obstacle == false) {
+            empty_obstacle_coordinates();
+        }
 
         for (size_t i = 0; i < map.num_obstacles; i++) {
             render_obstacle(&fill_program, obstacles + i);
+        }
+        for (size_t i = 0; i < run_time_obstacles.size(); i++) {
+            render_obstacle(&fill_program, &(run_time_obstacles[i]));
         }
 
         frame_occupancy_grid.clear();
@@ -507,6 +568,23 @@ int main(int argc, char** argv) {
                 float theta = (float)(i + LIDAR_SCAN_START) + rover_angle;
                 float x = rover_x + lidar_points[i] * cosf(theta * M_PI / 180.0f);
                 float y = rover_y + lidar_points[i] * sinf(theta * M_PI / 180.0f);
+
+                int q, r; 
+                wtc(x, y, &q, &r);
+                
+                frame_occupancy_grid.inc(q, r);
+
+                render_lidar_point(&fill_program, &lidar_point_model, x, y);
+            }
+        }
+
+        float lidar_points2[LIDAR_NUM_POINTS];
+        lidar_scan(rover_x, rover_y, rover_angle, run_time_obstacles.data(), run_time_obstacles.size(), lidar_points2);
+        for (int i = 0; i < LIDAR_NUM_POINTS; i++) {
+            if (lidar_points2[i] < LIDAR_RANGE) {
+                float theta = (float)(i + LIDAR_SCAN_START) + rover_angle;
+                float x = rover_x + lidar_points2[i] * cosf(theta * M_PI / 180.0f);
+                float y = rover_y + lidar_points2[i] * sinf(theta * M_PI / 180.0f);
 
                 int q, r; 
                 wtc(x, y, &q, &r);
