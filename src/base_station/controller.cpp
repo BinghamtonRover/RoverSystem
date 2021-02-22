@@ -1,4 +1,5 @@
 #include "controller.hpp"
+#include "../logger/logger.hpp"
 
 #include <fcntl.h>
 #include <linux/joystick.h>
@@ -108,56 +109,23 @@ float smooth_rover_input(float value) {
 
 void handle_drive_controller_event(Event event, Session* bs_session) {
     if (event.type == EventType::AXIS) {
-        bool forward = event.value <= 0;
+        bool forward;
+        (event.value <= 0) ? forward = true : forward = false;
         int16_t abs_val = event.value < 0 ? -event.value : event.value;
-
+        int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
         if (event.axis == Axis::JS_LEFT_Y) {
-            if (get_value(Axis::DPAD_X) != 0 ||
-                get_value(Axis::DPAD_Y) != 0) {
-                return;
-            }
-
-            int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-            // logger::log(logger::DEBUG, "Left orig: %d, smooth: %d", abs_val, smoothed);
-
             bs_session->last_movement_message.left = smoothed;
-            if (!forward) bs_session->last_movement_message.left *= -1;
-        } else if (event.axis == Axis::JS_RIGHT_Y) {
-            if (get_value(Axis::DPAD_X) != 0 ||
-                get_value(Axis::DPAD_Y) != 0) {
-
-                return;
+            if(!forward){
+                bs_session->last_movement_message.left *= -1;
             }
-
-            int16_t smoothed = (int16_t) smooth_rover_input((float) (abs_val >> 7));
-            // logger::log(logger::DEBUG, "Right orig: %d, smooth: %d", abs_val, smoothed);
-
+            //logger::log(logger::DEBUG, "Left orig: %d, smooth: %d", abs_val, bs_session->last_movement_message.left);
+        }
+        if (event.axis == Axis::JS_RIGHT_Y) {
             bs_session->last_movement_message.right = smoothed;
-            if (!forward) bs_session->last_movement_message.right *= -1;
-        } else if (event.axis == Axis::DPAD_Y) {
-            int16_t val = -event.value;
-
-            if (val > 0) {
-                bs_session->last_movement_message.left = JOINT_DRIVE_SPEED;
-                bs_session->last_movement_message.right = JOINT_DRIVE_SPEED;
-            } else if (val < 0) {
-                bs_session->last_movement_message.left = -JOINT_DRIVE_SPEED;
-                bs_session->last_movement_message.right = -JOINT_DRIVE_SPEED;
-            } else {
-                bs_session->last_movement_message.left = 0;
-                bs_session->last_movement_message.right = 0;
+            if(!forward){
+                bs_session->last_movement_message.right *= -1;
             }
-        } else if (event.axis == Axis::DPAD_X) {
-            if (event.value > 0) {
-                bs_session->last_movement_message.left = JOINT_DRIVE_SPEED;
-                bs_session->last_movement_message.right = -JOINT_DRIVE_SPEED;
-            } else if (event.value < 0) {
-                bs_session->last_movement_message.left = -JOINT_DRIVE_SPEED;
-                bs_session->last_movement_message.right = JOINT_DRIVE_SPEED;
-            } else {
-                bs_session->last_movement_message.left = 0;
-                bs_session->last_movement_message.right = 0;
-            }
+            //logger::log(logger::DEBUG, "Right orig: %d, smooth: %d", abs_val, bs_session->last_movement_message.right);
         }
     } 
 }
