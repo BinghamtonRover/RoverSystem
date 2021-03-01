@@ -18,9 +18,10 @@
 #include <vector>
 
 
-const uint8_t SUSPENSION_I2C_ADDR = 0x01;
-const uint8_t ARM_I2C_ADDR = 0x02;
-const uint8_t GRIPPER_I2C_ADDR = 0x03;
+const uint8_t POWER_I2C_ADDR = 0x10;
+const uint8_t SUSPENSION_I2C_ADDR = 0x11;
+const uint8_t ARM_I2C_ADDR = 0x12;
+const uint8_t GRIPPER_I2C_ADDR = 0x13;
 
 const int SUSPENSION_UPDATE_INTERVAL = 1000 / 15;
 
@@ -61,6 +62,8 @@ public:
     bool suspension_inited;
     bool arm_inited;
     bool gripper_inited;
+    bool lidar_inited;
+    bool gps_inited;
 
     network::Feed r_feed;
     network::Feed bs_feed;
