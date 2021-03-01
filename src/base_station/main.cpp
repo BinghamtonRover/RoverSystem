@@ -192,16 +192,10 @@ int main() {
         
     }
 
-    // Keep track of when we last sent movement info.
-    util::Timer movement_send_timer;
-    util::Timer::init(&movement_send_timer, MOVEMENT_SEND_INTERVAL, &bs_session.global_clock);
-
-    util::Timer arm_send_timer;
-    util::Timer::init(&arm_send_timer, ARM_SEND_INTERVAL, &bs_session.global_clock);
-
-    // Grab network stats every second.
-    util::Timer network_stats_timer;
-    util::Timer::init(&network_stats_timer, NETWORK_STATS_INTERVAL, &bs_session.global_clock);
+    // Init last movement info timers.
+    util::Timer::init(&bs_session.movement_send_timer, MOVEMENT_SEND_INTERVAL, &bs_session.global_clock);
+    util::Timer::init(&bs_session.arm_send_timer, ARM_SEND_INTERVAL, &bs_session.global_clock);
+    util::Timer::init(&bs_session.network_stats_timer, NETWORK_STATS_INTERVAL, &bs_session.global_clock);
 
     // Init the controller.
     // TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
@@ -428,7 +422,7 @@ int main() {
         network::update_status(&bs_session.bs_feed);
         network::update_status(&bs_session.v_feed);
 
-        if (network_stats_timer.ready()) {
+        if (bs_session.network_stats_timer.ready()) {
             bs_session.r_tp = (float) bs_session.r_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
             bs_session.bs_tp = (float) bs_session.bs_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
             bs_session.v_tp = (float) bs_session.v_feed.bytes_transferred / ((float) NETWORK_STATS_INTERVAL * 1000.0f);
@@ -486,13 +480,12 @@ int main() {
             }  
         }
 
-        if (movement_send_timer.ready()) {
+        if (bs_session.movement_send_timer.ready()) {
             // printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
-
             network::publish(&bs_session.bs_feed, &bs_session.last_movement_message);
         }
 
-        if (arm_send_timer.ready()) {
+        if (bs_session.arm_send_timer.ready()) {
             network::publish(&bs_session.bs_feed, &bs_session.last_arm_message);
         }
 

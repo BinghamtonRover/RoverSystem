@@ -126,6 +126,11 @@ public:
 
     network::ArmMessage last_arm_message;
 
+    // Keep track of when we last sent movement info.
+    util::Timer movement_send_timer;
+    util::Timer arm_send_timer;
+    util::Timer network_stats_timer;
+
     // Camera stuff: These get initialized off-the-bat.
     // We only care about feed_to_move value when we are in camera move mode.
     camera_feed::Feed camera_feeds[MAX_FEEDS];
