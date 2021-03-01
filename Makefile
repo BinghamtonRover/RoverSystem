@@ -1,6 +1,6 @@
 #"rover" is the old rover computer program, will keep it updated regardless 
 #all: base_station rover video_computer subsystems_computer
-all: base_station video_computer subsystems_computer
+all: base_station video_computer subsystem_computer
 
 bin:
 	mkdir bin
@@ -26,7 +26,7 @@ base_station: bin network simple_config logger
 #rover: bin network simple_config logger rocs
 #	make -C src/rover
 
-subsystems_computer: bin network simple_config logger rocs
+subsystem_computer: bin network simple_config logger rocs
 	make -C src/subsystems_computer
 
 video_computer: bin network simple_config logger
