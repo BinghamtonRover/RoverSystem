@@ -26,7 +26,7 @@ base_station: bin network simple_config logger
 #rover: bin network simple_config logger rocs
 #	make -C src/rover
 
-subsystems_computer: bin network simple_config logger
+subsystems_computer: bin network simple_config logger rocs
 	make -C src/subsystems_computer
 
 video_computer: bin network simple_config logger
