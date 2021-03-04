@@ -13,6 +13,7 @@ int main() {
         return 1;
     }
 
+    // Suspension subsystem init
     for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
         if (suspension::init(SUSPENSION_I2C_ADDR) != suspension::Error::OK) {
             logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
@@ -24,9 +25,10 @@ int main() {
     }
     if (!subsys_session.suspension_inited) {
         logger::log(logger::ERROR, "[!] Failed to start suspension!");
-        return 1;
+        //return 1;
     }
 
+    // Arm subsystem init
     for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
         if (arm::init(ARM_I2C_ADDR) != arm::Error::OK) {
             logger::log(logger::WARNING, "[!] Failed to init arm (try %d).", i);
@@ -38,9 +40,10 @@ int main() {
     }
     if (!subsys_session.arm_inited) {
         logger::log(logger::ERROR, "[!] Failed to start arm!");
-        return 1;
+        //return 1;
     }
 
+    // Gripper subsystem init (deprecated)
     for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
         if (gripper::init(GRIPPER_I2C_ADDR) != gripper::Error::OK) {
             logger::log(logger::WARNING, "[!] Failed to init gripper (try %d).", i);
@@ -50,22 +53,31 @@ int main() {
             break;
         }
     }
-
     if (!subsys_session.gripper_inited) {
         logger::log(logger::ERROR, "[!] Failed to start gripper!");
-        return 1;
+        //return 1;
     }
 
+    // LIDAR init
     if (lidar::start("192.168.1.21") != lidar::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to start lidar!");
-        return 1;
+        //subsys_session.lidar_inited = false;
+        //return 1;
+    }
+    else {
+        subsys_session.lidar_inited = true;
     }
 
+    // GPS init
     if (gps::init(subsys_session.config.gps_serial_id, &subsys_session.global_clock) != gps::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to open GPS!");
-        return 1;
+        //subsys_session.gps_inited = false;
+        //return 1;
     }
-
+    else {
+        subsys_session.gps_inited = true;
+    }
+    
     // Three feeds: incoming base station and video computer; outgoing rover.
     {
         auto err = network::init(
@@ -119,9 +131,14 @@ int main() {
     util::Timer::init(&subsys_session.suspension_update_timer, SUSPENSION_UPDATE_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.lidar_update_timer, LIDAR_UPDATE_INTERVAL, &subsys_session.global_clock);
 
-    logger::log(logger::INFO, "Success! Entering main loop.");
+    util::Timer::init(&subsys_session.power_read_data, POWER_READ_DATA_INTERVAL, &subsys_session.global_clock);
+    util::Timer::init(&subsys_session.suspension_read_data, SUSPENSION_READ_DATA_INTERVAL, &subsys_session.global_clock);
+    util::Timer::init(&subsys_session.arm_read_data, ARM_READ_DATA_INTERVAL, &subsys_session.global_clock);
+    util::Timer::init(&subsys_session.science_read_data, SCIENCE_READ_DATA_INTERVAL, &subsys_session.global_clock);
+
+    // Subsystem computer main loop
     while (true) {
-        if (subsys_session.location_send_timer.ready()) {
+        if (subsys_session.location_send_timer.ready() && subsys_session.gps_inited) {
             network::LocationMessage message;
 
             auto fix = gps::get_fix();
@@ -134,7 +151,7 @@ int main() {
             network::publish(&subsys_session.r_feed,&message);
         }
 
-        if (subsys_session.lidar_update_timer.ready()) {
+        if (subsys_session.lidar_update_timer.ready() && subsys_session.lidar_inited) {
             network::LidarMessage message;
 
             subsys_session.lidar_points.clear();
@@ -167,6 +184,7 @@ int main() {
                     break;
                 }
                 case network::MessageType::ARM: {
+                    
                     network::ArmMessage arm_message;
                     network::deserialize(&message.buffer, &arm_message);
 
@@ -200,6 +218,8 @@ int main() {
                     break;
             }
         }
+
+        // Update network status
         if (subsys_session.network_update_timer.ready()) {
             // Update feed statuses.
             network::update_status(&subsys_session.r_feed);
@@ -207,58 +227,83 @@ int main() {
             network::update_status(&subsys_session.v_feed);
         }
 
-        if (subsys_session.suspension_update_timer.ready()) {
+        // Update suspension subsystem speed
+        if (subsys_session.suspension_update_timer.ready() && subsys_session.suspension_inited) {
             auto movement = subsys_session.last_movement_message;
+            uint8_t absolute_speed; 
+            //logger::log(logger::DEBUG, "Received left: %d; right: %d", movement.left, movement.right);
 
-            suspension::Direction left_dir;
-            suspension::Direction right_dir;
-
-            if (movement.left < 0) {
-                left_dir = suspension::Direction::BACKWARD;
-                movement.left = -movement.left;
-            } 
-            else if (movement.left > 0) {
-                left_dir = suspension::Direction::FORWARD;
-            }
-
-            if (movement.left > 255){
-                movement.left = 255;
-            } 
-
-            if (movement.right < 0) {
-                right_dir = suspension::Direction::BACKWARD;
-                movement.right = -movement.right;
-            } 
-            else if (movement.right > 0) {
-                right_dir = suspension::Direction::FORWARD;
-            } 
-
-            if (movement.right > 255){
-                movement.right = 255;
-            } 
-
-            if (movement.left == 0) {
-                if (suspension::stop(suspension::Side::LEFT) != suspension::Error::OK) {
-                    logger::log(logger::ERROR, "Failed to stop left suspension side");
+            // Left side update
+            // If movement is smaller than 0, we go backwards on the left side wheels
+            if(movement.left < 0){
+                
+                absolute_speed = (-1) * movement.left;
+                if(absolute_speed > 255){
+                    absolute_speed = 255;
                 }
-            } 
-            else {
-                if (suspension::update(suspension::Side::LEFT, left_dir, (uint8_t)movement.left) != suspension::Error::OK) {
-                    logger::log(logger::ERROR, "Failed to update left suspension side");
+                logger::log(logger::DEBUG, "Received left: %d\n", absolute_speed);
+                if(suspension::update(suspension::Side::LEFT, suspension::Direction::BACKWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
+                     logger::log(logger::ERROR, "Failed to update left suspension side");
                 }
             }
-
-            if (movement.right == 0) {
-                if (suspension::stop(suspension::Side::RIGHT) != suspension::Error::OK) {
-                    logger::log(logger::ERROR, "Failed to stop right suspension side");
+            // If movement is greater than 0, we go forward on the left side wheels
+            else if(movement.left > 0){
+                absolute_speed = movement.left;
+                if(absolute_speed > 255){
+                    absolute_speed = 255;
                 }
-            } 
-            else {
-                if (suspension::update(suspension::Side::RIGHT, right_dir, (uint8_t)movement.right) != suspension::Error::OK) {
-
-                    logger::log(logger::ERROR, "Failed to update right suspension side");
+                logger::log(logger::DEBUG, "Received left: %d\n", absolute_speed);
+                if(suspension::update(suspension::Side::LEFT, suspension::Direction::FORWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
+                     logger::log(logger::ERROR, "Failed to update left suspension side");
                 }
             }
+            // Is movement is 0, then stop left side wheels
+            else if(movement.left == 0){
+                suspension::stop(suspension::Side::LEFT);
+            }
+
+            // Right side update
+            // If movement is less than 0, we go backwards on the right side wheels
+            if(movement.right < 0){
+                // Get absolute value of movement since we cre casting it into an uint8_t
+                absolute_speed = (-1) * movement.right;
+                if(absolute_speed > 255){
+                    absolute_speed = 255;
+                }
+                if(suspension::update(suspension::Side::RIGHT, suspension::Direction::BACKWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
+                     logger::log(logger::ERROR, "Failed to update right suspension side");
+                }
+            }
+            // If movement is greater than 0, we go forward on the right side wheels
+            else if(movement.right > 0){
+                absolute_speed = movement.right;
+                if(absolute_speed > 255){
+                    absolute_speed = 255;
+                }
+                if(suspension::update(suspension::Side::RIGHT, suspension::Direction::FORWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
+                     logger::log(logger::ERROR, "Failed to update right suspension side");
+                }
+            }
+            // Is movement is 0, then stop left side wheels
+            else if(movement.right == 0){
+                suspension::stop(suspension::Side::RIGHT);
+            }
+        }
+
+        if(subsys_session.power_read_data.ready() && subsys_session.power_inited){
+            
+        }
+
+        if(subsys_session.suspension_read_data.ready() && subsys_session.suspension_inited){
+            
+        }
+
+        if(subsys_session.arm_read_data.ready() && subsys_session.arm_inited){
+            
+        }
+
+        if(subsys_session.science_read_data.ready() && subsys_session.science_inited){
+            
         }
 
         // Tick.

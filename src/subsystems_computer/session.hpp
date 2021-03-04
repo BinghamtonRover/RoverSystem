@@ -37,6 +37,14 @@ const int LIDAR_UPDATE_INTERVAL = 1000 / 15;
 
 const int TICK_INTERVAL = 1000;
 
+const int POWER_READ_DATA_INTERVAL = 3000;
+
+const int SUSPENSION_READ_DATA_INTERVAL = 3000;
+
+const int ARM_READ_DATA_INTERVAL = 1000;
+
+const int SCIENCE_READ_DATA_INTERVAL = 500;
+
 struct Config
 {
     int base_station_port;
@@ -59,8 +67,10 @@ public:
     util::Clock global_clock;
     Config config;
 
+    bool power_inited;
     bool suspension_inited;
     bool arm_inited;
+    bool science_inited;
     bool gripper_inited;
     bool lidar_inited;
     bool gps_inited;
@@ -75,6 +85,11 @@ public:
     util::Timer subsystem_send_timer;
     util::Timer suspension_update_timer;
     util::Timer lidar_update_timer;
+
+    util::Timer power_read_data;
+    util::Timer suspension_read_data;
+    util::Timer arm_read_data;
+    util::Timer science_read_data;
 
     uint32_t ticks;
 
