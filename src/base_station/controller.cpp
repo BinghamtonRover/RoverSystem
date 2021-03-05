@@ -132,85 +132,74 @@ void handle_drive_controller_event(Event event, Session* bs_session) {
 
 void handle_arm_controller_event(Event event, Session* bs_session) {
     if (event.type == EventType::BUTTON) {
-        network::ArmMessage::Motor motor;
-        network::ArmMessage::State state;
-
         switch (event.button) {
             case Button::A:
-                motor = network::ArmMessage::Motor::GRIPPER_FINGER;
-                state = network::ArmMessage::State::CLOCK;
+                bs_session->arm_mode = ArmMode::GRIPPER;
                 break;
             case Button::B:
-                motor = network::ArmMessage::Motor::GRIPPER_FINGER;
-                state = network::ArmMessage::State::COUNTER;
+                bs_session->arm_mode = ArmMode::WRIST;
                 break;
             case Button::X:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE;
-                state = network::ArmMessage::State::CLOCK;
+                bs_session->arm_mode = ArmMode::BASE;
                 break;
             case Button::Y:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE;
-                state = network::ArmMessage::State::COUNTER;
-                break;
-            case Button::LB:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_FLEX;
-                state = network::ArmMessage::State::CLOCK;
-                break;
-            case Button::RB:
-                motor = network::ArmMessage::Motor::GRIPPER_WRIST_FLEX;
-                state = network::ArmMessage::State::COUNTER;
+                bs_session->arm_mode = ArmMode::ELBOW;
                 break;
             default:
                 return;
         }
-
-        if (event.value == 0) state = network::ArmMessage::State::STOP;
-
-        bs_session->last_arm_message.set_state(motor, state);
     } else if (event.type == EventType::AXIS) {
-        network::ArmMessage::Motor motor;
-        network::ArmMessage::State state;
+        network::ArmMessage::Joint joint;
+        network::ArmMessage::Direction direction;
 
         switch (event.axis) {
             case Axis::DPAD_X:
-                motor = network::ArmMessage::Motor::ARM_LOWER;
-                if (event.value >= 0) {
-                    state = network::ArmMessage::State::CLOCK;
-                } else {
-                    state = network::ArmMessage::State::COUNTER;
+                switch (bs_session->arm_mode) {
+                    case ArmMode::BASE:
+                        joint = network::ArmMessage::Joint::BASE_ROTATE;
+                        break;
+                    case ArmMode::GRIPPER:
+                        joint = network::ArmMessage::Joint::GRIPPER_ROTATE;
+                        break;
+                    default:
+                        return;
                 }
                 break;
             case Axis::DPAD_Y:
-                motor = network::ArmMessage::Motor::ARM_UPPER;
-                if (event.value >= 0) {
-                    state = network::ArmMessage::State::CLOCK;
-                } else {
-                    state = network::ArmMessage::State::COUNTER;
-                }
-                break;
-            case Axis::LT:
-                motor = network::ArmMessage::Motor::ARM_BASE;
-                if (event.value >= INT16_MAX / 2) {
-                    state = network::ArmMessage::State::COUNTER;
-                } else {
-                    state = network::ArmMessage::State::STOP;
-                }
-                break;
-            case Axis::RT:
-                motor = network::ArmMessage::Motor::ARM_BASE;
-                if (event.value >= INT16_MAX / 2) {
-                    state = network::ArmMessage::State::CLOCK;
-                } else {
-                    state = network::ArmMessage::State::STOP;
+                switch (bs_session->arm_mode) {
+                    case ArmMode::BASE:
+                        joint = network::ArmMessage::Joint::BASE_SHOULDER;
+                        break;
+                    case ArmMode::ELBOW:
+                        joint = network::ArmMessage::Joint::ELBOW;
+                        break;
+                    case ArmMode::WRIST:
+                        joint = network::ArmMessage::Joint::WRIST;
+                        break;
+                    case ArmMode::GRIPPER:
+                        joint = network::ArmMessage::Joint::GRIPPER_FINGERS;
+                        break;
+                    default:
+                        return;
                 }
                 break;
             default:
                 return;
         }
-
-        if (event.value == 0) state = network::ArmMessage::State::STOP;
-
-        bs_session->last_arm_message.set_state(motor, state);
+        
+        if (event.value == 0) {
+            direction = network::ArmMessage::Direction::NONE;
+        } else if (event.value > 0) {
+            direction = network::ArmMessage::Direction::RIGHT;
+        } else {
+            direction = network::ArmMessage::Direction::LEFT;
+        }
+        
+        network::ArmMessage arm_update_message;
+        arm_update_message.joint = joint;
+        arm_update_message.direction = direction;
+        
+        network::publish(&bs_session->bs_feed, &arm_update_message);
     }
 }
 

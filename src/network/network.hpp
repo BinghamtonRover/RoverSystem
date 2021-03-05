@@ -198,6 +198,35 @@ struct MovementMessage {
     }
 };
 
+struct ArmMessage {
+    static const auto TYPE = MessageType::ARM;
+
+    enum class Direction : uint8_t {
+        LEFT = 1,
+        NONE = 2,
+        RIGHT = 3
+    } direction;
+    
+    enum class Joint : uint8_t {
+        BASE_ROTATE,
+        BASE_SHOULDER,
+        ELBOW,
+        WRIST,
+        GRIPPER_ROTATE,
+        GRIPPER_FINGERS
+    } joint;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, static_cast<uint8_t>(this->direction));
+        network::serialize(buffer, static_cast<uint8_t>(this->joint));
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->direction)));
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->joint)));
+    }
+};
+
 struct CameraMessage {
     static const auto TYPE = MessageType::CAMERA;
 
@@ -403,55 +432,6 @@ struct SubsystemMessage {
             network::deserialize(buffer, this->subsystems[i].name, MAX_NAME_LEN + 1);
             network::deserialize(buffer, &(this->subsystems[i].state));
         }
-    }
-};
-
-struct ArmMessage {
-    static const auto TYPE = MessageType::ARM;
-
-    enum class Motor : uint8_t {
-        GRIPPER_FINGER,
-        GRIPPER_WRIST_ROTATE,
-        GRIPPER_WRIST_FLEX,
-        ARM_LOWER,
-        ARM_UPPER,
-        ARM_BASE,
-
-        NUM
-    };
-
-    enum class State : uint8_t {
-        STOP,
-        CLOCK,
-        COUNTER
-    };
-
-    State states[static_cast<int>(Motor::NUM)];
-
-    ArmMessage() {
-        for (size_t i = 0; i < static_cast<size_t>(Motor::NUM); i++) {
-            states[i] = State::STOP;
-        }
-    }
-
-    void serialize(Buffer* buffer) {
-        for (size_t i = 0; i < static_cast<size_t>(Motor::NUM); i++) {
-            network::serialize(buffer, static_cast<uint8_t>(states[i]));
-        }
-    }
-
-    void deserialize(Buffer* buffer) {
-        for (size_t i = 0; i < static_cast<size_t>(Motor::NUM); i++) {
-            network::deserialize(buffer, reinterpret_cast<uint8_t*>(states + i));
-        }
-    }
-    
-    State get_state(Motor m) {
-        return states[static_cast<int>(m)];
-    }
-
-    void set_state(Motor m, State s) {
-        states[static_cast<int>(m)] = s;
     }
 };
 
