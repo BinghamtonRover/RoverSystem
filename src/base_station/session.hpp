@@ -62,7 +62,15 @@ enum class FocusMode{
 enum class StopwatchState { 
     STOPPED,
     PAUSED,
-    RUNNING };
+    RUNNING 
+};
+
+enum class ArmControlRegion{
+    SHOULDER,
+    ELBOW,
+    WRIST,
+    GRIPPER
+};
 
 struct StopwatchStruct {
     StopwatchState state;
@@ -123,7 +131,6 @@ public:
     util::Clock global_clock;
 
     network::MovementMessage last_movement_message;
-
     network::ArmMessage last_arm_message;
 
     // Keep track of when we last sent movement info.
@@ -140,6 +147,7 @@ public:
 
     bool controller_loaded;
     ControllerMode controller_mode;
+    ArmControlRegion arm_control_region;
 
     std::vector<uint16_t> lidar_points;
 

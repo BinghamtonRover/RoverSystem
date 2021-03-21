@@ -409,51 +409,34 @@ struct SubsystemMessage {
 struct ArmMessage {
     static const auto TYPE = MessageType::ARM;
 
-    enum class Motor : uint8_t {
-        GRIPPER_FINGER,
-        GRIPPER_WRIST_ROTATE,
-        GRIPPER_WRIST_FLEX,
-        ARM_LOWER,
-        ARM_UPPER,
-        ARM_BASE,
-
-        NUM
+    enum class Joint : uint8_t {
+        BASE_ROTATE,
+        BASE_SHOULDER,
+        ELBOW, 
+        WRIST,
+        GRIPPER_ROTATE,
+        GRIPPER_FINGERS
     };
 
-    enum class State : uint8_t {
+    enum class Movement : uint8_t {
         STOP,
         CLOCK,
         COUNTER
     };
 
-    State states[static_cast<int>(Motor::NUM)];
-
-    ArmMessage() {
-        for (size_t i = 0; i < static_cast<size_t>(Motor::NUM); i++) {
-            states[i] = State::STOP;
-        }
-    }
+    int16_t joint, movement;
 
     void serialize(Buffer* buffer) {
-        for (size_t i = 0; i < static_cast<size_t>(Motor::NUM); i++) {
-            network::serialize(buffer, static_cast<uint8_t>(states[i]));
-        }
+        network::serialize(buffer, this->joint);
+        network::serialize(buffer, this->movement);
     }
 
     void deserialize(Buffer* buffer) {
-        for (size_t i = 0; i < static_cast<size_t>(Motor::NUM); i++) {
-            network::deserialize(buffer, reinterpret_cast<uint8_t*>(states + i));
-        }
-    }
-    
-    State get_state(Motor m) {
-        return states[static_cast<int>(m)];
-    }
-
-    void set_state(Motor m, State s) {
-        states[static_cast<int>(m)] = s;
+        network::deserialize(buffer, &(this->joint));
+        network::deserialize(buffer, &(this->movement));
     }
 };
+
 
 struct FocusModeMessage {
     static const auto TYPE = MessageType::FOCUS_MODE;

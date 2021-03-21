@@ -19,6 +19,7 @@ Session::Session(){
     this->autonomy_info.edit_idx = 0;
 
     this->last_movement_message = { 0, 0 };
+    this->last_arm_message = { 0, 0 };
 
     //These get initialized off-the-bat.
     //We only care about feed_to_move value when we are in camera move mode.
@@ -29,6 +30,7 @@ Session::Session(){
     //Controller info
     this->controller_loaded = false;
     this->controller_mode = ControllerMode::DRIVE;
+    this->arm_control_region = ArmControlRegion::SHOULDER;
 
     //Initialize rover computer default Focus modes
     this->subsystem_focus_mode = network::FocusModeMessage::FocusMode::GENERAL;

@@ -41,20 +41,20 @@ int main() {
         return 1;
     }
 
-    for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
-        if (gripper::init(GRIPPER_I2C_ADDR) != gripper::Error::OK) {
-            logger::log(logger::WARNING, "[!] Failed to init gripper (try %d).", i);
-        } 
-        else {
-            subsys_session.gripper_inited = true;
-            break;
-        }
-    }
+    //for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
+    //    if (gripper::init(GRIPPER_I2C_ADDR) != gripper::Error::OK) {
+    //        logger::log(logger::WARNING, "[!] Failed to init gripper (try %d).", i);
+    //    } 
+    //    else {
+    //        subsys_session.gripper_inited = true;
+    //        break;
+    //    }
+    //}
 
-    if (!subsys_session.gripper_inited) {
-        logger::log(logger::ERROR, "[!] Failed to start gripper!");
-        return 1;
-    }
+    //if (!subsys_session.gripper_inited) {
+    //    logger::log(logger::ERROR, "[!] Failed to start gripper!");
+    //    return 1;
+    //}
 
     if (lidar::start("192.168.1.21") != lidar::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to start lidar!");
@@ -117,6 +117,7 @@ int main() {
     util::Timer::init(&subsys_session.network_update_timer, NETWORK_UPDATE_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.subsystem_send_timer, SUBSYSTEM_SEND_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.suspension_update_timer, SUSPENSION_UPDATE_INTERVAL, &subsys_session.global_clock);
+    util::Timer::init(&subsys_session.arm_update_timer, ARM_UPDATE_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.lidar_update_timer, LIDAR_UPDATE_INTERVAL, &subsys_session.global_clock);
 
     logger::log(logger::INFO, "Success! Entering main loop.");
@@ -167,25 +168,8 @@ int main() {
                     break;
                 }
                 case network::MessageType::ARM: {
-                    network::ArmMessage arm_message;
-                    network::deserialize(&message.buffer, &arm_message);
-
-                    arm::update(network::ArmMessage::Motor::ARM_LOWER, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::ARM_LOWER)]);
-                    arm::update(network::ArmMessage::Motor::ARM_UPPER, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::ARM_UPPER)]);
-                    arm::update(network::ArmMessage::Motor::ARM_BASE, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::ARM_BASE)]);
-                    
-                    gripper::update(network::ArmMessage::Motor::GRIPPER_FINGER, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::GRIPPER_FINGER)]);
-                    gripper::update(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE)]);
-                    gripper::update(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX, arm_message.states[static_cast<uint8_t>(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX)]);
-                    /*
-                    logger::log(logger::DEBUG, "arm update:");
-                    logger::log(logger::DEBUG, "  gfinger=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::GRIPPER_FINGER)));
-                    logger::log(logger::DEBUG, "  gwrotate=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_ROTATE)));
-                    logger::log(logger::DEBUG, "  gwflex=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::GRIPPER_WRIST_FLEX)));
-                    logger::log(logger::DEBUG, "  arml=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::ARM_LOWER)));
-                    logger::log(logger::DEBUG, "  armu=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::ARM_UPPER)));
-                    logger::log(logger::DEBUG, "  armb=%d", static_cast<uint8_t>(arm_message.get_state(network::ArmMessage::Motor::ARM_BASE)));
-                    */
+                    network::deserialize(&message.buffer, &subsys_session.last_arm_message);
+                    logger::log(logger::DEBUG, "Joint: %d, Movement: %d", (int)subsys_session.last_arm_message.joint, (int)subsys_session.last_arm_message.movement);
                     break;
                 }
                 case network::MessageType::FOCUS_MODE: {
@@ -258,6 +242,13 @@ int main() {
 
                     logger::log(logger::ERROR, "Failed to update right suspension side");
                 }
+            }
+        }
+        if (subsys_session.arm_update_timer.ready()) {
+            auto movement = subsys_session.last_arm_message;          
+            if (arm::update(static_cast<network::ArmMessage::Joint>(movement.joint),
+                static_cast<network::ArmMessage::Movement>(movement.movement)) != arm::Error::OK) {
+                    logger::log(logger::ERROR, "Failed to update arm");
             }
         }
 
