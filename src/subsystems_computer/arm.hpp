@@ -11,6 +11,6 @@ enum class Error {
 
 Error init(uint8_t slave_addr);
 
-Error update(network::ArmMessage::Motor motor, network::ArmMessage::State state);
+Error update(network::ArmMessage::Joint motor, network::ArmMessage::Movement state);
 
 }

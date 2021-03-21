@@ -59,10 +59,25 @@ enum class FocusMode{
     AUTONOMY
 };
 
+enum class ArmMode {
+    BASE,
+    ELBOW,
+    WRIST,
+    GRIPPER
+};
+
 enum class StopwatchState { 
     STOPPED,
     PAUSED,
-    RUNNING };
+    RUNNING 
+};
+
+enum class ArmControlRegion{
+    SHOULDER,
+    ELBOW,
+    WRIST,
+    GRIPPER
+};
 
 struct StopwatchStruct {
     StopwatchState state;
@@ -108,6 +123,8 @@ public:
     //Initialize Focus Mode
     FocusMode bs_focus_mode = FocusMode::GENERAL;
 
+    ArmMode arm_mode = ArmMode::BASE;
+    
     unsigned int map_texture_id;
 
     unsigned int stopwatch_texture_id;
@@ -123,8 +140,12 @@ public:
     util::Clock global_clock;
 
     network::MovementMessage last_movement_message;
-
     network::ArmMessage last_arm_message;
+
+    // Keep track of when we last sent movement info.
+    util::Timer movement_send_timer;
+    util::Timer arm_send_timer;
+    util::Timer network_stats_timer;
 
     // Camera stuff: These get initialized off-the-bat.
     // We only care about feed_to_move value when we are in camera move mode.
@@ -135,6 +156,7 @@ public:
 
     bool controller_loaded;
     ControllerMode controller_mode;
+    ArmControlRegion arm_control_region;
 
     std::vector<uint16_t> lidar_points;
 

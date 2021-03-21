@@ -17,37 +17,30 @@ Error init(uint8_t slave_addr) {
         return Error::READ;
     }
 
-    if (strcmp(name_buffer, "ptaArm") != 0) {
+    if (strcmp(name_buffer, "arm") != 0) {
         return Error::DEVICE_NOT_RECOGNIZED;
     }
 
     return Error::OK;
 }
 
-static uint8_t get_register(network::ArmMessage::Motor motor) {
-    switch (motor) {
-        case network::ArmMessage::Motor::ARM_LOWER:
-            return 0x01;
-        case network::ArmMessage::Motor::ARM_UPPER:
-            return 0x02;
-        case network::ArmMessage::Motor::ARM_BASE:
-            return 0x03;
-        default:
-            return 0x00;
-    }
-}
-
-uint8_t state_to_value_map[3] = {
-    [static_cast<int>(network::ArmMessage::State::STOP)] = 0x01,
-    [static_cast<int>(network::ArmMessage::State::CLOCK)] = 0x00,
-    [static_cast<int>(network::ArmMessage::State::COUNTER)] = 0x02,
+uint8_t joint_to_reg_map[6] = {
+    [static_cast<int>(network::ArmMessage::Joint::BASE_ROTATE)] = 0x01,
+    [static_cast<int>(network::ArmMessage::Joint::BASE_SHOULDER)] = 0x02,
+    [static_cast<int>(network::ArmMessage::Joint::ELBOW)] = 0x03,
+    [static_cast<int>(network::ArmMessage::Joint::WRIST)] = 0x04,
+    [static_cast<int>(network::ArmMessage::Joint::GRIPPER_ROTATE)] = 0x05,
+    [static_cast<int>(network::ArmMessage::Joint::GRIPPER_FINGERS)] = 0x06,
 };
 
-Error update(network::ArmMessage::Motor motor, network::ArmMessage::State state) {
-    auto rocs_res = rocs::write_to_register(
-        global_slave_addr,
-        get_register(motor),
-        state_to_value_map[static_cast<int>(state)]);
+uint8_t state_to_value_map[3] = {
+    [static_cast<int>(network::ArmMessage::Movement::STOP)] = 0x02,
+    [static_cast<int>(network::ArmMessage::Movement::CLOCK)] = 0x00,
+    [static_cast<int>(network::ArmMessage::Movement::COUNTER)] = 0x01,
+};
+
+Error update(network::ArmMessage::Joint joint, network::ArmMessage::Movement movement) {
+    auto rocs_res = rocs::write_to_register(global_slave_addr, joint_to_reg_map[static_cast<int>(joint)], state_to_value_map[static_cast<int>(movement)]);
     if (rocs_res != rocs::Error::OK) return Error::WRITE;
 
     return Error::OK;
