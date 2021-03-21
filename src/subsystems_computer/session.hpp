@@ -8,7 +8,6 @@
 #include "subsystem.hpp"
 #include "suspension.hpp"
 #include "lidar.hpp"
-#include "gripper.hpp"
 #include "arm.hpp"
 
 #include <cstddef>
@@ -21,9 +20,10 @@
 const uint8_t POWER_I2C_ADDR = 0x10;
 const uint8_t SUSPENSION_I2C_ADDR = 0x11;
 const uint8_t ARM_I2C_ADDR = 0x12;
-const uint8_t GRIPPER_I2C_ADDR = 0x13;
 
 const int SUSPENSION_UPDATE_INTERVAL = 1000 / 15;
+
+const int ARM_UPDATE_INTERVAL = 1000 / 15;
 
 const int SUSPENSION_CONNECT_TRIES = 5;
 
@@ -71,7 +71,6 @@ public:
     bool suspension_inited;
     bool arm_inited;
     bool science_inited;
-    bool gripper_inited;
     bool lidar_inited;
     bool gps_inited;
 
@@ -84,6 +83,7 @@ public:
     util::Timer network_update_timer;
     util::Timer subsystem_send_timer;
     util::Timer suspension_update_timer;
+    util::Timer arm_update_timer;
     util::Timer lidar_update_timer;
 
     util::Timer power_read_data;
@@ -94,6 +94,7 @@ public:
     uint32_t ticks;
 
     network::MovementMessage last_movement_message = { 0, 0 };
+    network::ArmMessage last_arm_message = { 0, 0 };
 
     std::vector<long> lidar_points;
 

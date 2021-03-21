@@ -11,7 +11,7 @@ ifdef ONBOARD
 	LIDAR_ONBOARD = true
 	GPS_ONBOARD = true
 	ARM_ONBOARD = true
-	GRIPPER_ONBOARD = true
+#	GRIPPER_ONBOARD = true
 endif
 
 ifdef SUSPENSION_ONBOARD
@@ -47,11 +47,11 @@ else
 	SOURCES += arm_dummy.cpp
 endif
 
-ifdef GRIPPER_ONBOARD
-	SOURCES += gripper_onboard.cpp
-else
-	SOURCES += gripper_dummy.cpp
-endif
+#ifdef GRIPPER_ONBOARD
+#	SOURCES += gripper_onboard.cpp
+#else
+#	SOURCES += gripper_dummy.cpp
+#endif
 
 $(EXECUTABLE): $(SOURCES) $(HEADERS) $(LIBRARIES)
 	g++ $(CFLAGS) $(SOURCES) -o $@ $(LFLAGS)

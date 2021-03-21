@@ -485,10 +485,6 @@ int main() {
             network::publish(&bs_session.bs_feed, &bs_session.last_movement_message);
         }
 
-        if (bs_session.arm_send_timer.ready()) {
-            network::publish(&bs_session.bs_feed, &bs_session.last_arm_message);
-        }
-
         // Update and draw GUI.
         gui::do_gui(&bs_session);
 
