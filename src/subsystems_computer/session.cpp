@@ -2,9 +2,10 @@
 #include <cstring>
 
 Session::Session(){
+    this->power_inited = false;
     this->suspension_inited = false;
     this->arm_inited = false;
-    this->gripper_inited = false;
+    this->science_inited = false;
     this->lidar_inited = false;
     this->gps_inited = false;
     this->ticks = 0;

@@ -1,4 +1,5 @@
 #include <cstring>
+//#include <stdio.h>
 
 #include "../rocs/rocs.hpp"
 
@@ -29,13 +30,13 @@ Error init(uint8_t slave_addr) {
 }
 
 uint8_t side_to_dir_register_map[2] = {
-    [static_cast<int>(Side::LEFT)] = 0x02,
-    [static_cast<int>(Side::RIGHT)] = 0x04,
+    [static_cast<int>(Side::LEFT)] = 0x05,
+    [static_cast<int>(Side::RIGHT)] = 0x07,
 };
 
 uint8_t side_to_speed_register_map[2] = {
-    [static_cast<int>(Side::LEFT)] = 0x01,
-    [static_cast<int>(Side::RIGHT)] = 0x03,
+    [static_cast<int>(Side::LEFT)] = 0x06,
+    [static_cast<int>(Side::RIGHT)] = 0x08,
 };
 
 uint8_t dir_to_value_map[2] = {
@@ -43,36 +44,32 @@ uint8_t dir_to_value_map[2] = {
     [static_cast<int>(Direction::BACKWARD)] = 0x01,
 };
 
+const uint8_t READ_LEFT_VELOCITY = 0x09;
+const uint8_t READ_RIGHT_VELOCITY = 0x0A;
+
+
+Error read_variable_velocity(){
+    auto rocs_res = rocs::write_to_register(global_slave_addr, )
+}
+
 Error update(Side side, Direction direction, uint8_t speed) {
-    // Scale it down so that we don't go too fast.
-    uint16_t speed_scaling = speed * 100;
-    speed_scaling /= PRESCALE;
-    speed_scaling /= 100;
-    speed = (uint8_t) speed_scaling;
+    auto rocs_res = rocs::write_to_register(global_slave_addr, side_to_speed_register_map[side], speed);
+    if (rocs_res != rocs::Error::OK){
+        return Error::WRITE;
+    }
 
-    auto rocs_res = rocs::write_to_register(
-        global_slave_addr,
-        side_to_speed_register_map[side],
-        speed);
-    if (rocs_res != rocs::Error::OK) return Error::WRITE;
-
-    rocs_res = rocs::write_to_register(
-        global_slave_addr,
-        side_to_dir_register_map[side],
-        dir_to_value_map[direction]);
-    if (rocs_res != rocs::Error::OK) return Error::WRITE;
-
+    rocs_res = rocs::write_to_register(global_slave_addr, side_to_dir_register_map[side], dir_to_value_map[direction]);
+    if (rocs_res != rocs::Error::OK){
+        return Error::WRITE;
+    }    
     return Error::OK;
 }
 
 Error stop(Side side) {
-    auto rocs_res = rocs::write_to_register(
-        global_slave_addr,
-        side_to_speed_register_map[side],
-        0);
-    if (rocs_res != rocs::Error::OK) return Error::WRITE;
-
+    auto rocs_res = rocs::write_to_register(global_slave_addr, side_to_speed_register_map[side], 0);
+    if (rocs_res != rocs::Error::OK){
+        return Error::WRITE;
+    }
     return Error::OK;
 }
-
 }
