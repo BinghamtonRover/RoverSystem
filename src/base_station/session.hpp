@@ -59,6 +59,13 @@ enum class FocusMode{
     AUTONOMY
 };
 
+enum class ArmMode {
+    BASE,
+    ELBOW,
+    WRIST,
+    GRIPPER
+};
+
 enum class StopwatchState { 
     STOPPED,
     PAUSED,
@@ -116,6 +123,8 @@ public:
     //Initialize Focus Mode
     FocusMode bs_focus_mode = FocusMode::GENERAL;
 
+    ArmMode arm_mode = ArmMode::BASE;
+    
     unsigned int map_texture_id;
 
     unsigned int stopwatch_texture_id;

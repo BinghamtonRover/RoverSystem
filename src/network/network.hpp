@@ -198,6 +198,35 @@ struct MovementMessage {
     }
 };
 
+//struct ArmMessage {
+//    static const auto TYPE = MessageType::ARM;
+//
+//    enum class Direction : uint8_t {
+//        LEFT = 1,
+//        NONE = 2,
+//        RIGHT = 3
+//    } direction;
+//    
+//    enum class Joint : uint8_t {
+//        BASE_ROTATE,
+//        BASE_SHOULDER,
+//        ELBOW,
+//        WRIST,
+//        GRIPPER_ROTATE,
+//        GRIPPER_FINGERS
+//    } joint;
+//
+//    void serialize(Buffer* buffer) {
+//        network::serialize(buffer, static_cast<uint8_t>(this->direction));
+//        network::serialize(buffer, static_cast<uint8_t>(this->joint));
+//    }
+//
+//    void deserialize(Buffer* buffer) {
+//        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->direction)));
+//        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->joint)));
+//    }
+//};
+
 struct CameraMessage {
     static const auto TYPE = MessageType::CAMERA;
 
