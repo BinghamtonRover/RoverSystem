@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <ctime>
+#include <chrono>
+#include <iostream>
 
 #include "gui.hpp"
 
@@ -356,6 +359,135 @@ void do_textured_rect(Layout* layout, int width, int height, unsigned int textur
 
     layout->advance_x(width);
     layout->advance_y(height);
+}
+
+//Returns a byte (char) array of rgb values for the pixels making up the current rover feed frame
+unsigned char* get_current_camera_frame(unsigned int texture_id, int texture_size){
+
+    std::cout << "In getting frame" << std::endl;
+
+    
+
+    glEnable(GL_TEXTURE_2D); 
+    glBindTexture(GL_TEXTURE_2D, texture_id); //Binds current camera frame to the 2D Texture
+
+    unsigned char * frame_data = (unsigned char *) malloc(texture_size); //Will hold the frame data
+
+
+    std::cout << "Malloc'd Frame to size " << texture_size << std::endl;
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, frame_data); //Grabs the texture in GL_TEXTURE_2D and puts it into rgb_data
+
+    std::cout << "Got texture into rgb_data" << std::endl;
+
+    glDisable(GL_TEXTURE_2D);
+
+    return frame_data;
+}
+
+void gen_bitmap_from_camera_feed(Session* bs_session){
+
+    std::cout << "I am here!" << std::endl;
+
+    const int width = 1280;
+    const int height = 720;
+    const int BYTES_PER_PIXEL = 3;
+    const int FILE_HEADER_SIZE = 14;
+    const int INFO_HEADER_SIZE = 40;
+
+    std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    char * curr_time = std::ctime(&now);
+    std::string file_name_start = "feed_screenshots/rover feed ";
+    std::string file_end = ".bmp";
+    char * img_name = (char *) std::malloc(1 + std::strlen(curr_time) + std::strlen(file_name_start.c_str()) + std::strlen(file_end.c_str()));
+    std::strcpy(img_name, file_name_start.c_str());
+    std::strcat(img_name, curr_time);
+    std::strcat(img_name, file_end.c_str());
+
+    int width_in_bytes = width * BYTES_PER_PIXEL;
+    unsigned char padding[3] = {0, 0, 0};
+    int padding_size = (4 - (width_in_bytes)%4) % 4;
+
+    int stride = (width_in_bytes) + padding_size;
+
+    int file_size = FILE_HEADER_SIZE + INFO_HEADER_SIZE + (stride * height);
+
+    unsigned char * frame = get_current_camera_frame(bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id, file_size);
+
+    std::cout << "Back into bitmap function!" << std::endl;
+
+    if (frame != NULL){
+
+        FILE* imageFile = fopen(img_name, "wb");
+
+        static unsigned char fileHeader[] = {
+            0,0,        //signature
+            0,0,0,0,    //image file size in bytes
+            0,0,0,0,    //reserved
+            0,0,0,0,    //start of pixel array
+        };
+
+        fileHeader[0] = (unsigned char )('B');
+        fileHeader[1] = (unsigned char )('M');
+        fileHeader[2] = (unsigned char )(file_size);
+        fileHeader[3] = (unsigned char )(file_size >> 8);
+        fileHeader[4] = (unsigned char )(file_size >> 16);
+        fileHeader[5] = (unsigned char )(file_size >> 24);
+        fileHeader[10]= (unsigned char )(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
+
+        static unsigned char infoHeader[] = {
+            0,0,0,0,    // header size
+            0,0,0,0,    // image width
+            0,0,0,0,    // image height
+            0,0,        // number of color planes
+            0,0,        // bits per pixel
+            0,0,0,0,    // compression
+            0,0,0,0,    // image size
+            0,0,0,0,    // horizontal res
+            0,0,0,0,    // vertical res
+            0,0,0,0,    // colors in color table
+            0,0,0,0,    // important color count
+        };
+
+        infoHeader[0] = (unsigned char)(INFO_HEADER_SIZE);
+        infoHeader[4] = (unsigned char)(width);
+        infoHeader[5] = (unsigned char)(width >> 8);
+        infoHeader[6] = (unsigned char)(width >> 16);
+        infoHeader[7] = (unsigned char)(width >> 24);
+        infoHeader[8] = (unsigned char)(height);
+        infoHeader[9] = (unsigned char)(height >> 8);
+        infoHeader[10] = (unsigned char)(height >> 16);
+        infoHeader[11] = (unsigned char)(height >> 24);
+        infoHeader[12] = (unsigned char)(1);
+        infoHeader[14] = (unsigned char)(BYTES_PER_PIXEL*8);
+
+        std::cout << "I am here 2!" << std::endl;
+
+        fwrite(fileHeader, 1, FILE_HEADER_SIZE, imageFile);
+        fwrite(infoHeader, 1, INFO_HEADER_SIZE, imageFile);
+
+        std::cout << "I am here 3!" << std::endl;
+
+        if(frame != NULL){
+            for(int i = height-1; i > -1; i--){
+                fwrite(frame + (i*width_in_bytes), BYTES_PER_PIXEL, width, imageFile);
+                fwrite(padding, 1, padding_size, imageFile);
+            }
+        }else{
+            std::cout << "Frame was not correctly acquired!" << std::endl;
+        }
+        
+
+        std::cout << "I am here 4!" << std::endl;
+
+        fclose(imageFile);
+        std::free(img_name);
+    } else {
+        std::cout << "No frame data to capture!" << std::endl;
+    }
+
+    std::free(frame);
 }
 
 unsigned int load_texture(const char* file_name) {

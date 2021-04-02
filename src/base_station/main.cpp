@@ -267,10 +267,11 @@ int main() {
                 stopwatch_menu_up = false;
                 gui::state.input_state = gui::InputState::KEY_COMMAND;
             }
-        } else if (
-            glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
+        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
             stopwatch_menu_up = true;
             gui::state.input_state = gui::InputState::STOPWATCH_MENU;
+        } else if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS){
+            gui::gen_bitmap_from_camera_feed(&bs_session);
         }
 
         if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {

@@ -130,6 +130,12 @@ void do_solid_rect(Layout* layout, int width, int height, float r, float g, floa
 // with the given texture.
 void do_textured_rect(Layout* layout, int width, int height, unsigned int texture_id);
 
+//Grabs the current texture of the camera feed render
+unsigned char* get_current_camera_frame(unsigned int texture_id, int texture_size);
+
+//Saves the current camera feed frame and saves it as a bitmap image
+void gen_bitmap_from_camera_feed(Session* bs_session);
+
 // Loads a png or jpeg image into memory, and returns an OpenGL texture id.
 unsigned int load_texture(const char* file_name);
 
