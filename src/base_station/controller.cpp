@@ -268,4 +268,72 @@ void handle_arm_controller_event(Event event, Session* bs_session) {
     }
 }
 
+void handle_science_controller_event(Event event, Session* bs_session) {
+    if (event.type == EventType::BUTTON && event.button == Button::XBOX && event.value == 1) {
+        (bs_session->science_mode == ScienceMode::DIRT_COLLECTION_MODE) ? 
+            bs_session->science_mode = ScienceMode::TESTING_MODE :
+            bs_session->science_mode = ScienceMode::DIRT_COLLECTION_MODE;
+    }
+    else {
+        if(bs_session->science_mode == ScienceMode::DIRT_COLLECTION_MODE){
+            if(event.type == EventType::BUTTON){
+                switch (event.button) {
+                    case Button::LB:
+                        if(event.value == 1){
+                            logger::log(logger::DEBUG, "Carousel to Tests");
+                        }
+                        else {
+                            logger::log(logger::DEBUG, "Stop Carousel");
+                        }
+                        break;
+                    case Button::RB:
+                        if(event.value == 1){
+                            logger::log(logger::DEBUG, "Carousel to Auger");
+                        }
+                        else {
+                            logger::log(logger::DEBUG, "Stop Carousel");
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else if(event.type == EventType::AXIS){
+                switch (event.axis) {
+                    case Axis::DPAD_X:
+                        if(event.value < 0){
+                            logger::log(logger::DEBUG, "CCW Auger");
+                        }
+                        else if(event.value > 0){
+                            logger::log(logger::DEBUG, "CW Auger");
+                        }
+                        else{
+                            logger::log(logger::DEBUG, "Stop Auger");
+                        }
+                        break;
+                    case Axis::DPAD_Y:
+                        if(event.value < 0){
+                            logger::log(logger::DEBUG, "Lower Auger");
+                        }
+                        else if(event.value > 0){
+                            logger::log(logger::DEBUG, "Raise Auger");
+                        }
+                        else{
+                            logger::log(logger::DEBUG, "Still Auger");
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        else if(bs_session->science_mode == ScienceMode::TESTING_MODE){
+
+        }
+        else{
+            return;
+        }
+    }
+}
+
 } // namespace controller

@@ -76,6 +76,7 @@ int16_t get_value(Axis axis);
 float smooth_rover_input(float value);
 void handle_drive_controller_event(controller::Event event, Session* bs_session);
 void handle_arm_controller_event(controller::Event event, Session* bs_session);
+void handle_science_controller_event(controller::Event event, Session* bs_session);
 
 } // namespace controller
 #endif

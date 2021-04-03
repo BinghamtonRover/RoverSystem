@@ -441,6 +441,7 @@ int main() {
             while ((err = controller::poll(&event)) == controller::Error::OK) {
                 if (event.type == controller::EventType::BUTTON) {
                     if (event.button == controller::Button::BACK && event.value != 0) {
+                        logger::log(logger::DEBUG, "button");
                         int temp = bs_session.primary_feed;
                         bs_session.primary_feed = bs_session.secondary_feed;
                         bs_session.secondary_feed = temp;
@@ -453,6 +454,10 @@ int main() {
                             case ControllerMode::ARM:
                                 bs_session.controller_mode = ControllerMode::DRIVE;
                                 break;
+                            case ControllerMode::SCIENCE:
+                                break;
+                            default:
+                                break;
                         }
                     }
                 }
@@ -463,6 +468,11 @@ int main() {
                         break;
                     case ControllerMode::ARM:
                         controller::handle_arm_controller_event(event, &bs_session);
+                        break;
+                    case ControllerMode::SCIENCE:
+                        controller::handle_science_controller_event(event, &bs_session);
+                        break;
+                    default:
                         break;
                 }
             }
@@ -505,7 +515,6 @@ int main() {
     }
 
     // Cleanup.
-    //var.fn();
     glfwTerminate();
 
     return 0;
