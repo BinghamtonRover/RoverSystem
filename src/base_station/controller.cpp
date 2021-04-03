@@ -269,69 +269,128 @@ void handle_arm_controller_event(Event event, Session* bs_session) {
 }
 
 void handle_science_controller_event(Event event, Session* bs_session) {
-    if (event.type == EventType::BUTTON && event.button == Button::XBOX && event.value == 1) {
-        (bs_session->science_mode == ScienceMode::DIRT_COLLECTION_MODE) ? 
-            bs_session->science_mode = ScienceMode::TESTING_MODE :
-            bs_session->science_mode = ScienceMode::DIRT_COLLECTION_MODE;
+    if(bs_session->science_mode == ScienceMode::DIRT_COLLECTION_MODE){
+        if(event.type == EventType::BUTTON){
+            switch (event.button) {
+                case Button::LB:
+                    if(event.value == 1){
+                        logger::log(logger::DEBUG, "Carousel to Tests");
+                    }
+                    else {
+                        logger::log(logger::DEBUG, "Stop Carousel");
+                    }
+                    break;
+                case Button::RB:
+                    if(event.value == 1){
+                        logger::log(logger::DEBUG, "Carousel to Auger");
+                    }
+                    else {
+                        logger::log(logger::DEBUG, "Stop Carousel");
+                    }
+                    break;
+                case Button::XBOX:
+                    bs_session->science_mode = ScienceMode::TESTING_MODE;
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if(event.type == EventType::AXIS){
+            switch (event.axis) {
+                case Axis::DPAD_X:
+                    if(event.value < 0){
+                        logger::log(logger::DEBUG, "CCW Auger");
+                    }
+                    else if(event.value > 0){
+                        logger::log(logger::DEBUG, "CW Auger");
+                    }
+                    else{
+                        logger::log(logger::DEBUG, "Stop Auger");
+                    }
+                    break;
+                case Axis::DPAD_Y:
+                    if(event.value < 0){
+                        logger::log(logger::DEBUG, "Lower Auger");
+                    }
+                    else if(event.value > 0){
+                        logger::log(logger::DEBUG, "Raise Auger");
+                    }
+                    else{
+                        logger::log(logger::DEBUG, "Still Auger");
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
     }
-    else {
-        if(bs_session->science_mode == ScienceMode::DIRT_COLLECTION_MODE){
-            if(event.type == EventType::BUTTON){
-                switch (event.button) {
-                    case Button::LB:
-                        if(event.value == 1){
-                            logger::log(logger::DEBUG, "Carousel to Tests");
-                        }
-                        else {
-                            logger::log(logger::DEBUG, "Stop Carousel");
-                        }
-                        break;
-                    case Button::RB:
-                        if(event.value == 1){
-                            logger::log(logger::DEBUG, "Carousel to Auger");
-                        }
-                        else {
-                            logger::log(logger::DEBUG, "Stop Carousel");
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else if(event.type == EventType::AXIS){
-                switch (event.axis) {
-                    case Axis::DPAD_X:
-                        if(event.value < 0){
-                            logger::log(logger::DEBUG, "CCW Auger");
-                        }
-                        else if(event.value > 0){
-                            logger::log(logger::DEBUG, "CW Auger");
-                        }
-                        else{
-                            logger::log(logger::DEBUG, "Stop Auger");
-                        }
-                        break;
-                    case Axis::DPAD_Y:
-                        if(event.value < 0){
-                            logger::log(logger::DEBUG, "Lower Auger");
-                        }
-                        else if(event.value > 0){
-                            logger::log(logger::DEBUG, "Raise Auger");
-                        }
-                        else{
-                            logger::log(logger::DEBUG, "Still Auger");
-                        }
-                        break;
-                    default:
-                        break;
-                }
+    else if(bs_session->science_mode == ScienceMode::TESTING_MODE){
+        if(event.type == EventType::BUTTON){
+            switch (event.button) {
+                case Button::X:
+                    if(event.value == 1){
+                        logger::log(logger::DEBUG, "Run Pump 1");
+                    }
+                    else {
+                        logger::log(logger::DEBUG, "Stop Pump 1");
+                    }
+                    break;
+                case Button::Y:
+                    if(event.value == 1){
+                        logger::log(logger::DEBUG, "Run Pump 2");
+                    }
+                    else {
+                        logger::log(logger::DEBUG, "Stop Pump 2");
+                    }
+                    break;
+                case Button::B:
+                    if(event.value == 1){
+                        logger::log(logger::DEBUG, "Run Pump 3");
+                    }
+                    else {
+                        logger::log(logger::DEBUG, "Stop Pump 3");
+                    }
+                    break;
+                case Button::A:
+                    if(event.value == 1){
+                        logger::log(logger::DEBUG, "Run Pump 4");
+                    }
+                    else {
+                        logger::log(logger::DEBUG, "Stop Pump 4");
+                    }
+                    break;
+                case Button::XBOX:
+                    bs_session->science_mode = ScienceMode::DIRT_COLLECTION_MODE;
+                    break;
+                default:
+                    break;
             }
         }
-        else if(bs_session->science_mode == ScienceMode::TESTING_MODE){
-
-        }
-        else{
-            return;
+        else if(event.type == EventType::AXIS){
+            int16_t smoothed;
+            switch (event.axis) {
+            case Axis::DPAD_Y:
+                if(event.value < 0){
+                    logger::log(logger::DEBUG, "Lower Tests");
+                }
+                else if(event.value > 0){
+                    logger::log(logger::DEBUG, "Raise Tests");
+                }
+                else{
+                    logger::log(logger::DEBUG, "Still Tests");
+                }
+                break;
+            case Axis::LT:
+                smoothed = (int16_t) smooth_rover_input((float) (event.value >> 7));
+                logger::log(logger::DEBUG, "CCW Carousel: %d", smoothed);
+                break;
+            case Axis::RT:
+                smoothed = (int16_t) smooth_rover_input((float) (event.value >> 7));
+                logger::log(logger::DEBUG, "CW Carousel: %d", smoothed);
+                break;
+            default:
+                break;
+            }
         }
     }
 }
