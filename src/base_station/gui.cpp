@@ -14,7 +14,6 @@
 #include <string>
 #include <ctime>
 #include <chrono>
-#include <iostream>
 
 #include "gui.hpp"
 
