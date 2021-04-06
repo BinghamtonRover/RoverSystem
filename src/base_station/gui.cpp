@@ -364,38 +364,37 @@ void do_textured_rect(Layout* layout, int width, int height, unsigned int textur
 //Returns a byte (char) array of rgb values for the pixels making up the current rover feed frame
 unsigned char* get_current_camera_frame(unsigned int texture_id, int texture_size){
 
-    std::cout << "In getting frame" << std::endl;
-
-    
-
+    //Sets GL_TEXUTRE_2D to the current camera frame
     glEnable(GL_TEXTURE_2D); 
-    glBindTexture(GL_TEXTURE_2D, texture_id); //Binds current camera frame to the 2D Texture
+    glBindTexture(GL_TEXTURE_2D, texture_id); 
 
-    unsigned char * frame_data = (unsigned char *) malloc(texture_size); //Will hold the frame data
+    //Holds frame data
+    unsigned char * frame_data = (unsigned char *) malloc(texture_size);
 
-
-    std::cout << "Malloc'd Frame to size " << texture_size << std::endl;
-
+    //Sets correct alignment for bitmap images
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, frame_data); //Grabs the texture in GL_TEXTURE_2D and puts it into rgb_data
 
-    std::cout << "Got texture into rgb_data" << std::endl;
+    //Grabs the texture in GL_TEXTURE_2D and puts it into frame_data
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, frame_data); 
 
+    //Disables the 2D texture so it can be used by other things
     glDisable(GL_TEXTURE_2D);
 
     return frame_data;
 }
 
-void gen_bitmap_from_camera_feed(Session* bs_session){
+char * gen_bitmap_from_camera_feed(Session* bs_session){
 
-    std::cout << "I am here!" << std::endl;
-
+    //These variables MUST be set to the original camera's resolution or the pictures will not come out correct or the program will crash!!!
     const int width = 1280;
     const int height = 720;
+
+    //Specifics for bitmap format
     const int BYTES_PER_PIXEL = 3;
     const int FILE_HEADER_SIZE = 14;
     const int INFO_HEADER_SIZE = 40;
 
+    //Generates names of images
     std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     char * curr_time = std::ctime(&now);
     std::string file_name_start = "feed_screenshots/rover feed ";
@@ -405,22 +404,24 @@ void gen_bitmap_from_camera_feed(Session* bs_session){
     std::strcat(img_name, curr_time);
     std::strcat(img_name, file_end.c_str());
 
+    //Correctly formats bitmap image
     int width_in_bytes = width * BYTES_PER_PIXEL;
     unsigned char padding[3] = {0, 0, 0};
     int padding_size = (4 - (width_in_bytes)%4) % 4;
-
     int stride = (width_in_bytes) + padding_size;
 
+    //Calculates size of bitmap file
     int file_size = FILE_HEADER_SIZE + INFO_HEADER_SIZE + (stride * height);
 
+    //Gets the raw camera frame data
     unsigned char * frame = get_current_camera_frame(bs_session->camera_feeds[bs_session->secondary_feed].gl_texture_id, file_size);
-
-    std::cout << "Back into bitmap function!" << std::endl;
 
     if (frame != NULL){
 
+        //Opens the output file
         FILE* imageFile = fopen(img_name, "wb");
 
+        //Creates space for the file header
         static unsigned char fileHeader[] = {
             0,0,        //signature
             0,0,0,0,    //image file size in bytes
@@ -436,6 +437,7 @@ void gen_bitmap_from_camera_feed(Session* bs_session){
         fileHeader[5] = (unsigned char )(file_size >> 24);
         fileHeader[10]= (unsigned char )(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
 
+        //Creates space for the info header
         static unsigned char infoHeader[] = {
             0,0,0,0,    // header size
             0,0,0,0,    // image width
@@ -462,32 +464,27 @@ void gen_bitmap_from_camera_feed(Session* bs_session){
         infoHeader[12] = (unsigned char)(1);
         infoHeader[14] = (unsigned char)(BYTES_PER_PIXEL*8);
 
-        std::cout << "I am here 2!" << std::endl;
-
+        //Writes file header and info header to the bitmap image
         fwrite(fileHeader, 1, FILE_HEADER_SIZE, imageFile);
         fwrite(infoHeader, 1, INFO_HEADER_SIZE, imageFile);
 
-        std::cout << "I am here 3!" << std::endl;
-
-        if(frame != NULL){
-            for(int i = height-1; i > -1; i--){
-                fwrite(frame + (i*width_in_bytes), BYTES_PER_PIXEL, width, imageFile);
-                fwrite(padding, 1, padding_size, imageFile);
-            }
-        }else{
-            std::cout << "Frame was not correctly acquired!" << std::endl;
+        //Writes the raw frame data to the bitmap image 
+        //Data is written backwards as the image is inverted in its raw form
+        for(int i = height-1; i > -1; i--){
+           fwrite(frame + (i*width_in_bytes), BYTES_PER_PIXEL, width, imageFile);
+            fwrite(padding, 1, padding_size, imageFile);
         }
-        
 
-        std::cout << "I am here 4!" << std::endl;
-
+        //Clean up
         fclose(imageFile);
-        std::free(img_name);
-    } else {
-        std::cout << "No frame data to capture!" << std::endl;
-    }
+        std::free(frame);
 
-    std::free(frame);
+        return img_name;
+    } else {
+        std::free(img_name);
+        std::free(frame);
+        return NULL;
+    }
 }
 
 unsigned int load_texture(const char* file_name) {
@@ -962,6 +959,81 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
     glEnd();
 
     help_layout.pop();
+}
+
+void do_image_display(char *firstImageName, char *secondImageName, Session *bs_session){
+
+    //Loads bitmap images as textures for display
+    unsigned int first_image_texture_id = load_texture(firstImageName);
+    unsigned int second_image_texture_id = load_texture(secondImageName);
+
+    //Declares text to be used in image display
+    const char* title = "Results of Image Captures";
+    const char* exit_prompt = "Press 'escape' to exit menu";
+
+    //Determines sizes of components in display
+    int display_width = 1620;
+    int display_height = 780;
+    int width_padding = 120;
+    int height_padding = 210;
+    int between_padding = 100;
+    int picture_width = 640;
+    int picture_height = 360;
+
+    //Creaets display layout
+    Layout display_layout{};
+
+    //Advances layout so the window is centered on the screen
+    display_layout.advance_x((WINDOW_WIDTH / 2) - (display_width / 2));
+    display_layout.advance_y((WINDOW_HEIGHT / 2) - (display_height / 2));
+    display_layout.push();
+
+    //Draws the windwo
+    do_solid_rect(&display_layout, display_width, display_height, 0.2, 0.2f, 0.2);
+
+    //Gets x and y coords for title
+    int title_width = text_width(&gui::state.global_font, title, 24);
+    display_layout.reset_x();
+    display_layout.advance_x(width_padding + picture_width + (between_padding / 2) - (title_width / 2));
+    display_layout.reset_y();
+    display_layout.advance_y((height_padding / 2) - 12);
+
+    //Draws title
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(&gui::state.global_font, title, display_layout.current_x, display_layout.current_y, 24);
+
+    //Creates correct padding for the images
+    display_layout.reset_x();
+    display_layout.advance_x(width_padding);
+    display_layout.reset_y();
+    display_layout.advance_y(height_padding);
+    display_layout.push();
+
+    //Draws first image
+    do_textured_rect(&display_layout, picture_width, picture_height, first_image_texture_id);
+
+    //Sets x and y for exit text
+    display_layout.reset_x();
+    int exit_prompt_width = text_width(&gui::state.global_font, exit_prompt, 16);
+    display_layout.advance_x(picture_width + (between_padding/2) - (exit_prompt_width/2));
+    display_layout.advance_y((height_padding/2) - 8);
+
+    //Draws exit text
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(&gui::state.global_font, exit_prompt, display_layout.current_x, display_layout.current_y, 16);
+
+    //Sets position of second image
+    display_layout.reset_x();
+    display_layout.advance_x(picture_width + between_padding);
+    display_layout.reset_y();
+    display_layout.push();
+
+    //Draws second image
+    do_textured_rect(&display_layout, picture_width, picture_height, second_image_texture_id);
+
+    //Cleans up
+    glEnd();
+    display_layout.pop();
 }
 
 void do_lidar(Layout* layout, Session *bs_session) {
