@@ -420,6 +420,11 @@ char * gen_bitmap_from_camera_feed(Session* bs_session){
         //Opens the output file
         FILE* imageFile = fopen(img_name, "wb");
 
+        if(imageFile == NULL){
+            logger::log(logger::WARNING, "Failed to create image file! Is /feed_screenshots directory missing from Roversystem?");
+            return NULL;
+        }
+
         //Creates space for the file header
         static unsigned char fileHeader[] = {
             0,0,        //signature
