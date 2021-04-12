@@ -1561,6 +1561,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::GENERAL;
+                bs_session->controller_mode = ControllerMode::NEUTRAL;
                 network::FocusModeMessage message;
                 message.focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
                 network::publish(&bs_session->bs_feed, &message);
@@ -1569,6 +1570,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         else if (action == GLFW_PRESS && key == GLFW_KEY_2) {
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::DRIVE;
+                bs_session->controller_mode = ControllerMode::DRIVE;
                 network::FocusModeMessage message;
                 message.focus_mode = network::FocusModeMessage::FocusMode::DRIVE;
                 network::publish(&bs_session->bs_feed, &message);
@@ -1577,6 +1579,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         else if (action == GLFW_PRESS && key == GLFW_KEY_3) {
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::ARM;
+                bs_session->controller_mode = ControllerMode::ARM;
                 network::FocusModeMessage message;
                 message.focus_mode = network::FocusModeMessage::FocusMode::ARM;
                 network::publish(&bs_session->bs_feed, &message);
@@ -1584,6 +1587,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         } else if (action == GLFW_PRESS && key == GLFW_KEY_4) {
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::SCIENCE;
+                bs_session->controller_mode = ControllerMode::SCIENCE;
                 network::FocusModeMessage message;
                 message.focus_mode = network::FocusModeMessage::FocusMode::SCIENCE;
                 network::publish(&bs_session->bs_feed, &message);
@@ -1591,6 +1595,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         } else if (action == GLFW_PRESS && key == GLFW_KEY_5) {
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::AUTONOMY;
+                bs_session->controller_mode = ControllerMode::NEUTRAL;
                 network::FocusModeMessage message;
                 message.focus_mode = network::FocusModeMessage::FocusMode::AUTONOMY;
                 network::publish(&bs_session->bs_feed, &message);

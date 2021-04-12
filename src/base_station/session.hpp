@@ -48,7 +48,9 @@ struct autonomy_info_struct {
 
 enum class ControllerMode {
     DRIVE,
-    ARM
+    ARM,
+    SCIENCE,
+    NEUTRAL
 };
 
 enum class FocusMode{
@@ -70,6 +72,11 @@ enum class StopwatchState {
     STOPPED,
     PAUSED,
     RUNNING 
+};
+
+enum class ScienceMode{
+    DIRT_COLLECTION_MODE,
+    TESTING_MODE
 };
 
 enum class ArmControlRegion{
@@ -124,6 +131,8 @@ public:
     FocusMode bs_focus_mode = FocusMode::GENERAL;
 
     ArmMode arm_mode = ArmMode::BASE;
+
+    ScienceMode science_mode = ScienceMode::DIRT_COLLECTION_MODE;
     
     unsigned int map_texture_id;
 
