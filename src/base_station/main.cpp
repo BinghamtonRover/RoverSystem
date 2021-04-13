@@ -195,6 +195,8 @@ int main() {
     // Init last movement info timers.
     util::Timer::init(&bs_session.movement_send_timer, MOVEMENT_SEND_INTERVAL, &bs_session.global_clock);
     util::Timer::init(&bs_session.arm_send_timer, ARM_SEND_INTERVAL, &bs_session.global_clock);
+    util::Timer::init(&bs_session.science_send_timer, ARM_SEND_INTERVAL, &bs_session.global_clock);
+    //
     util::Timer::init(&bs_session.network_stats_timer, NETWORK_STATS_INTERVAL, &bs_session.global_clock);
 
     // Init the controller.
@@ -446,20 +448,20 @@ int main() {
                         bs_session.primary_feed = bs_session.secondary_feed;
                         bs_session.secondary_feed = temp;
                     } 
-                    else if (event.button == controller::Button::XBOX && event.value != 0) {
-                        switch (bs_session.controller_mode) {
-                            case ControllerMode::DRIVE:
-                                bs_session.controller_mode = ControllerMode::ARM;
-                                break;
-                            case ControllerMode::ARM:
-                                bs_session.controller_mode = ControllerMode::DRIVE;
-                                break;
-                            case ControllerMode::SCIENCE:
-                                break;
-                            default:
-                                break;
-                        }
-                    }
+                    //else if (event.button == controller::Button::XBOX && event.value != 0) {
+                    //    switch (bs_session.controller_mode) {
+                    //        case ControllerMode::DRIVE:
+                    //            bs_session.controller_mode = ControllerMode::ARM;
+                    //            break;
+                    //        case ControllerMode::ARM:
+                    //            bs_session.controller_mode = ControllerMode::DRIVE;
+                    //            break;
+                    //        case ControllerMode::SCIENCE:
+                    //            break;
+                    //        default:
+                    //            break;
+                    //    }
+                    //}
                 }
 
                 switch (bs_session.controller_mode) {
@@ -490,10 +492,20 @@ int main() {
             }  
         }
 
+        // Publish drive movement messages
         if (bs_session.movement_send_timer.ready()) {
-            // printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
-            network::publish(&bs_session.bs_feed, &bs_session.last_movement_message);
+            network::publish(&bs_session.bs_feed, &bs_session.last_drive_movement_message);
         }
+
+        // Publish arm movement messages
+        if (bs_session.arm_send_timer.ready()) {
+            network::publish(&bs_session.bs_feed, &bs_session.last_arm_movement_message);
+        }
+
+        // Publish drive movement messages
+        //if (bs_session.science_send_timer.ready()) {
+        //    network::publish(&bs_session.bs_feed, &bs_session.last_science_movement_message);
+        //}
 
         // Update and draw GUI.
         gui::do_gui(&bs_session);

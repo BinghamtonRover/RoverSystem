@@ -180,22 +180,22 @@ void command_callback(std::string command, Session *bs_session) {
             char right_direction_char = parts[2][0];
             int16_t right_speed = (int16_t) atoi(parts[2].substr(1).c_str());
 
-            bs_session->last_movement_message.left = left_speed;
-            bs_session->last_movement_message.right = right_speed;
+            bs_session->last_drive_movement_message.left = left_speed;
+            bs_session->last_drive_movement_message.right = right_speed;
 
             if (left_direction_char == 'b') {
-                bs_session->last_movement_message.left *= -1;
+                bs_session->last_drive_movement_message.left *= -1;
             }
 
             if (right_direction_char == 'b') {
-                bs_session->last_movement_message.right *= -1;
+                bs_session->last_drive_movement_message.right *= -1;
             }
 
             logger::log(
                 logger::DEBUG,
                 "> Update movement to %d, %d",
-                bs_session->last_movement_message.left,
-                bs_session->last_movement_message.right);
+                bs_session->last_drive_movement_message.left,
+                bs_session->last_drive_movement_message.right);
         } else {
             log("Invalid Input: \"move\" expects two integers.", 1, 0, 0);
         }

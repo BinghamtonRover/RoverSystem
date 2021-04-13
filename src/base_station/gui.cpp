@@ -1548,16 +1548,16 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } 
-        else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
-            switch (bs_session->controller_mode) {
-                case ControllerMode::DRIVE:
-                    bs_session->controller_mode = ControllerMode::ARM;
-                    break;
-                case ControllerMode::ARM:
-                    bs_session->controller_mode = ControllerMode::DRIVE;
-                    break;
-            }
-        } 
+        //else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+        //    switch (bs_session->controller_mode) {
+        //        case ControllerMode::DRIVE:
+        //            bs_session->controller_mode = ControllerMode::ARM;
+        //            break;
+        //        case ControllerMode::ARM:
+        //            bs_session->controller_mode = ControllerMode::DRIVE;
+        //            break;
+        //    }
+        //} 
         else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::GENERAL;

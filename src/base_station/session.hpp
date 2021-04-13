@@ -28,11 +28,12 @@ const int16_t JOINT_DRIVE_SPEED = 100;
 
 // Send movement updates x times per second.
 const int MOVEMENT_SEND_INTERVAL = 1000 / 15;
+const int ARM_SEND_INTERVAL = 1000 / 9;
+const int SCIENCE_SEND_INTERVAL = 1000 / 10;
+
 
 // Update network statistics once per second.
 const int NETWORK_STATS_INTERVAL = 1000;
-
-const int ARM_SEND_INTERVAL = 1000 / 9;
 
 const int MAX_FEEDS = 9;
 
@@ -148,12 +149,15 @@ public:
     // Clock!
     util::Clock global_clock;
 
-    network::MovementMessage last_movement_message;
-    network::ArmMessage last_arm_message;
+    network::MovementMessage last_drive_movement_message;
+    network::ArmMessage last_arm_movement_message;
 
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
     util::Timer arm_send_timer;
+    util::Timer science_send_timer;
+
+    // Keep track of when we last network stats info.
     util::Timer network_stats_timer;
 
     // Camera stuff: These get initialized off-the-bat.
