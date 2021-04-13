@@ -153,7 +153,8 @@ enum class MessageType {
     ARM,
     FOCUS_MODE,
     AUTONOMY_STATUS,
-    AUTONOMY_COMMAND
+    AUTONOMY_COMMAND,
+    SCIENCE
 };
 
 struct HeartbeatMessage {
@@ -198,34 +199,39 @@ struct MovementMessage {
     }
 };
 
-//struct ArmMessage {
-//    static const auto TYPE = MessageType::ARM;
-//
-//    enum class Direction : uint8_t {
-//        LEFT = 1,
-//        NONE = 2,
-//        RIGHT = 3
-//    } direction;
-//    
-//    enum class Joint : uint8_t {
-//        BASE_ROTATE,
-//        BASE_SHOULDER,
-//        ELBOW,
-//        WRIST,
-//        GRIPPER_ROTATE,
-//        GRIPPER_FINGERS
-//    } joint;
-//
-//    void serialize(Buffer* buffer) {
-//        network::serialize(buffer, static_cast<uint8_t>(this->direction));
-//        network::serialize(buffer, static_cast<uint8_t>(this->joint));
-//    }
-//
-//    void deserialize(Buffer* buffer) {
-//        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->direction)));
-//        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->joint)));
-//    }
-//};
+struct ScienceMessage{
+    static const auto TYPE = MessageType::SCIENCE;
+    enum class Movement : uint8_t {
+        STOP = 1,
+        CLOCK = 2,
+        COUNTER = 3
+    };
+
+    enum class Motor : uint8_t {
+        AUGER_ROTATION,
+        AUGER_LINEAR,
+        CAROUSEL_ROTATION,
+        CAROUSEL_LINEAR,
+        SENSORS,
+        PUMP_1,
+        PUMP_2,
+        PUMP_3,
+        PUMP_4
+    };
+
+    uint8_t movement;
+    uint8_t motor;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, static_cast<uint8_t>(this->movement));
+        network::serialize(buffer, static_cast<uint8_t>(this->motor));
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->movement)));
+        network::deserialize(buffer, reinterpret_cast<uint8_t*>(&(this->motor)));
+    }
+};
 
 struct CameraMessage {
     static const auto TYPE = MessageType::CAMERA;
