@@ -274,18 +274,26 @@ void handle_science_controller_event(Event event, Session* bs_session) {
             switch (event.button) {
                 case Button::LB:
                     if(event.value == 1){
-                        logger::log(logger::DEBUG, "Carousel to Tests");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_LINEAR;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::COUNTER;
+                        //logger::log(logger::DEBUG, "Carousel to Tests");
                     }
                     else {
-                        logger::log(logger::DEBUG, "Stop Carousel");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_LINEAR;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Carousel");
                     }
                     break;
                 case Button::RB:
                     if(event.value == 1){
-                        logger::log(logger::DEBUG, "Carousel to Auger");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_LINEAR;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "Carousel to Auger");
                     }
                     else {
-                        logger::log(logger::DEBUG, "Stop Carousel");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_LINEAR;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Carousel");
                     }
                     break;
                 case Button::XBOX:
@@ -299,24 +307,36 @@ void handle_science_controller_event(Event event, Session* bs_session) {
             switch (event.axis) {
                 case Axis::DPAD_X:
                     if(event.value < 0){
-                        logger::log(logger::DEBUG, "CCW Auger");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_ROTATION;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::COUNTER;
+                        //logger::log(logger::DEBUG, "CCW Auger");
                     }
                     else if(event.value > 0){
-                        logger::log(logger::DEBUG, "CW Auger");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_ROTATION;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "CW Auger");
                     }
                     else{
-                        logger::log(logger::DEBUG, "Stop Auger");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_ROTATION;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Auger");
                     }
                     break;
                 case Axis::DPAD_Y:
                     if(event.value < 0){
-                        logger::log(logger::DEBUG, "Lower Auger");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_LINEAR;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::COUNTER;
+                        //logger::log(logger::DEBUG, "Lower Auger");
                     }
                     else if(event.value > 0){
-                        logger::log(logger::DEBUG, "Raise Auger");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_LINEAR;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "Raise Auger");
                     }
                     else{
-                        logger::log(logger::DEBUG, "Still Auger");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_LINEAR;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Still Auger");
                     }
                     break;
                 default:
@@ -329,34 +349,74 @@ void handle_science_controller_event(Event event, Session* bs_session) {
             switch (event.button) {
                 case Button::X:
                     if(event.value == 1){
-                        logger::log(logger::DEBUG, "Run Pump 1");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_1;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "Run Pump 1");
                     }
                     else {
-                        logger::log(logger::DEBUG, "Stop Pump 1");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_1;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Pump 1");
                     }
                     break;
                 case Button::Y:
                     if(event.value == 1){
-                        logger::log(logger::DEBUG, "Run Pump 2");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_2;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "Run Pump 2");
                     }
                     else {
-                        logger::log(logger::DEBUG, "Stop Pump 2");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_2;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Pump 2");
                     }
                     break;
                 case Button::B:
                     if(event.value == 1){
-                        logger::log(logger::DEBUG, "Run Pump 3");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_3;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "Run Pump 3");
                     }
                     else {
-                        logger::log(logger::DEBUG, "Stop Pump 3");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_3;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Pump 3");
                     }
                     break;
                 case Button::A:
                     if(event.value == 1){
-                        logger::log(logger::DEBUG, "Run Pump 4");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_4;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "Run Pump 4");
                     }
                     else {
-                        logger::log(logger::DEBUG, "Stop Pump 4");
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::PUMP_4;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Pump 4");
+                    }
+                    break;
+                case Button::LB:
+                    if(event.value == 1){
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_ROTATION;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::COUNTER;
+                        //logger::log(logger::DEBUG, "CCW Carousel");
+                    }
+                    else {
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_ROTATION;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Carousel Rotation");
+                    }
+                    break;
+                case Button::RB:
+                    if(event.value == 1){
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_ROTATION;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                        //logger::log(logger::DEBUG, "CW Carousel");
+                    }
+                    else {
+                        bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::CAROUSEL_ROTATION;
+                        bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                        //logger::log(logger::DEBUG, "Stop Carousel Rotation");
                     }
                     break;
                 case Button::XBOX:
@@ -367,26 +427,23 @@ void handle_science_controller_event(Event event, Session* bs_session) {
             }
         }
         else if(event.type == EventType::AXIS){
-            int16_t smoothed;
             switch (event.axis) {
             case Axis::DPAD_Y:
                 if(event.value < 0){
-                    logger::log(logger::DEBUG, "Lower Tests");
+                    bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::SENSORS;
+                    bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::COUNTER;
+                    //logger::log(logger::DEBUG, "Lower Tests");
                 }
                 else if(event.value > 0){
-                    logger::log(logger::DEBUG, "Raise Tests");
+                    bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::SENSORS;
+                    bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
+                    //logger::log(logger::DEBUG, "Raise Tests");
                 }
                 else{
-                    logger::log(logger::DEBUG, "Still Tests");
+                    bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::SENSORS;
+                    bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::STOP;
+                    //logger::log(logger::DEBUG, "Still Tests");
                 }
-                break;
-            case Axis::LT:
-                smoothed = (int16_t) smooth_rover_input((float) (event.value >> 7));
-                logger::log(logger::DEBUG, "CCW Carousel: %d", smoothed);
-                break;
-            case Axis::RT:
-                smoothed = (int16_t) smooth_rover_input((float) (event.value >> 7));
-                logger::log(logger::DEBUG, "CW Carousel: %d", smoothed);
                 break;
             default:
                 break;

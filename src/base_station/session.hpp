@@ -151,6 +151,7 @@ public:
 
     network::MovementMessage last_drive_movement_message;
     network::ArmMessage last_arm_movement_message;
+    network::ScienceMessage last_science_movement_message;
 
     // Keep track of when we last sent movement info.
     util::Timer movement_send_timer;
