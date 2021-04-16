@@ -296,8 +296,10 @@ void handle_science_controller_event(Event event, Session* bs_session) {
                         //logger::log(logger::DEBUG, "Stop Carousel");
                     }
                     break;
-                case Button::XBOX:
-                    bs_session->science_mode = ScienceMode::TESTING_MODE;
+                case Button::BACK:
+                    if(event.value == 0){
+                        bs_session->science_mode = ScienceMode::TESTING_MODE;
+                    }
                     break;
                 default:
                     break;
@@ -326,12 +328,12 @@ void handle_science_controller_event(Event event, Session* bs_session) {
                     if(event.value < 0){
                         bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_LINEAR;
                         bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::COUNTER;
-                        //logger::log(logger::DEBUG, "Lower Auger");
+                        logger::log(logger::DEBUG, "Lower Auger");
                     }
                     else if(event.value > 0){
                         bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_LINEAR;
                         bs_session->last_science_movement_message.movement = (uint8_t)network::ScienceMessage::Movement::CLOCK;
-                        //logger::log(logger::DEBUG, "Raise Auger");
+                        logger::log(logger::DEBUG, "Raise Auger");
                     }
                     else{
                         bs_session->last_science_movement_message.motor = (uint8_t)network::ScienceMessage::Motor::AUGER_LINEAR;
@@ -419,8 +421,10 @@ void handle_science_controller_event(Event event, Session* bs_session) {
                         //logger::log(logger::DEBUG, "Stop Carousel Rotation");
                     }
                     break;
-                case Button::XBOX:
-                    bs_session->science_mode = ScienceMode::DIRT_COLLECTION_MODE;
+                case Button::BACK:
+                    if(event.value == 0){
+                        bs_session->science_mode = ScienceMode::DIRT_COLLECTION_MODE;
+                    }
                     break;
                 default:
                     break;

@@ -95,6 +95,7 @@ public:
 
     network::MovementMessage last_movement_message = { 0, 0 };
     network::ArmMessage last_arm_message = { 0, 0 };
+    network::ScienceMessage last_science_message = { 0, 0 };
 
     std::vector<long> lidar_points;
 

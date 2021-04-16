@@ -441,28 +441,27 @@ int main() {
             controller::Error err;
 
             while ((err = controller::poll(&event)) == controller::Error::OK) {
-                if (event.type == controller::EventType::BUTTON) {
-                    if (event.button == controller::Button::BACK && event.value != 0) {
-                        logger::log(logger::DEBUG, "button");
-                        int temp = bs_session.primary_feed;
-                        bs_session.primary_feed = bs_session.secondary_feed;
-                        bs_session.secondary_feed = temp;
-                    } 
-                    //else if (event.button == controller::Button::XBOX && event.value != 0) {
-                    //    switch (bs_session.controller_mode) {
-                    //        case ControllerMode::DRIVE:
-                    //            bs_session.controller_mode = ControllerMode::ARM;
-                    //            break;
-                    //        case ControllerMode::ARM:
-                    //            bs_session.controller_mode = ControllerMode::DRIVE;
-                    //            break;
-                    //        case ControllerMode::SCIENCE:
-                    //            break;
-                    //        default:
-                    //            break;
-                    //    }
-                    //}
-                }
+                //if (event.type == controller::EventType::BUTTON) {
+                //    if (event.button == controller::Button::BACK && event.value != 0) {
+                //        int temp = bs_session.primary_feed;
+                //        bs_session.primary_feed = bs_session.secondary_feed;
+                //        bs_session.secondary_feed = temp;
+                //    } 
+                //    else if (event.button == controller::Button::XBOX && event.value != 0) {
+                //        switch (bs_session.controller_mode) {
+                //            case ControllerMode::DRIVE:
+                //                bs_session.controller_mode = ControllerMode::ARM;
+                //                break;
+                //            case ControllerMode::ARM:
+                //                bs_session.controller_mode = ControllerMode::DRIVE;
+                //                break;
+                //            case ControllerMode::SCIENCE:
+                //                break;
+                //            default:
+                //                break;
+                //        }
+                //    }
+                //}
 
                 switch (bs_session.controller_mode) {
                     case ControllerMode::DRIVE:
@@ -474,6 +473,7 @@ int main() {
                     case ControllerMode::SCIENCE:
                         controller::handle_science_controller_event(event, &bs_session);
                         break;
+                    case ControllerMode::NEUTRAL:
                     default:
                         break;
                 }

@@ -174,6 +174,11 @@ int main() {
                     //logger::log(logger::DEBUG, "Joint: %d, Movement: %d", (int)subsys_session.last_arm_message.joint, (int)subsys_session.last_arm_message.movement);
                     break;
                 }
+                case network::MessageType::SCIENCE: {
+                    network::deserialize(&message.buffer, &subsys_session.last_science_message);
+                    logger::log(logger::DEBUG, "Motor: %d, Movement: %d", (int)subsys_session.last_science_message.motor, (int)subsys_session.last_science_message.movement);
+                    break;
+                }
                 case network::MessageType::FOCUS_MODE: {
                     network::FocusModeMessage focus_mode_message;
                     network::deserialize(&message.buffer, &focus_mode_message);
@@ -271,8 +276,10 @@ int main() {
         }
 
         if(subsys_session.science_read_data.ready() && subsys_session.science_inited){
-            
+            auto movement = subsys_session.last_science_message;
+
         }
+
         if (subsys_session.arm_update_timer.ready()) {
             auto movement = subsys_session.last_arm_message;          
             if (arm::update(static_cast<network::ArmMessage::Joint>(movement.joint),
