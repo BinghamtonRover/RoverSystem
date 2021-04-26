@@ -219,8 +219,10 @@ int main() {
 
     bool image_display_up = false;
     char * firstImageName = NULL;
+    unsigned int firstImageID;
     unsigned int firstImageTime;
     char * secondImageName = NULL;
+    unsigned int secondImageID;
 
     // Add the help menu commands here
     std::vector<const char*> commands;
@@ -301,11 +303,13 @@ int main() {
         if(firstImageName != NULL && secondImageName == NULL && bs_session.global_clock.get_millis() >= (firstImageTime + (10 * 1000))){
             secondImageName = gui::gen_bitmap_from_camera_feed(&bs_session);
             std::string msg_beginning = "Saved second image as: ";
-            char * pic_msg = (char *) malloc(1 + std::strlen(msg_beginning.c_str()) + std::strlen(firstImageName));
+            char * pic_msg = (char *) malloc(1 + std::strlen(msg_beginning.c_str()) + std::strlen(secondImageName));
             std::strcpy(pic_msg, msg_beginning.c_str());
-            std::strcat(pic_msg, firstImageName);
+            std::strcat(pic_msg, secondImageName);
             logger::log(logger::INFO, pic_msg);
             std::free(pic_msg);
+            firstImageID = gui::load_texture(firstImageName);
+            secondImageID = gui::load_texture(secondImageName);
             image_display_up = true;
         }
 
@@ -553,7 +557,7 @@ int main() {
             gui::do_stopwatch_menu(&bs_session);
         }
 
-        if (image_display_up && secondImageName != NULL) gui::do_image_display(firstImageName, secondImageName, &bs_session);
+        if (image_display_up && secondImageName != NULL) gui::do_image_display(firstImageID, secondImageID, &bs_session);
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 

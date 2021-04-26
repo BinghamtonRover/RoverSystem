@@ -173,7 +173,7 @@ void do_stopwatch_menu(Session *bs_session);
 void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, Session *bs_session);
 
 //Displays the two images captured for science testing side-by-side in a window
-void do_image_display(char *firstImageName, char *secondImageName, Session *bs_session);
+void do_image_display(unsigned int first_image_texture_id, unsigned int second_image_texture_id, Session *bs_session);
 
 //Draws info acquired by the lidar system
 void do_lidar(Layout* layout, Session *bs_session);

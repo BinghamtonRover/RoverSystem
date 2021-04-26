@@ -965,11 +965,7 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
     help_layout.pop();
 }
 
-void do_image_display(char *firstImageName, char *secondImageName, Session *bs_session){
-
-    //Loads bitmap images as textures for display
-    unsigned int first_image_texture_id = load_texture(firstImageName);
-    unsigned int second_image_texture_id = load_texture(secondImageName);
+void do_image_display(unsigned int first_image_texture_id, unsigned int second_image_texture_id, Session *bs_session){
 
     //Declares text to be used in image display
     const char* title = "Results of Image Captures";
