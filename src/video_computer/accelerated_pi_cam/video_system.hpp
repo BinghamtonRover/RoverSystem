@@ -22,16 +22,22 @@ private:
 public:
 	VideoSystem();
 	
+	// Initialize the camera and encoder with default settings.
 	void init();
 	void deinit();
+
+	// Initialize the camera and encoder with provided settings. All values are copied and can be local variables.
 	void init(CameraSettings& cam_settings, H264Settings& encoder_settings);
+	
+	// Begin capturing and encoding frames. Must init() first or there will be errors
 	void start_video();
 	void stop_video();
 	OMX_BUFFERHEADERTYPE* get_partial_frame();
 
-	/** fill buf with a partial frame.
-		returns true if it begins a new frame
-		returns false if frame in progress
+	/** Retrieve part of a full frame (enough to fill an OMX buffer or until the frame ends)
+	 * 
+	 *	@param buf Pointer that will be changed to point to the filled buffer
+	 *  @returns true if this buffer starts a new frame. false if it continues an existing frame
 	*/
 	bool get_partial_frame(OMX_BUFFERHEADERTYPE** buf);
 	
@@ -46,6 +52,9 @@ public:
 	/** same as get_partial_frame, but fill_partial_frame_async() should be called first
 	 *  Blocking: if buffer not filled, this will wait for it to fill
 	 *  Use partial_frame_available_async() to check before calling
+	 * 
+	 *  @param buf Pointer that will be changed to point to the filled buffer
+	 *  @returns true if this buffer starts a new frame. false if it continues an existing frame
 	 */
 	bool get_partial_frame_async(OMX_BUFFERHEADERTYPE** buf);
 	
