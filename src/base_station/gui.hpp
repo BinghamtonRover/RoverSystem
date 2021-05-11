@@ -130,6 +130,12 @@ void do_solid_rect(Layout* layout, int width, int height, float r, float g, floa
 // with the given texture.
 void do_textured_rect(Layout* layout, int width, int height, unsigned int texture_id);
 
+//Grabs the current texture of the camera feed render
+unsigned char* get_current_camera_frame(unsigned int texture_id, int texture_size);
+
+//Saves the current camera feed frame as a bitmap image and returns the name of the file
+char * gen_bitmap_from_camera_feed(Session* bs_session);
+
 // Loads a png or jpeg image into memory, and returns an OpenGL texture id.
 unsigned int load_texture(const char* file_name);
 
@@ -165,6 +171,9 @@ void do_stopwatch_menu(Session *bs_session);
 
 //Sets up the help menu window
 void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, Session *bs_session);
+
+//Displays the two images captured for science testing side-by-side in a window
+void do_image_display(unsigned int first_image_texture_id, unsigned int second_image_texture_id, Session *bs_session);
 
 //Draws info acquired by the lidar system
 void do_lidar(Layout* layout, Session *bs_session);

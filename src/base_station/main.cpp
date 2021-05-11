@@ -211,6 +211,13 @@ int main() {
     bool help_menu_up = false;
     bool stopwatch_menu_up = false;
 
+    bool image_display_up = false;
+    char * firstImageName = NULL;
+    unsigned int firstImageID;
+    unsigned int firstImageTime;
+    char * secondImageName = NULL;
+    unsigned int secondImageID;
+
     // Add the help menu commands here
     std::vector<const char*> commands;
     std::vector<const char*> debug_commands;
@@ -219,6 +226,7 @@ int main() {
     commands.push_back("<shift>c: Open camera matrix");
     commands.push_back("c: Swap camera feeds");
     commands.push_back("s: Open stopwatch menu");
+    commands.push_back("p: Takes initial picture from rover feed");
     commands.push_back("z + UP ARROW: Zoom in map");
     commands.push_back("z + DOWN ARROW: Zoom out map");
     commands.push_back("z + r: Reset map");
@@ -261,10 +269,42 @@ int main() {
                 stopwatch_menu_up = false;
                 gui::state.input_state = gui::InputState::KEY_COMMAND;
             }
-        } else if (
-            glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
+            if (image_display_up){
+                image_display_up = false;
+                free(firstImageName);
+                free(secondImageName);
+                firstImageName = NULL;
+                secondImageName = NULL;
+            } 
+        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
             stopwatch_menu_up = true;
             gui::state.input_state = gui::InputState::STOPWATCH_MENU;
+        } else if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS){
+            //Takes initial image
+            if(firstImageName == NULL){
+                firstImageName = gui::gen_bitmap_from_camera_feed(&bs_session);
+                firstImageTime = bs_session.global_clock.get_millis();
+                std::string msg_beginning = "Saved first image as: ";
+                char * pic_msg = (char *) malloc(1 + std::strlen(msg_beginning.c_str()) + std::strlen(firstImageName));
+                std::strcpy(pic_msg, msg_beginning.c_str());
+                std::strcat(pic_msg, firstImageName);
+                logger::log(logger::INFO, pic_msg);
+                std::free(pic_msg);
+            }
+        }
+
+        //Checks if it has been 10 seconds since a picture was taken
+        if(firstImageName != NULL && secondImageName == NULL && bs_session.global_clock.get_millis() >= (firstImageTime + (10 * 1000))){
+            secondImageName = gui::gen_bitmap_from_camera_feed(&bs_session);
+            std::string msg_beginning = "Saved second image as: ";
+            char * pic_msg = (char *) malloc(1 + std::strlen(msg_beginning.c_str()) + std::strlen(secondImageName));
+            std::strcpy(pic_msg, msg_beginning.c_str());
+            std::strcat(pic_msg, secondImageName);
+            logger::log(logger::INFO, pic_msg);
+            std::free(pic_msg);
+            firstImageID = gui::load_texture(firstImageName);
+            secondImageID = gui::load_texture(secondImageName);
+            image_display_up = true;
         }
 
         if (gui::state.input_state == gui::InputState::STOPWATCH_MENU) {
@@ -507,6 +547,8 @@ int main() {
         if (stopwatch_menu_up) {
             gui::do_stopwatch_menu(&bs_session);
         }
+
+        if (image_display_up && secondImageName != NULL) gui::do_image_display(firstImageID, secondImageID, &bs_session);
 
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
