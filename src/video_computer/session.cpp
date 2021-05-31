@@ -115,7 +115,7 @@ int Session::updateCameraStatus() {
     // 1. Check which cameras exist in the file system.
     // 2. Iterate through our cameras adding any extras that do exist.
     // 3. Remove any cameras that don't exist,
-    for(int i = start_index; i < cntr; i++) {
+    for(int i = 0; i < cntr; i++) {
         // 1.  Check which cameras exist in the file system.
         for(int j = 1; j < MAX_STREAMS; j++) {
             if(this->streams[j] != nullptr) { 
