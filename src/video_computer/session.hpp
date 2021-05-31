@@ -7,7 +7,10 @@
 #include "../util/util.hpp"
 
 #include "camera.hpp"
+
+#ifdef PI_OMX_DRIVERS
 #include "accelerated_pi_cam/video_system.hpp"
+#endif
 
 #include <turbojpeg.h>
 
@@ -45,7 +48,9 @@ public:
 
     unsigned int frame_counter;
     camera::CaptureSession* streams[MAX_STREAMS] = {0};
+    #ifdef PI_OMX_DRIVERS
     VideoSystem accel_video_system;
+    #endif
     bool using_accel_system = false;
 
     network::Feed r_feed;

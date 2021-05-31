@@ -32,6 +32,10 @@ subsystems_computer: bin network simple_config logger
 video_computer: bin network simple_config logger
 	make -C src/video_computer
 
+# includes video drivers only present on Raspberry Pi
+video_computer_pi: bin network simple_config logger
+	make -C src/video_computer video_computer_pi
+
 clean:
 	rm bin/*
 

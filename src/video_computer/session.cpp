@@ -12,8 +12,10 @@ Session::Session(){
 }
 
 Session::~Session() {
+    #ifdef PI_OMX_DRIVERS
     accel_video_system.stop_video();
     accel_video_system.deinit();
+    #endif
 }
 
 void Session::stderr_handler(logger::Level leve, std::string message) {

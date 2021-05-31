@@ -1,5 +1,8 @@
 #include "session.hpp"
+
+#ifdef PI_OMX_DRIVERS
 #include "accelerated_pi_cam/video_system_exception.hpp"
+#endif
 
 int main(){
     Session video_session;
@@ -8,6 +11,7 @@ int main(){
     video_session.load_config("res/v.sconfig");
 
     // Must start the accelerated video system first or the Pi camera is taken by the standard video system
+    #ifdef PI_OMX_DRIVERS
     try {
         video_session.accel_video_system.init();
         video_session.using_accel_system = true;
@@ -15,6 +19,7 @@ int main(){
         logger::log(logger::DEBUG, "Error opening CSI-attached camera: %s. Accelerated video system will be disabled.", video_system_exception.get_details().c_str());
         video_session.using_accel_system = false;
     }
+    #endif
     video_session.updateCameraStatus();
 
     //Three feeds: base station, subsystem computer, and video computer.
@@ -57,9 +62,10 @@ int main(){
             exit(1);
         }
     }
-
+    #ifdef PI_OMX_DRIVERS
     if (video_session.using_accel_system)
         video_session.accel_video_system.start_video();
+    #endif
 
     util::Timer::init(&video_session.camera_update_timer, CAMERA_UPDATE_INTERVAL, &video_session.global_clock);
     util::Timer::init(&video_session.tick_timer, TICK_INTERVAL, &video_session.global_clock);
@@ -73,9 +79,10 @@ int main(){
         video_session.streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
     }
     while (true) {
-
+        #ifdef PI_OMX_DRIVERS
         if (video_session.using_accel_system)
             video_session.accel_video_system.fill_partial_frame_async();
+        #endif
 
         for (size_t i = 1; i < MAX_STREAMS; i++) {
             camera::CaptureSession* cs = video_session.streams[i];
@@ -171,6 +178,7 @@ int main(){
         // Increment global (across all streams) frame counter. Should be ok. Should...
         video_session.frame_counter++;
 
+        #ifdef PI_OMX_DRIVERS
         // Camera streams using accelerated CSI-attached cameras
         static VideoSystem::MessageBuilder csi_message_builder;
 
@@ -191,6 +199,7 @@ int main(){
                 network::publish(&video_session.v_feed, &csi_message);
             }
         }
+        #endif
 
         // Receive incoming messages
         network::IncomingMessage message;
