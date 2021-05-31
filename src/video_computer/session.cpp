@@ -93,8 +93,9 @@ int Session::updateCameraStatus() {
     int cntr = 0;
     uint8_t open = 1;
     int numOpen = 0;
+    int start_index = using_accel_system ? 1 : 0;   // CSI-attached camera appears as video0. Ignore video0 if the accelerated system is active
     
-    for (int i = 0; true; i++) {
+    for (int i = start_index; true; i++) {
         char name_filename_buffer[100];
         sprintf(name_filename_buffer, "/sys/class/video4linux/video%d/name", i);
         FILE* name_file = fopen(name_filename_buffer, "r");
@@ -114,7 +115,7 @@ int Session::updateCameraStatus() {
     // 1. Check which cameras exist in the file system.
     // 2. Iterate through our cameras adding any extras that do exist.
     // 3. Remove any cameras that don't exist,
-    for(int i = 0; i < cntr; i++) {
+    for(int i = start_index; i < cntr; i++) {
         // 1.  Check which cameras exist in the file system.
         for(int j = 1; j < MAX_STREAMS; j++) {
             if(this->streams[j] != nullptr) { 

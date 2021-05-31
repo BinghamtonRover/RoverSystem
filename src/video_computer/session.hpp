@@ -46,6 +46,7 @@ public:
     unsigned int frame_counter;
     camera::CaptureSession* streams[MAX_STREAMS] = {0};
     VideoSystem accel_video_system;
+    bool using_accel_system = false;
 
     network::Feed r_feed;
     network::Feed bs_feed;

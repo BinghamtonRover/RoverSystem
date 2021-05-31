@@ -1,10 +1,20 @@
 #include "session.hpp"
+#include "accelerated_pi_cam/video_system_exception.hpp"
 
 int main(){
     Session video_session;
     logger::register_handler(logger::stderr_handler);
     util::Clock::init(&video_session.global_clock);
     video_session.load_config("res/v.sconfig");
+
+    // Must start the accelerated video system first or the Pi camera is taken by the standard video system
+    try {
+        video_session.accel_video_system.init();
+        video_session.using_accel_system = true;
+    } catch (const VideoSystemException& video_system_exception) {
+        logger::log(logger::DEBUG, "Error opening CSI-attached camera: %s. Accelerated video system will be disabled.", video_system_exception.get_details().c_str());
+        video_session.using_accel_system = false;
+    }
     video_session.updateCameraStatus();
 
     //Three feeds: base station, subsystem computer, and video computer.
@@ -48,8 +58,8 @@ int main(){
         }
     }
 
-    video_session.accel_video_system.init();
-    video_session.accel_video_system.start_video();
+    if (video_session.using_accel_system)
+        video_session.accel_video_system.start_video();
 
     util::Timer::init(&video_session.camera_update_timer, CAMERA_UPDATE_INTERVAL, &video_session.global_clock);
     util::Timer::init(&video_session.tick_timer, TICK_INTERVAL, &video_session.global_clock);
@@ -63,6 +73,10 @@ int main(){
         video_session.streamTypes[i] = network::CameraControlMessage::sendType::DONT_SEND;
     }
     while (true) {
+
+        if (video_session.using_accel_system)
+            video_session.accel_video_system.fill_partial_frame_async();
+
         for (size_t i = 1; i < MAX_STREAMS; i++) {
             camera::CaptureSession* cs = video_session.streams[i];
             if(cs == nullptr) continue;
@@ -160,7 +174,7 @@ int main(){
         // Camera streams using accelerated CSI-attached cameras
         static VideoSystem::MessageBuilder csi_message_builder;
 
-        if (video_session.accel_video_system.partial_frame_available_async()) {
+        if (video_session.using_accel_system && video_session.accel_video_system.partial_frame_available_async()) {
             OMX_BUFFERHEADERTYPE *frame;
             network::CSICameraMessage csi_message;
 
