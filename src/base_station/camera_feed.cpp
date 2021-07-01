@@ -15,6 +15,7 @@ tjhandle jpeg_decompressor;
 const int JPEG_SIZE = 1920 * 1080 * 3;
 unsigned char decompress_buffer[JPEG_SIZE];
 
+//Decompresses jpeg data to a specified feed
 static Error decompress(Feed* feed, unsigned char* jpeg_data) {
     /*
        The parameters are the decompressor, the compressed image, the size of the
@@ -38,8 +39,11 @@ static Error decompress(Feed* feed, unsigned char* jpeg_data) {
     return Error::OK;
 }
 
+//Initializes to turboJPEG decompressor
 Error init() {
     jpeg_decompressor = tjInitDecompress();
+
+    //If decompressor fails to construct, send an error
     if (!jpeg_decompressor) {
         return Error::TURBO_JPEG_INIT;
     }
@@ -47,6 +51,7 @@ Error init() {
     return Error::OK;
 }
 
+//Initializes a feed with given name, width and height
 Error init_feed(Feed* feed, const char* name, int width, int height) {
     strncpy(feed->name, name, FEED_NAME_MAX_LEN + 1);
     feed->width = width;
@@ -82,6 +87,7 @@ Error init_feed(Feed* feed, const char* name, int width, int height) {
     return Error::OK;
 }
 
+//Handles sections of video that come from rover to ensure the feed is in the correct order
 Error handle_section(
     Feed* feed, unsigned char* data, int data_size, int section_index, int section_count, int frame_index) {
     /*
@@ -112,10 +118,11 @@ Error handle_section(
     uint32_t offset = (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * section_index);
     memcpy(feed->buffers[current_frame_indx].data_sections + offset, data, data_size);
 
+    // This frame is ready. Decompress and update the texture.
     if (feed->buffers[current_frame_indx].sections_remaining == 0) {
-        // This frame is ready. Decompress and update the texture.
 
         Error err = decompress(feed, feed->buffers[current_frame_indx].data_sections);
+        //If an error occured on the decompress, return the error
         if (err != Error::OK) {
             return err;
         }
@@ -136,7 +143,10 @@ Error handle_section(
     return Error::OK;
 }
 
+//Deletes the inputted feed
 void destroy_feed(Feed* feed) {
+    
+    //Deletes data sections contained in the feed
     for (int i = 0; i < CAMERA_FRAME_BUFFER_COUNT; i++) {
         delete[] feed->buffers[i].data_sections;
     }

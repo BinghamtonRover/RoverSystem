@@ -35,6 +35,7 @@ static void removeOldMessages() {
     }
 }
 
+//Prints new message to the log and removes any messages that no longer fit
 void print(Font* font, int width, std::string m, float r, float g, float b, float a) {
     while (m.length() > 0) {
         int idx = gui::text_last_index_that_can_fit(font, m.c_str(), width, FONT_SIZE);
@@ -51,6 +52,7 @@ void print(Font* font, int width, std::string m, float r, float g, float b, floa
     removeOldMessages();
 }
 
+//Moves the view index one up to show previous lines
 void moveUpOne() {
     if (logMessages.size() >= num_lines && view_index > 0) {
         view_index--;
@@ -58,6 +60,7 @@ void moveUpOne() {
     }
 }
 
+//Moves the view index one down to shwo newer lines
 void moveDownOne() {
     if (logMessages.size() >= num_lines && view_index < logMessages.size() - num_lines) {
         view_index++;
@@ -67,6 +70,7 @@ void moveDownOne() {
     }
 }
 
+//Moves the view index to the top of the log
 void moveTop() {
     if (logMessages.size() >= num_lines) {
         view_index = 0;
@@ -74,6 +78,7 @@ void moveTop() {
     }
 }
 
+//Moves the view index to the bottom of the log
 void moveBottom() {
     if (logMessages.size() >= num_lines) {
         view_index = logMessages.size() - num_lines;
@@ -81,6 +86,7 @@ void moveBottom() {
     }
 }
 
+//Draws the log to the given layout
 void do_log(gui::Layout* layout, int width, int height, Font* font) {
     int x = layout->current_x;
     int y = layout->current_y;
@@ -105,6 +111,7 @@ void do_log(gui::Layout* layout, int width, int height, Font* font) {
         moveBottom();
     }
 
+    //Drows the log messages from the view index up to the size of the log
     for (unsigned int i = view_index; i < tempSize + view_index; i++) {
         const char* str = logMessages[i].c_str();
 
@@ -114,9 +121,11 @@ void do_log(gui::Layout* layout, int width, int height, Font* font) {
     }
 }
 
+//Handles the different types of message levels in the logger
 void log_view_handler(logger::Level level, std::string message) {
     float r, g, b, a = 1.0f;
 
+    //Switches the colors of the log messages based on the level
     switch (level) {
         case logger::DEBUG:
             r = 0.70f;

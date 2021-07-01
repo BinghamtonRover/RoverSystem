@@ -46,12 +46,15 @@ Session::Session(){
 
 Session::~Session() {};
 
+//Loads a session config from a file
 void Session::load_config(const char* filename) {
     sc::SimpleConfig* sc_config;
 
     auto err = sc::parse(filename, &sc_config);
+    //If thre is an error reading the file, log an error
     if (err != sc::Error::OK) {
         logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
+        //If the file is open, log a second error
         if (err == sc::Error::FILE_OPEN) {
             logger::log(logger::ERROR, "(Did you forget to run the program from the repo root?)");
         }
@@ -60,6 +63,7 @@ void Session::load_config(const char* filename) {
 
     //Configure ports
     char* rover_port = sc::get(sc_config, "rover_port");
+    //Configures rover port
     if (!rover_port) {
         logger::log(logger::ERROR, "Config missing 'rover_port'!");
         exit(1);
@@ -67,6 +71,7 @@ void Session::load_config(const char* filename) {
     this->config.rover_port = atoi(rover_port);
 
     char* base_station_port = sc::get(sc_config, "base_station_port");
+    //Configures base station port
     if (!base_station_port) {
         logger::log(logger::ERROR, "Config missing 'base_station_port'!");
         exit(1);
@@ -74,6 +79,7 @@ void Session::load_config(const char* filename) {
     this->config.base_station_port = atoi(base_station_port);
 
     char* video_port = sc::get(sc_config, "video_port");
+    //Configures video port
     if (!video_port) {
         logger::log(logger::ERROR, "Config missing 'video_port'!");
         exit(1);
@@ -82,6 +88,7 @@ void Session::load_config(const char* filename) {
 
     //Configure multicast group 
     char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
+    //configures rover mulitcast group
     if (!rover_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'rover_multicast_group'!");
         exit(1);
@@ -89,6 +96,7 @@ void Session::load_config(const char* filename) {
     strncpy(this->config.rover_multicast_group, rover_multicast_group, 16);
 
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
+    //configures base station multicast group
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'base_station_multicast_group'!");
         exit(1);
@@ -96,6 +104,7 @@ void Session::load_config(const char* filename) {
     strncpy(this->config.base_station_multicast_group, base_station_multicast_group, 16);
 
     char* video_multicast_group = sc::get(sc_config, "video_multicast_group");
+    //configures video multicast group
     if (!video_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'video_multicast_group'!");
         exit(1);
@@ -111,6 +120,7 @@ void Session::load_config(const char* filename) {
         strncpy(this->config.interface, interface, 16);
     }
 
+    //Configures the perfered monitor
     char* preferred_monitor = sc::get(sc_config, "preferred_monitor");
     if (!preferred_monitor) {
         // Default: empty string means primary monitor.
@@ -122,6 +132,7 @@ void Session::load_config(const char* filename) {
     sc::free(sc_config);
 }
 
+//Sends basestation feed
 void Session::send_feed(uint8_t stream_indx) {
     network::CameraControlMessage message = {
         network::CameraControlMessage::Setting::DISPLAY_STATE
@@ -134,6 +145,7 @@ void Session::send_feed(uint8_t stream_indx) {
     return;
 }
 
+//Sends all feeds
 void Session::send_all_feeds() {
     for(uint8_t i = 0; i < 9; i++) {
         if(i != this->primary_feed && i != this->secondary_feed) {
@@ -143,6 +155,7 @@ void Session::send_all_feeds() {
     return;
 }
 
+//Doesn't send the specified feed
 void Session::dont_send_feed(uint8_t stream_indx) {
     network::CameraControlMessage message = {
         network::CameraControlMessage::Setting::DISPLAY_STATE
@@ -155,6 +168,7 @@ void Session::dont_send_feed(uint8_t stream_indx) {
     return;
 }
 
+//Doesn't send non-visible feeds
 void Session::dont_send_invalid() {
     for(uint8_t i = 0; i < 9; i++) {
         if(i != this->primary_feed && i != this->secondary_feed) {
@@ -164,6 +178,7 @@ void Session::dont_send_invalid() {
     return;
 }
 
+//Initializes the drive subsystem
 void Session::drive_sub_init(){
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";
@@ -196,6 +211,7 @@ void Session::drive_sub_init(){
     this->drive_sub_info.insert(motor_stat);
 }
 
+//Initializes the arm subsystem
 void Session::arm_sub_init(){
     std::pair<std::string, double> xloca_stat;
     xloca_stat.first = "X-Location (cm)";
@@ -218,6 +234,7 @@ void Session::arm_sub_init(){
     this->arm_sub_info.insert(grpos_stat);
 }
 
+//Initializes the arm subsystem
 void Session::science_sub_init(){
     std::pair<std::string, double> tempr_stat;
     tempr_stat.first = "Temperature (C)";
@@ -251,6 +268,7 @@ void Session::science_sub_init(){
 
 }
 
+//Initializes the autonomy subsystem
 void Session::autonomy_sub_init(){
     std::pair<std::string, double> arloc_stat;
     arloc_stat.first = "AR Marker Lock";
@@ -263,6 +281,7 @@ void Session::autonomy_sub_init(){
     this->autonomy_sub_info.insert(distw_stat);
 }
 
+//Initializes the power subsystem
 void Session::power_sub_init(){
     std::pair<std::string, double> battvolt_stat;
     battvolt_stat.first = "Battery Voltage (V)";
@@ -285,8 +304,10 @@ void Session::power_sub_init(){
     this->power_sub_info.insert(batttemp_stat);    
 }
 
+//Starts the log file
 void Session::start_log(const char* filename) {
     log_file.open(filename);
+    //If the log file opened successfully start logging
     if (log_file.is_open()) {
         util::Timer::init(&log_interval_timer, 3000, &global_clock);
         log_file << "Timestamp,";
@@ -302,10 +323,12 @@ void Session::start_log(const char* filename) {
     }
 }
 
+//Stops the log file
 void Session::stop_log() {
     log_file.close();
 }
 
+//Exports the science subsystem info
 void Session::export_data() {
     auto itr = science_sub_info.begin();
     
@@ -319,6 +342,7 @@ void Session::export_data() {
     strcpy(&time_str[20], current_millis.c_str());
     
     log_file << time_str << ',';
+    //Writes the science subsystem info the log
     while (itr != science_sub_info.end()) {
         log_file << itr->second;
         ++itr;

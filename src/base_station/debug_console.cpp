@@ -42,16 +42,19 @@ struct DebugConsole {
     CommandCallback callback;
 } console;
 
+//Sets the callback for the console
 void set_callback(CommandCallback callback) {
     console.callback = callback;
 }
 
+//Takes a string and returns a vector containing substrings that were separated by spaces
 std::vector<std::string> split_by_spaces(std::string s) {
     std::vector<std::string> strings;
 
     size_t last = 0;
     size_t next = 0;
 
+    //Loops through the string and adds the substrings to the vector
     while ((next = s.find(" ", last)) != std::string::npos) {
         strings.push_back(s.substr(last, next - last));
         last = next + 1;
@@ -62,16 +65,21 @@ std::vector<std::string> split_by_spaces(std::string s) {
     return strings;
 }
 
+//Parses commands
 void command_callback(std::string command, Session *bs_session) {
     auto parts = gui::debug_console::split_by_spaces(command);
+    //Checks for test command
     if (parts[0] == "test") {
+        //Executes commands if there are no other parameters (other than the command itself)
         if (parts.size() == 1) {
             log("This is some red text.", 1, 0, 0);
         } else {
             log("Invalid Input: \"test\" expects no parameters.", 1, 0, 0);
         }
     } 
+    //Checks for the toggle debug command
     else if (parts[0] == "tdl") {
+        //Ensures that there are no other parameters (other than the command itself)
         if (parts.size() == 1) {
             bool mode = logger::toggleDebugMode();
             if(mode) {
@@ -83,7 +91,9 @@ void command_callback(std::string command, Session *bs_session) {
             log("Invalid Input: \"tdl\" expects no parameters.", 1, 0, 0);
         }
     } 
+    //Checks for the add waypoint command
     else if (parts[0] == "aw") {
+        //Checks that there are 3 parameters
         if (parts.size() == 3) {
             try {
                 float lat = std::stof(parts[1], nullptr);
@@ -99,7 +109,9 @@ void command_callback(std::string command, Session *bs_session) {
             log("Invalid Input: \"aw\" requires two doubles, for example: \"aw 42.2 75.3\"", 1, 0, 0);
         }
     } 
+    //Checks for the list waypoints command
     else if (parts[0] == "lw") {
+        //Ensures there is only one parameter (the command itself)
         if (parts.size() == 1) {
             log("Waypoints: ", 1, 0, 1);
             auto waypoints = waypoint::get_waypoints();
@@ -112,15 +124,20 @@ void command_callback(std::string command, Session *bs_session) {
             log("Invalid Input: \"lw\" expects no parameters.", 1, 0, 0);
         }
     } 
+    //Checks for the help command
     else if (parts[0] == "help") {
+        //Ensures there is only one parameter (other than the command itself)
         if (parts.size() == 1) {
             log("Press 'h' on the main screen for help.", 1, 1, 1);
         } else {
             log("Invalid Input: \"help\" expects no parameters.", 1, 0, 0);
         }
     }
+    //Cehcks for the greyscale on command
     else if (parts[0] == "gs_on") {
+        //Checks that there is only one parameter (other than the command itself)
         if (parts.size() == 1) {
+            //Checks that there is a rover feed
             if (shared_feeds::bs_feed != NULL){
                 //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                 network::CameraControlMessage message = {
@@ -133,8 +150,10 @@ void command_callback(std::string command, Session *bs_session) {
         } else {
             log("Invalid Input: \"gs_on\" expects no parameters.", 1, 0, 0);
         }
-    } 
+    }
+    //Checks for the greyscale off command
     else if (parts[0] == "gs_off") {
+        //Checks that there is one parameter (other than the command itself)
         if (parts.size() == 1) {
             if (shared_feeds::bs_feed != NULL){
                 //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
@@ -148,11 +167,14 @@ void command_callback(std::string command, Session *bs_session) {
         else {
             log("Invalid Input: \"gs_off\" expects no parameters.", 1, 0, 0);
         }
-    } 
+    }
+    //Checks for the jpeg quality command
     else if (parts[0] == "jpeg_quality") {
+        //Checks that there are two parameters
         if (parts.size() == 2) {
             try {
                 int value = std::stoi(parts[1], nullptr);
+                //Checks that the value is in the correct range
                 if (value >= 0 && value <= 100) {
                     //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                     if (shared_feeds::bs_feed != NULL){
@@ -172,7 +194,9 @@ void command_callback(std::string command, Session *bs_session) {
             log("Invalid Input: \"jpeg_quality\" requires an integer between 0 and 100, for example: \"jpeg_quality 30\"",1,0,0);
         }
     }
+    //Checks for the move command
     else if (parts[0] == "move") {
+        //Checks that there are 3 paramteres
         if (parts.size() == 3) {
             char left_direction_char = parts[1][0];
             int16_t left_speed = (int16_t) atoi(parts[1].substr(1).c_str());
@@ -183,10 +207,12 @@ void command_callback(std::string command, Session *bs_session) {
             bs_session->last_movement_message.left = left_speed;
             bs_session->last_movement_message.right = right_speed;
 
+            //Reverses direction of left message
             if (left_direction_char == 'b') {
                 bs_session->last_movement_message.left *= -1;
             }
 
+            //Reverses direction of right message
             if (right_direction_char == 'b') {
                 bs_session->last_movement_message.right *= -1;
             }
@@ -200,16 +226,20 @@ void command_callback(std::string command, Session *bs_session) {
             log("Invalid Input: \"move\" expects two integers.", 1, 0, 0);
         }
     }
+    //Catches invalid input
     else if (parts[0].length() > 0) {
         log("Invalid Input: no matching command was found", 1, 0, 0);
     }
 }
 
+//Draws the debug console
 void do_debug(gui::Layout* layout, Font* font) {
+    //If the GUI isn't supposed to be drawn
     if (!gui::state.show_debug_console) {
         return;
     }
 
+    //Exits the debug console
     if (glfwGetKey(gui::state.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         gui::state.show_debug_console = false;
         gui::state.input_state = InputState::KEY_COMMAND;
@@ -267,17 +297,21 @@ void do_debug(gui::Layout* layout, Font* font) {
         // Move up and add a gap between lines.
         text_begin -= CONSOLE_TEXT_SIZE + CONSOLE_PADDING;
 
+        // Breaks loop when there isn't room for the text
         if (text_begin < 0) break;
     }
 }
 
+// Draws text to the log
 void log(std::string text, float r, float g, float b) {
+    // If the text size is less than 200, add to the console history
     if (text.size() < 200) {
         DebugLine line{ text, r, g, b };
         console.history.push_back(line);
         return;
     }
 
+    // If text is larger than 200, breaks it into two lines
     while (text.size() >= 200) {
         for (int i = 200; i > 0; i--) {
             if (text[i] == ' ') {
@@ -291,11 +325,14 @@ void log(std::string text, float r, float g, float b) {
     }
 }
 
+// Pushes a character onto the buffer
 void handle_input(char c) {
     console.buffer.line.push_back(c);
 }
 
+// Handles key presses in the console
 void handle_keypress(int key, int mods, Session *session) {
+    // If the enter key pressed, enters command to console
     if (key == GLFW_KEY_ENTER) {
         std::string command = console.buffer.line.substr(CONSOLE_PROMPT.size());
 
@@ -305,7 +342,9 @@ void handle_keypress(int key, int mods, Session *session) {
         console.callback(command, session);
         
 
-    } else if (key == GLFW_KEY_BACKSPACE) {
+    } 
+    // If the backspace key is pressed, remove a character from the command buffer
+    else if (key == GLFW_KEY_BACKSPACE) {
         if (mods & GLFW_MOD_CONTROL) {
             console.buffer = { CONSOLE_PROMPT, 0, 1, 0 };
         } else {
@@ -314,7 +353,9 @@ void handle_keypress(int key, int mods, Session *session) {
                 console.buffer.line.pop_back();
             }
         }
-    } else if (key == GLFW_KEY_ESCAPE) {
+    } 
+    //If the escape key is pressed, the console exits
+    else if (key == GLFW_KEY_ESCAPE) {
         gui::state.input_state = gui::InputState::KEY_COMMAND;
         gui::state.show_debug_console = false;
     }

@@ -13,16 +13,19 @@ namespace waypoint_map {
 float ppm = PPM_MIN;
 bool gridMap = true;
 
+//Zooms in on the waypoint map
 void zoom_in() {
     ppm *= PPM_SCALE_FACTOR;
     if (ppm > PPM_MAX) ppm = PPM_MAX;
 }
 
+//Zooms out of the waypoint map
 void zoom_out() {
     ppm /= PPM_SCALE_FACTOR;
     if (ppm < PPM_MIN) ppm = PPM_MIN;
 }
 
+//Calculates the meter offset
 static void get_meter_offset(float lat1, float long1, float lat2, float long2, float* out_x, float* out_y) {
     const float EARTH_RADIUS = 6378.137e3;
 
@@ -33,6 +36,7 @@ static void get_meter_offset(float lat1, float long1, float lat2, float long2, f
     *out_y = dy;
 }
 
+//Draws the waypoint map to the given layout
 void do_waypoint_map(gui::Layout * layout, int w, int h){
     int x = layout->current_x;
     int y = layout->current_y;
@@ -69,13 +73,16 @@ void do_waypoint_map(gui::Layout * layout, int w, int h){
     int num_x = mw / GRID_SPACING;
     int num_y = mh / GRID_SPACING;
     
+    //If the grid lines are enabled
     if (gridMap){
         glLineWidth(1.0f);
         glBegin(GL_LINES);
+        //Draws the horizontal grid lines
         for (int xg = -num_x/2; xg <= num_x/2; xg++) {
             glVertex2f(xg * GRID_SPACING, -mh/2.0f);
             glVertex2f(xg * GRID_SPACING, mh/2.0f);
         }
+        //Draws the vertical grid lines
         for (int yg = -num_y/2; yg <= num_y/2; yg++) {
             glVertex2f(-mw/2.0f, yg * GRID_SPACING);
             glVertex2f(mw/2.0f, yg * GRID_SPACING);
@@ -83,6 +90,7 @@ void do_waypoint_map(gui::Layout * layout, int w, int h){
         glEnd();
     }
     else {
+        //Draws lines radiating from the center
         for(int radius = GRID_SPACING; radius < (mw/2) * GRID_SPACING; radius += GRID_SPACING){
             //The coordinates are (0,0) since we shifted the origin to the middle instead of the top-left
             gui::do_circle(0,0,radius); 

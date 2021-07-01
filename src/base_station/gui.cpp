@@ -25,6 +25,7 @@ namespace gui {
 
 gui::GlobalState state;
 
+//Loads a font to Font* font from font file_name and sets the size
 bool load_font(Font* font, const char* file_name, int size) {
     // Open the font file for reading.
     FILE* font_file = fopen(file_name, "r");
@@ -304,6 +305,7 @@ void do_circle(int x, int y, int radius){
 
 }
 
+// Fills a specified rectange region with provided texture id based on the color set before the function is called
 void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int texture_id) {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -332,11 +334,13 @@ void fill_textured_rect_mix_color(int x, int y, int w, int h, unsigned int textu
     glPopMatrix();
 }
 
+// Fills a rectangle with a texture as it was originally imported
 void fill_textured_rect(int x, int y, int w, int h, unsigned int texture_id) {
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     fill_textured_rect_mix_color(x, y, w, h, texture_id);
 }
 
+//Draws a rectangle with the given width and height, with the given (r,g,b) color in the layout
 void do_solid_rect(Layout* layout, int width, int height, float r, float g, float b) {
     int x = layout->current_x;
     int y = layout->current_y;
@@ -348,6 +352,7 @@ void do_solid_rect(Layout* layout, int width, int height, float r, float g, floa
     layout->advance_y(height);
 }
 
+//Draws a texture in the shape of a rectangle in the given layout
 void do_textured_rect(Layout* layout, int width, int height, unsigned int texture_id) {
     int x = layout->current_x;
     int y = layout->current_y;
@@ -358,6 +363,7 @@ void do_textured_rect(Layout* layout, int width, int height, unsigned int textur
     layout->advance_y(height);
 }
 
+//Loads a texture in from file and returns its texture id
 unsigned int load_texture(const char* file_name) {
     int texture_w, texture_h, texture_channels;
     // This loads a PNG or JPEG file into memory as an array of RGB pixels.
@@ -458,7 +464,9 @@ unsigned int load_texture_alpha(const char* file_name) {
     return tex_id;
 }
 
+//Sets the stopwatch color based on the stopwatch state
 void set_stopwatch_icon_color(Session *bs_session) {
+    //Switches based on stopwatch state to select correct color
     switch (bs_session->stopwatch.state) {
         case StopwatchState::RUNNING:
             glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
@@ -472,9 +480,11 @@ void set_stopwatch_icon_color(Session *bs_session) {
     }
 }
 
+//Gets the stopwatch text from the stopwatch and returns the text
 const char* get_stopwatch_text(Session *bs_session) {
     static char buffer[50];
 
+    //If stopwatch is stopped, set text to zero seconds and return
     if (bs_session->stopwatch.state == StopwatchState::STOPPED) {
         sprintf(buffer, "00:00:00");
 
@@ -483,6 +493,7 @@ const char* get_stopwatch_text(Session *bs_session) {
 
     unsigned int time_to_use;
 
+    //If the stopwatch is paused, get the paused time, else get the current time
     if (bs_session->stopwatch.state == StopwatchState::PAUSED) {
         time_to_use = bs_session->stopwatch.pause_time;
     } else {
@@ -502,6 +513,7 @@ const char* get_stopwatch_text(Session *bs_session) {
     return buffer;
 }
 
+//Draws the info panel in the given layout
 void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
     static char info_buffer[200];
 
@@ -534,6 +546,7 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
     draw_text(&gui::state.global_font, info_buffer, x + 5, y + y_offset, 14);
 
     y_offset += 25;
+    //Displays the current latitude and longitude based on the FixStatus of the rover
     switch (waypoint::rover_fix) {
         case network::LocationMessage::FixStatus::NONE:
             glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
@@ -567,6 +580,7 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
 
     y_offset += 25;
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    //Displays the current base station focus mode
     switch (bs_session->bs_focus_mode){
     case FocusMode::GENERAL:{
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -604,6 +618,7 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
 
     y_offset += 15;
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    //Displays current subsystem focus mode
     switch (bs_session->subsystem_focus_mode){
     case network::FocusModeMessage::FocusMode::GENERAL:{
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -641,6 +656,7 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
 
     y_offset += 15;
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    //Displays current video CPU focus mode
     switch (bs_session->video_focus_mode){
     case network::FocusModeMessage::FocusMode::GENERAL:{
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -679,6 +695,7 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
 
     y_offset += 25;
     std::unordered_map<std::string, double>::iterator itr = bs_session->power_sub_info.begin();
+    //Draws the power subsystem info to the info panel
     while(itr != bs_session->power_sub_info.end()){
         sprintf(info_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
         glColor4f(1.0f, 1.0f, 0.5f, 1.0f);
@@ -706,6 +723,7 @@ void do_info_panel(Layout* layout, int width, int height, Session *bs_session) {
     fill_textured_rect_mix_color(x + width - 5 - stopwatch_text_width - 3 - 20, y + height - 20 - 5, 20, 20, bs_session->stopwatch_texture_id);
 }
 
+//Draws the subsystem panel to the given layout
 void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_session){
     static char text_buffer[200];
     
@@ -717,6 +735,7 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
     //Print contents of subsystem data registers into subsystem window by focus mode
     std::unordered_map<std::string, double>::iterator itr;
     int offset = 0;
+    //Displays different subsytem info given the focus mode
     switch(bs_session->bs_focus_mode){
         case FocusMode::DRIVE:{
             sprintf(text_buffer, "Drive Subsystem Info");
@@ -724,6 +743,7 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
             draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
             offset += 30;
             itr = bs_session->drive_sub_info.begin();
+            //Iterates through drive subsystem info and displays the text to the subsystem panel
             while(itr != bs_session->drive_sub_info.end()){
                 sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
                 glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
@@ -739,6 +759,7 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
             draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
             offset += 30;
             itr = bs_session->arm_sub_info.begin();
+            //Iterates through arm subsystem info and displays the text to the subsystem panel
             while(itr != bs_session->arm_sub_info.end()){
                 sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
                 glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
@@ -754,6 +775,7 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
             draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
             offset += 30;
             itr = bs_session->science_sub_info.begin();
+            //Iterates through science subsystem info and displays the text to the subsystem panel
             while(itr != bs_session->science_sub_info.end()){
                 sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
                 glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
@@ -769,6 +791,7 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
             draw_text(&gui::state.global_font, text_buffer, x + 5, y + offset + 5, 20);
             offset += 30;
             itr = bs_session->autonomy_sub_info.begin();
+            //Iterates through autonomy subsystem info and displays the text to the subsystem panel
             while(itr != bs_session->autonomy_sub_info.end()){
                 sprintf(text_buffer, "%s: %.3f", itr->first.c_str(), itr->second);
                 glColor4f(1.0f, 1.0f, 1.5f, 1.0f);
@@ -785,6 +808,7 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
     }
 }
 
+//Draws stopwatch menu over the GUI
 void do_stopwatch_menu(Session *bs_session){
     const int w = 150;
     const int h = 110;
@@ -799,6 +823,7 @@ void do_stopwatch_menu(Session *bs_session){
     draw_text(&gui::state.global_font, "Stopwatch", x + 5, y + 5, 20);
 
     const char* space_help_text;
+    //Changes the space help text depending on the stopwatch state
     switch (bs_session->stopwatch.state) {
         case StopwatchState::STOPPED:
             space_help_text = "<space> : start";
@@ -825,6 +850,7 @@ void do_stopwatch_menu(Session *bs_session){
         WINDOW_HEIGHT - 20 - 5 - 20, 20, 20, bs_session->stopwatch_texture_id);
 }
 
+//Draws the help menu over the GUI when active
 void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, Session *bs_session) {
     // Texts have a fixed height and spacing
     int height = 20;
@@ -839,10 +865,12 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
     const char* exit_prompt = "Press 'escape' to exit menu";
 
     int max_width = debug_title_width;
+    //If any commands exceed width of debug title, we set the width to the size of that command
     for (unsigned int i = 0; i < commands.size(); i++) {
         int current_width = text_width(&gui::state.global_font, commands[i], height);
         if (current_width > max_width) max_width = current_width;
     }
+    //If any debug commands exceed width of debug title, we set the width to the size of that debug command
     for (unsigned int i = 0; i < debug_commands.size(); i++) {
         int current_width = text_width(&gui::state.global_font, debug_commands[i], height);
         if (current_width > max_width) max_width = current_width;
@@ -871,6 +899,7 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
 
     draw_text(&gui::state.global_font, title, x + (menu_width / 2) - (title_width / 2), y, title_height);
 
+    //Draws the text for each command
     for (unsigned int i = 0; i < commands.size(); i++) {
         draw_text(&gui::state.global_font, commands[i], x + left_margin, y + (spacing * i) + top_padding + title_height, height);
     }
@@ -881,6 +910,7 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
     draw_text(&gui::state.global_font, debug_title, debug_commands_x, debug_commands_y, debug_title_height);
     debug_commands_y += 10; // To give extra room for the commands after the debug title
 
+    //Draws the text for each debug command
     for (unsigned int i = 0; i < debug_commands.size(); i++) {
         draw_text(&gui::state.global_font, debug_commands[i], x + left_margin, debug_commands_y + (spacing * (i + 1)), height);
     }
@@ -914,6 +944,7 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
     help_layout.pop();
 }
 
+//Draws the lidar panel to the given layout
 void do_lidar(Layout* layout, Session *bs_session) {
     int wx = layout->current_x;
     int wy = layout->current_y;
@@ -924,6 +955,7 @@ void do_lidar(Layout* layout, Session *bs_session) {
 
     glBegin(GL_QUADS);
 
+    //Draws the lidar points on the panel
     for (size_t i = 0; i < bs_session->lidar_points.size(); i++) {
         float angle = 225.0f - (float) i;
         float theta = angle * M_PI / 180.0f;
@@ -962,6 +994,7 @@ void do_lidar(Layout* layout, Session *bs_session) {
     glEnd();
 }
 
+//Handles the GUI when camera positions are being moved
 void do_camera_move_target(Session *bs_session) {
     const float COVER_ALPHA = 0.5f;
     glColor4f(1.0f, 1.0f, 1.0f, COVER_ALPHA);
@@ -1000,6 +1033,7 @@ void do_camera_move_target(Session *bs_session) {
     draw_text(&gui::state.global_font, secondary_text, stx, sty, SECONDARY_TEXT_SIZE);
 }
 
+//Draws the camera matrix displaying all cameras
 void do_camera_matrix(Session *bs_session) {
     switch (state.input_state) {
         case InputState::CAMERA_MATRIX:
@@ -1042,7 +1076,9 @@ void do_camera_matrix(Session *bs_session) {
     assert(MAX_FEEDS <= 10);
 
     int feed_idx = 0;
+    //Handles drawing the rows of the camera matrix
     for (int r = 0; r < NUM_ROWS; r++) {
+        //Handles drawing the feeds in the colums of the camera matrix
         for (int c = 0; c < NUM_VIEWS_PER_ROW; c++) {
             if (feed_idx >= MAX_FEEDS) break;
 
@@ -1065,6 +1101,7 @@ void do_camera_matrix(Session *bs_session) {
     const int HELP_TEXT_SIZE = 15;
 
     const char* help_text;
+    //Draws different help text based on the input state
     if (state.input_state == InputState::CAMERA_MATRIX) {
         help_text = "m: move camera | escape: exit matrix";
     } else if (state.input_state == InputState::CAMERA_MOVE) {
@@ -1079,6 +1116,7 @@ void do_camera_matrix(Session *bs_session) {
     draw_text(&gui::state.global_font, help_text, WINDOW_WIDTH - SIDE_MARGIN - TEXT_PADDING - help_text_width, 
         WINDOW_HEIGHT - TOP_MARGIN - TEXT_PADDING - HELP_TEXT_SIZE, HELP_TEXT_SIZE);
 
+    // Handles drawing the text instructions for moving the camera in the matrix
     if (state.input_state == InputState::CAMERA_MOVE) {
         glColor4f(255.0f / 255.0f, 199.0f / 255.0f, 0.0f, 1.0f);
         draw_text(&gui::state.global_font, "Press key '0'-'9' to select feed to move",
@@ -1086,7 +1124,9 @@ void do_camera_matrix(Session *bs_session) {
     }
 }
 
+// Draws autonomy info for autonomy control
 void do_autonomy_control(Session *bs_session) {
+    // If not in autonomy control input state or autonomy edit target state, return
     if (gui::state.input_state != gui::InputState::AUTONOMY_CONTROL
         && gui::state.input_state != gui::InputState::AUTONOMY_EDIT_TARGET) return;
 
@@ -1111,6 +1151,7 @@ void do_autonomy_control(Session *bs_session) {
 
     char text_buffer[500];
 
+    //Changes the status text based on autonomy status
     const char* status_text;
     switch (bs_session->autonomy_info.status) {
         case network::AutonomyStatusMessage::Status::IDLE:
@@ -1129,6 +1170,7 @@ void do_autonomy_control(Session *bs_session) {
 
     y += 20 + 10;
 
+    //If the input state is autonomy edit target, display info relating to the target
     if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
         int target_width = text_width(&gui::state.global_font, "Target:", 20);
         int lat_width = text_width(&gui::state.global_font, bs_session->autonomy_info.edit_lat.c_str(), 20);
@@ -1137,6 +1179,7 @@ void do_autonomy_control(Session *bs_session) {
 
         gui::draw_text(&gui::state.global_font, "Target:", x, y, 20);
         
+        //Fills a rectangle for the latitude
         if (bs_session->autonomy_info.edit_idx == 0) {
             glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
             gui::fill_rectangle(x + target_width + 10, y, lat_width, 20);
@@ -1147,6 +1190,7 @@ void do_autonomy_control(Session *bs_session) {
 
         gui::draw_text(&gui::state.global_font, ",", x + target_width + 10 + lat_width + 10, y, 20);
 
+        //Fills a rectangle for the longitude
         if (bs_session->autonomy_info.edit_idx == 1) {
             glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
             gui::fill_rectangle(x + target_width + 10 + lat_width + 10 + comma_width + 10, y, lon_width, 20);
@@ -1155,6 +1199,7 @@ void do_autonomy_control(Session *bs_session) {
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
         gui::draw_text(&gui::state.global_font, bs_session->autonomy_info.edit_lon.c_str(), x + target_width + 10 + lat_width + 10 + comma_width + 10, y, 20);
     } else {
+        //If autonomy has a target, display its lat and long
         if (bs_session->autonomy_info.has_target) {
             sprintf(text_buffer, "Target: %.4f, %.4f", bs_session->autonomy_info.target_lat, bs_session->autonomy_info.target_lon);
         } else {
@@ -1166,6 +1211,7 @@ void do_autonomy_control(Session *bs_session) {
     y += 20 + 10;
 }
 
+//Draws autonomy gui
 void do_autonomy_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1236,6 +1282,7 @@ void do_autonomy_gui(Session *bs_session){
     do_autonomy_control(bs_session);
 }
 
+//Draws the general GUI
 void do_general_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1301,6 +1348,7 @@ void do_general_gui(Session *bs_session){
     do_autonomy_control(bs_session);    
 }
 
+//Draws the drive GUI
 void do_drive_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1367,6 +1415,7 @@ void do_drive_gui(Session *bs_session){
     //do_autonomy_control(bs_session);
 }
 
+//Draws the arm GUI
 void do_arm_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1426,6 +1475,7 @@ void do_arm_gui(Session *bs_session){
     do_camera_matrix(bs_session);
 }
 
+//Draws the science GUI
 void do_science_gui(Session *bs_session){
     // Clear the screen to a modern dark gray.
     glClearColor(35.0f / 255.0f, 35.0f / 255.0f, 35.0f / 255.0f, 1.0f);
@@ -1477,11 +1527,14 @@ void do_science_gui(Session *bs_session){
     do_camera_matrix(bs_session);
 }
 
+//Draws the GUI based on the rover focus mode
 void do_gui(Session *bs_session) {
     //if (bs_session->log_file.is_open() && bs_session->log_interval_timer.ready()) {
     //    bs_session->export_data();
     //}
     //switch (bs_session->focus_mode)
+
+    //Selects the correct GUI based on the focus mode
     switch (bs_session->bs_focus_mode)
     {
     case FocusMode::GENERAL:{
@@ -1509,6 +1562,7 @@ void do_gui(Session *bs_session) {
     }
 }
 
+//Hanldes input of a character in the debug console
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
         if (codepoint < 128) {
@@ -1517,22 +1571,28 @@ void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
     }
 }
 
+// Handles key presses in the GUI
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     void *bs_session_pointer = glfwGetWindowUserPointer(window);
     Session *bs_session = static_cast<Session *>(bs_session_pointer);
     bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+    //If the input stat is the debug console, have the debug console handle it
     if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+        //Ensures action type is correct for debug console
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             gui::debug_console::handle_keypress(key, mods, bs_session);
         }
     } 
+    //If the input state is a key command
     else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
         // We open the menu on release to prevent the D key from being detected
         // in the character callback upon release.
         if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
             gui::state.show_debug_console = true;
             gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+        // If the C key is pressed
         } else if (action == GLFW_PRESS && key == GLFW_KEY_C) {
+            //If shift is held, enter the camera matrix, else switch camera positions in the GUI
             if (mods & GLFW_MOD_SHIFT) {
                 gui::state.input_state = gui::InputState::CAMERA_MATRIX;
                 bs_session->send_all_feeds();
@@ -1541,13 +1601,16 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 bs_session->primary_feed = bs_session->secondary_feed;
                 bs_session->secondary_feed = temp;
             }
-        } 
+        }
+        //If z is pressed and g is released, toggle the grid map
         else if (z_on && action == GLFW_RELEASE && key == GLFW_KEY_G){
             gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
         } 
+        //If a is pressed, switch input state to autonomy control
         else if (action == GLFW_PRESS && key == GLFW_KEY_A) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
         } 
+        //If m is pressed, toggle controller mode between drive and arm
         else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             switch (bs_session->controller_mode) {
                 case ControllerMode::DRIVE:
@@ -1558,7 +1621,9 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                     break;
             }
         } 
+        //If shift and one are pressed, swap to general mode
         else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+            //Ensures shift is also pressed
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::GENERAL;
                 bs_session->controller_mode = ControllerMode::NEUTRAL;
@@ -1567,7 +1632,9 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 network::publish(&bs_session->bs_feed, &message);
             }
         } 
+        //If shift and two are pressed, swaps to drive mode
         else if (action == GLFW_PRESS && key == GLFW_KEY_2) {
+            //Ensures shift is also pressed
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::DRIVE;
                 bs_session->controller_mode = ControllerMode::DRIVE;
@@ -1576,7 +1643,9 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 network::publish(&bs_session->bs_feed, &message);
             }
         } 
+        //If shift and 3 are pressed, swaps to arm mode
         else if (action == GLFW_PRESS && key == GLFW_KEY_3) {
+            //Ensures shift is also pressed
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::ARM;
                 bs_session->controller_mode = ControllerMode::ARM;
@@ -1584,7 +1653,10 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 message.focus_mode = network::FocusModeMessage::FocusMode::ARM;
                 network::publish(&bs_session->bs_feed, &message);
             }
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_4) {
+        }
+        //If shift and 4 are pressed, swaps to science mode
+        else if (action == GLFW_PRESS && key == GLFW_KEY_4) {
+            //Ensures shift is also pressed
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::SCIENCE;
                 bs_session->controller_mode = ControllerMode::SCIENCE;
@@ -1592,7 +1664,10 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 message.focus_mode = network::FocusModeMessage::FocusMode::SCIENCE;
                 network::publish(&bs_session->bs_feed, &message);
             }
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_5) {
+        }
+        //If shift and 5 are pressed, swaps to autonomy mode
+        else if (action == GLFW_PRESS && key == GLFW_KEY_5) {
+            //Ensures shift is also pressed
             if(mods & GLFW_MOD_SHIFT) {
                 bs_session->bs_focus_mode = FocusMode::AUTONOMY;
                 bs_session->controller_mode = ControllerMode::NEUTRAL;
@@ -1600,7 +1675,10 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 message.focus_mode = network::FocusModeMessage::FocusMode::AUTONOMY;
                 network::publish(&bs_session->bs_feed, &message);
             }
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_I) {
+        } 
+        // If I is pressed, toggle logging
+        else if (action == GLFW_PRESS && key == GLFW_KEY_I) {
+            //If file is open, stop the log, else, start logging
             if (bs_session->log_file.is_open()) {
                 bs_session->stop_log();
             } else {
@@ -1617,18 +1695,29 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                 bs_session->start_log(time_str);
             } 
         }
-    } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+    } 
+    //If the inpus state is the camera matrix
+    else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+        //If escape is pressed, set input state to key command
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::KEY_COMMAND;
             bs_session->dont_send_invalid();
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+        } 
+        //If m is pressed, set input state to camera move
+        else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
             gui::state.input_state = gui::InputState::CAMERA_MOVE;
         }
-    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+    } 
+    //If input state is camera move
+    else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        //If escape is pressed, set input state to camera matrix
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::CAMERA_MATRIX;
-        } else if (action == GLFW_PRESS) {
+        } 
+        //If a key is pressed
+        else if (action == GLFW_PRESS) {
             int selected_feed_idx = -1;
+            //Changes selected feed index based on key press 0-9
             switch (key) {
                 case GLFW_KEY_0:
                     selected_feed_idx = 0;
@@ -1662,15 +1751,21 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
                     break;
             }
 
+            //Sets the feed to move from the selected feed and changes the input state to camera move target
             if (selected_feed_idx >= 0 && selected_feed_idx < MAX_FEEDS) {
                 bs_session->feed_to_move = selected_feed_idx;
                 gui::state.input_state = gui::InputState::CAMERA_MOVE_TARGET;
             }
         }
-    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE_TARGET) {
+    } 
+    //If the input state is camera move target
+    else if (gui::state.input_state == gui::InputState::CAMERA_MOVE_TARGET) {
+        // If escape is pressed, switch to the camera matrix input state
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::CAMERA_MATRIX;
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
+        } 
+        //If the 0 key is pressed, move the selected camera feed to the 0 camera position
+        else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
             // If the new feed wasn't being displayed,
             // lets start displaying it
             if (bs_session->feed_to_move != bs_session->secondary_feed) {
@@ -1680,7 +1775,9 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             bs_session->primary_feed = bs_session->feed_to_move;
             bs_session->dont_send_invalid();
             gui::state.input_state = gui::InputState::KEY_COMMAND;
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+        } 
+        //If the 1 key is pressed, move the selected camera feed to the 1 camera position
+        else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
             // If the new feed isn't the same as it was,
             // lets start displaying it
             if (bs_session->feed_to_move != bs_session->primary_feed) {
@@ -1691,23 +1788,38 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             bs_session->dont_send_invalid();
             gui::state.input_state = gui::InputState::KEY_COMMAND;
         }
-    } else if (gui::state.input_state == gui::InputState::AUTONOMY_CONTROL) {
+    } 
+    //If the input state is autonomy control
+    else if (gui::state.input_state == gui::InputState::AUTONOMY_CONTROL) {
+        //If the escpae key is pressed, set the input state to key command
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::KEY_COMMAND;
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_T) {
+        } 
+        //If the t key is pressed, set the input state to autonomy edit target
+        else if (action == GLFW_PRESS && key == GLFW_KEY_T) {
             gui::state.input_state = gui::InputState::AUTONOMY_EDIT_TARGET;
         }
-    } else if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
+    } 
+    //If the input state is autonomy edit target
+    else if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
+        //If the escape key is pressed, set the input state to autonomy control
         if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
             gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
+        } 
+        //If the tab key is pressed, move the edit iterator one over
+        else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
             bs_session->autonomy_info.edit_idx = (bs_session->autonomy_info.edit_idx + 1) % 2;
-        } else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
+        } 
+        //Comment in statement (Not implemented?)
+        else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
             // Set has_target to true, save the target, and send the command.
-        } else if (action == GLFW_PRESS) {
+        } 
+        //If a key is pressed
+        else if (action == GLFW_PRESS) {
             std::string& edit_str = bs_session->autonomy_info.edit_idx == 0 ?
                 bs_session->autonomy_info.edit_lat : bs_session->autonomy_info.edit_lon;
 
+            //Push back the edit string with the characters from 0-9 or '.' or '-' or backspace to delete a character
             switch (key) {
                 case GLFW_KEY_0:
                     edit_str.push_back('0');
