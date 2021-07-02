@@ -1,17 +1,54 @@
 #include "session.hpp"
 #include "../logger/logger.hpp"
 
-//Create Session instance and initialize variables
+/*****session.cpp*******************************************************************
+1. Create Session instance and initialize variables
+    1.a Initializes ticks
+    1.b Network stats
+    1.c Initializing autonomy_info struct variables, edit_lat and edit_lon remain uninitialized
+    1.d Initialzie feeds
+    1.e Controller info
+    1.f Initialize rover computer default Focus modes
+    1.g Initialize subsystem info registers
+2. Loads a session config from a file
+    2.a If thre is an error reading the file, log an error
+        2.a.1 If the file is open, log a second error
+    2.b Configures rover port
+    2.c Configures base station port
+    2.d Configures video port
+    2.e Configures rover mulitcast group
+    2.f Configures base station multicast group
+    2.g Configures video multicast group
+    2.h Configure base station interface
+    2.i Configures the perfered monitor
+3. Sends basestation feed
+4. Sends all feeds
+5. Doesn't send the specified feed
+6. Doesn't send non-visible feeds
+7. Initializes the drive subsystem
+8. Initializes the arm subsystem
+9. Initializes the arm subsystem
+10. Initializes the autonomy subsystem
+11. Initializes the power subsystem
+12. Starts the log file
+    12.a If the log file opened successfully start logging
+13. Stops the log file
+14. Exports the science subsystem info
+    14.a Writes the science subsystem info the log
+***********************************************************************************/
+
+// 1. Create Session instance and initialize variables
 Session::Session(){
+    // 1.a Initializes ticks
     this->last_subsystem_tick = 0;
     this->last_video_tick = 0;
 
-    //Network stats
+    // 1.b Network stats
     this->r_tp = 0;
     this->bs_tp = 0;
     this->t_tp = 0;
 
-    //Initializing autonomy_info struct variables, edit_lat and edit_lon remain uninitialized
+    // 1.c Initializing autonomy_info struct variables, edit_lat and edit_lon remain uninitialized
     this->autonomy_info.status = network::AutonomyStatusMessage::Status::IDLE;
     this->autonomy_info.has_target = false;
     this->autonomy_info.target_lat = 0;
@@ -23,20 +60,22 @@ Session::Session(){
 
     //These get initialized off-the-bat.
     //We only care about feed_to_move value when we are in camera move mode.
+
+    // 1.d Initialzie feeds
     this->primary_feed = 0;
     this->secondary_feed = 1;
     this->feed_to_move = -1;
 
-    //Controller info
+    // 1.e Controller info
     this->controller_loaded = false;
     this->controller_mode = ControllerMode::DRIVE;
     this->arm_control_region = ArmControlRegion::SHOULDER;
 
-    //Initialize rover computer default Focus modes
+    // 1.f Initialize rover computer default Focus modes
     this->subsystem_focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
     this->video_focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
 
-    //Initialize subsystem info registers
+    // 1.g Initialize subsystem info registers
     this->drive_sub_init();
     this->arm_sub_init();
     this->science_sub_init();
@@ -46,15 +85,15 @@ Session::Session(){
 
 Session::~Session() {};
 
-//Loads a session config from a file
+// 2. Loads a session config from a file
 void Session::load_config(const char* filename) {
     sc::SimpleConfig* sc_config;
 
     auto err = sc::parse(filename, &sc_config);
-    //If thre is an error reading the file, log an error
+    // 2.a If thre is an error reading the file, log an error
     if (err != sc::Error::OK) {
         logger::log(logger::ERROR, "Failed to parse config file: %s", sc::get_error_string(sc_config, err));
-        //If the file is open, log a second error
+        // 2.a.1 If the file is open, log a second error
         if (err == sc::Error::FILE_OPEN) {
             logger::log(logger::ERROR, "(Did you forget to run the program from the repo root?)");
         }
@@ -63,7 +102,7 @@ void Session::load_config(const char* filename) {
 
     //Configure ports
     char* rover_port = sc::get(sc_config, "rover_port");
-    //Configures rover port
+    // 2.b Configures rover port
     if (!rover_port) {
         logger::log(logger::ERROR, "Config missing 'rover_port'!");
         exit(1);
@@ -71,7 +110,7 @@ void Session::load_config(const char* filename) {
     this->config.rover_port = atoi(rover_port);
 
     char* base_station_port = sc::get(sc_config, "base_station_port");
-    //Configures base station port
+    // 2.c Configures base station port
     if (!base_station_port) {
         logger::log(logger::ERROR, "Config missing 'base_station_port'!");
         exit(1);
@@ -79,7 +118,7 @@ void Session::load_config(const char* filename) {
     this->config.base_station_port = atoi(base_station_port);
 
     char* video_port = sc::get(sc_config, "video_port");
-    //Configures video port
+    // 2.d Configures video port
     if (!video_port) {
         logger::log(logger::ERROR, "Config missing 'video_port'!");
         exit(1);
@@ -88,7 +127,7 @@ void Session::load_config(const char* filename) {
 
     //Configure multicast group 
     char* rover_multicast_group = sc::get(sc_config, "rover_multicast_group");
-    //configures rover mulitcast group
+    // 2.e Configures rover mulitcast group
     if (!rover_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'rover_multicast_group'!");
         exit(1);
@@ -96,7 +135,7 @@ void Session::load_config(const char* filename) {
     strncpy(this->config.rover_multicast_group, rover_multicast_group, 16);
 
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
-    //configures base station multicast group
+    // 2.f Configures base station multicast group
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'base_station_multicast_group'!");
         exit(1);
@@ -104,14 +143,14 @@ void Session::load_config(const char* filename) {
     strncpy(this->config.base_station_multicast_group, base_station_multicast_group, 16);
 
     char* video_multicast_group = sc::get(sc_config, "video_multicast_group");
-    //configures video multicast group
+    // 2.g Configures video multicast group
     if (!video_multicast_group) {
         logger::log(logger::ERROR, "Config missing 'video_multicast_group'!");
         exit(1);
     }
     strncpy(this->config.video_multicast_group, video_multicast_group, 16);
 
-    //Configure base station interface
+    // 2.h Configure base station interface
     char* interface = sc::get(sc_config, "interface");
     if (!interface) {
         // Default.
@@ -120,7 +159,7 @@ void Session::load_config(const char* filename) {
         strncpy(this->config.interface, interface, 16);
     }
 
-    //Configures the perfered monitor
+    // 2.i Configures the perfered monitor
     char* preferred_monitor = sc::get(sc_config, "preferred_monitor");
     if (!preferred_monitor) {
         // Default: empty string means primary monitor.
@@ -132,7 +171,7 @@ void Session::load_config(const char* filename) {
     sc::free(sc_config);
 }
 
-//Sends basestation feed
+// 3. Sends basestation feed
 void Session::send_feed(uint8_t stream_indx) {
     network::CameraControlMessage message = {
         network::CameraControlMessage::Setting::DISPLAY_STATE
@@ -145,7 +184,7 @@ void Session::send_feed(uint8_t stream_indx) {
     return;
 }
 
-//Sends all feeds
+// 4. Sends all feeds
 void Session::send_all_feeds() {
     for(uint8_t i = 0; i < 9; i++) {
         if(i != this->primary_feed && i != this->secondary_feed) {
@@ -155,7 +194,7 @@ void Session::send_all_feeds() {
     return;
 }
 
-//Doesn't send the specified feed
+// 5. Doesn't send the specified feed
 void Session::dont_send_feed(uint8_t stream_indx) {
     network::CameraControlMessage message = {
         network::CameraControlMessage::Setting::DISPLAY_STATE
@@ -168,7 +207,7 @@ void Session::dont_send_feed(uint8_t stream_indx) {
     return;
 }
 
-//Doesn't send non-visible feeds
+// 6. Doesn't send non-visible feeds
 void Session::dont_send_invalid() {
     for(uint8_t i = 0; i < 9; i++) {
         if(i != this->primary_feed && i != this->secondary_feed) {
@@ -178,7 +217,7 @@ void Session::dont_send_invalid() {
     return;
 }
 
-//Initializes the drive subsystem
+// 7. Initializes the drive subsystem
 void Session::drive_sub_init(){
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";
@@ -211,7 +250,7 @@ void Session::drive_sub_init(){
     this->drive_sub_info.insert(motor_stat);
 }
 
-//Initializes the arm subsystem
+// 8. Initializes the arm subsystem
 void Session::arm_sub_init(){
     std::pair<std::string, double> xloca_stat;
     xloca_stat.first = "X-Location (cm)";
@@ -234,7 +273,7 @@ void Session::arm_sub_init(){
     this->arm_sub_info.insert(grpos_stat);
 }
 
-//Initializes the arm subsystem
+// 9. Initializes the arm subsystem
 void Session::science_sub_init(){
     std::pair<std::string, double> tempr_stat;
     tempr_stat.first = "Temperature (C)";
@@ -268,7 +307,7 @@ void Session::science_sub_init(){
 
 }
 
-//Initializes the autonomy subsystem
+// 10. Initializes the autonomy subsystem
 void Session::autonomy_sub_init(){
     std::pair<std::string, double> arloc_stat;
     arloc_stat.first = "AR Marker Lock";
@@ -281,7 +320,7 @@ void Session::autonomy_sub_init(){
     this->autonomy_sub_info.insert(distw_stat);
 }
 
-//Initializes the power subsystem
+// 11. Initializes the power subsystem
 void Session::power_sub_init(){
     std::pair<std::string, double> battvolt_stat;
     battvolt_stat.first = "Battery Voltage (V)";
@@ -304,10 +343,10 @@ void Session::power_sub_init(){
     this->power_sub_info.insert(batttemp_stat);    
 }
 
-//Starts the log file
+// 12. Starts the log file
 void Session::start_log(const char* filename) {
     log_file.open(filename);
-    //If the log file opened successfully start logging
+    // 12.a If the log file opened successfully start logging
     if (log_file.is_open()) {
         util::Timer::init(&log_interval_timer, 3000, &global_clock);
         log_file << "Timestamp,";
@@ -323,12 +362,12 @@ void Session::start_log(const char* filename) {
     }
 }
 
-//Stops the log file
+// 13. Stops the log file
 void Session::stop_log() {
     log_file.close();
 }
 
-//Exports the science subsystem info
+// 14. Exports the science subsystem info
 void Session::export_data() {
     auto itr = science_sub_info.begin();
     
@@ -342,7 +381,7 @@ void Session::export_data() {
     strcpy(&time_str[20], current_millis.c_str());
     
     log_file << time_str << ',';
-    //Writes the science subsystem info the log
+    // 14.a Writes the science subsystem info the log
     while (itr != science_sub_info.end()) {
         log_file << itr->second;
         ++itr;

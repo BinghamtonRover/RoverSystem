@@ -13,7 +13,23 @@ unsigned int chars_per_line = 32;
 unsigned int num_lines = 15;
 unsigned int total_lines = 1000;
 
-// Holds where in the logMessages you are looking, with 0 being the top line
+/*******log_view.cpp**********************************************************************
+1. Helper method for addMessage
+2. Prints new message to the log and removes any messages that no longer fit
+3. Moves the view index one up to show previous lines
+4. Moves the view index one down to shwo newer lines
+5. Moves the view index to the top of the log
+6. Moves the view index to the bottom of the log
+7. Draws the log to the given layout
+    7.a We want to print a num_lines amount of times *unless* logMessages is too small
+    7.b Extra Failsafe
+    7.c Lock Bottom
+    7.d Draws the log messages from the view index up to the size of the log
+8. Handles the different types of message levels in the logger
+    8.a Switches the colors of the log messages based on the level
+*****************************************************************************************/
+
+// Holds where in the log Messages you are looking, with 0 being the top line
 unsigned int view_index = 0;
 
 // True when user is at the bottom of the messages
@@ -24,7 +40,7 @@ std::vector<std::string> logMessages;
 // Four parallel lists that are also parallel to logMessages
 std::vector<float> red, green, blue, alpha;
 
-// Helper method for addMessage
+// 1. Helper method for addMessage
 static void removeOldMessages() {
     while (logMessages.size() > total_lines) {
         logMessages.erase(logMessages.begin());
@@ -35,7 +51,7 @@ static void removeOldMessages() {
     }
 }
 
-//Prints new message to the log and removes any messages that no longer fit
+// 2. Prints new message to the log and removes any messages that no longer fit
 void print(Font* font, int width, std::string m, float r, float g, float b, float a) {
     while (m.length() > 0) {
         int idx = gui::text_last_index_that_can_fit(font, m.c_str(), width, FONT_SIZE);
@@ -52,7 +68,7 @@ void print(Font* font, int width, std::string m, float r, float g, float b, floa
     removeOldMessages();
 }
 
-//Moves the view index one up to show previous lines
+// 3. Moves the view index one up to show previous lines
 void moveUpOne() {
     if (logMessages.size() >= num_lines && view_index > 0) {
         view_index--;
@@ -60,7 +76,7 @@ void moveUpOne() {
     }
 }
 
-//Moves the view index one down to shwo newer lines
+// 4. Moves the view index one down to shwo newer lines
 void moveDownOne() {
     if (logMessages.size() >= num_lines && view_index < logMessages.size() - num_lines) {
         view_index++;
@@ -70,7 +86,7 @@ void moveDownOne() {
     }
 }
 
-//Moves the view index to the top of the log
+// 5. Moves the view index to the top of the log
 void moveTop() {
     if (logMessages.size() >= num_lines) {
         view_index = 0;
@@ -78,7 +94,7 @@ void moveTop() {
     }
 }
 
-//Moves the view index to the bottom of the log
+// 6. Moves the view index to the bottom of the log
 void moveBottom() {
     if (logMessages.size() >= num_lines) {
         view_index = logMessages.size() - num_lines;
@@ -86,7 +102,7 @@ void moveBottom() {
     }
 }
 
-//Draws the log to the given layout
+// 7. Draws the log to the given layout
 void do_log(gui::Layout* layout, int width, int height, Font* font) {
     int x = layout->current_x;
     int y = layout->current_y;
@@ -95,23 +111,23 @@ void do_log(gui::Layout* layout, int width, int height, Font* font) {
 
     gui::do_solid_rect(layout, width, height, 0, 0, 0);
 
-    // We want to print a num_lines amount of times *unless* logMessages is too small
+    // 7.a We want to print a num_lines amount of times *unless* logMessages is too small
     unsigned int tempSize = logMessages.size();
     if (logMessages.size() >= num_lines) {
         tempSize = num_lines;
     }
 
-    // Extra Failsafe
+    // 7.b Extra Failsafe
     if (logMessages.size() < num_lines + view_index) {
         view_index = 0;
     }
 
-    // Lock Bottom
+    // 7.c Lock Bottom
     if (lockBottom) {
         moveBottom();
     }
 
-    //Drows the log messages from the view index up to the size of the log
+    // 7.d Draws the log messages from the view index up to the size of the log
     for (unsigned int i = view_index; i < tempSize + view_index; i++) {
         const char* str = logMessages[i].c_str();
 
@@ -121,11 +137,11 @@ void do_log(gui::Layout* layout, int width, int height, Font* font) {
     }
 }
 
-//Handles the different types of message levels in the logger
+// 8. Handles the different types of message levels in the logger
 void log_view_handler(logger::Level level, std::string message) {
     float r, g, b, a = 1.0f;
 
-    //Switches the colors of the log messages based on the level
+    // 8.a Switches the colors of the log messages based on the level
     switch (level) {
         case logger::DEBUG:
             r = 0.70f;
