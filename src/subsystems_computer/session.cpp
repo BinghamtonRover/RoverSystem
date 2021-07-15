@@ -43,6 +43,13 @@ void Session::load_config(const char* filename) {
     }
     this->config.video_port = atoi(video_port);
 
+    char* spinny_port = sc::get(sc_config, "spinny_port");
+    if (!spinny_port) {
+        logger::log(logger::ERROR, "Config file missing 'spinny_port'!");
+        exit(1);
+    }
+    this->config.spinny_port = atoi(spinny_port);
+
     char* base_station_multicast_group = sc::get(sc_config, "base_station_multicast_group");
     if (!base_station_multicast_group) {
         logger::log(logger::ERROR, "Config file missing 'base_station_multicast_group'!");
@@ -71,6 +78,13 @@ void Session::load_config(const char* filename) {
         exit(1);
     }
     strncpy(this->config.video_multicast_group, video_multicast_group, 16);
+
+    char* spinny_multicast_group = sc::get(sc_config, "spinny_multicast_group");
+    if (!spinny_multicast_group) {
+        logger::log(logger::ERROR, "Config file missing 'spinny_multicast_group'!");
+        exit(1);
+    }
+    strncpy(this->config.spinny_multicast_group, spinny_multicast_group, 16);
 
     char* gps_serial_id = sc::get(sc_config, "gps_serial_id");
     if (!gps_serial_id) {
