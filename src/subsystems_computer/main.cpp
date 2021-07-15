@@ -109,6 +109,21 @@ int main() {
         }
     }
 
+    {
+        auto err = network::init(
+            &subsys_session.s_feed,
+            network::FeedType::IN,
+            subsys_session.config.interface,
+            subsys_session.config.spinny_multicast_group,
+            subsys_session.config.spinny_port,
+            &subsys_session.global_clock);
+        
+        if (err != network::Error::OK) {
+            logger::log(logger::ERROR, "[!] Failed to subscribe to spinny antenna feed: %s", network::get_error_string(err));
+            exit(1);
+        }
+    }
+
     util::Timer::init(&subsys_session.location_send_timer,LOCATION_SEND_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.tick_timer, TICK_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.network_update_timer, NETWORK_UPDATE_INTERVAL, &subsys_session.global_clock);
