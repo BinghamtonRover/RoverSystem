@@ -218,7 +218,9 @@ int main() {
     char * secondImageName = NULL;
     unsigned int secondImageID;
 
-    // Add the help menu commands here
+    // Add the general help menu commands here
+    bool help_key_pressed = false;
+    std::vector<const char*> no_commands;
     std::vector<const char*> commands;
     std::vector<const char*> debug_commands;
     commands.push_back("d: Show debug console");
@@ -237,10 +239,37 @@ int main() {
     debug_commands.push_back("'gs_off': Changes camera feeds to RGB");
     debug_commands.push_back("'jpeg_quality <0-100>: Changes the quality of the cameras");
 
+    // Add the science help menu commands here
+    std::vector<const char*> science_commands;
+    std::vector<const char*> science_debug_commands;
+    std::vector<const char*> science_controller_inputs; // Currently omitting because subject to change, commands below later
+    science_commands.push_back("d: Show debug console");
+    science_commands.push_back("ctrl + q: Exit");
+    science_commands.push_back("<shift>c: Open camera matrix");
+    science_commands.push_back("c: Swap camera feeds");
+    science_commands.push_back("s: Open stopwatch menu");
+    science_commands.push_back("p: Takes initial picture from rover feed");
+    science_commands.push_back("z + UP ARROW: Zoom in map");
+    science_commands.push_back("z + DOWN ARROW: Zoom out map");
+    science_commands.push_back("z + r: Reset map");
+    science_commands.push_back("z + g: Toggle map display");
+    science_commands.push_back("a: Opens autonomy control panel");
+    science_commands.push_back("m: Toggles between arm and drive controller modes");
+    science_commands.push_back("i: Starts and stops recording to a log file");
+    science_debug_commands.push_back("'test': Displays red text");
+    science_debug_commands.push_back("'tdl': Toggles debug mode");
+    science_debug_commands.push_back("'aw <number> <number>': Adds a waypoint (in latitude and longitude)");
+    science_debug_commands.push_back("'lw': Lists waypoints");
+    science_debug_commands.push_back("'gs_on': Changes camera feeds to greyscale");
+    science_debug_commands.push_back("'gs_off': Changes camera feeds to RGB");
+    science_debug_commands.push_back("'jpeg_quality <0-100>: Changes the quality of the cameras");
+    science_debug_commands.push_back("'move <integer> <integer>': Updates the movement");
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
 
+        //Check key press
         if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
             gui::waypoint_map::zoom_in();    
         } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
@@ -262,7 +291,10 @@ int main() {
                 break;
             }
         } else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-            if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
+            if (gui::state.input_state == gui::InputState::KEY_COMMAND && !help_key_pressed) {
+                help_key_pressed = true;
+                help_menu_up = !help_menu_up;
+            }
         } else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             if (help_menu_up) help_menu_up = false;
             if (stopwatch_menu_up) {
@@ -292,6 +324,9 @@ int main() {
                 std::free(pic_msg);
             }
         }
+
+        //Check key release
+        if (glfwGetKey(window, GLFW_KEY_H) == GLFW_RELEASE) { help_key_pressed = false; }
 
         //Checks if it has been 10 seconds since a picture was taken
         if(firstImageName != NULL && secondImageName == NULL && bs_session.global_clock.get_millis() >= (firstImageTime + (10 * 1000))){
@@ -542,7 +577,12 @@ int main() {
             bs_session.export_data();
         }
 
-        if (help_menu_up) gui::do_help_menu(commands, debug_commands, &bs_session);
+        if (help_menu_up) { 
+            switch (bs_session.bs_focus_mode) {
+                case FocusMode::SCIENCE: gui::do_help_menu(science_commands, science_debug_commands, science_controller_inputs, &bs_session); break;
+                default: gui::do_help_menu(commands, debug_commands, no_commands, &bs_session); break;
+            }
+        }
 
         if (stopwatch_menu_up) {
             gui::do_stopwatch_menu(&bs_session);

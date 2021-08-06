@@ -958,20 +958,32 @@ void do_stopwatch_menu(Session *bs_session){
         WINDOW_HEIGHT - 20 - 5 - 20, 20, 20, bs_session->stopwatch_texture_id);
 }
 
-void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, Session *bs_session) {
+void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, std::vector<const char*> controller_inputs, Session *bs_session) {
     // Texts have a fixed height and spacing
     int height = 20;
     int spacing = height + 10;
 
-    const char* title = "Help Menu";
+    const char* title;
+    switch (bs_session->bs_focus_mode) {
+        case FocusMode::GENERAL: title = "General Help Menu"; break;
+        case FocusMode::DRIVE: title = "Drive Help Menu"; break;
+        case FocusMode::ARM: title = "Arm Help Menu"; break;
+        case FocusMode::SCIENCE: title = "Science Help Menu"; break;
+        case FocusMode::AUTONOMY: title = "Autonomy Help Menu"; break;
+        default: title = "Help Menu"; break;
+    }
+    
     int title_height = 25;
     int title_width = text_width(&gui::state.global_font, title, title_height);
     int debug_title_height = 25;
     const char* debug_title = "Debug Commands";
     int debug_title_width = text_width(&gui::state.global_font, debug_title, debug_title_height);
-    const char* exit_prompt = "Press 'escape' to exit menu";
+    int controller_title_height = 25;
+    const char* controller_title = "Controller Inputs";
+    int controller_title_width = text_width(&gui::state.global_font, controller_title, controller_title_height);
+    const char* exit_prompt = "Press 'escape' or 'h' to exit menu";
 
-    int max_width = debug_title_width;
+    int max_width = controller_title_width;
     for (unsigned int i = 0; i < commands.size(); i++) {
         int current_width = text_width(&gui::state.global_font, commands[i], height);
         if (current_width > max_width) max_width = current_width;
@@ -980,13 +992,19 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
         int current_width = text_width(&gui::state.global_font, debug_commands[i], height);
         if (current_width > max_width) max_width = current_width;
     }
+    for (unsigned int i = 0; i < controller_inputs.size(); i++) {
+        int current_width = text_width(&gui::state.global_font, controller_inputs[i], height);
+        if (current_width > max_width) max_width = current_width;
+    }
 
     int right_padding = 150;
-    int bottom_padding = (spacing * 1.5) + 15; // The +15 is to account for the exit prompt
+    int bottom_padding = (spacing * 1.5); // Add to this number if changes cause the exit prompt to not fit properly
     int top_padding = 20;
     int menu_width = max_width + right_padding;
+    
     int menu_height = (spacing * commands.size()) + (spacing * debug_commands.size()) + title_height +
-        debug_title_height + top_padding + bottom_padding;
+        debug_title_height + top_padding + bottom_padding - 5;
+    if (controller_inputs.size() != 0) { menu_height += (spacing * controller_inputs.size()) + controller_title_height + 10; } //add space for controller inputs
 
     Layout help_layout{};
 
@@ -1018,6 +1036,20 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
         draw_text(&gui::state.global_font, debug_commands[i], x + left_margin, debug_commands_y + (spacing * (i + 1)), height);
     }
 
+    int controller_inputs_x = 0;
+    int controller_inputs_y = 0;
+    if (controller_inputs.size() != 0) {
+        glColor4f(0.0f, 1.0f, 1.0f, 1.0f);
+        controller_inputs_x = x + (menu_width / 2) - (controller_title_width / 2);
+        controller_inputs_y = y + (spacing * commands.size()) + top_padding + (2 * title_height) + (spacing * debug_commands.size()) + 15;
+        draw_text(&gui::state.global_font, controller_title, controller_inputs_x, controller_inputs_y, debug_title_height);
+        controller_inputs_y += 10; // To give extra room for the commands after the controller title
+
+        for (unsigned int i = 0; i < controller_inputs.size(); i++) {
+            draw_text(&gui::state.global_font, controller_inputs[i], x + left_margin, controller_inputs_y + (spacing * (i + 1)), height);
+        }
+    }
+
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     int exit_prompt_width = text_width(&gui::state.global_font, exit_prompt, 15);
     draw_text(&gui::state.global_font, exit_prompt, x + (menu_width / 2) - (exit_prompt_width / 2), y + menu_height - 20, 15);
@@ -1041,6 +1073,17 @@ void do_help_menu(std::vector<const char*> commands, std::vector<const char*> de
     // After debug title
     glVertex2f(x, debug_commands_y + debug_title_height + 2);
     glVertex2f(x + menu_width, debug_commands_y + debug_title_height + 2);
+
+    // Only add if there are controller inputs
+    if (controller_inputs.size() != 0) {
+        // Before debug title
+        glVertex2f(x, controller_inputs_y - 8);
+        glVertex2f(x + menu_width, controller_inputs_y - 8);
+
+        // After controller title
+        glVertex2f(x, controller_inputs_y + debug_title_height + 2);
+        glVertex2f(x + menu_width, controller_inputs_y + debug_title_height + 2);
+    }
 
     glEnd();
 
