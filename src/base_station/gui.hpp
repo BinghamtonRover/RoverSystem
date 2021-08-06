@@ -170,7 +170,7 @@ void do_subsystem_panel(Layout* layout, int width, int height, Session *bs_sessi
 void do_stopwatch_menu(Session *bs_session);
 
 //Sets up the help menu window
-void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, Session *bs_session);
+void do_help_menu(std::vector<const char*> commands, std::vector<const char*> debug_commands, std::vector<const char*> controller_inputs, Session *bs_session);
 
 //Displays the two images captured for science testing side-by-side in a window
 void do_image_display(unsigned int first_image_texture_id, unsigned int second_image_texture_id, Session *bs_session);
