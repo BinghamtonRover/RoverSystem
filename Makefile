@@ -1,6 +1,6 @@
 #"rover" is the old rover computer program, will keep it updated regardless 
 #all: base_station rover video_computer subsystems_computer
-all: base_station video_computer subsystem_computer
+all: base_station video_computer subsystem_computer enum_comments
 
 bin:
 	mkdir bin
@@ -50,4 +50,10 @@ send_s: archive
 send_v: archive
 	scp RoverSystem.zip pi@192.168.1.23:/home/pi/RoverSystem.zip
 
-.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs, autonomy, subsystems_computer
+enum_comments:
+	python3 auto_commenter.py
+
+file_enum_comments:
+	python3 auto_commenter.py $(FILE)
+
+.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs, autonomy, subsystems_computer, enum_comments, file_enum_comments

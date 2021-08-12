@@ -7,14 +7,19 @@
 
 #include <turbojpeg.h>
 
+///********** camera_feed.cpp ***************
+/// TODO: Make this dynamically-sized. | 18
+///******************************************
+
 namespace camera_feed {
 
 tjhandle jpeg_decompressor;
 
-// TODO: Make this dynamically-sized.
+// >> TODO: Make this dynamically-sized.
 const int JPEG_SIZE = 1920 * 1080 * 3;
 unsigned char decompress_buffer[JPEG_SIZE];
 
+// Test Comment
 static Error decompress(Feed* feed, unsigned char* jpeg_data) {
     /*
        The parameters are the decompressor, the compressed image, the size of the

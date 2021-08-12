@@ -2,6 +2,11 @@
 
 #include <vector>
 
+///********** log_view.cpp *********************************************************
+/// Holds where in the logMessages you are looking, with 0 being the top line | 20
+/// True when user is at the bottom of the messages | 23
+///*********************************************************************************
+
 namespace gui {
 namespace log_view {
 
@@ -13,10 +18,10 @@ unsigned int chars_per_line = 32;
 unsigned int num_lines = 15;
 unsigned int total_lines = 1000;
 
-// Holds where in the logMessages you are looking, with 0 being the top line
+// >> Holds where in the logMessages you are looking, with 0 being the top line
 unsigned int view_index = 0;
 
-// True when user is at the bottom of the messages
+// >> True when user is at the bottom of the messages
 bool lockBottom = true;
 
 // List of messages the log displays

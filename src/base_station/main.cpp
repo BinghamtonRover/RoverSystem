@@ -25,8 +25,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+///********** main.cpp *******************************
+///    1  Declaring base station session object | 33
+///***************************************************
+
 int main() {
-    //Declaring base station session object
+    // 1 >> Declaring base station session object
     Session bs_session;
 
     util::Clock::init(&bs_session.global_clock);

@@ -7,6 +7,10 @@
 
 #include <math.h>
 
+///********** waypoint_map.cpp *****************************************************************************************
+///            1.a.i  The coordinates are (0,0) since we shifted the origin to the middle instead of the top-left | 91
+///*********************************************************************************************************************
+
 namespace gui {
 namespace waypoint_map {
 
@@ -84,7 +88,7 @@ void do_waypoint_map(gui::Layout * layout, int w, int h){
     }
     else {
         for(int radius = GRID_SPACING; radius < (mw/2) * GRID_SPACING; radius += GRID_SPACING){
-            //The coordinates are (0,0) since we shifted the origin to the middle instead of the top-left
+            // 1.a.i >> The coordinates are (0,0) since we shifted the origin to the middle instead of the top-left
             gui::do_circle(0,0,radius); 
         }
     }

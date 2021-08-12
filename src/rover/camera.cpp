@@ -10,9 +10,13 @@
 
 #include "camera.hpp"
 
+///********** camera.cpp ****************************
+/// List of string names for the error values. | 19
+///**************************************************
+
 namespace camera {
 
-// List of string names for the error values.
+// >> List of string names for the error values.
 #define X(name) #name
 const char* error_names[] = { ERROR_DEF(X) };
 #undef X

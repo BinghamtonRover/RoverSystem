@@ -1,7 +1,11 @@
 #include "session.hpp"
 #include "../logger/logger.hpp"
 
-//Create Session instance and initialize variables
+///********** session.cpp ********************************
+/// Create Session instance and initialize variables | 8
+///*******************************************************
+
+// >> Create Session instance and initialize variables
 Session::Session(){
     this->last_subsystem_tick = 0;
     this->last_video_tick = 0;

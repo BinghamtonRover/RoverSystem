@@ -9,6 +9,10 @@
 #include <vector>
 #include <stdexcept>
 
+///********** debug_console.cpp ******************************************************************************************************
+///                1.a.i.1  TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main | 129
+///***********************************************************************************************************************************
+
 namespace gui {
 namespace debug_console {
 
@@ -122,7 +126,7 @@ void command_callback(std::string command, Session *bs_session) {
     else if (parts[0] == "gs_on") {
         if (parts.size() == 1) {
             if (shared_feeds::bs_feed != NULL){
-                //TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
+                // 1.a.i.1 >> TODO: Fix this design hack, currently using shared_feeds to get the rover_feed established in main
                 network::CameraControlMessage message = {
                     network::CameraControlMessage::Setting::GREYSCALE, // setting
                     //static_cast<uint8_t>(1), //setting
