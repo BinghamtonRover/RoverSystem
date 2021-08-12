@@ -23,12 +23,16 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+///********** gui.cpp **************************
+///    1  Open the font file for reading. | 35
+///*********************************************
+
 namespace gui {
 
 gui::GlobalState state;
 
 bool load_font(Font* font, const char* file_name, int size) {
-    // Open the font file for reading.
+    // 1 >> Open the font file for reading.
     FILE* font_file = fopen(file_name, "r");
 
     if (!font_file) {
@@ -1540,7 +1544,6 @@ void do_drive_gui(Session *bs_session){
     //layout.reset_y();
     layout.advance_x(200);
 
-    //// Draw the lidar.
     //do_lidar(&layout, bs_session);
 
     layout.reset_y();

@@ -8,11 +8,19 @@
 #include <cerrno>
 #include <cmath>
 
+///********** controller.cpp ******************************************************************************************************************************************
+/// As of now, we only support a single controller. | 21
+/// If there is a need to support more than one, factor
+/// this global state into a struct.
+/// Global containers for current button and axis values. | 35
+///    1  Test Comment | 42
+///********************************************************************************************************************************************************************
+
 namespace controller {
 
-// As of now, we only support a single controller.
-// If there is a need to support more than one, factor
-// this global state into a struct.
+// >> As of now, we only support a single controller.
+// >> If there is a need to support more than one, factor
+// >> this global state into a struct.
 int global_controller_fd = -1;
 
 // Axis ranges from -32767 to +32767
@@ -24,13 +32,14 @@ int global_controller_fd = -1;
 // -3000 to 3000 seems like a good dead range.
 constexpr int16_t MAX_POS = 32767, MIN_POS = 3000;
 
-// Global containers for current button and axis values.
+// >> Global containers for current button and axis values.
 int16_t button_values[NUM_BUTTONS]{};
 int16_t axis_values[NUM_AXES]{};
 
 // Joystick values range from -32767 to +32767
 // Used formula scaled_val = (new_max - new_min) / (old_max - old_min) * (v - old_min) + new_min
 static int16_t recalibrate(int16_t axis_value) {
+    // 1 >> Test Comment
     int16_t abs_value = std::abs(axis_value);
     if (abs_value < MIN_POS) {
         return 0;
