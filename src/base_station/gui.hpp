@@ -209,6 +209,15 @@ void glfw_character_callback(GLFWwindow* window, unsigned int codepoint);
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+//Commands for pressing keys in specific focus modes
+void universal_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
+void general_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
+void arm_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
+void drive_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
+void science_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
+void autonomy_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
+void neutral_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
+
 } // namespace gui
 
 #endif

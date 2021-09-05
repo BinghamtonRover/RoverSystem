@@ -242,7 +242,7 @@ int main() {
         bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
 
         if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
-            gui::waypoint_map::zoom_in();    
+            gui::waypoint_map::zoom_in();
         } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
             gui::waypoint_map::zoom_out();
         } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {

@@ -1729,6 +1729,269 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             gui::debug_console::handle_keypress(key, mods, bs_session);
         }
+    } else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+        universal_key_commands(bs_session, window, key, action, mods);
+        switch (bs_session->bs_focus_mode){
+            case FocusMode::GENERAL: general_key_commands(bs_session, window, key, action, mods); break;
+            case FocusMode::ARM: arm_key_commands(bs_session, window, key, action, mods); break;
+            case FocusMode::DRIVE: drive_key_commands(bs_session, window, key, action, mods); break;
+            case FocusMode::SCIENCE: science_key_commands(bs_session, window, key, action, mods); break;
+            case FocusMode::AUTONOMY: autonomy_key_commands(bs_session, window, key, action, mods); break;
+            //case FocusMode::NEUTRAL: neutral_key_commands(bs_session, window, key, action, mods); break;
+            default: break;
+        }
+        /*
+        
+        */
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MATRIX) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+            bs_session->dont_send_invalid();
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+            gui::state.input_state = gui::InputState::CAMERA_MOVE;
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS) {
+            int selected_feed_idx = -1;
+            switch (key) {
+                case GLFW_KEY_0:
+                    selected_feed_idx = 0;
+                    break;
+                case GLFW_KEY_1:
+                    selected_feed_idx = 1;
+                    break;
+                case GLFW_KEY_2:
+                    selected_feed_idx = 2;
+                    break;
+                case GLFW_KEY_3:
+                    selected_feed_idx = 3;
+                    break;
+                case GLFW_KEY_4:
+                    selected_feed_idx = 4;
+                    break;
+                case GLFW_KEY_5:
+                    selected_feed_idx = 5;
+                    break;
+                case GLFW_KEY_6:
+                    selected_feed_idx = 6;
+                    break;
+                case GLFW_KEY_7:
+                    selected_feed_idx = 7;
+                    break;
+                case GLFW_KEY_8:
+                    selected_feed_idx = 8;
+                    break;
+                case GLFW_KEY_9:
+                    selected_feed_idx = 9;
+                    break;
+            }
+
+            if (selected_feed_idx >= 0 && selected_feed_idx < MAX_FEEDS) {
+                bs_session->feed_to_move = selected_feed_idx;
+                gui::state.input_state = gui::InputState::CAMERA_MOVE_TARGET;
+            }
+        }
+    } else if (gui::state.input_state == gui::InputState::CAMERA_MOVE_TARGET) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_0) {
+            // If the new feed wasn't being displayed,
+            // lets start displaying it
+            if (bs_session->feed_to_move != bs_session->secondary_feed) {
+                bs_session->send_feed(bs_session->feed_to_move);
+            }
+
+            bs_session->primary_feed = bs_session->feed_to_move;
+            bs_session->dont_send_invalid();
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+            // If the new feed isn't the same as it was,
+            // lets start displaying it
+            if (bs_session->feed_to_move != bs_session->primary_feed) {
+                bs_session->send_feed(bs_session->feed_to_move);
+            }
+
+            bs_session->secondary_feed = bs_session->feed_to_move;
+            bs_session->dont_send_invalid();
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        }
+    } else if (gui::state.input_state == gui::InputState::AUTONOMY_CONTROL) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_T) {
+            gui::state.input_state = gui::InputState::AUTONOMY_EDIT_TARGET;
+        }
+    } else if (gui::state.input_state == gui::InputState::AUTONOMY_EDIT_TARGET) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+            gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
+            bs_session->autonomy_info.edit_idx = (bs_session->autonomy_info.edit_idx + 1) % 2;
+        } else if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
+            // Set has_target to true, save the target, and send the command.
+        } else if (action == GLFW_PRESS) {
+            std::string& edit_str = bs_session->autonomy_info.edit_idx == 0 ?
+                bs_session->autonomy_info.edit_lat : bs_session->autonomy_info.edit_lon;
+            switch (key) {
+                case GLFW_KEY_0:
+                    edit_str.push_back('0');
+                    break;
+                case GLFW_KEY_1:
+                    edit_str.push_back('1');
+                    break;
+                case GLFW_KEY_2:
+                    edit_str.push_back('2');
+                    break;
+                case GLFW_KEY_3:
+                    edit_str.push_back('3');
+                    break;
+                case GLFW_KEY_4:
+                    edit_str.push_back('4');
+                    break;
+                case GLFW_KEY_5:
+                    edit_str.push_back('5');
+                    break;
+                case GLFW_KEY_6:
+                    edit_str.push_back('6');
+                    break;
+                case GLFW_KEY_7:
+                    edit_str.push_back('7');
+                    break;
+                case GLFW_KEY_8:
+                    edit_str.push_back('8');
+                    break;
+                case GLFW_KEY_9:
+                    edit_str.push_back('9');
+                    break;
+                case GLFW_KEY_MINUS:
+                    edit_str.push_back('-');
+                    break;
+                case GLFW_KEY_PERIOD:
+                    edit_str.push_back('.');
+                    break;
+                case GLFW_KEY_BACKSPACE:
+                    if (!edit_str.empty()) edit_str.pop_back();
+                    break;
+            }
+        }
+    }
+}
+
+void universal_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
+    // We open the menu on release to prevent the D key from being detected
+    // in the character callback upon release.
+    if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
+        gui::state.show_debug_console = true;
+        gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
+    } else if (action == GLFW_PRESS && key == GLFW_KEY_C) {
+        if (mods & GLFW_MOD_SHIFT) {
+            gui::state.input_state = gui::InputState::CAMERA_MATRIX;
+            bs_session->send_all_feeds();
+        } else {
+            int temp = bs_session->primary_feed;
+            bs_session->primary_feed = bs_session->secondary_feed;
+            bs_session->secondary_feed = temp;
+        }
+    } else if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && action == GLFW_RELEASE && key == GLFW_KEY_G){
+        gui::waypoint_map::gridMap = !gui::waypoint_map::gridMap;
+    } else if (action == GLFW_PRESS && key == GLFW_KEY_1) {
+        if(mods & GLFW_MOD_SHIFT) {
+            bs_session->bs_focus_mode = FocusMode::GENERAL;
+            bs_session->controller_mode = ControllerMode::NEUTRAL;
+            network::FocusModeMessage message;
+            message.focus_mode = network::FocusModeMessage::FocusMode::GENERAL;
+            network::publish(&bs_session->bs_feed, &message);
+        }
+    } else if (action == GLFW_PRESS && key == GLFW_KEY_2) {
+        if(mods & GLFW_MOD_SHIFT) {
+            bs_session->bs_focus_mode = FocusMode::DRIVE;
+            bs_session->controller_mode = ControllerMode::DRIVE;
+            network::FocusModeMessage message;
+            message.focus_mode = network::FocusModeMessage::FocusMode::DRIVE;
+            network::publish(&bs_session->bs_feed, &message);
+        }
+    } else if (action == GLFW_PRESS && key == GLFW_KEY_3) {
+        if(mods & GLFW_MOD_SHIFT) {
+            bs_session->bs_focus_mode = FocusMode::ARM;
+            bs_session->controller_mode = ControllerMode::ARM;
+            network::FocusModeMessage message;
+            message.focus_mode = network::FocusModeMessage::FocusMode::ARM;
+            network::publish(&bs_session->bs_feed, &message);
+        }
+    } else if (action == GLFW_PRESS && key == GLFW_KEY_4) {
+        if(mods & GLFW_MOD_SHIFT) {
+            bs_session->bs_focus_mode = FocusMode::SCIENCE;
+            bs_session->controller_mode = ControllerMode::SCIENCE;
+            network::FocusModeMessage message;
+            message.focus_mode = network::FocusModeMessage::FocusMode::SCIENCE;
+            network::publish(&bs_session->bs_feed, &message);
+        }
+    } else if (action == GLFW_PRESS && key == GLFW_KEY_5) {
+        if(mods & GLFW_MOD_SHIFT) {
+            bs_session->bs_focus_mode = FocusMode::AUTONOMY;
+            bs_session->controller_mode = ControllerMode::NEUTRAL;
+            network::FocusModeMessage message;
+            message.focus_mode = network::FocusModeMessage::FocusMode::AUTONOMY;
+            network::publish(&bs_session->bs_feed, &message);
+        }
+    } else if (action == GLFW_PRESS && key == GLFW_KEY_M) {
+        switch (bs_session->controller_mode) {
+            case ControllerMode::DRIVE:
+                bs_session->controller_mode = ControllerMode::ARM;
+                break;
+            case ControllerMode::ARM:
+                bs_session->controller_mode = ControllerMode::DRIVE;
+                break;
+        }
+    }
+}
+void general_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_A) {
+        gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
+    } 
+}
+void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
+
+}
+void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
+
+}
+void science_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_I) {
+        if (bs_session->log_file.is_open()) {
+            bs_session->stop_log();
+        } else {
+            char time_str[32];
+            time_t current_time;
+            time(&current_time);
+            struct tm* time_info = localtime(&current_time);
+            strftime(time_str, 24, "%Y-%m-%d_%H:%M:%S.", time_info);
+            
+            std::string current_millis = std::to_string(bs_session->global_clock.get_millis() % 1000);
+            strcpy(&time_str[20], current_millis.c_str());
+            strcpy(&time_str[23], "_LOG.csv");
+            
+            bs_session->start_log(time_str);
+        } 
+    }
+}
+void autonomy_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_A) {
+        gui::state.input_state = gui::InputState::AUTONOMY_CONTROL;
+    } 
+}
+//void neutral_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {}
+
+/*
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    void *bs_session_pointer = glfwGetWindowUserPointer(window);
+    Session *bs_session = static_cast<Session *>(bs_session_pointer);
+    bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+    if (gui::state.input_state == gui::InputState::DEBUG_CONSOLE) {
+        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+            gui::debug_console::handle_keypress(key, mods, bs_session);
+        }
     } 
     else if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
         // We open the menu on release to prevent the D key from being detected
@@ -1955,7 +2218,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
             }
         }
     }
-}
+} /**/
 
 
 } // namespace gui
