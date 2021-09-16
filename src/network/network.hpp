@@ -151,6 +151,7 @@ enum class MessageType {
     TICK,
     SUBSYSTEM,
     ARM,
+    IK,
     FOCUS_MODE,
     AUTONOMY_STATUS,
     AUTONOMY_COMMAND
@@ -466,6 +467,32 @@ struct ArmMessage {
     }
 };
 
+//Struct for creating IK messages
+struct IKMessage {
+    static const auto TYPE = MessageType::IK;
+
+    enum class Movement : uint8_t {
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+        FORWARD,
+        BACKWARD
+    };
+
+    int16_t movement;
+    float magnitude;
+
+    void serialize(Buffer* buffer) {
+        network::serialize(buffer, this->movement);
+        network::serialize(buffer, this->magnitude);
+    }
+
+    void deserialize(Buffer* buffer) {
+        network::deserialize(buffer, &(this->movement));
+        network::deserialize(buffer, &(this->magnitude));
+    }
+}
 
 struct FocusModeMessage {
     static const auto TYPE = MessageType::FOCUS_MODE;

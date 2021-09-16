@@ -49,6 +49,7 @@ struct autonomy_info_struct {
 enum class ControllerMode {
     DRIVE,
     ARM,
+    IK,
     SCIENCE,
     NEUTRAL
 };

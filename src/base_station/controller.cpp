@@ -131,140 +131,144 @@ void handle_drive_controller_event(Event event, Session* bs_session) {
 }
 
 void handle_arm_controller_event(Event event, Session* bs_session) {
-    if (event.type == EventType::BUTTON) {
-        switch (event.button) {
-            case Button::A:
-                bs_session->arm_control_region = ArmControlRegion::GRIPPER;
-                break;
-            case Button::B:
-                bs_session->arm_control_region = ArmControlRegion::WRIST;
-                break;
-            case Button::X:
-                bs_session->arm_control_region = ArmControlRegion::SHOULDER;
-                break;
-            case Button::Y:
-                bs_session->arm_control_region = ArmControlRegion::ELBOW;
-                break;
-            default:
-                return;
+    if(bs_session->controller_mode == ControllerMode::ARM){
+        if (event.type == EventType::BUTTON) {
+            switch (event.button) {
+                case Button::A:
+                    bs_session->arm_control_region = ArmControlRegion::GRIPPER;
+                    break;
+                case Button::B:
+                    bs_session->arm_control_region = ArmControlRegion::WRIST;
+                    break;
+                case Button::X:
+                    bs_session->arm_control_region = ArmControlRegion::SHOULDER;
+                    break;
+                case Button::Y:
+                    bs_session->arm_control_region = ArmControlRegion::ELBOW;
+                    break;
+                default:
+                    return;
+            }
+        } 
+
+        else if (event.type == EventType::AXIS) {
+            switch (event.axis) {
+                case Axis::DPAD_X:
+                    if(bs_session->arm_control_region == ArmControlRegion::SHOULDER){
+                        if(event.value < 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_ROTATE;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
+                            logger::log(logger::DEBUG, "Base rotate left");
+                        }
+                        else if(event.value > 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_ROTATE;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
+                            logger::log(logger::DEBUG, "Base rotate right");
+                        }
+                        else{
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_ROTATE;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
+                            logger::log(logger::DEBUG, "Base no rotation");
+                        }
+                    }
+
+                    if(bs_session->arm_control_region == ArmControlRegion::GRIPPER){
+                        if(event.value < 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_ROTATE;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
+                            logger::log(logger::DEBUG, "Gripper rotate left");
+                        }
+                        else if(event.value > 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_ROTATE;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
+                            logger::log(logger::DEBUG, "Gripper rotate right");
+                        }
+                        else{
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_ROTATE;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
+                            logger::log(logger::DEBUG, "Gripper no rotation");
+                        }
+                    }
+                    break;
+                case Axis::DPAD_Y:
+                    if(bs_session->arm_control_region == ArmControlRegion::SHOULDER){
+                        if(event.value < 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_SHOULDER;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
+                            logger::log(logger::DEBUG, "Base up");
+                        }
+                        else if(event.value > 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_SHOULDER;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
+                            logger::log(logger::DEBUG, "Base down");
+                        }
+                        else{
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_SHOULDER;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
+                            logger::log(logger::DEBUG, "Base still");
+                        }
+                    }
+
+                    if(bs_session->arm_control_region == ArmControlRegion::ELBOW){
+                        if(event.value < 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::ELBOW;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
+                            logger::log(logger::DEBUG, "Elbow up");
+                        }
+                        else if(event.value > 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::ELBOW;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
+                            logger::log(logger::DEBUG, "Elbow down");
+                        }
+                        else{
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::ELBOW;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
+                            logger::log(logger::DEBUG, "Elbow still");
+                        }
+                    }
+
+                    if(bs_session->arm_control_region == ArmControlRegion::WRIST){
+                        if(event.value < 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::WRIST;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
+                            logger::log(logger::DEBUG, "Wrist up");
+                        }
+                        else if(event.value > 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::WRIST;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
+                            logger::log(logger::DEBUG, "Wrist down");
+                        }
+                        else{
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::WRIST;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
+                            logger::log(logger::DEBUG, "Wrist still");
+                        }
+                    }
+
+                    if(bs_session->arm_control_region == ArmControlRegion::GRIPPER){
+                        if(event.value < 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_FINGERS;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
+                            logger::log(logger::DEBUG, "Gripper opening");
+                        }
+                        else if(event.value > 0){
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_FINGERS;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
+                            logger::log(logger::DEBUG, "Gripper closing");
+                        }
+                        else{
+                            bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_FINGERS;
+                            bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
+                            logger::log(logger::DEBUG, "Gripper still");
+                        }
+                    }
+                    break;
+                default:
+                    return;
+            }
         }
-    } 
-
-    else if (event.type == EventType::AXIS) {
-        switch (event.axis) {
-            case Axis::DPAD_X:
-                if(bs_session->arm_control_region == ArmControlRegion::SHOULDER){
-                    if(event.value < 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_ROTATE;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
-                        logger::log(logger::DEBUG, "Base rotate left");
-                    }
-                    else if(event.value > 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_ROTATE;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
-                        logger::log(logger::DEBUG, "Base rotate right");
-                    }
-                    else{
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_ROTATE;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
-                        logger::log(logger::DEBUG, "Base no rotation");
-                    }
-                }
-
-                if(bs_session->arm_control_region == ArmControlRegion::GRIPPER){
-                    if(event.value < 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_ROTATE;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
-                        logger::log(logger::DEBUG, "Gripper rotate left");
-                    }
-                    else if(event.value > 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_ROTATE;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
-                        logger::log(logger::DEBUG, "Gripper rotate right");
-                    }
-                    else{
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_ROTATE;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
-                        logger::log(logger::DEBUG, "Gripper no rotation");
-                    }
-                }
-                break;
-            case Axis::DPAD_Y:
-                if(bs_session->arm_control_region == ArmControlRegion::SHOULDER){
-                    if(event.value < 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_SHOULDER;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
-                        logger::log(logger::DEBUG, "Base up");
-                    }
-                    else if(event.value > 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_SHOULDER;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
-                        logger::log(logger::DEBUG, "Base down");
-                    }
-                    else{
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::BASE_SHOULDER;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
-                        logger::log(logger::DEBUG, "Base still");
-                    }
-                }
-
-                if(bs_session->arm_control_region == ArmControlRegion::ELBOW){
-                    if(event.value < 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::ELBOW;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
-                        logger::log(logger::DEBUG, "Elbow up");
-                    }
-                    else if(event.value > 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::ELBOW;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
-                        logger::log(logger::DEBUG, "Elbow down");
-                    }
-                    else{
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::ELBOW;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
-                        logger::log(logger::DEBUG, "Elbow still");
-                    }
-                }
-
-                if(bs_session->arm_control_region == ArmControlRegion::WRIST){
-                    if(event.value < 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::WRIST;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
-                        logger::log(logger::DEBUG, "Wrist up");
-                    }
-                    else if(event.value > 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::WRIST;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
-                        logger::log(logger::DEBUG, "Wrist down");
-                    }
-                    else{
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::WRIST;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
-                        logger::log(logger::DEBUG, "Wrist still");
-                    }
-                }
-
-                if(bs_session->arm_control_region == ArmControlRegion::GRIPPER){
-                    if(event.value < 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_FINGERS;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::COUNTER;
-                        logger::log(logger::DEBUG, "Gripper opening");
-                    }
-                    else if(event.value > 0){
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_FINGERS;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::CLOCK;
-                        logger::log(logger::DEBUG, "Gripper closing");
-                    }
-                    else{
-                        bs_session->last_arm_message.joint = (int16_t)network::ArmMessage::Joint::GRIPPER_FINGERS;
-                        bs_session->last_arm_message.movement = (int16_t)network::ArmMessage::Movement::STOP;
-                        logger::log(logger::DEBUG, "Gripper still");
-                    }
-                }
-                break;
-            default:
-                return;
-        }
+    }else if (bs_session->controller_mode == ControllerMode::IK){
+        //TODO: Add stuff here for binding controlls for IK movements
     }
 }
 

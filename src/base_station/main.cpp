@@ -500,6 +500,18 @@ int main() {
                                 break;
                         }
                     }
+                    //Handles Toggling Between moving the arm in IK mode or Joint Mode (ARM)
+                    else if (event.button == controller::Button::JS_RIGHT && event.value != 0) {
+                        switch (bs_session.controller_mode) {
+                            case ControllerMode::ARM:
+                                bs_session.controller_mode = ControllerMode::IK;
+                                break;
+                            case ControllerMode::IK:
+                                bs_session.controller_mode = ControllerMode::ARM;
+                            default:
+                                break;
+                        }
+                    }
                 }
 
                 switch (bs_session.controller_mode) {
