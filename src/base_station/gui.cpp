@@ -1881,7 +1881,14 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 void universal_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
     // We open the menu on release to prevent the D key from being detected
     // in the character callback upon release.
-    if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
+
+    /* temp start here*/
+    bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+    if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
+        gui::waypoint_map::zoom_in();
+    } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
+        gui::waypoint_map::zoom_out();
+    } else /* temp end here */ if (action == GLFW_RELEASE && key == GLFW_KEY_D) {
         gui::state.show_debug_console = true;
         gui::state.input_state = gui::InputState::DEBUG_CONSOLE;
     } else if (action == GLFW_PRESS && key == GLFW_KEY_C) {

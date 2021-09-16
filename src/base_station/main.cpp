@@ -240,12 +240,12 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
-
+        /*
         if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
             gui::waypoint_map::zoom_in();
         } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
             gui::waypoint_map::zoom_out();
-        } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
+        } else */if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
             if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
                 gui::log_view::moveTop();
             } else {
