@@ -25,6 +25,72 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+/*  Passing in help_menu_up, stopwatch_menu_up, image_display_up, firstImageTime, firstImageName, secondImageName, and bs_session in for now,
+    - Toggling the menus could be made into its own method, but this isn't necessary for now
+    - bs_session could be made a global variable, if this wasn't done already it probably wasn't done for a reason I'm unaware of
+    - firstImageTime, firstImageName, and secondImageName could ???
+
+    If all these changes are made, and the gui.cpp input becomes based on polling (or something else that's responsive), then this
+    method could be merged with gui_key_callback in gui.cpp
+
+    When adding new inputs, try to add them to gui.cpp, this is only here to prepare to merge into gui.cpp
+*/
+void glfw_key_callback(Session& bs_session, GLFWwindow* window, bool& help_menu_up, bool& stopwatch_menu_up, bool& image_display_up, unsigned int& firstImageTime, char * firstImageName, char * secondImageName, bool& quit)/*, int key, int scancode, int action, int mods) { */ {\
+    //these all would go in universal_key_commands() in gui.cpp, so the switch is not necessary since no more key bindings should be added here    
+    bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+    if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
+        gui::waypoint_map::zoom_in();
+    } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
+        gui::waypoint_map::zoom_out();
+    } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            gui::log_view::moveTop();
+        } else {
+            gui::log_view::moveUpOne();
+        }
+    } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            gui::log_view::moveBottom();
+        } else {
+            gui::log_view::moveDownOne();
+        }
+    } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            quit = true;
+        }
+    } else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+        help_menu_up = true;
+    } else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        if (help_menu_up) help_menu_up = false;
+        if (stopwatch_menu_up) {
+            stopwatch_menu_up = false;
+            gui::state.input_state = gui::InputState::KEY_COMMAND;
+        }
+        if (image_display_up){
+            image_display_up = false;
+            free(firstImageName);
+            free(secondImageName);
+            firstImageName = NULL;
+            secondImageName = NULL;
+        } 
+    } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        stopwatch_menu_up = true;
+        gui::state.input_state = gui::InputState::STOPWATCH_MENU;
+    } else if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS){
+        //Takes initial image
+        if(firstImageName == NULL){
+            firstImageName = gui::gen_bitmap_from_camera_feed(&bs_session);
+            firstImageTime = bs_session.global_clock.get_millis();
+            std::string msg_beginning = "Saved first image as: ";
+            char * pic_msg = (char *) malloc(1 + std::strlen(msg_beginning.c_str()) + std::strlen(firstImageName));
+            std::strcpy(pic_msg, msg_beginning.c_str());
+            std::strcat(pic_msg, firstImageName);
+            logger::log(logger::INFO, pic_msg);
+            std::free(pic_msg);
+        }
+    }
+}
+
 int main() {
     //Declaring base station session object
     Session bs_session;
@@ -239,59 +305,11 @@ int main() {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
-        /*
-        if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
-            gui::waypoint_map::zoom_in();
-        } else if (z_on && (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS)) {
-            gui::waypoint_map::zoom_out();
-        } else */if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
-            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-                gui::log_view::moveTop();
-            } else {
-                gui::log_view::moveUpOne();
-            }
-        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
-            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-                gui::log_view::moveBottom();
-            } else {
-                gui::log_view::moveDownOne();
-            }
-        } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-                break;
-            }
-        } else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-            if (gui::state.input_state == gui::InputState::KEY_COMMAND) help_menu_up = true;
-        } else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            if (help_menu_up) help_menu_up = false;
-            if (stopwatch_menu_up) {
-                stopwatch_menu_up = false;
-                gui::state.input_state = gui::InputState::KEY_COMMAND;
-            }
-            if (image_display_up){
-                image_display_up = false;
-                free(firstImageName);
-                free(secondImageName);
-                firstImageName = NULL;
-                secondImageName = NULL;
-            } 
-        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && gui::state.input_state == gui::InputState::KEY_COMMAND) {
-            stopwatch_menu_up = true;
-            gui::state.input_state = gui::InputState::STOPWATCH_MENU;
-        } else if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS){
-            //Takes initial image
-            if(firstImageName == NULL){
-                firstImageName = gui::gen_bitmap_from_camera_feed(&bs_session);
-                firstImageTime = bs_session.global_clock.get_millis();
-                std::string msg_beginning = "Saved first image as: ";
-                char * pic_msg = (char *) malloc(1 + std::strlen(msg_beginning.c_str()) + std::strlen(firstImageName));
-                std::strcpy(pic_msg, msg_beginning.c_str());
-                std::strcat(pic_msg, firstImageName);
-                logger::log(logger::INFO, pic_msg);
-                std::free(pic_msg);
-            }
+        bool quit = false;
+        if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
+            glfw_key_callback(bs_session, window, help_menu_up, stopwatch_menu_up, image_display_up, firstImageTime, firstImageName, secondImageName, quit);
         }
+        if (quit) { break; }
 
         //Checks if it has been 10 seconds since a picture was taken
         if(firstImageName != NULL && secondImageName == NULL && bs_session.global_clock.get_millis() >= (firstImageTime + (10 * 1000))){
