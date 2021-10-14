@@ -209,6 +209,9 @@ void glfw_character_callback(GLFWwindow* window, unsigned int codepoint);
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+// Called frequently for key actions that rely on polling rather than events
+void poll_keys_callback(Session& bs_session, GLFWwindow* window, bool& help_menu_up, bool& stopwatch_menu_up, bool& image_display_up, unsigned int& firstImageTime, char * firstImageName, char * secondImageName, bool& quit);
+
 //Commands for pressing keys in specific focus modes
 void universal_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
 void general_key_commands(Session* bs_session, GLFWwindow* window, int key, int action, int mods);
