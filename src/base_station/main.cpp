@@ -35,7 +35,7 @@
 
     When adding new inputs, try to add them to gui.cpp, this is only here to prepare to merge into gui.cpp
 */
-void glfw_key_callback(Session& bs_session, GLFWwindow* window, bool& help_menu_up, bool& stopwatch_menu_up, bool& image_display_up, unsigned int& firstImageTime, char * firstImageName, char * secondImageName, bool& quit)/*, int key, int scancode, int action, int mods) { */ {\
+void poll_keys_callback(Session& bs_session, GLFWwindow* window, bool& help_menu_up, bool& stopwatch_menu_up, bool& image_display_up, unsigned int& firstImageTime, char * firstImageName, char * secondImageName, bool& quit)/*, int key, int scancode, int action, int mods) { */ {\
     //these all would go in universal_key_commands() in gui.cpp, so the switch is not necessary since no more key bindings should be added here    
     bool z_on = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
     if (z_on && (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS)) {
@@ -307,7 +307,7 @@ int main() {
         glfwPollEvents();
         bool quit = false;
         if (gui::state.input_state == gui::InputState::KEY_COMMAND) {
-            glfw_key_callback(bs_session, window, help_menu_up, stopwatch_menu_up, image_display_up, firstImageTime, firstImageName, secondImageName, quit);
+            poll_keys_callback(bs_session, window, help_menu_up, stopwatch_menu_up, image_display_up, firstImageTime, firstImageName, secondImageName, quit);
         }
         if (quit) { break; }
 
