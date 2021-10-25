@@ -122,8 +122,52 @@ int main() {
     util::Timer::init(&subsys_session.arm_read_data, ARM_READ_DATA_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.science_read_data, SCIENCE_READ_DATA_INTERVAL, &subsys_session.global_clock);
 
+    /* Some testing for the CAN bus thingy (init) */
+    int method = 1;
+
+    if (method == 1) { system("sudo /sbin/ip link set can0 up type can bitrate 500000"); }
+    else if (method == 2) {
+
+    }
+    else if (method == 3) {
+        
+    }
+    
+
     // Subsystem computer main loop
     while (true) {
+        
+        /* Some testing for the CAN bus thingy */
+
+        if (method == 1) {
+            ///Evan's method (very quick and dirty, but it works)
+            char* flipped = new char[8]; //malloc(sizeof(char) * 100);
+
+            float forward = 0.0f;   //Change this when testing
+
+            char str[8];
+            
+            float pi = (float)forward;  //probably not needed but I'll leave just in case
+            //union { float f; uint32_t u; } f2u = { .f = pi };     //this is giving me problems so I'm going to just try casting
+            uint32_t f2u = (uint32_t)pi;
+
+            sprintf(str, "%x", f2u);
+            sprintf(flipped, "cansend can0 00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
+            system(flipped);
+        }
+        else if (method == 2) {
+            ///Using installed packages
+
+        }
+        else if (method == 3) {
+            ///From scratch
+        }
+        
+
+
+        /* No more testing for the CAN bus */
+
+
         if (subsys_session.location_send_timer.ready() && subsys_session.gps_inited) {
             network::LocationMessage message;
 
