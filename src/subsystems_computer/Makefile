@@ -29,6 +29,12 @@ else
 	SOURCES += rocs_dummy.cpp
 endif
 
+#unsure how to check if motors onboard, but I'm assuming they always will be
+#can bus requires A LOT of sources
+SOURCES += can-bus/include/linux/can.h
+SOURCES += can-bus/cansend.cpp
+SOURCES += can-bus/lib.c
+
 ifdef LIDAR_ONBOARD
 	SOURCES += lidar_onboard.cpp
 else

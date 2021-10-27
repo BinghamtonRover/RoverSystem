@@ -1,0 +1,1 @@
+int can_send(char* argv1, char* argv2); //hi daniel, how's the pull request review going?

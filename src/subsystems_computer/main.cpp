@@ -1,4 +1,5 @@
 #include "session.hpp"
+#include "can-bus/cansend.hpp"
 
 int main() {
     Session subsys_session;
@@ -123,16 +124,20 @@ int main() {
     util::Timer::init(&subsys_session.science_read_data, SCIENCE_READ_DATA_INTERVAL, &subsys_session.global_clock);
 
     /* Some testing for the CAN bus thingy (init) */
-    int method = 1;
+    int method = 2;
 
     if (method == 1) { system("sudo /sbin/ip link set can0 up type can bitrate 500000"); }
     else if (method == 2) {
-
+        //char* name = (char*)"can0";
+        //uint32_t bitrate = (uint32_t)500000;
+        
+        //system("sudo /sbin/ip link set can0 up type can bitrate 500000");
     }
     else if (method == 3) {
         
     }
     
+    logger::log(logger::INFO, "Subsystem Computer Initialization Successful!");
 
     // Subsystem computer main loop
     while (true) {
@@ -156,8 +161,22 @@ int main() {
             system(flipped);
         }
         else if (method == 2) {
-            ///Using installed packages
+            ///Modifying the installed packages
+            ///Evan's method (very quick and dirty, but it works)
+            char* flipped = new char[8]; //malloc(sizeof(char) * 100);
 
+            float forward = 0.0f;   //Change this when testing
+
+            char str[8];
+            
+            float pi = (float)forward;  //probably not needed but I'll leave just in case
+            //union { float f; uint32_t u; } f2u = { .f = pi };     //this is giving me problems so I'm going to just try casting
+            uint32_t f2u = (uint32_t)pi;
+
+            sprintf(str, "%x", f2u);
+            sprintf(flipped, "00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
+
+            can_send((char*)"can0", flipped);
         }
         else if (method == 3) {
             ///From scratch
