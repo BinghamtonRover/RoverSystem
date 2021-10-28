@@ -47,9 +47,9 @@
 #include <string.h>
 
 //#include <can.h>
-#include "linux/can.h"
+#include "include/linux/can.h"
 //#include <can/error.h>
-#include "linux/can/error.h"
+#include "include/linux/can/error.h"
 #include <sys/socket.h> /* for sa_family_t */
 
 #include "lib.h"
@@ -157,7 +157,7 @@ int hexstring2data(char *arg, unsigned char *data, int maxdlen) {
 
 int parse_canframe(char *cs, struct canfd_frame *cf) {
 	/* documentation see lib.h */
-
+	
 	int i, idx, dlen, len;
 	int maxdlen = CAN_MAX_DLEN;
 	int ret = CAN_MTU;
@@ -207,7 +207,7 @@ int parse_canframe(char *cs, struct canfd_frame *cf) {
 				if ((tmp > CAN_MAX_DLEN) && (tmp <= 15 /*CAN_MAX_RAW_DLC*/)) {
 					struct can_frame *ccf = (struct can_frame *)cf;
 
-					ccf->len8_dlc = tmp;
+					ccf->len8_dlc = tmp; //original code
 				}
 			}
 		}

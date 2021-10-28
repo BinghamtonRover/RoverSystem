@@ -48,6 +48,7 @@
 
 #include <linux/types.h>
 #include <linux/socket.h>
+#include <cstdint>
 
 /* controller area network (CAN) kernel definitions */
 
@@ -69,7 +70,7 @@
  * bit 30	: remote transmission request flag (1 = rtr frame)
  * bit 31	: frame format flag (0 = standard 11 bit, 1 = extended 29 bit)
  */
-typedef __u32 canid_t;
+typedef uint32_t canid_t;
 
 #define CAN_SFF_ID_BITS		11
 #define CAN_EFF_ID_BITS		29
@@ -80,7 +81,7 @@ typedef __u32 canid_t;
  * bit 0-28	: error class mask (see include/uapi/linux/can/error.h)
  * bit 29-31	: set to zero
  */
-typedef __u32 can_err_mask_t;
+typedef uint32_t can_err_mask_t;
 
 /* CAN payload length and DLC definitions according to ISO 11898-1 */
 #define CAN_MAX_DLC 8
@@ -106,18 +107,11 @@ typedef __u32 can_err_mask_t;
  */
 struct can_frame {
 	canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-	union {
-		/* CAN frame payload length in byte (0 .. CAN_MAX_DLEN)
-		 * was previously named can_dlc so we need to carry that
-		 * name for legacy support
-		 */
-		__u8 len;
-		__u8 can_dlc; /* deprecated */
-	} __attribute__((packed)); /* disable padding added in some ABIs */
-	__u8 __pad; /* padding */
-	__u8 __res0; /* reserved / padding */
-	__u8 len8_dlc; /* optional DLC for 8 byte payload length (9 .. 15) */
-	__u8 data[CAN_MAX_DLEN] __attribute__((aligned(8)));
+	uint8_t len;
+	uint8_t __pad; /* padding */
+	uint8_t __res0; /* reserved / padding */
+	uint8_t len8_dlc; /* optional DLC for 8 byte payload length (9 .. 15) */
+	uint8_t data[CAN_MAX_DLEN] __attribute__((aligned(8)));
 };
 
 /*
@@ -159,11 +153,11 @@ struct can_frame {
  */
 struct canfd_frame {
 	canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-	__u8    len;     /* frame payload length in byte */
-	__u8    flags;   /* additional flags for CAN FD */
-	__u8    __res0;  /* reserved / padding */
-	__u8    __res1;  /* reserved / padding */
-	__u8    data[CANFD_MAX_DLEN] __attribute__((aligned(8)));
+	uint8_t len;     /* frame payload length in byte */
+	uint8_t flags;   /* additional flags for CAN FD */
+	uint8_t __res0;  /* reserved / padding */
+	uint8_t __res1;  /* reserved / padding */
+	uint8_t data[CANFD_MAX_DLEN] __attribute__((aligned(8)));
 };
 
 #define CAN_MTU		(sizeof(struct can_frame))
@@ -205,7 +199,7 @@ struct sockaddr_can {
 		/* J1939 address information */
 		struct {
 			/* 8 byte name when using dynamic addressing */
-			__u64 name;
+			uint64_t name;
 
 			/* pgn:
 			 * 8 bit: PS in PDU2 case, else 0
@@ -213,10 +207,10 @@ struct sockaddr_can {
 			 * 1 bit: DP
 			 * 1 bit: reserved
 			 */
-			__u32 pgn;
+			uint32_t pgn;
 
 			/* 1 byte address */
-			__u8 addr;
+			uint8_t addr;
 		} j1939;
 
 		/* reserved for future CAN protocols address information */
