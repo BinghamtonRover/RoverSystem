@@ -1,6 +1,11 @@
 #include "session.hpp"
 #include "can-bus/cansend.hpp"
 
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include <inttypes.h>
+
 int main() {
     Session subsys_session;
     logger::register_handler(logger::stderr_handler);
@@ -124,9 +129,11 @@ int main() {
     util::Timer::init(&subsys_session.science_read_data, SCIENCE_READ_DATA_INTERVAL, &subsys_session.global_clock);
 
     /* Some testing for the CAN bus thingy (init) */
-    int method = 2;
+    int method = 1;
 
-    if (method == 1) { system("sudo /sbin/ip link set can0 up type can bitrate 500000"); }
+    if (method == 1) { system("sudo /sbin/ip link set can0 up type can bitrate 500000");
+        std::cout << "SYSTEM WROTE \"sudo /sbin/ip link set can0 up type can bitrate 500000\"" << std::endl; 
+    }
     else if (method == 2) {
         //char* name = (char*)"can0";
         //uint32_t bitrate = (uint32_t)500000;
@@ -138,12 +145,38 @@ int main() {
     
     logger::log(logger::INFO, "Subsystem Computer Initialization Successful!");
 
-    // Subsystem computer main loop
+
+
+
     while (true) {
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+
+            ///Modifying the installed packages
+            char* flipped = new char[8]; //malloc(sizeof(char) * 100);
+
+            float forward = 0.0f;   //Change this when testing
+
+            char str[8];
+            
+            float pi = (float)forward;  //probably not needed but I'll leave just in case
+            union { float f; uint32_t u; } f2u = { .f = pi };
+
+            sprintf(str, "%x", f2u.u);    //<- so this should be working but isn't...
+            for (int i = 0; i < 8; i++) { std::cout << str[i] << " "; } std::cout << std::endl;
+            sprintf(flipped, "00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
+
+            can_send((char*)"can0", flipped);
+            std::cout << "can_send(\"" << flipped << "\")" << std::endl;
+
+    }
+
+
+    // Subsystem computer main loop
+    while (true && false) {
         
         /* Some testing for the CAN bus thingy */
 
-        if (method == 1) {
+        if (method == 1 && false) {
             ///Evan's method (very quick and dirty, but it works)
             char* flipped = new char[8]; //malloc(sizeof(char) * 100);
 
@@ -152,16 +185,14 @@ int main() {
             char str[8];
             
             float pi = (float)forward;  //probably not needed but I'll leave just in case
-            //union { float f; uint32_t u; } f2u = { .f = pi };     //this is giving me problems so I'm going to just try casting
-            uint32_t f2u = (uint32_t)pi;
+            union { float f; uint32_t u; } f2u = { .f = pi };
 
-            sprintf(str, "%x", f2u);
+            sprintf(str, "%x", f2u.u);
             sprintf(flipped, "cansend can0 00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
             system(flipped);
         }
         else if (method == 2) {
             ///Modifying the installed packages
-            ///Evan's method (very quick and dirty, but it works)
             char* flipped = new char[8]; //malloc(sizeof(char) * 100);
 
             float forward = 0.0f;   //Change this when testing
@@ -169,10 +200,9 @@ int main() {
             char str[8];
             
             float pi = (float)forward;  //probably not needed but I'll leave just in case
-            //union { float f; uint32_t u; } f2u = { .f = pi };     //this is giving me problems so I'm going to just try casting
-            uint32_t f2u = (uint32_t)pi;
+            union { float f; uint32_t u; } f2u = { .f = pi };
 
-            sprintf(str, "%x", f2u);
+            sprintf(str, "%x", f2u.u);
             sprintf(flipped, "00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
 
             can_send((char*)"can0", flipped);
