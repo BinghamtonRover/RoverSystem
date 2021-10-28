@@ -131,10 +131,9 @@ int main() {
         //char* name = (char*)"can0";
         //uint32_t bitrate = (uint32_t)500000;
         
-        //system("sudo /sbin/ip link set can0 up type can bitrate 500000");
-    }
-    else if (method == 3) {
-        
+        //can-utils initialization?
+
+        system("sudo /sbin/ip link set can0 up type can bitrate 500000");
     }
     
     logger::log(logger::INFO, "Subsystem Computer Initialization Successful!");
@@ -177,9 +176,6 @@ int main() {
             sprintf(flipped, "00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
 
             can_send((char*)"can0", flipped);
-        }
-        else if (method == 3) {
-            ///From scratch
         }
         
 

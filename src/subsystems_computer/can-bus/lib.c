@@ -350,7 +350,7 @@ void fprint_long_canframe(FILE *stream , struct canfd_frame *cf, char *eol, int 
 	fprintf(stream, "%s", buf);
 	if ((view & CANLIB_VIEW_ERROR) && (cf->can_id & CAN_ERR_FLAG)) {
 		//snprintf_can_error_frame(buf, sizeof(buf), cf, "\n\t");
-		fprintf(stream, "can_error_frame info supported removed for now...");
+		fprintf(stream, "can_error_frame info supported removed for now...");  
 		fprintf(stream, "\n\t%s", buf);
 	}
 	if (eol)
