@@ -157,7 +157,7 @@ int hexstring2data(char *arg, unsigned char *data, int maxdlen) {
 
 int parse_canframe(char *cs, struct canfd_frame *cf) {
 	/* documentation see lib.h */
-	
+
 	int i, idx, dlen, len;
 	int maxdlen = CAN_MAX_DLEN;
 	int ret = CAN_MTU;
@@ -349,7 +349,8 @@ void fprint_long_canframe(FILE *stream , struct canfd_frame *cf, char *eol, int 
 	sprint_long_canframe(buf, cf, view, maxdlen);
 	fprintf(stream, "%s", buf);
 	if ((view & CANLIB_VIEW_ERROR) && (cf->can_id & CAN_ERR_FLAG)) {
-		snprintf_can_error_frame(buf, sizeof(buf), cf, "\n\t");
+		//snprintf_can_error_frame(buf, sizeof(buf), cf, "\n\t");
+		fprintf(stream, "can_error_frame info supported removed for now...");
 		fprintf(stream, "\n\t%s", buf);
 	}
 	if (eol)
@@ -624,6 +625,10 @@ static int snprintf_error_prot(char *buf, size_t len, const struct canfd_frame *
 	return n;
 }
 
+//so this method is causing issues but we not actually need it
+//it may be useful for the future, so worth uncommenting and fixing at some point
+// ctrl-f "snprintf_can_error_frame" to find where it was removed
+/*
 void snprintf_can_error_frame(char *buf, size_t len, const struct canfd_frame *cf,
                   const char* sep)
 {
@@ -666,3 +671,4 @@ void snprintf_can_error_frame(char *buf, size_t len, const struct canfd_frame *c
 			      cf->data[6], cf->data[7]);
 	}
 }
+*/
