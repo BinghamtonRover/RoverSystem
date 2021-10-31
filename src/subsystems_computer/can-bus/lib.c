@@ -350,7 +350,7 @@ void fprint_long_canframe(FILE *stream , struct canfd_frame *cf, char *eol, int 
 	fprintf(stream, "%s", buf);
 	if ((view & CANLIB_VIEW_ERROR) && (cf->can_id & CAN_ERR_FLAG)) {
 		//snprintf_can_error_frame(buf, sizeof(buf), cf, "\n\t");
-		fprintf(stream, "can_error_frame info supported removed for now...");  
+		fprintf(stream, "can_error_frame info support removed for now...");  
 		fprintf(stream, "\n\t%s", buf);
 	}
 	if (eol)
@@ -489,6 +489,7 @@ void sprint_long_canframe(char *buf , struct canfd_frame *cf, int view, int maxd
 	}
 }
 
+/*
 static const char *error_classes[] = {
 	"tx-timeout",
 	"lost-arbitration",
@@ -624,6 +625,12 @@ static int snprintf_error_prot(char *buf, size_t len, const struct canfd_frame *
 
 	return n;
 }
+
+*/
+
+
+
+
 
 //so this method is causing issues but we not actually need it
 //it may be useful for the future, so worth uncommenting and fixing at some point

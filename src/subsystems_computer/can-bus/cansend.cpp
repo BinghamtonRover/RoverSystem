@@ -56,9 +56,52 @@
 
 #include "lib.h"
 
-//int main(int argc, char **argv)
-int can_send(char* argv1, char* argv2)
+#include <inttypes.h>
+
+
+#include <iostream>
+//get a can message (in hexadecimal from a uint32_t
+char* get_can_message(uint32_t u) {
+	char* can_message = new char[13];
+	can_message[0] = '0';
+	can_message[1] = '0';
+	can_message[2] = 'd';
+	can_message[3] = '#';
+
+	//get the digits (in hex) of the value to be sent
+	for (int i = 8; i >= 1; i--) {
+		uint8_t half_byte = ((0xF << ( 4 * (i - 1))) & u) >> (4 * (i - 1));
+		char v = '0';
+		switch(half_byte) {
+			case 0xF: v = 'f'; break;
+			case 0XE: v = 'e'; break;
+			case 0xD: v = 'd'; break;
+			case 0XC: v = 'c'; break;
+			case 0xB: v = 'b'; break;
+			case 0xA: v = 'a'; break;
+			case 0x9: v = '9'; break;
+			case 0x8: v = '8'; break;
+			case 0x7: v = '7'; break;
+			case 0x6: v = '6'; break;
+			case 0x5: v = '5'; break;
+			case 0x4: v = '4'; break;
+			case 0x3: v = '3'; break;
+			case 0x2: v = '2'; break;
+			case 0x1: v = '1'; break;
+		}
+		can_message[12 - i] = v;
+	}
+
+	//end the char*
+	can_message[12] = '\0';
+
+	return can_message;
+}
+
+int can_send(char* argv1, uint32_t argv2_num)
 {
+	char* argv2 = get_can_message(argv2_num);
+
 	int s; /* can raw socket */ 
 	int required_mtu;
 	int mtu;

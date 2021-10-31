@@ -146,72 +146,42 @@ int main() {
     logger::log(logger::INFO, "Subsystem Computer Initialization Successful!");
 
 
-
+    float speed = 1.0f;
+    bool fix_message_test = false;
 
     while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
-            ///Modifying the installed packages
-            char* flipped = new char[8]; //malloc(sizeof(char) * 100);
+        speed = 1.0f;
+        //speed *= -1.0f;
+        /* if (speed >= 4.0f) { speed = -4.0f; }
+        else { speed += 1.0f; } */
 
-            float forward = 0.0f;   //Change this when testing
+        union { float f; uint32_t u; } f2u = { .f = speed };
+        
+        //convert to big endian
+        uint32_t speed_be = ((0xF0F0F0F0 & f2u.u) >> 4) | ((0x0F0F0F0F & f2u.u) << 4);
 
-            char str[8];
-            
-            float pi = (float)forward;  //probably not needed but I'll leave just in case
-            union { float f; uint32_t u; } f2u = { .f = pi };
+        if (!fix_message_test) {
+            //send can message
+            can_send((char*)"can0", speed_be);
+            std::cout << "can_send(\"" << speed_be << "\")" << std::endl;
+        }
+        else {
+            //fix message? (I hope?)
+            uint32_t speed_be_fixed = speed_be;
+            if ((f2u.u & 0x7FFFFF) % 2 == 0 || ((f2u.u & 0x7FFFFF) == 0)) { speed_be_fixed |= 0x00000003; }
 
-            sprintf(str, "%x", f2u.u);    //<- so this should be working but isn't...
-            for (int i = 0; i < 8; i++) { std::cout << str[i] << " "; } std::cout << std::endl;
-            sprintf(flipped, "00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
-
-            can_send((char*)"can0", flipped);
-            std::cout << "can_send(\"" << flipped << "\")" << std::endl;
+            //send can message
+            can_send((char*)"can0", speed_be_fixed);
+            std::cout << "can_send(\"" << speed_be_fixed << "\")" << std::endl;
+        }
 
     }
 
 
     // Subsystem computer main loop
     while (true && false) {
-        
-        /* Some testing for the CAN bus thingy */
-
-        if (method == 1 && false) {
-            ///Evan's method (very quick and dirty, but it works)
-            char* flipped = new char[8]; //malloc(sizeof(char) * 100);
-
-            float forward = 0.0f;   //Change this when testing
-
-            char str[8];
-            
-            float pi = (float)forward;  //probably not needed but I'll leave just in case
-            union { float f; uint32_t u; } f2u = { .f = pi };
-
-            sprintf(str, "%x", f2u.u);
-            sprintf(flipped, "cansend can0 00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
-            system(flipped);
-        }
-        else if (method == 2) {
-            ///Modifying the installed packages
-            char* flipped = new char[8]; //malloc(sizeof(char) * 100);
-
-            float forward = 0.0f;   //Change this when testing
-
-            char str[8];
-            
-            float pi = (float)forward;  //probably not needed but I'll leave just in case
-            union { float f; uint32_t u; } f2u = { .f = pi };
-
-            sprintf(str, "%x", f2u.u);
-            sprintf(flipped, "00d#%c%c%c%c%c%c%c%c", str[6],str[7],str[4],str[5],str[2],str[3],str[0],str[1]);
-
-            can_send((char*)"can0", flipped);
-        }
-        
-
-
-        /* No more testing for the CAN bus */
-
 
         if (subsys_session.location_send_timer.ready() && subsys_session.gps_inited) {
             network::LocationMessage message;
