@@ -2024,8 +2024,34 @@ void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int acti
 }
 void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
     if(bs_session->bs_focus_mode == FocusMode::DRIVE){
+        if (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS) {
+            //up & right
+            if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS){
 
+            }
+            //up and left
+            else if(glfwGetKey(window,GLFW_KEY_LEFT == GLFW_PRESS)){
+
+            }
+            //only up
+            else{
+                
+            }
+        }
+        //only left
+        else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
+
+        }
+        //only right
+        else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
+
+        }
+        //only backwards
+        else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
+
+        }  
     }
+   
 }
 void science_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
     if (action == GLFW_PRESS && key == GLFW_KEY_I) {
