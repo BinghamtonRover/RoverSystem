@@ -164,6 +164,8 @@ void Session::dont_send_invalid() {
     return;
 }
 
+
+
 void Session::drive_sub_init(){
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";
