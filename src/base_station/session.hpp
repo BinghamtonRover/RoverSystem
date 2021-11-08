@@ -170,6 +170,9 @@ public:
     std::vector<uint16_t> lidar_points;
 
     Config config;
+
+    //throttle variable to limit the max speed
+    int throttle;
     
     //Subsystems information
     std::unordered_map<std::string, double> drive_sub_info; 

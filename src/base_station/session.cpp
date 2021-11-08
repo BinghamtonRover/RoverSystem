@@ -194,6 +194,11 @@ void Session::drive_sub_init(){
     motor_stat.first = "Motor Current (Amps)";
     motor_stat.second = 0.0;
     this->drive_sub_info.insert(motor_stat);
+
+    std::pair<std::string, double> throttle_stat;
+    throttle_stat.first = "Throttle Speen (Max is 255)";
+    throttle_stat.second = 255.0;
+    this->drive_sub_info.insert(throttle_stat);
 }
 
 void Session::arm_sub_init(){
