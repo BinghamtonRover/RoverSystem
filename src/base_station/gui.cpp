@@ -2023,8 +2023,8 @@ void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int acti
 
 }
 void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
-    if (action == GLFW_PRESS && key == GLFW_KEY_UP){
-        
+    if(bs_session->bs_focus_mode == FocusMode::DRIVE){
+
     }
 }
 void science_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {

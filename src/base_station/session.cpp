@@ -197,7 +197,7 @@ void Session::drive_sub_init(){
 
     std::pair<std::string, double> throttle_stat;
     throttle_stat.first = "Throttle Speen (Max is 255)";
-    throttle_stat.second = 255.0;
+    throttle_stat.second = 0.0;
     this->drive_sub_info.insert(throttle_stat);
 }
 
