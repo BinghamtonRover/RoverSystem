@@ -46,7 +46,6 @@
 #define CAN_UTILS_LIB_H
 
 #include <stdio.h>
-#include <inttypes.h>
 
 /* buffer sizes for CAN frame string representations */
 
@@ -96,7 +95,7 @@ int hexstring2data(char *arg, unsigned char *data, int maxdlen);
  *
  */
 
-int parse_canframe(uint32_t cs, struct canfd_frame *cf);
+int parse_canframe(char *cs, struct canfd_frame *cf);
 /*
  * Transfers a valid ASCII string describing a CAN frame into struct canfd_frame.
  *

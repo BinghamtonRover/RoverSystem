@@ -155,7 +155,7 @@ int hexstring2data(char *arg, unsigned char *data, int maxdlen) {
 	return 0;
 }
 
-int parse_canframe(uint32_t cs, struct canfd_frame *cf) {
+int parse_canframe(char *cs, struct canfd_frame *cf) {
 	/* documentation see lib.h */
 
 	int i, idx, dlen, len;
