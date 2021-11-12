@@ -1,15 +1,23 @@
 #include "can_controller.hpp"
 
 //initialize can_controller with number of devices using can
-can_controller::can_controller(int num_devs) {
+/*
+can_controller(int num_devs) {
 	num_devices = num_devs;
 	for (int i = 0; i < num_devices; i += 2) {
 		can_init(i);
 	}
 }
+*/
+
+void can_init_drive() {
+	for (int i = 0; i < num_devices; i++) {
+		can_init(i);
+	}
+}
 
 //initialize can devices
-void can_controller::can_init(int device_num) {
+void can_init(int device_num) {
 	//add this to raspberrypi bootup file
 	//system("sudo /sbin/ip link set can0 up type can bitrate 500000");
 	//AXIS_STATE_FULL_CALIBRATION_SEQUENCE
@@ -21,7 +29,7 @@ void can_controller::can_init(int device_num) {
 }
 
 //can_send
-int can_controller::can_send(int device_num, uint32_t message) {
+int can_send(int device_num, uint32_t message) {
 	char* device_name = get_can_device(device_num);
 	char* can_frame = get_can_message(device_num, message);
 	int ret = can_send(device_name, can_frame);
@@ -31,7 +39,7 @@ int can_controller::can_send(int device_num, uint32_t message) {
 }
 
 //send a non-power can_frame (does not start with 00d# and 02d#)
-int can_controller::can_send_custom_message(int device_num, char* custom_message) {
+int can_send_custom_message(int device_num, char* custom_message) {
 	char* device_name = get_can_device(device_num);
 	int ret = can_send(device_name, custom_message);
 	delete device_name;
@@ -39,14 +47,14 @@ int can_controller::can_send_custom_message(int device_num, char* custom_message
 }
 
 //get the can device name based on the device number
-char* can_controller::get_can_device(int device_num) {
+char* get_can_device(int device_num) {
 	char* device_name = new char[4];
 	sprintf(device_name, "can%i", device_num / 2);
 	return device_name;
 }
 
 //convert uint32_t and device_num to a can_frame (only can frames for sending power, which start with 00d# and 02d#)
-char* can_controller::get_can_message(int device_num, uint32_t message) {
+char* get_can_message(int device_num, uint32_t message) {
 	char* full_message = new char[12];
 	char* vals = new char[8];
 	sprintf(vals, "%010x", get_big_endian(message));
@@ -55,7 +63,7 @@ char* can_controller::get_can_message(int device_num, uint32_t message) {
 }
         
 //convert uint32_t to big endian
-uint32_t can_controller::get_big_endian(uint32_t u) {
+uint32_t get_big_endian(uint32_t u) {
 	return ((0x000000FF & u) << 24) | ((0x0000FF00 & u) << 8) | ((0x00FF0000 & u) >> 8)  | ((0xFF000000 & u) >> 24);
 }
 
@@ -103,7 +111,7 @@ uint32_t can_controller::get_big_endian(uint32_t u) {
  *
  */
 
-int can_controller::can_send(char* argv1, char* argv2)
+int can_send(char* argv1, char* argv2)
 {
 	int s; /* can raw socket */ 
 	int required_mtu;
