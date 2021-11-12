@@ -3,14 +3,23 @@
 //initialize can_controller with number of devices using can
 can_controller::can_controller(int num_devs) {
 	num_devices = num_devs;
-	for (int i = 0; i < num_devices; i++) {
+	for (int i = 0; i < num_devices; i += 2) {
 		can_init(i);
 	}
 }
 
 //initialize can devices
 void can_controller::can_init(int device_num) {
-	can_send_custom_message(device_num, (char*)"00d#00000000");
+	//add this to raspberrypi bootup file
+	//system("sudo /sbin/ip link set can0 up type can bitrate 500000");
+	//AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+	can_send_custom_message(device_num, (char*)"007#03");
+	//AXIS_STATE_CLOSED_LOOP_CONTROL
+	can_send_custom_message(device_num, (char*)"007#08");
+	//CONTROL_MODE_VELOCITY_CONTROL
+	can_send_custom_message(device_num, (char*)"00b#02");
+	//initial velocity = 0
+	can_send_custom_message(device_num, (char*)"00d#");
 }
 
 //can_send

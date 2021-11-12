@@ -4,6 +4,7 @@ CFLAGS = -std=c++11 -Wall -g
 LFLAGS = 
 
 all:	can_controller.o
+	g++ -c -o ../../bin/can_controller
 	mv can_controller.o ../../../bin
 #I know this looks cursed, but I'm doing this to store the ".o" files with the ".a" files
 can_controller.o:	can_controller.cpp
