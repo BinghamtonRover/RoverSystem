@@ -18,8 +18,6 @@ void can_controller::can_init(int device_num) {
 	can_send_custom_message(device_num, (char*)"007#08");
 	//CONTROL_MODE_VELOCITY_CONTROL
 	can_send_custom_message(device_num, (char*)"00b#02");
-	//initial velocity = 0
-	can_send_custom_message(device_num, (char*)"00d#");
 }
 
 //can_send
