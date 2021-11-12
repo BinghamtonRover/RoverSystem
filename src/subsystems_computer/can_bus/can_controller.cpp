@@ -1,3 +1,57 @@
+#include "can_controller.hpp"
+
+//initialize can_controller with number of devices using can
+can_controller::can_controller(int num_devs) {
+	num_devices = num_devs;
+	for (int i = 0; i < num_devices; i++) {
+		can_init(i);
+	}
+}
+
+//initialize can devices
+void can_controller::can_init(int device_num) {
+	can_send_custom_message(device_num, (char*)"00d#00000000");
+}
+
+//can_send
+int can_controller::can_send(int device_num, uint32_t message) {
+	char* device_name = get_can_device(device_num);
+	char* can_frame = get_can_message(device_num, message);
+	int ret = can_send(device_name, can_frame);
+	delete device_name;
+	delete can_frame;
+	return ret;
+}
+
+//send a non-power can_frame (does not start with 00d# and 02d#)
+int can_controller::can_send_custom_message(int device_num, char* custom_message) {
+	char* device_name = get_can_device(device_num);
+	int ret = can_send(device_name, custom_message);
+	delete device_name;
+	return ret;
+}
+
+//get the can device name based on the device number
+char* can_controller::get_can_device(int device_num) {
+	char* device_name = new char[4];
+	sprintf(device_name, "can%i", device_num / 2);
+	return device_name;
+}
+
+//convert uint32_t and device_num to a can_frame (only can frames for sending power, which start with 00d# and 02d#)
+char* can_controller::get_can_message(int device_num, uint32_t message) {
+	char* full_message = new char[12];
+	char* vals = new char[8];
+	sprintf(vals, "%010x", get_big_endian(message));
+	sprintf(full_message, "0%id#%s", (device_num % 2) * 2, vals);
+	return full_message;
+}
+        
+//convert uint32_t to big endian
+uint32_t can_controller::get_big_endian(uint32_t u) {
+	return ((0x000000FF & u) << 24) | ((0x0000FF00 & u) << 8) | ((0x00FF0000 & u) >> 8)  | ((0xFF000000 & u) >> 24);
+}
+
 /* SPDX-License-Identifier: (GPL-2.0-only OR BSD-3-Clause) */
 /*
  * cansend.c - send CAN-frames via CAN_RAW sockets
@@ -42,66 +96,8 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-
-#include <linux/can.h>
-#include <linux/can/raw.h>
-
-#include "lib-char.h"
-
-#include <inttypes.h>
-
-#include <iostream>
-
-//get a can message (in hexadecimal from a uint32_t
-char* get_can_message(uint32_t u) {
-	char* can_message = new char[13];
-	can_message[0] = '0';
-	can_message[1] = '0';
-	can_message[2] = 'd';
-	can_message[3] = '#';
-
-	//get the digits (in hex) of the value to be sent
-	for (int i = 8; i >= 1; i--) {
-		uint8_t half_byte = ((0xF << ( 4 * (i - 1))) & u) >> (4 * (i - 1));
-		char v = '0';
-		switch(half_byte) {
-			case 0xF: v = 'f'; break;
-			case 0XE: v = 'e'; break;
-			case 0xD: v = 'd'; break;
-			case 0XC: v = 'c'; break;
-			case 0xB: v = 'b'; break;
-			case 0xA: v = 'a'; break;
-			case 0x9: v = '9'; break;
-			case 0x8: v = '8'; break;
-			case 0x7: v = '7'; break;
-			case 0x6: v = '6'; break;
-			case 0x5: v = '5'; break;
-			case 0x4: v = '4'; break;
-			case 0x3: v = '3'; break;
-			case 0x2: v = '2'; break;
-			case 0x1: v = '1'; break;
-		}
-		can_message[12 - i] = v;
-	}
-
-	//end the char*
-	can_message[12] = '\0';
-
-	return can_message;
-}
-
-int can_send(char* argv1, uint32_t argv2_num)
+int can_controller::can_send(char* argv1, char* argv2)
 {
-	char* argv2 = get_can_message(argv2_num);
-
 	int s; /* can raw socket */ 
 	int required_mtu;
 	int mtu;

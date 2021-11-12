@@ -53,6 +53,9 @@ endif
 #	SOURCES += gripper_dummy.cpp
 #endif
 
+#always add CAN to onboard, until a dummy (if necessary) needs to be created
+SOURCES += ../../bin/can_controller.o
+
 $(EXECUTABLE): $(SOURCES) $(HEADERS) $(LIBRARIES)
 	g++ $(CFLAGS) $(SOURCES) -o $@ $(LFLAGS)
 

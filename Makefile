@@ -17,6 +17,9 @@ logger: bin
 rocs: bin
 	make -C src/rocs
 
+can: bin
+	make -C src/subsystems_computer/can_bus
+
 autonomy: bin
 	make -C src/autonomy
 
@@ -26,7 +29,7 @@ base_station: bin network simple_config logger
 #rover: bin network simple_config logger rocs
 #	make -C src/rover
 
-subsystem_computer: bin network simple_config logger rocs
+subsystem_computer: bin network simple_config logger rocs can
 	make -C src/subsystems_computer
 
 video_computer: bin network simple_config logger
@@ -50,4 +53,4 @@ send_s: archive
 send_v: archive
 	scp RoverSystem.zip pi@192.168.1.23:/home/pi/RoverSystem.zip
 
-.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs, autonomy, subsystems_computer
+.PHONY: network, base_station, rover, clean, simple_config, format, archive, send, logger, rocs, can, autonomy, subsystems_computer
