@@ -54,7 +54,8 @@ endif
 #endif
 
 #always add CAN to onboard, until a dummy (if necessary) needs to be created
-#SOURCES += ../../bin/can_controller.o
+SOURCES += can_bus/can_controller.cpp
+SOURCES += can_bus/lib.c
 
 $(EXECUTABLE): $(SOURCES) $(HEADERS) $(LIBRARIES)
 	g++ $(CFLAGS) $(SOURCES) -o $@ $(LFLAGS)

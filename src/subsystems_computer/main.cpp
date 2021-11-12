@@ -1,4 +1,5 @@
 #include "session.hpp"
+#include "can_bus/can_controller.hpp"
 
 int main() {
     Session subsys_session;
@@ -121,6 +122,8 @@ int main() {
     util::Timer::init(&subsys_session.suspension_read_data, SUSPENSION_READ_DATA_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.arm_read_data, ARM_READ_DATA_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.science_read_data, SCIENCE_READ_DATA_INTERVAL, &subsys_session.global_clock);
+
+    can_send(0, 2.0f);
 
     // Subsystem computer main loop
     while (true) {

@@ -21,9 +21,10 @@ void can_init_drive();
 //will add something like this if needed
 //int can_drive(uint32_t power_1, uint32_t power_2, uint32_t power_3, uint32_t power_4, uint32_t power_5, uint32_t power_6);
 
-void can_init(int device_num);
+int can_init(int device_num);
 int can_send(int device_num, char* message);
 int can_send(int device_num, uint32_t message);
+int can_send(int device_num, float message);
 int can_send_custom_message(int device_num, char* custom_message);
 
 char* get_can_device(int device_num);

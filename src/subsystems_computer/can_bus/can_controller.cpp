@@ -17,18 +17,20 @@ void can_init_drive() {
 }
 
 //initialize can devices
-void can_init(int device_num) {
+int can_init(int device_num) {
+	int ret = 0;
 	//add this to raspberrypi bootup file
 	//system("sudo /sbin/ip link set can0 up type can bitrate 500000");
 	//AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-	can_send_custom_message(device_num, (char*)"007#03");
+	ret += can_send_custom_message(device_num, (char*)"007#03");
 	//AXIS_STATE_CLOSED_LOOP_CONTROL
-	can_send_custom_message(device_num, (char*)"007#08");
+	ret += can_send_custom_message(device_num, (char*)"007#08");
 	//CONTROL_MODE_VELOCITY_CONTROL
-	can_send_custom_message(device_num, (char*)"00b#02");
+	ret += can_send_custom_message(device_num, (char*)"00b#02");
+	return ret;
 }
 
-//can_send
+//can_send a uint32_t
 int can_send(int device_num, uint32_t message) {
 	char* device_name = get_can_device(device_num);
 	char* can_frame = get_can_message(device_num, message);
@@ -36,6 +38,12 @@ int can_send(int device_num, uint32_t message) {
 	delete device_name;
 	delete can_frame;
 	return ret;
+}
+
+//can_send a float
+int can_send(int device_num, float message) {
+	union { float f; uint32_t u; } f2u = { .f = message };
+	return can_send(device_num, f2u.u);
 }
 
 //send a non-power can_frame (does not start with 00d# and 02d#)
