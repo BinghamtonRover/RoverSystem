@@ -36,6 +36,8 @@ const int ARM_SEND_INTERVAL = 1000 / 9;
 
 const int MAX_FEEDS = 9;
 
+const double MAX_THROTTLE = 255;
+
 struct autonomy_info_struct {
     network::AutonomyStatusMessage::Status status;
     bool has_target;
@@ -171,8 +173,6 @@ public:
 
     Config config;
 
-    //throttle variable to limit the max speed
-    int throttle;
     
     //Subsystems information
     std::unordered_map<std::string, double> drive_sub_info; 
@@ -184,6 +184,9 @@ public:
     //Science data logging variables
     std::ofstream log_file;
     util::Timer log_interval_timer;
+
+    //throttle variable to limit the max speed
+    double throttle;
 
     //Constructor & Destructor
     Session();
@@ -206,6 +209,9 @@ public:
     void start_log(const char* filename);
     void stop_log();
     void export_data();
+
+    void increase_throttle();
+    void decrease_throttle();
 };
 
 #endif

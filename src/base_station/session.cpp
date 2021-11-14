@@ -198,7 +198,7 @@ void Session::drive_sub_init(){
     this->drive_sub_info.insert(motor_stat);
 
     std::pair<std::string, double> throttle_stat;
-    throttle_stat.first = "Throttle Speen (Max is 255)";
+    throttle_stat.first = "Throttle Speed (km/s)";
     throttle_stat.second = 0.0;
     this->drive_sub_info.insert(throttle_stat);
 }
@@ -335,3 +335,19 @@ void Session::export_data() {
     }
     log_file << std::endl;
 }
+
+void Session::increase_throttle(){
+    if(throttle < MAX_THROTTLE){
+        throttle++;
+        //since we know throttle speed is already in the map
+        drive_sub_info["Throttle Speed (km/s)"] = throttle;
+    }
+        
+};
+
+void Session::decrease_throttle(){
+    if(throttle < MAX_THROTTLE){
+        throttle--;
+        drive_sub_info["Throttle Speed (km/s)"] = throttle;
+    }
+};
