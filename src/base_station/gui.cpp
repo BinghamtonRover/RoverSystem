@@ -2024,8 +2024,8 @@ void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int acti
 }
 void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
     if(bs_session->bs_focus_mode == FocusMode::DRIVE){
-        
         if (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS) {
+            bs_session->increase_throttle();
             //up & right
             if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS){
                 bs_session->last_movement_message.left= (int16_t) bs_session->throttle;
@@ -2037,30 +2037,29 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
                 bs_session->last_movement_message.right= (int16_t) bs_session->throttle;
             }
             //only up set left=right=throttle
-            else{
-                bs_session->increase_throttle();
+            else{                
                 bs_session->last_movement_message.left= (int16_t) bs_session->throttle;
                 bs_session->last_movement_message.right= (int16_t) bs_session->throttle;
             }
         }
         //only left
         else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
-            bs_session->last_movement_message.left= (int16_t) -bs_session->throttle;
-            bs_session->last_movement_message.right= (int16_t) -bs_session->throttle;
+            bs_session->last_movement_message.left= (int16_t) 0;
+            bs_session->last_movement_message.right= (int16_t) bs_session->throttle;
         }
         //only right
         else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
-            bs_session->last_movement_message.left= (int16_t) -bs_session->throttle;
-            bs_session->last_movement_message.right= (int16_t) -bs_session->throttle;
+            bs_session->last_movement_message.left = (int16_t) bs_session->throttle;
+            bs_session->last_movement_message.right = (int16_t) 0;
         }
         //only backwards
-        else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
+        else if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS){
             bs_session->increase_throttle();
-            bs_session->last_movement_message.left= (int16_t) -bs_session->throttle;
-            bs_session->last_movement_message.right= (int16_t) -bs_session->throttle;
+            bs_session->last_movement_message.left = (int16_t) -bs_session->throttle;
+            bs_session->last_movement_message.right = (int16_t) -bs_session->throttle;
         }  
+        //TODO: decrease throttle periodically?   
     }
-   
 }
 void science_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
     if (action == GLFW_PRESS && key == GLFW_KEY_I) {

@@ -346,7 +346,7 @@ void Session::increase_throttle(){
 };
 
 void Session::decrease_throttle(){
-    if(throttle < MAX_THROTTLE){
+    if(throttle > 0){
         throttle--;
         drive_sub_info["Throttle Speed (km/s)"] = throttle;
     }
