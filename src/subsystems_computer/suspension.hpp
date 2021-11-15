@@ -13,10 +13,15 @@ enum Direction : uint8_t { FORWARD, BACKWARD };
 enum class Error { SUSPENSION_ERRORS_DEF(X) };
 #undef X
 
+//I need to get this from Joon I think - JM
+#define max_speed 10.0f
+
 const char* get_error_string(Error e);
 
+//int init();
 Error init(uint8_t slave_addr);
 
+//int update(Side side, Direction direction, uint8_t speed);
 Error update(Side side, Direction direction, uint8_t speed);
 
 Error stop(Side side);

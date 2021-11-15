@@ -10,10 +10,13 @@ can_controller(int num_devs) {
 }
 */
 
-void can_init_drive() {
+int can_init_drive() {
+	int ret = 0;
 	for (int i = 0; i < num_devices; i++) {
-		can_init(i);
+		ret += can_init(i);
 	}
+	if (ret == num_devices) { return 0; }
+	return 1;
 }
 
 //initialize can devices
@@ -27,7 +30,8 @@ int can_init(int device_num) {
 	ret += can_send_custom_message(device_num, (char*)"007#08");
 	//CONTROL_MODE_VELOCITY_CONTROL
 	ret += can_send_custom_message(device_num, (char*)"00b#02");
-	return ret;
+	if (ret == 3) { return 0; }
+	return 1;
 }
 
 //can_send a uint32_t

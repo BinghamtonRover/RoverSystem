@@ -1,5 +1,4 @@
 #include "session.hpp"
-#include "can_bus/can_controller.hpp"
 
 int main() {
     Session subsys_session;
@@ -9,15 +8,19 @@ int main() {
     logger::log(logger::INFO, "Initializing Subsystem Computer...");
 
     // i2c
+    // goodbye I2C <3 - JM
+    /*
     if (rocs::init("/dev/i2c-1") != rocs::Error::OK) {
         logger::log(logger::ERROR, "[!] Failed to init ROCS!");
         return 1;
     }
+    */
 
-    // Suspension subsystem init
+    // Suspension subsystem init -> and CAN bus init
     for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
         if (suspension::init(SUSPENSION_I2C_ADDR) != suspension::Error::OK) {
-            logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
+            logger::log(logger::WARNING, "[!] Failed to init suspension and CAN!");
+            //logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
         } 
         else {
             subsys_session.suspension_inited = true;
@@ -122,8 +125,6 @@ int main() {
     util::Timer::init(&subsys_session.suspension_read_data, SUSPENSION_READ_DATA_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.arm_read_data, ARM_READ_DATA_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.science_read_data, SCIENCE_READ_DATA_INTERVAL, &subsys_session.global_clock);
-
-    can_send(0, 2.0f);
 
     // Subsystem computer main loop
     while (true) {
