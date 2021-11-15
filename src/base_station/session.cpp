@@ -339,15 +339,18 @@ void Session::export_data() {
 void Session::increase_throttle(){
     if(throttle < MAX_THROTTLE){
         throttle++;
-        //since we know throttle speed is already in the map
-        drive_sub_info["Throttle Speed (km/s)"] = throttle;
-    }
-        
+        drive_sub_info["Throttle Speed (km/s)"] = throttle; //we know throttle speed is already initialized in the drive_sub_info
+        //update movement message
+        last_movement_message.left > 0 ? last_movement_message.left++ : last_movement_message.left--; 
+        last_movement_message.right > 0 ? last_movement_message.right++ : last_movement_message.right--;
+    }   
 };
 
 void Session::decrease_throttle(){
     if(throttle > 0){
         throttle--;
         drive_sub_info["Throttle Speed (km/s)"] = throttle;
+        last_movement_message.left > 0 ? last_movement_message.left-- : last_movement_message.left++; 
+        last_movement_message.right > 0 ? last_movement_message.right-- : last_movement_message.right++;
     }
 };
