@@ -10,6 +10,7 @@ can_controller(int num_devs) {
 }
 */
 
+//initialize can_controller with number of devices using can (should be 3)
 int can_init_drive() {
 	int ret = 0;
 	for (int i = 0; i < num_devices; i++) {
@@ -17,6 +18,19 @@ int can_init_drive() {
 	}
 	if (ret == num_devices) { return 0; }
 	return 1;
+}
+
+//send 6 values through can (for each wheel)
+int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5) {
+	int ret = 0;
+	ret += can_send(0, s0);
+	ret += can_send(1, s1);
+	ret += can_send(2, s2);
+	ret += can_send(3, s3);
+	ret += can_send(4, s4);
+	ret += can_send(5, s5);
+	if (ret == 6) { return 0; }
+	else { return 1; }
 }
 
 //initialize can devices

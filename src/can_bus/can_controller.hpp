@@ -18,8 +18,7 @@
 #define num_devices 3
 
 int can_init_drive();
-//will add something like this if needed
-//int can_drive(uint32_t power_1, uint32_t power_2, uint32_t power_3, uint32_t power_4, uint32_t power_5, uint32_t power_6);
+int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5);
 
 int can_init(int device_num);
 int can_send(int device_num, char* message);

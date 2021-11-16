@@ -21,7 +21,7 @@ namespace suspension {
     Error init(uint8_t slave_addr) {
         if (can_init_drive() == 0) { return Error::OK; }
         //I chose a random error here - JM
-        else { return ERROR::READ; }
+        else { return Error::READ; }
         /*
         global_slave_addr = slave_addr;
 
@@ -72,6 +72,46 @@ namespace suspension {
     //new info is (wheel #, uint8_t speed) - JM
     Error update(Side side, Direction direction, uint8_t speed) {
         float float_speed = max_speed * (float)(speed / (uint8_t)255);
+        
+        /*
+        if (direction == forward) {
+            if (side == left) {
+                //three of these should be min_speed (left ones)
+                can_send_drive(float_speed, float_speed, float_speed, float_speed, float_speed, float_speed);
+            }
+            else if (side == right) {
+                //three of these should be min_speed (right ones)
+                can_send_drive(float_speed, float_speed, float_speed, float_speed, float_speed, float_speed);
+            }
+            else {
+                can_send_drive(float_speed, float_speed, float_speed, float_speed, float_speed, float_speed);
+            }
+        }
+        else if (direction == backward) {
+            if (side == left) {
+
+            }
+            else if (side == right) {
+
+            }
+            else {
+                
+            }
+        }
+        else (direction == neutral?) {
+            if (side == left) {
+
+            }
+            else if (side == right) {
+
+            }
+            else {
+                //this should not be possible
+            }
+        }
+        */
+
+
         //can_send(int device_num, float speed);
         /*
         auto rocs_res = rocs::write_to_register(global_slave_addr, side_to_speed_register_map[side], speed);

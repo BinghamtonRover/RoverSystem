@@ -14,7 +14,8 @@ enum class Error { SUSPENSION_ERRORS_DEF(X) };
 #undef X
 
 //I need to get this from Joon I think - JM
-#define max_speed 10.0f
+#define max_speed 30.0f
+#define min_speed 3.0f
 
 const char* get_error_string(Error e);
 

@@ -14,6 +14,8 @@ ifdef ONBOARD
 #	GRIPPER_ONBOARD = true
 endif
 
+SUSPENSION_ONBOARD = true
+
 ifdef SUSPENSION_ONBOARD
 	# ROCS is a dependency
 	ROCS_ONBOARD = true
