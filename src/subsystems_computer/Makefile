@@ -2,7 +2,7 @@ SOURCES = main.cpp subsystem.cpp session.cpp
 HEADERS = gps.hpp subsystem.hpp ../util/util.hpp lidar.hpp session.hpp
 LIBRARIES = ../../bin/libnetwork.a ../../bin/libsimpleconfig.a ../../bin/liblogger.a
 LFLAGS = -L../../bin -lnetwork -lsimpleconfig -llogger
-CFLAGS = -pthread -Wall -std=c++11 -g 
+CFLAGS = -pthread -Wall -std=c++11 -g
 EXECUTABLE = ../../bin/subsystem_computer
 
 ifdef ONBOARD
@@ -14,15 +14,16 @@ ifdef ONBOARD
 #	GRIPPER_ONBOARD = true
 endif
 
-SUSPENSION_ONBOARD = true
+ROCS_ONBOARD = true
+#SOURCES += suspension.hpp
 
-ifdef SUSPENSION_ONBOARD
-	# ROCS is a dependency
-	ROCS_ONBOARD = true
-	SOURCES += suspension_onboard.cpp
-else
-	SOURCES += suspension_dummy.cpp
-endif
+#ifdef SUSPENSION_ONBOARD
+#	# ROCS is a dependency
+#	ROCS_ONBOARD = true
+#	SOURCES += suspension.hpp
+#else
+#	SOURCES += suspension_dummy.cpp
+#endif
 
 ifdef ROCS_ONBOARD
 	LIBRARIES += ../../bin/librocs.a
@@ -55,7 +56,7 @@ endif
 #	SOURCES += gripper_dummy.cpp
 #endif
 
-#always add CAN to onboard, until a dummy (if necessary) needs to be created
+#always add CAN to onboard
 SOURCES += ../can_bus/can_controller.cpp
 SOURCES += ../can_bus/lib.c
 

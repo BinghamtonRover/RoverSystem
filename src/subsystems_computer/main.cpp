@@ -16,9 +16,9 @@ int main() {
     }
     */
 
-    // Suspension subsystem init -> and CAN bus init
+    // Suspension subsystem and CAN bus init
     for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
-        if (suspension::init(SUSPENSION_I2C_ADDR) != suspension::Error::OK) {
+        if (suspension::init() != 0) {
             logger::log(logger::WARNING, "[!] Failed to init suspension and CAN!");
             //logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
         } 
@@ -126,6 +126,7 @@ int main() {
     util::Timer::init(&subsys_session.arm_read_data, ARM_READ_DATA_INTERVAL, &subsys_session.global_clock);
     util::Timer::init(&subsys_session.science_read_data, SCIENCE_READ_DATA_INTERVAL, &subsys_session.global_clock);
 
+    suspension::set_target_speed(255, 255, 0.0f);
     // Subsystem computer main loop
     while (true) {
         if (subsys_session.location_send_timer.ready() && subsys_session.gps_inited) {
@@ -202,64 +203,12 @@ int main() {
         // Update suspension subsystem speed
         if (subsys_session.suspension_update_timer.ready() && subsys_session.suspension_inited) {
             auto movement = subsys_session.last_movement_message;
-            uint8_t absolute_speed; 
-            //logger::log(logger::DEBUG, "Received left: %d; right: %d", movement.left, movement.right);
+            logger::log(logger::DEBUG, "Received left: %d; right: %d", movement.left, movement.right);
 
-            // Left side update
-            // If movement is smaller than 0, we go backwards on the left side wheels
-            if(movement.left < 0){
-                
-                absolute_speed = (-1) * movement.left;
-                if(absolute_speed > 255){
-                    absolute_speed = 255;
-                }
-                logger::log(logger::DEBUG, "Received left: %d\n", absolute_speed);
-                if(suspension::update(suspension::Side::LEFT, suspension::Direction::BACKWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
-                     logger::log(logger::ERROR, "Failed to update left suspension side");
-                }
-            }
-            // If movement is greater than 0, we go forward on the left side wheels
-            else if(movement.left > 0){
-                absolute_speed = movement.left;
-                if(absolute_speed > 255){
-                    absolute_speed = 255;
-                }
-                logger::log(logger::DEBUG, "Received left: %d\n", absolute_speed);
-                if(suspension::update(suspension::Side::LEFT, suspension::Direction::FORWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
-                     logger::log(logger::ERROR, "Failed to update left suspension side");
-                }
-            }
-            // Is movement is 0, then stop left side wheels
-            else if(movement.left == 0){
-                suspension::stop(suspension::Side::LEFT);
-            }
-
-            // Right side update
-            // If movement is less than 0, we go backwards on the right side wheels
-            if(movement.right < 0){
-                // Get absolute value of movement since we cre casting it into an uint8_t
-                absolute_speed = (-1) * movement.right;
-                if(absolute_speed > 255){
-                    absolute_speed = 255;
-                }
-                if(suspension::update(suspension::Side::RIGHT, suspension::Direction::BACKWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
-                     logger::log(logger::ERROR, "Failed to update right suspension side");
-                }
-            }
-            // If movement is greater than 0, we go forward on the right side wheels
-            else if(movement.right > 0){
-                absolute_speed = movement.right;
-                if(absolute_speed > 255){
-                    absolute_speed = 255;
-                }
-                if(suspension::update(suspension::Side::RIGHT, suspension::Direction::FORWARD, (uint8_t)absolute_speed) != suspension::Error::OK){
-                     logger::log(logger::ERROR, "Failed to update right suspension side");
-                }
-            }
-            // Is movement is 0, then stop left side wheels
-            else if(movement.right == 0){
-                suspension::stop(suspension::Side::RIGHT);
-            }
+            suspension::set_target_speed(movement.left, movement.right, subsys_session.global_clock.get_millis());
+        }
+        else if (subsys_session.suspension_inited) {
+            suspension::update(subsys_session.global_clock.get_millis());
         }
 
         if(subsys_session.power_read_data.ready() && subsys_session.power_inited){
