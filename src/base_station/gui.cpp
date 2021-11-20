@@ -2034,6 +2034,7 @@ void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int acti
 void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
         double throttle = bs_session->throttle;
 
+        //0: no keys, 1: forward, 2: forward left, 3: forward right, 4: left only, 5: right only, 6: back only
         switch(bs_session->drive_command_state){
             //no keys pressed 
             case 0: {
@@ -2057,14 +2058,10 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
                 bs_session->last_movement_message.right = (int16_t) throttle;
                 
                 if (action == GLFW_PRESS){
-                    if(key==GLFW_KEY_UP)
-                        bs_session->drive_command_state = 1;
-                    else if(key == GLFW_KEY_LEFT)
+                    if(key == GLFW_KEY_LEFT)
                         bs_session->drive_command_state = 2;
                     else if(key == GLFW_KEY_RIGHT)
                         bs_session->drive_command_state = 3;
-                    else if(key == GLFW_KEY_DOWN))
-                        bs_session->drive_command_state = 4;
                 }
 
                 if (action == GLFW_RELEASE){
@@ -2079,17 +2076,6 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
                 bs_session->last_movement_message.left = (int16_t) throttle / 2;
                 bs_session->last_movement_message.right = (int16_t) throttle;
                 
-                if (action == GLFW_PRESS){
-                    if(key==GLFW_KEY_UP)
-                        //bs_session->drive_command_state = 2;
-                    else if(key == GLFW_KEY_LEFT)
-                        bs_session->drive_command_state = 2;
-                    else if(key == GLFW_KEY_RIGHT)
-                        //bs_session->drive_command_state = 3;
-                    else if(key == GLFW_KEY_DOWN))
-                        bs_session->drive_command_state = 4;
-                }
-
                 if (action == GLFW_RELEASE){
                     if(key==GLFW_KEY_UP)
                         bs_session->drive_command_state = 4;
@@ -2104,17 +2090,6 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
             case 3: {
                 bs_session->last_movement_message.left = (int16_t) throttle;
                 bs_session->last_movement_message.right = (int16_t) throttle / 2;
-                
-                if (action == GLFW_PRESS){
-                    if(key==GLFW_KEY_UP)
-                        bs_session->drive_command_state = 1;
-                    else if(key == GLFW_KEY_LEFT)
-                        bs_session->drive_command_state = 2;
-                    else if(key == GLFW_KEY_RIGHT)
-                        bs_session->drive_command_state = 3;
-                    else if(key == GLFW_KEY_DOWN))
-                        bs_session->drive_command_state = 4;
-                }
 
                 if (action == GLFW_RELEASE){
                     if(key==GLFW_KEY_UP)
@@ -2122,6 +2097,8 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
                     else if(key == GLFW_KEY_RIGHT)
                         bs_session->drive_command_state = 1;
                 }
+
+                break;
             }
             //left alone
             case 4: {
@@ -2137,6 +2114,8 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
                     if(key == GLFW_KEY_LEFT)
                         bs_session->drive_command_state = 0;
                 }
+
+                break;
             }
             //right alone
             case 5: {
@@ -2152,6 +2131,8 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
                     if(key == GLFW_KEY_RIGHT)
                         bs_session->drive_command_state = 0;
                 }
+
+                break;
             }
             //back only
             case 6: {
@@ -2162,6 +2143,8 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
                     if(key == GLFW_KEY_DOWN))
                         bs_session->drive_command_state = 0;
                 }
+
+                break;
             }
         }
 }

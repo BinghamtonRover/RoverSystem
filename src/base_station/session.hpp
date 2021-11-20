@@ -187,7 +187,7 @@ public:
 
     //throttle variable to limit the max speed
     double throttle;
-    //0 
+    //0: no keys, 1: forward, 2: forward left, 3: forward right, 4: left only, 5: right only, 6: back only
     int drive_command_state;
 
     //Constructor & Destructor
