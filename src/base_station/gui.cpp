@@ -1779,12 +1779,12 @@ void poll_keys_callback(Session& bs_session, GLFWwindow* window, bool& help_menu
     } 
     //Throttle info
     else if (glfwGetKey(window,GLFW_KEY_T) == GLFW_PRESS){
-        if(bs_session->bs_focus_mode == FocusMode::DRIVE)
-            bs_session->increase_throttle(); //increase throttle updates the throttle variable and the drive sub info
+        if(bs_session.bs_focus_mode == FocusMode::DRIVE)
+            bs_session.increase_throttle(); //increase throttle updates the throttle variable and the drive sub info
     }
     else if(glfwGetKey(window,GLFW_KEY_R) == GLFW_PRESS){
-        if(bs_session->bs_focus_mode == FocusMode::DRIVE)
-            bs_session->decrease_throttle(); //same as increase
+        if(bs_session.bs_focus_mode == FocusMode::DRIVE)
+            bs_session.decrease_throttle(); //same as increase
     } 
 }
 
@@ -2138,12 +2138,10 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
             case 6: {
                 bs_session->last_movement_message.left = (int16_t) -throttle;
                 bs_session->last_movement_message.right = (int16_t) -throttle;
-
                 if (action == GLFW_RELEASE){
-                    if(key == GLFW_KEY_DOWN))
+                    if(key == GLFW_KEY_DOWN)
                         bs_session->drive_command_state = 0;
                 }
-
                 break;
             }
         }
