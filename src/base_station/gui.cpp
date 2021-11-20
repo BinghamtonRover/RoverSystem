@@ -1776,7 +1776,16 @@ void poll_keys_callback(Session& bs_session, GLFWwindow* window, bool& help_menu
             logger::log(logger::INFO, pic_msg);
             std::free(pic_msg);
         }
+    } 
+    //Throttle info
+    else if (glfwGetKey(window,GLFW_KEY_T) == GLFW_PRESS){
+        if(bs_session->bs_focus_mode == FocusMode::DRIVE)
+            bs_session->increase_throttle(); //increase throttle updates the throttle variable and the drive sub info
     }
+    else if(glfwGetKey(window,GLFW_KEY_R) == GLFW_PRESS){
+        if(bs_session->bs_focus_mode == FocusMode::DRIVE)
+            bs_session->decrease_throttle(); //same as increase
+    } 
 }
 
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
@@ -2023,15 +2032,14 @@ void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int acti
 
 }
 void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
-    if(bs_session->bs_focus_mode == FocusMode::DRIVE){
-        if (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_UP) {
             //up & right
-            if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS){
+            if(action == GLFW_PRESS && key == GLFW_KEY_RIGHT){
                 bs_session->last_movement_message.left = (int16_t) bs_session->throttle;
                 bs_session->last_movement_message.right = (int16_t) (bs_session->throttle / 2);
             }
             //up and left
-            else if(glfwGetKey(window,GLFW_KEY_LEFT == GLFW_PRESS)){
+            else if(action == GLFW_PRESS && key == GLFW_KEY_LEFT){
                 bs_session->last_movement_message.left = (int16_t) (bs_session->throttle / 2);
                 bs_session->last_movement_message.right = (int16_t) bs_session->throttle;
             }
@@ -2042,29 +2050,24 @@ void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int ac
             }
         }
         //only left
-        else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
+        else if(action == GLFW_PRESS && key == GLFW_KEY_LEFT){
             bs_session->last_movement_message.left = (int16_t) 0;
             bs_session->last_movement_message.right = (int16_t) bs_session->throttle;
         }
         //only right
-        else if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
+        else if(action == GLFW_PRESS && key == GLFW_KEY_RIGHT){
             bs_session->last_movement_message.left = (int16_t) bs_session->throttle;
             bs_session->last_movement_message.right = (int16_t) 0;
         }
         //only backwards
-        else if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS){
-            bs_session->last_movement_message.left = (int16_t) -bs_session->throttle;
-            bs_session->last_movement_message.right = (int16_t) -bs_session->throttle;
-        }  
-        //T increases throttle R decresasesd throttle
-        if (glfwGetKey(window,GLFW_KEY_T) == GLFW_PRESS){
-            //TODO: update the speed in the last_movement_message
-            bs_session->increase_throttle(); //increase throttle updates the throttle variable and the drive sub info
-        }
-        else if(glfwGetKey(window,GLFW_KEY_R) == GLFW_PRESS){
-            bs_session->decrease_throttle(); //same as increase
+        else if(action == GLFW_PRESS && key == GLFW_KEY_DOWN){
+            bs_session->last_movement_message.left = (int16_t) - bs_session->throttle;
+            bs_session->last_movement_message.right = (int16_t) - bs_session->throttle;
         } 
-    }
+
+        else if(action==GLFW_RELEASE){
+            
+        } 
 }
 void science_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
     if (action == GLFW_PRESS && key == GLFW_KEY_I) {
