@@ -187,6 +187,8 @@ public:
 
     //throttle variable to limit the max speed
     double throttle;
+    //0 
+    int drive_command_state;
 
     //Constructor & Destructor
     Session();

@@ -201,6 +201,8 @@ void Session::drive_sub_init(){
     throttle_stat.first = "Throttle Speed (max 255)";
     throttle_stat.second = 0.0;
     this->drive_sub_info.insert(throttle_stat);
+
+    drive_command_state = 0;
 }
 
 void Session::arm_sub_init(){
@@ -339,7 +341,7 @@ void Session::export_data() {
 void Session::increase_throttle(){
     if(throttle < MAX_THROTTLE){
         throttle++;
-        drive_sub_info["Throttle Speed (km/s)"] = throttle; //we know throttle speed is already initialized in the drive_sub_info
+        drive_sub_info["Throttle Speed (max 255)"] = throttle; //we know throttle speed is already initialized in the drive_sub_info
         //update movement message
         last_movement_message.left > 0 ? last_movement_message.left++ : last_movement_message.left--; 
         last_movement_message.right > 0 ? last_movement_message.right++ : last_movement_message.right--;
@@ -349,7 +351,7 @@ void Session::increase_throttle(){
 void Session::decrease_throttle(){
     if(throttle > 0){
         throttle--;
-        drive_sub_info["Throttle Speed (km/s)"] = throttle;
+        drive_sub_info["Throttle Speed (max 255)"] = throttle;
         last_movement_message.left > 0 ? last_movement_message.left-- : last_movement_message.left++; 
         last_movement_message.right > 0 ? last_movement_message.right-- : last_movement_message.right++;
     }
