@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <functional>
 
 namespace gui {
 namespace debug_console {
@@ -198,6 +199,137 @@ void command_callback(std::string command, Session *bs_session) {
                 bs_session->last_movement_message.right);
         } else {
             log("Invalid Input: \"move\" expects two integers.", 1, 0, 0);
+        }
+    }
+    else if (parts[0] == "controller") {
+        if (parts.size() > 1) {
+            if (parts[1] == "list") {
+                log("Controller Input Devices:", 1, 1, 1);
+                for (Controller& c : bs_session->controller_mgr.devices) {
+                    if (c.present()) {
+                        log("    Device " + std::to_string(c.get_joystick_id()) + ": " + glfwGetJoystickName(c.get_joystick_id()), 1, 1, 1);
+                    }
+                }
+            }
+            else if (parts[1] == "bind") {
+                if (parts.size() != 5 || parts[2] == "help") {
+                    log("Usage: controller bind [joystick ID] [axis] [action]", 1, 1, 1);
+                    log("    Available actions: forward, reverse, steering", 1, 1, 1);
+                }
+                else {
+                    try {
+                        int js_id = std::stoi(parts[2]);
+                        if (js_id < GLFW_JOYSTICK_1 || js_id > GLFW_JOYSTICK_LAST || !bs_session->controller_mgr.devices[js_id].present()) {
+                            throw std::logic_error("joystick id");
+                        }
+
+                        int count;
+                        glfwGetJoystickAxes(js_id, &count);
+                        
+                        int axis = std::stoi(parts[3]);
+                        if (axis < 0 || axis >= count) {
+                            throw std::logic_error("joystick axis");
+                        }
+
+                        std::function<void(float)> target_action;
+                        if (parts[4] == "forward") {
+                            target_action = std::bind(&Session::axis_forward_speed, bs_session, std::placeholders::_1);
+                        } else if (parts[4] == "reverse") {
+                            target_action = std::bind(&Session::axis_reverse_speed, bs_session, std::placeholders::_1);
+                        } else if (parts[4] == "steering") {
+                            target_action = std::bind(&Session::axis_turning, bs_session, std::placeholders::_1);
+                        } else if (parts[4] == "debug") {
+                            if (bs_session->drive_sub_info.count("Axis Input") == 0) {
+                                std::pair<std::string, double> axis_input;
+                                axis_input.first = "Axis Input";
+                                axis_input.second = 0.0;
+                                bs_session->drive_sub_info.insert(axis_input);
+                            }
+
+                            target_action = [bs_session](float x) {
+                                bs_session->drive_sub_info["Axis Input"] = x;
+                            };
+                        }
+
+                        if (target_action) {
+                            bs_session->controller_mgr.devices[js_id][axis].set_action(target_action);
+                        } else {
+                            log("Invalid action. Options: forward, reverse, steering", 1, 0, 0);
+                        }
+                    
+                    } catch (const std::logic_error& e) {
+                        log("Invalid input. Usage: controller bind [joystick ID] [axis] [function]", 1, 0, 0);
+                    }
+                }
+            }
+            else if (parts[1] == "calibrate") {
+                try {
+                    if (parts.at(2) == "start") {
+                        int joystick_id = std::stoi(parts.at(3));
+                        int axis_id = std::stoi(parts.at(4));
+                        Controller& c = bs_session->controller_mgr.devices.at(joystick_id);
+                        if (axis_id < 0 || axis_id > c.count_axes()) {
+                            throw std::out_of_range("calibrate");
+                        }
+
+                        c[axis_id].begin_calibration();
+                        log("Calibration started on axis " + std::to_string(axis_id), 1, 1, 1);
+
+                    } else if (parts.at(2) == "finish") {
+                        int joystick_id = std::stoi(parts.at(3));
+                        int axis_id = std::stoi(parts.at(4));
+                        Controller& c = bs_session->controller_mgr.devices.at(joystick_id);
+                        if (axis_id < 0 || axis_id > c.count_axes()) {
+                            throw std::out_of_range("calibrate");
+                        }
+
+                        c[axis_id].finish_calibration();
+                        log("Calibration finished on axis " + std::to_string(axis_id), 1, 1, 1);
+                    } else if (parts.at(2) == "center") {
+                        int joystick_id = std::stoi(parts.at(3));
+                        int axis_id = std::stoi(parts.at(4));
+                        float center = std::stof(parts.at(5));
+                        float dead_zone = std::stof(parts.at(6));
+                        Controller& c = bs_session->controller_mgr.devices.at(joystick_id);
+                        if (axis_id < 0 || axis_id > c.count_axes()) {
+                            throw std::out_of_range("calibrate");
+                        }
+
+                        c[axis_id].recenter(center, dead_zone);
+                        log("Recentered axis " + std::to_string(axis_id) + " at " + std::to_string(center) + " with " + std::to_string(dead_zone * 100) + "% tolerance", 1, 1, 1);
+                    } else {
+                        throw std::logic_error("calibrate");
+                    }
+                } catch (const std::logic_error&) {
+                    log("Invalid input. Usage: controller calibrate [start/finish/center] [joystick ID] [axis] (center) (dead zone %)", 1, 0, 0);
+                    log("    Example: controller calibrate start 0 2", 1, 0, 0);
+                    log("    Example: controller calibrate center 0 2 0.0 0.05", 1, 0, 0);
+                }
+            }
+            else if (parts[1] == "info") {
+                if (parts.size() != 3) {
+                    log("Usage: controller info [joystick ID]", 1, 1, 1);
+                } else {
+                    try {
+                        int js_id = std::stoi(parts[2]);
+                        if (js_id < GLFW_JOYSTICK_1 || js_id > GLFW_JOYSTICK_LAST || !bs_session->controller_mgr.devices[js_id].present()) {
+                            throw std::logic_error("joystick id");
+                        }
+
+                        int count;
+                        const float* axes = glfwGetJoystickAxes(js_id, &count);
+                        log("Device " + std::to_string(js_id) + ": " + glfwGetJoystickName(js_id) + ", " + std::to_string(count) + " axes", 1, 1, 1);
+                        for (int i = 0; i < count; i++) {
+                            log("    AXIS " + std::to_string(i) + " = " + std::to_string(axes[i]) + " -> " + std::to_string(bs_session->controller_mgr.devices[js_id][i].translate(axes[i])), 1, 1, 1);
+                        }
+                        
+                    } catch (const std::logic_error&) {
+                        log("Invalid joystick ID.", 1, 0, 0);
+                    }
+                }
+            } else {
+                log("Usage: controller [list, bind <controller #, axis #, action name>, calibrate <start/finish/center> <controller #> <axis #> <center> <dead zone %>, info <controller #>]", 1, 0, 0);
+            }
         }
     }
     else if (parts[0].length() > 0) {

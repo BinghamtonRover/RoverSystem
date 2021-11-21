@@ -1,82 +1,59 @@
-#ifndef CONTROLLER_HPP
-#define CONTROLLER_HPP
+#ifndef CONTROLLER
+#define CONTROLLER
 
-#include <cstdint>
-#include "session.hpp"
+#include <vector>
+#include <functional>
 
-namespace controller {
+class JoystickAxis {
+    public:
 
-// Button mapping for the XBox One controller.
-enum class Button : uint16_t {
-    A = 0,
-    B = 1,
-    X = 2,
-    Y = 3,
-    LB = 4,
-    RB = 5,
-    BACK = 6,
-    START = 7,
-    XBOX = 8,
-    JS_LEFT = 9,
-    JS_RIGHT = 10
-};
-const int NUM_BUTTONS = 11;
+		constexpr static float AXIS_MIN = -1.0F;
+		constexpr static float AXIS_MAX = 1.0F;
+		constexpr static float AXIS_RANGE = AXIS_MAX - AXIS_MIN;
 
-// Axis mapping for the Xbox One controller.
-enum class Axis : uint16_t {
-    JS_LEFT_X = 0,
-    JS_LEFT_Y = 1,
-    JS_RIGHT_X = 3,
-    JS_RIGHT_Y = 4,
-    DPAD_X = 6,
-    DPAD_Y = 7,
-    LT = 2,
-    RT = 5
-};
-const int NUM_AXES = 8;
+		void begin_calibration();
+		void finish_calibration();
+		void set_action(std::function<void(float)>& action);
 
-// Represents the different error states associated with reading from the controller.
-enum class Error {
-    OK,
-    DONE,
+		// Calibrate the joystick around a center value with a dead zone
+		void recenter(float center, float dead_zone);
 
-    OPEN,
-    READ
+		inline void update(float x) { if (!calibrating) x = translate(x); if (action) action(translate(x)); }
+
+		// Scale the raw controller input to the calibrated range for this joystick
+		float translate(float);
+	private:
+		// Joystick calibration:
+		// Min and max show the range achievable by this axis. Typically all axes cover the entire [-1, 1]
+		float minimum = AXIS_MIN;
+		float maximum = AXIS_MAX;
+		// Two-sided scaling: joysticks usually don't center exactly at 0, so scale around a calibrated center
+		// There are two separate scales since one side will cover a larger range of values
+		float left_scale = 1.0F;
+		float right_scale = 1.0F;
+		float center = 0.0F;
+		float dead_zone = 0.0F;
+
+		bool calibrating = false;
+
+		void calibrate_action(float);
+        std::function<void(float)> action;
+		std::function<void(float)> displaced_action;
 };
 
-enum class EventType { BUTTON, AXIS, OTHER };
-
-struct Event {
-    EventType type;
-
-    union {
-        Button button;
-        Axis axis;
-    };
-
-    int16_t value;
+class Controller {
+    public:
+        void set_joystick_id(int id);
+        int get_joystick_id() const;
+        bool present() const;
+        void update_device();
+        void update_axes();
+        JoystickAxis& operator[](size_t index);
+		int count_axes() const;
+    private:
+        int joystick_id;
+        std::vector<JoystickAxis> axes;
+        bool _present = false;
 };
 
-// Initializes the global controller by attempting to open the given device file.
-// Returns Error::OK on success and Error::OPEN if the file cannot be opened.
-Error init(const char* device_file);
-
-// Polls for joystick events, filling in the given event.
-// Returns Error::OK if there are more events to be polled.
-// Returns Error::DONE if there are no more events to process
-// (if Error::DONE is returned, then no event was found).
-// Returns Error::READ if reading from the device file fails.
-Error poll(Event* event);
-
-// Retrieves the value of the given button or axis.
-// 0 is returned if no update has been received.
-int16_t get_value(Button button);
-int16_t get_value(Axis axis);
-
-float smooth_rover_input(float value);
-void handle_drive_controller_event(controller::Event event, Session* bs_session);
-void handle_arm_controller_event(controller::Event event, Session* bs_session);
-void handle_science_controller_event(controller::Event event, Session* bs_session);
-
-} // namespace controller
 #endif

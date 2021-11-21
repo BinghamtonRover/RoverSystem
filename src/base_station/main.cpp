@@ -1,7 +1,6 @@
 #include "../network/network.hpp"
 #include "../util/util.hpp"
 
-#include "controller.hpp"
 #include "debug_console.hpp"
 #include "log_view.hpp"
 #include "waypoint.hpp"
@@ -192,20 +191,12 @@ int main() {
 
         
     }
+    bs_session.controller_mgr.init();
 
     // Init last movement info timers.
     util::Timer::init(&bs_session.movement_send_timer, MOVEMENT_SEND_INTERVAL, &bs_session.global_clock);
     util::Timer::init(&bs_session.arm_send_timer, ARM_SEND_INTERVAL, &bs_session.global_clock);
     util::Timer::init(&bs_session.network_stats_timer, NETWORK_STATS_INTERVAL, &bs_session.global_clock);
-
-    // Init the controller.
-    // TODO: QUERY /sys/class/input/js1/device/id/{vendor,product} TO FIND THE RIGHT CONTROLLER.
-    if (controller::init("/dev/input/js0") == controller::Error::OK) {
-        bs_session.controller_loaded = true;
-        logger::log(logger::INFO, "Controller connected.");
-    } else {
-        logger::log(logger::WARNING, "No controller connected!");
-    }
 
     gui::debug_console::log("Debug log initialized.", 0, 1.0, 0);
 
@@ -245,6 +236,8 @@ int main() {
             gui::poll_keys_callback(bs_session, window, help_menu_up, stopwatch_menu_up, image_display_up, firstImageTime, firstImageName, secondImageName, quit);
         }
         if (quit) { break; }
+
+        bs_session.controller_mgr.update_controls();
 
         //Checks if it has been 10 seconds since a picture was taken
         if(firstImageName != NULL && secondImageName == NULL && bs_session.global_clock.get_millis() >= (firstImageTime + (10 * 1000))){
@@ -424,63 +417,6 @@ int main() {
             bs_session.r_feed.bytes_transferred = 0;
             bs_session.bs_feed.bytes_transferred = 0;
             bs_session.v_feed.bytes_transferred = 0;
-        }
-
-        if (bs_session.controller_loaded) {
-            // Process controller input.
-            controller::Event event;
-            controller::Error err;
-
-            while ((err = controller::poll(&event)) == controller::Error::OK) {
-                if (event.type == controller::EventType::BUTTON) {
-                    if (event.button == controller::Button::BACK && event.value != 0) {
-                        logger::log(logger::DEBUG, "button");
-                        int temp = bs_session.primary_feed;
-                        bs_session.primary_feed = bs_session.secondary_feed;
-                        bs_session.secondary_feed = temp;
-                    } 
-                    else if (event.button == controller::Button::XBOX && event.value != 0) {
-                        switch (bs_session.controller_mode) {
-                            case ControllerMode::DRIVE:
-                                bs_session.controller_mode = ControllerMode::ARM;
-                                break;
-                            case ControllerMode::ARM:
-                                bs_session.controller_mode = ControllerMode::DRIVE;
-                                break;
-                            case ControllerMode::SCIENCE:
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-
-                switch (bs_session.controller_mode) {
-                    case ControllerMode::DRIVE:
-                        controller::handle_drive_controller_event(event, &bs_session);
-                        break;
-                    case ControllerMode::ARM:
-                        controller::handle_arm_controller_event(event, &bs_session);
-                        break;
-                    case ControllerMode::SCIENCE:
-                        controller::handle_science_controller_event(event, &bs_session);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (err != controller::Error::DONE) {
-                logger::log(logger::ERROR, "Failed to read from the controller! Disabling until reconnect.");
-                bs_session.controller_loaded = false;
-            }
-        }
-
-        if(!bs_session.controller_loaded){
-            if (controller::init("/dev/input/js0") == controller::Error::OK) {
-                bs_session.controller_loaded = true;
-                logger::log(logger::INFO, "Controller reconnected.");
-            }  
         }
 
         if (bs_session.movement_send_timer.ready()) {

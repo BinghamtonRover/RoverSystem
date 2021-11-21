@@ -1,6 +1,5 @@
 #include "../network/network.hpp"
 #include "waypoint.hpp"
-#include "controller.hpp"
 #include "camera_feed.hpp"
 #include "waypoint_map.hpp"
 #include "debug_console.hpp"

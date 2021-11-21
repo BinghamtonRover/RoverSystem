@@ -6,6 +6,7 @@
 #include "shared_feeds.hpp" 
 #include "camera_feed.hpp"
 #include "stb_truetype.h"
+#include "controller_manager.hpp"
 
 #include <string>
 #include <vector>
@@ -180,6 +181,7 @@ public:
     bool controller_loaded;
     ControllerMode controller_mode;
     ArmControlRegion arm_control_region;
+    ControllerManager controller_mgr;
 
     std::vector<uint16_t> lidar_points;
 
@@ -226,6 +228,11 @@ public:
 
     void adjust_throttle(int delta);
     void calc_drive_speed();
+
+    // Controller mapping functions
+    void axis_forward_speed(float);
+    void axis_reverse_speed(float);
+    void axis_turning(float);
 
 };
 

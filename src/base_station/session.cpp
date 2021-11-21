@@ -403,3 +403,15 @@ void Session::calc_drive_speed() {
         }
     }
 }
+
+void Session::axis_forward_speed(float x) {
+    
+}
+
+void Session::axis_reverse_speed(float x) {
+
+}
+
+void Session::axis_turning(float x) {
+    
+}
