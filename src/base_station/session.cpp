@@ -1,8 +1,10 @@
 #include "session.hpp"
 #include "../logger/logger.hpp"
 
+#include <algorithm>
+
 //Create Session instance and initialize variables
-Session::Session(){
+Session::Session() {
     this->last_subsystem_tick = 0;
     this->last_video_tick = 0;
 
@@ -167,6 +169,11 @@ void Session::dont_send_invalid() {
 
 
 void Session::drive_sub_init(){
+
+    keyboard_direction = KeyboardDriveDirection::STOPPED;
+    keyboard_steering = KeyboardDriveSteering::STRAIGHT;
+    throttle = 0;
+
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";
     speed_stat.second = 0.0;
@@ -202,7 +209,16 @@ void Session::drive_sub_init(){
     throttle_stat.second = 0.0;
     this->drive_sub_info.insert(throttle_stat);
 
-    drive_command_state = 0;
+    std::pair<std::string, double> target_right_speed;
+    target_right_speed.first = "Target Right Speed";
+    target_right_speed.second = 0.0;
+    this->drive_sub_info.insert(target_right_speed);
+
+    std::pair<std::string, double> target_left_speed;
+    target_left_speed.first = "Target Right Speed";
+    target_left_speed.second = 0.0;
+    this->drive_sub_info.insert(target_left_speed);
+
 }
 
 void Session::arm_sub_init(){
@@ -338,21 +354,52 @@ void Session::export_data() {
     log_file << std::endl;
 }
 
-void Session::increase_throttle(){
-    if(throttle < MAX_THROTTLE){
-        throttle++;
-        drive_sub_info["Throttle Speed (max 255)"] = throttle; //we know throttle speed is already initialized in the drive_sub_info
-        //update movement message
-        last_movement_message.left > 0 ? last_movement_message.left++ : last_movement_message.left--; 
-        last_movement_message.right > 0 ? last_movement_message.right++ : last_movement_message.right--;
-    }   
+void Session::adjust_throttle(int delta) {
+    if (delta > 0) {
+        if (MAX_THROTTLE - throttle > delta) {
+            throttle += delta;
+        } else {
+            throttle = MAX_THROTTLE;
+        }
+    } else {
+        if (throttle > -delta) {
+            throttle += delta;
+        } else {
+            throttle = 0;
+        }
+    }
+    drive_sub_info["Throttle Speed (max 255)"] = static_cast<double>(throttle); //we know throttle speed is already initialized in the drive_sub_info   
 };
 
-void Session::decrease_throttle(){
-    if(throttle > 0){
-        throttle--;
-        drive_sub_info["Throttle Speed (max 255)"] = throttle;
-        last_movement_message.left > 0 ? last_movement_message.left-- : last_movement_message.left++; 
-        last_movement_message.right > 0 ? last_movement_message.right-- : last_movement_message.right++;
+void Session::calc_drive_speed() {
+    last_movement_message.left = 0;
+    last_movement_message.right = 0;
+    if (throttle > 0) {
+        bool invert = false;
+        if (keyboard_direction == KeyboardDriveDirection::FORWARD) {
+            last_movement_message.left = throttle;
+            last_movement_message.right = throttle;
+        } else if (keyboard_direction == KeyboardDriveDirection::BACKWARD) {
+            // Move backward slower than forward
+            last_movement_message.left = std::max(throttle / 2, 1);
+            last_movement_message.right = std::max(throttle / 2, 1);
+            invert = true;
+        }
+
+        // For steering, the side we turn to gets slowed down (halved)
+        // In the event of a "stationary" turn (no forward/back speed), we must boost the opposite side as well
+        if (keyboard_steering == KeyboardDriveSteering::LEFT) {
+            last_movement_message.left /= 2;
+            last_movement_message.right = std::max({static_cast<int>(last_movement_message.right), throttle / 2, 1});
+            
+        } else if (keyboard_steering == KeyboardDriveSteering::RIGHT) {
+            last_movement_message.right /= 2;
+            last_movement_message.left = std::max({static_cast<int>(last_movement_message.left), throttle / 2, 1});
+        }
+
+        if (invert) {
+            last_movement_message.right = -last_movement_message.right;
+            last_movement_message.left = -last_movement_message.left;
+        }
     }
-};
+}

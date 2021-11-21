@@ -484,7 +484,9 @@ int main() {
         }
 
         if (bs_session.movement_send_timer.ready()) {
-            // printf("sending movement with %d, %d\n", last_movement_message.left, last_movement_message.right);
+            bs_session.calc_drive_speed();
+            bs_session.drive_sub_info["Target Right Speed"] = bs_session.last_movement_message.right;
+            bs_session.drive_sub_info["Target Left Speed"] = bs_session.last_movement_message.left;
             network::publish(&bs_session.bs_feed, &bs_session.last_movement_message);
         }
 

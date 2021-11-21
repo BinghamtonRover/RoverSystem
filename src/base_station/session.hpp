@@ -88,6 +88,18 @@ enum class ArmControlRegion{
     GRIPPER
 };
 
+enum class KeyboardDriveDirection {
+    STOPPED,
+    FORWARD,
+    BACKWARD
+};
+
+enum class KeyboardDriveSteering {
+    STRAIGHT,
+    LEFT,
+    RIGHT
+};
+
 struct StopwatchStruct {
     StopwatchState state;
     unsigned int start_time;
@@ -186,9 +198,9 @@ public:
     util::Timer log_interval_timer;
 
     //throttle variable to limit the max speed
-    double throttle;
-    //0: no keys, 1: forward, 2: forward left, 3: forward right, 4: left only, 5: right only, 6: back only
-    int drive_command_state;
+    int throttle;
+    KeyboardDriveDirection keyboard_direction;
+    KeyboardDriveSteering keyboard_steering;
 
     //Constructor & Destructor
     Session();
@@ -212,8 +224,9 @@ public:
     void stop_log();
     void export_data();
 
-    void increase_throttle();
-    void decrease_throttle();
+    void adjust_throttle(int delta);
+    void calc_drive_speed();
+
 };
 
 #endif

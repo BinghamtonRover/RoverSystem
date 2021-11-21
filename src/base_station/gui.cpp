@@ -1780,11 +1780,11 @@ void poll_keys_callback(Session& bs_session, GLFWwindow* window, bool& help_menu
     //Throttle info
     else if (glfwGetKey(window,GLFW_KEY_T) == GLFW_PRESS){
         if(bs_session.bs_focus_mode == FocusMode::DRIVE)
-            bs_session.increase_throttle(); //increase throttle updates the throttle variable and the drive sub info
+            bs_session.adjust_throttle(1); // updates the throttle variable and the drive sub info
     }
     else if(glfwGetKey(window,GLFW_KEY_R) == GLFW_PRESS){
         if(bs_session.bs_focus_mode == FocusMode::DRIVE)
-            bs_session.decrease_throttle(); //same as increase
+            bs_session.adjust_throttle(-1);
     } 
 }
 
@@ -2032,119 +2032,55 @@ void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int acti
 
 }
 void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
-        double throttle = bs_session->throttle;
+        
+        if (action == GLFW_PRESS) {
 
-        //0: no keys, 1: forward, 2: forward left, 3: forward right, 4: left only, 5: right only, 6: back only
-        switch(bs_session->drive_command_state){
-            //no keys pressed 
-            case 0: {
-                bs_session->last_movement_message.left = (int16_t) 0;
-                bs_session->last_movement_message.right = (int16_t) 0;
-                
-                if (action == GLFW_PRESS && key == GLFW_KEY_UP)
-                    bs_session->drive_command_state = 1;
-                else if (action == GLFW_PRESS && key == GLFW_KEY_LEFT)
-                    bs_session->drive_command_state = 2;
-                else if (action == GLFW_PRESS && key == GLFW_KEY_RIGHT)
-                    bs_session->drive_command_state = 3;
-                else if (action == GLFW_PRESS && key == GLFW_KEY_DOWN)
-                    bs_session->drive_command_state = 4;
-
-                break;
-            }
-            //forward keys only pressed
-            case 1: {
-                bs_session->last_movement_message.left = (int16_t) throttle;
-                bs_session->last_movement_message.right = (int16_t) throttle;
-                
-                if (action == GLFW_PRESS){
-                    if(key == GLFW_KEY_LEFT)
-                        bs_session->drive_command_state = 2;
-                    else if(key == GLFW_KEY_RIGHT)
-                        bs_session->drive_command_state = 3;
-                }
-
-                if (action == GLFW_RELEASE){
-                    if(key==GLFW_KEY_UP)
-                        bs_session->drive_command_state = 0;
-                }
-
-                break;
-            }
-            //forward and left
-            case 2: {
-                bs_session->last_movement_message.left = (int16_t) throttle / 2;
-                bs_session->last_movement_message.right = (int16_t) throttle;
-                
-                if (action == GLFW_RELEASE){
-                    if(key==GLFW_KEY_UP)
-                        bs_session->drive_command_state = 4;
-                    else if(key == GLFW_KEY_LEFT)
-                        bs_session->drive_command_state = 1;
-                }
-
-                break;
+            switch (key) {
+                case GLFW_KEY_UP:
+                    // Only apply forward direction if the rover is stopped
+                    if (bs_session->keyboard_direction == KeyboardDriveDirection::STOPPED) {
+                        bs_session->keyboard_direction = KeyboardDriveDirection::FORWARD;
+                    }
+                    break; 
+                case GLFW_KEY_DOWN:
+                    // Reverse direction will take precedence over forward (as if braking)
+                    bs_session->keyboard_direction = KeyboardDriveDirection::BACKWARD;
+                    break;
+                case GLFW_KEY_LEFT:
+                    bs_session->keyboard_steering = KeyboardDriveSteering::LEFT;
+                    break;
+                case GLFW_KEY_RIGHT:
+                    bs_session->keyboard_steering = KeyboardDriveSteering::RIGHT;
+                    break;
             }
 
-            //forward and right
-            case 3: {
-                bs_session->last_movement_message.left = (int16_t) throttle;
-                bs_session->last_movement_message.right = (int16_t) throttle / 2;
+        } else if (action == GLFW_RELEASE) {
 
-                if (action == GLFW_RELEASE){
-                    if(key==GLFW_KEY_UP)
-                        bs_session->drive_command_state = 5;
-                    else if(key == GLFW_KEY_RIGHT)
-                        bs_session->drive_command_state = 1;
-                }
-
-                break;
+            switch (key) {
+                case GLFW_KEY_UP:
+                    if (bs_session->keyboard_direction == KeyboardDriveDirection::FORWARD) {
+                        bs_session->keyboard_direction = KeyboardDriveDirection::STOPPED;
+                    }
+                    break; 
+                case GLFW_KEY_DOWN:
+                    if (bs_session->keyboard_direction == KeyboardDriveDirection::BACKWARD) {
+                        bs_session->keyboard_direction = KeyboardDriveDirection::STOPPED;
+                    }
+                    break;
+                case GLFW_KEY_LEFT:
+                    if (bs_session->keyboard_steering == KeyboardDriveSteering::LEFT) {
+                        bs_session->keyboard_steering = KeyboardDriveSteering::STRAIGHT;
+                    }
+                    break;
+                case GLFW_KEY_RIGHT:
+                    if (bs_session->keyboard_steering == KeyboardDriveSteering::RIGHT) {
+                        bs_session->keyboard_steering = KeyboardDriveSteering::STRAIGHT;
+                    }
+                    break;
             }
-            //left alone
-            case 4: {
-                bs_session->last_movement_message.left = (int16_t) 0;
-                bs_session->last_movement_message.right = (int16_t) throttle;
-                
-                if (action == GLFW_PRESS){
-                    if(key==GLFW_KEY_UP)
-                        bs_session->drive_command_state = 2;
-                }
 
-                if (action == GLFW_RELEASE){
-                    if(key == GLFW_KEY_LEFT)
-                        bs_session->drive_command_state = 0;
-                }
-
-                break;
-            }
-            //right alone
-            case 5: {
-                bs_session->last_movement_message.left = (int16_t) throttle;
-                bs_session->last_movement_message.right = (int16_t) 0;
-                
-                if (action == GLFW_PRESS){
-                    if(key==GLFW_KEY_UP)
-                        bs_session->drive_command_state = 3;
-                }
-
-                if (action == GLFW_RELEASE){
-                    if(key == GLFW_KEY_RIGHT)
-                        bs_session->drive_command_state = 0;
-                }
-
-                break;
-            }
-            //back only
-            case 6: {
-                bs_session->last_movement_message.left = (int16_t) -throttle;
-                bs_session->last_movement_message.right = (int16_t) -throttle;
-                if (action == GLFW_RELEASE){
-                    if(key == GLFW_KEY_DOWN)
-                        bs_session->drive_command_state = 0;
-                }
-                break;
-            }
         }
+
 }
 void science_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
     if (action == GLFW_PRESS && key == GLFW_KEY_I) {
