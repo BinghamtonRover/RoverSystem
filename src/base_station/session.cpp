@@ -174,6 +174,12 @@ void Session::drive_sub_init(){
     keyboard_steering = KeyboardDriveSteering::STRAIGHT;
     throttle = 0;
 
+    controller_forward_speed = 0.0F;
+    controller_reverse_speed = 0.0F;
+    controller_steering = 0.0F;
+    controller_steering_state = ControlDriveState::STANDARD;
+
+
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";
     speed_stat.second = 0.0;
@@ -374,44 +380,89 @@ void Session::adjust_throttle(int delta) {
 void Session::calc_drive_speed() {
     last_movement_message.left = 0;
     last_movement_message.right = 0;
+
+    int keyboard_left = 0;
+    int keyboard_right = 0;
+    
     if (throttle > 0) {
         bool invert = false;
         if (keyboard_direction == KeyboardDriveDirection::FORWARD) {
-            last_movement_message.left = throttle;
-            last_movement_message.right = throttle;
+            keyboard_left = throttle;
+            keyboard_right = throttle;
         } else if (keyboard_direction == KeyboardDriveDirection::BACKWARD) {
             // Move backward slower than forward
-            last_movement_message.left = std::max(throttle / 2, 1);
-            last_movement_message.right = std::max(throttle / 2, 1);
+            keyboard_left = std::max(throttle / 2, 1);
+            keyboard_right = std::max(throttle / 2, 1);
             invert = true;
         }
 
         // For steering, the side we turn to gets slowed down (halved)
         // In the event of a "stationary" turn (no forward/back speed), we must boost the opposite side as well
         if (keyboard_steering == KeyboardDriveSteering::LEFT) {
-            last_movement_message.left /= 2;
-            last_movement_message.right = std::max({static_cast<int>(last_movement_message.right), throttle / 2, 1});
+            keyboard_left /= 2;
+            keyboard_right = std::max({static_cast<int>(keyboard_right), throttle / 2, 1});
             
         } else if (keyboard_steering == KeyboardDriveSteering::RIGHT) {
-            last_movement_message.right /= 2;
-            last_movement_message.left = std::max({static_cast<int>(last_movement_message.left), throttle / 2, 1});
+            keyboard_right /= 2;
+            keyboard_left = std::max({static_cast<int>(keyboard_left), throttle / 2, 1});
         }
 
         if (invert) {
-            last_movement_message.right = -last_movement_message.right;
-            last_movement_message.left = -last_movement_message.left;
+            keyboard_right = -keyboard_right;
+            keyboard_left = -keyboard_left;
         }
     }
+
+    int controller_left = 0;
+    int controller_right = 0;
+
+    if (controller_forward_speed > 0.0F) {
+        controller_left = MAX_THROTTLE * (controller_forward_speed / 2.0F);
+        controller_right = controller_left;
+        controller_steering_state = ControlDriveState::STANDARD;
+    }
+    if (controller_reverse_speed < 0.0F) {
+        controller_left = MAX_THROTTLE * (controller_reverse_speed / 2.0F);
+        controller_right = MAX_THROTTLE * (controller_reverse_speed / 2.0F);
+        controller_steering_state = ControlDriveState::STANDARD;
+    }
+
+    if (controller_steering != 0.0F) {
+
+        if (controller_steering_state == ControlDriveState::IN_PLACE) {
+            controller_left = (MAX_THROTTLE / 4) * controller_steering;
+            controller_right = -controller_left;
+        } else {
+            if (controller_steering < 0.0F) {
+                controller_left *= controller_steering + 1;
+            } else {
+                controller_right *= -controller_steering + 1;
+            }
+        }
+
+    } else if (controller_forward_speed == 0.0F && controller_reverse_speed == 0.0F) {
+        controller_steering_state = ControlDriveState::IN_PLACE;
+    }
+
+    // Prioritize controller over keyboard
+    if (controller_left != 0 || controller_right != 0) {
+        last_movement_message.right = controller_right;
+        last_movement_message.left = controller_left;
+    } else {
+        last_movement_message.right = keyboard_right;
+        last_movement_message.left = keyboard_left;
+    }
+
 }
 
-void Session::axis_forward_speed(float x) {
-    
+void Session::axis_forward_speed(float x, float scale_factor) {
+    controller_forward_speed = scale_factor * x + 1.0F;
 }
 
-void Session::axis_reverse_speed(float x) {
-
+void Session::axis_reverse_speed(float x, float scale_factor) {
+    controller_reverse_speed = -(scale_factor * x + 1.0F);
 }
 
 void Session::axis_turning(float x) {
-    
+    controller_steering = x;
 }

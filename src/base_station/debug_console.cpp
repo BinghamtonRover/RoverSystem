@@ -212,9 +212,9 @@ void command_callback(std::string command, Session *bs_session) {
                 }
             }
             else if (parts[1] == "bind") {
-                if (parts.size() != 5 || parts[2] == "help") {
-                    log("Usage: controller bind [joystick ID] [axis] [action]", 1, 1, 1);
-                    log("    Available actions: forward, reverse, steering", 1, 1, 1);
+                if (parts.size() < 5 || parts[2] == "help") {
+                    log("Usage: controller bind [joystick ID] [axis] [action] (opt: --invert)", 1, 1, 1);
+                    log("    Available actions: forward, reverse, steering, no_action", 1, 1, 1);
                 }
                 else {
                     try {
@@ -232,10 +232,19 @@ void command_callback(std::string command, Session *bs_session) {
                         }
 
                         std::function<void(float)> target_action;
+                        bool clear = false;
                         if (parts[4] == "forward") {
-                            target_action = std::bind(&Session::axis_forward_speed, bs_session, std::placeholders::_1);
+                            float scale = 1.0F;
+                            if (parts.size() == 6 && parts[5] == "--invert") {
+                                scale = -1.0F;
+                            }
+                            target_action = std::bind(&Session::axis_forward_speed, bs_session, scale, std::placeholders::_1);
                         } else if (parts[4] == "reverse") {
-                            target_action = std::bind(&Session::axis_reverse_speed, bs_session, std::placeholders::_1);
+                            float scale = 1.0F;
+                            if (parts.size() == 6 && parts[5] == "--invert") {
+                                scale = -1.0F;
+                            }
+                            target_action = std::bind(&Session::axis_reverse_speed, bs_session, scale, std::placeholders::_1);
                         } else if (parts[4] == "steering") {
                             target_action = std::bind(&Session::axis_turning, bs_session, std::placeholders::_1);
                         } else if (parts[4] == "debug") {
@@ -249,12 +258,14 @@ void command_callback(std::string command, Session *bs_session) {
                             target_action = [bs_session](float x) {
                                 bs_session->drive_sub_info["Axis Input"] = x;
                             };
+                        } else if (parts[4] == "no_action") {
+                            clear = true;
                         }
 
-                        if (target_action) {
+                        if (target_action || clear) {
                             bs_session->controller_mgr.devices[js_id][axis].set_action(target_action);
                         } else {
-                            log("Invalid action. Options: forward, reverse, steering", 1, 0, 0);
+                            log("Invalid action. Options: forward, reverse, steering, no_action", 1, 0, 0);
                         }
                     
                     } catch (const std::logic_error& e) {

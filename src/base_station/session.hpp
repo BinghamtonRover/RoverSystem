@@ -28,7 +28,7 @@ const float CONTROL_ALPHA = 30;
 const int16_t JOINT_DRIVE_SPEED = 100;
 
 // Send movement updates x times per second.
-const int MOVEMENT_SEND_INTERVAL = 1000 / 15;
+const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
 
 // Update network statistics once per second.
 const int NETWORK_STATS_INTERVAL = 1000;
@@ -37,7 +37,7 @@ const int ARM_SEND_INTERVAL = 1000 / 9;
 
 const int MAX_FEEDS = 9;
 
-const double MAX_THROTTLE = 255;
+const int MAX_THROTTLE = 255;
 
 struct autonomy_info_struct {
     network::AutonomyStatusMessage::Status status;
@@ -99,6 +99,11 @@ enum class KeyboardDriveSteering {
     STRAIGHT,
     LEFT,
     RIGHT
+};
+
+enum class ControlDriveState {
+    STANDARD,
+    IN_PLACE
 };
 
 struct StopwatchStruct {
@@ -203,6 +208,10 @@ public:
     int throttle;
     KeyboardDriveDirection keyboard_direction;
     KeyboardDriveSteering keyboard_steering;
+    float controller_forward_speed;
+    float controller_reverse_speed;
+    float controller_steering;
+    ControlDriveState controller_steering_state;
 
     //Constructor & Destructor
     Session();
@@ -230,9 +239,9 @@ public:
     void calc_drive_speed();
 
     // Controller mapping functions
-    void axis_forward_speed(float);
-    void axis_reverse_speed(float);
-    void axis_turning(float);
+    void axis_forward_speed(float x, float scale_factor=1.0F);
+    void axis_reverse_speed(float x, float scale_factor=1.0F);
+    void axis_turning(float x);
 
 };
 
