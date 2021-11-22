@@ -22,8 +22,7 @@ namespace suspension {
     #undef X
 
     #define max_speed 50.0f
-    //max acceleration could probably be much higher
-    #define max_acceleration_per_sec 50.0f
+    #define max_acceleration_per_sec 100.0f
 
     static float target_left_speed = 0.0f;
     static float target_right_speed = 0.0f;
@@ -32,12 +31,11 @@ namespace suspension {
     static float previous_right_speed = 0.0f;
     
     static float previous_time = 0.0f;
-    static float previous_sent_speed = 0.0f;
 
     const char* get_error_string(Error e);
 
     static int init() {
-        if (can_init_drive() == 0) { return 0; }
+        if (can_init() == 0) { return 0; }
         else { return 1; }
     };
 

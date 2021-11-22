@@ -17,16 +17,14 @@
 
 #define num_devices 3
 
-int can_init_drive();
 int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5);
 
-int can_init(int device_num);
+int can_init();
 int can_send(int device_num, char* message);
 int can_send(int device_num, uint32_t message);
 int can_send(int device_num, float message);
-int can_send_custom_message(int device_num, char* custom_message);
+int can_send_custom_message(char* custom_message);
 
-char* get_can_device(int device_num);
 char* get_can_message(int device_num, uint32_t message);
 uint32_t get_big_endian(uint32_t u);
 int can_send(char* argv1, char* argv2);

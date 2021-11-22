@@ -1,28 +1,8 @@
 #include "can_controller.hpp"
 
-//initialize can_controller with number of devices using can
-/*
-can_controller(int num_devs) {
-	num_devices = num_devs;
-	for (int i = 0; i < num_devices; i += 2) {
-		can_init(i);
-	}
-}
-*/
-
-//initialize can_controller with number of devices using can (should be 3)
 /*
  * This is untested and cannot be tested until the initialization commands can be sent from can
  */
-int can_init_drive() {
-	int ret = 0;
-	for (int i = 0; i < num_devices; i++) {
-		ret += can_init(i);
-	}
-	if (ret == num_devices) { return 0; }
-	return 1;
-}
-
 //send 6 values through can (for each wheel)
 int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5) {
 	int ret = 0;
@@ -36,27 +16,45 @@ int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5) {
 	else { return 1; }
 }
 
-//initialize can devices
-int can_init(int device_num) {
+//initialize can devices (fixed at 6 devices, for now)
+int can_init() {
 	int ret = 0;
-	//add this to raspberrypi bootup file
-	//system("sudo /sbin/ip link set can0 up type can bitrate 500000");
+
 	//AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-	ret += can_send_custom_message(device_num, (char*)"007#03");
+	ret += can_send_custom_message((char*)"007#03");
 	//AXIS_STATE_CLOSED_LOOP_CONTROL
-	ret += can_send_custom_message(device_num, (char*)"007#08");
+	ret += can_send_custom_message((char*)"007#08");
 	//CONTROL_MODE_VELOCITY_CONTROL
-	ret += can_send_custom_message(device_num, (char*)"00b#02");
-	if (ret == 3) { return 0; }
+	ret += can_send_custom_message((char*)"00b#02");
+
+	ret += can_send_custom_message((char*)"027#03");
+	ret += can_send_custom_message((char*)"027#08");
+	ret += can_send_custom_message((char*)"02b#02");
+
+	ret += can_send_custom_message((char*)"047#03");
+	ret += can_send_custom_message((char*)"047#08");
+	ret += can_send_custom_message((char*)"04b#02");
+
+	ret += can_send_custom_message((char*)"067#03");
+	ret += can_send_custom_message((char*)"067#08");
+	ret += can_send_custom_message((char*)"06b#02");
+
+	ret += can_send_custom_message((char*)"087#03");
+	ret += can_send_custom_message((char*)"087#08");
+	ret += can_send_custom_message((char*)"08b#02");
+
+	ret += can_send_custom_message((char*)"0a7#03");
+	ret += can_send_custom_message((char*)"0a7#08");
+	ret += can_send_custom_message((char*)"0ab#02");
+
+	if (ret == 18) { return 0; }
 	return 1;
 }
 
 //can_send a uint32_t
 int can_send(int device_num, uint32_t message) {
-	char* device_name = get_can_device(device_num);
 	char* can_frame = get_can_message(device_num, message);
-	int ret = can_send(device_name, can_frame);
-	delete device_name;
+	int ret = can_send((char*)"can0", can_frame);
 	delete can_frame;
 	return ret;
 }
@@ -67,30 +65,22 @@ int can_send(int device_num, float message) {
 	return can_send(device_num, f2u.u);
 }
 
-//send a non-power can_frame (does not start with 00d# and 02d#)
-int can_send_custom_message(int device_num, char* custom_message) {
-	char* device_name = get_can_device(device_num);
-	int ret = can_send(device_name, custom_message);
-	delete device_name;
+//send a non-power can_frame (does not have "d" before "#")
+int can_send_custom_message(char* custom_message) {
+	int ret = can_send((char*)"can0", custom_message);
 	return ret;
-}
-
-//get the can device name based on the device number
-char* get_can_device(int device_num) {
-	char* device_name = new char[4];
-	sprintf(device_name, "can%i", device_num / 2);
-	return device_name;
 }
 
 //convert uint32_t and device_num to a can_frame (only can frames for sending power, which start with 00d# and 02d#)
 char* get_can_message(int device_num, uint32_t message) {
 	char* full_message = new char[12];
 	char* vals = new char[8];
-	sprintf(vals, "%010x", get_big_endian(message));
-	sprintf(full_message, "0%id#%s", (device_num % 2) * 2, vals);
+	sprintf(vals, "%010x00000000", get_big_endian(message));
+	if (device_num < 8) { sprintf(full_message, "0%xd#%s", device_num << 1, (vals + 2)); }
+	else { sprintf(full_message, "%xd#%s", device_num << 1, (vals + 2)); }
 	return full_message;
 }
-        
+
 //convert uint32_t to big endian
 uint32_t get_big_endian(uint32_t u) {
 	return ((0x000000FF & u) << 24) | ((0x0000FF00 & u) << 8) | ((0x00FF0000 & u) >> 8)  | ((0xFF000000 & u) >> 24);
