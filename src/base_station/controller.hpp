@@ -48,7 +48,7 @@ class Controller {
         bool present() const;
         void update_device();
         void update_axes();
-        JoystickAxis& operator[](size_t index);
+        JoystickAxis& operator[](std::size_t index);
 		int count_axes() const;
     private:
         int joystick_id;

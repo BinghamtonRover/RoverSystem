@@ -79,7 +79,7 @@ int Controller::count_axes() const {
 	return static_cast<int>(axes.size());
 }
 
-JoystickAxis& Controller::operator[](size_t index) {
+JoystickAxis& Controller::operator[](std::size_t index) {
 	return axes[index];
 }
 
