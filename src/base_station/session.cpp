@@ -453,6 +453,10 @@ void Session::calc_drive_speed() {
         last_movement_message.left = keyboard_left;
     }
 
+    // Reset the controller speeds: if they are not updated, then the controller has been disconnected
+    controller_forward_speed = 0.0F;
+    controller_reverse_speed = 0.0F;
+
 }
 
 void Session::axis_forward_speed(float x, float scale_factor) {

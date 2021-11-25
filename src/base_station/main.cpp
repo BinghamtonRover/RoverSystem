@@ -193,6 +193,17 @@ int main() {
     }
     bs_session.controller_mgr.init();
 
+    // Apply the default driving configuration to the controller
+    for (auto &c : bs_session.controller_mgr.devices) {
+        if (c.present() && c.count_axes() == 6) {
+            // The joysticks typically require a deadzone to be accurate, but the triggers do not
+            c[0].recenter(0.0F, 0.05F);
+            c[0].set_action(bs_session.steering_action);
+            c[2].set_action(bs_session.reverse_action);
+            c[5].set_action(bs_session.forward_action);
+        }
+    }
+
     // Init last movement info timers.
     util::Timer::init(&bs_session.movement_send_timer, MOVEMENT_SEND_INTERVAL, &bs_session.global_clock);
     util::Timer::init(&bs_session.arm_send_timer, ARM_SEND_INTERVAL, &bs_session.global_clock);

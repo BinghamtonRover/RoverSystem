@@ -13,6 +13,7 @@
 #include <cstring>
 #include <unordered_map>
 #include <fstream>
+#include <functional>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -212,6 +213,11 @@ public:
     float controller_reverse_speed;
     float controller_steering;
     ControlDriveState controller_steering_state;
+
+
+    std::function<void(float)> steering_action = std::bind(&Session::axis_turning, this, std::placeholders::_1);
+    std::function<void(float)> forward_action = std::bind(&Session::axis_forward_speed, this, 1.0F, std::placeholders::_1);
+    std::function<void(float)> reverse_action = std::bind(&Session::axis_reverse_speed, this, 1.0F, std::placeholders::_1);
 
     //Constructor & Destructor
     Session();
