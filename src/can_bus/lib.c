@@ -46,10 +46,10 @@
 #include <stdio.h>
 #include <string.h>
 
-//#include <can.h>
-#include "include/linux/can.h"
-//#include <can/error.h>
-#include "include/linux/can/error.h"
+#include <linux/can.h>
+//#include "include/linux/can.h"
+#include <linux/can/error.h>
+//#include "include/linux/can/error.h"
 #include <sys/socket.h> /* for sa_family_t */
 
 #include "lib.h"
@@ -207,7 +207,7 @@ int parse_canframe(char *cs, struct canfd_frame *cf) {
 				if ((tmp > CAN_MAX_DLEN) && (tmp <= 15 /*CAN_MAX_RAW_DLC*/)) {
 					struct can_frame *ccf = (struct can_frame *)cf;
 
-					ccf->len8_dlc = tmp; //original code
+					ccf->__res1 = tmp; //original code
 				}
 			}
 		}
@@ -252,7 +252,7 @@ int parse_canframe(char *cs, struct canfd_frame *cf) {
 		if ((dlc > CAN_MAX_DLEN) && (dlc <= 15 /*CAN_MAX_RAW_DLC*/)) {
 			struct can_frame *ccf = (struct can_frame *)cf;
 
-			ccf->len8_dlc = dlc;
+			ccf->__res1 = dlc;
 		}
 	}
 
@@ -301,9 +301,9 @@ void sprint_canframe(char *buf , struct canfd_frame *cf, int sep, int maxdlen) {
 			if (cf->len == CAN_MAX_DLEN) {
 				struct can_frame *ccf = (struct can_frame *)cf;
 
-				if ((ccf->len8_dlc > CAN_MAX_DLEN) && (ccf->len8_dlc <= 15 /*CAN_MAX_RAW_DLC*/)) {
+				if ((ccf->__res1 > CAN_MAX_DLEN) && (ccf->__res1 <= 15 /*CAN_MAX_RAW_DLC*/)) {
 					buf[offset++] = CC_DLC_DELIM;
-					buf[offset++] = hex_asc_upper_lo(ccf->len8_dlc);
+					buf[offset++] = hex_asc_upper_lo(ccf->__res1);
 				}
 			}
 		}
@@ -330,7 +330,7 @@ void sprint_canframe(char *buf , struct canfd_frame *cf, int sep, int maxdlen) {
 	/* check for extra DLC when having a Classic CAN with 8 bytes payload */
 	if ((maxdlen == CAN_MAX_DLEN) && (len == CAN_MAX_DLEN)) {
 		struct can_frame *ccf = (struct can_frame *)cf;
-		unsigned char dlc = ccf->len8_dlc;
+		unsigned char dlc = ccf->__res1;
 
 		if ((dlc > CAN_MAX_DLEN) && (dlc <= 15 /*CAN_MAX_RAW_DLC*/)) {
 			buf[offset++] = CC_DLC_DELIM;
@@ -386,7 +386,7 @@ void sprint_long_canframe(char *buf , struct canfd_frame *cf, int view, int maxd
 	if (maxdlen == CAN_MAX_DLEN) {
 		if (view & CANLIB_VIEW_LEN8_DLC) {
 			struct can_frame *ccf = (struct can_frame *)cf;
-			unsigned char dlc = ccf->len8_dlc;
+			unsigned char dlc = ccf->__res1;
 
 			/* fall back to len if we don't have a valid DLC > 8 */
 			if (!((len == CAN_MAX_DLEN) && (dlc > CAN_MAX_DLEN) &&

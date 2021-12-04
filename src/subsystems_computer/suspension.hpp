@@ -24,13 +24,17 @@ namespace suspension {
     #define max_speed 50.0f
     #define max_acceleration_per_sec 100.0f
 
+    #define delta_time_cap 0.16f
+    #define max_no_message_time 5.0f
+
     static float target_left_speed = 0.0f;
     static float target_right_speed = 0.0f;
     
     static float previous_left_speed = 0.0f;
     static float previous_right_speed = 0.0f;
     
-    static float previous_time = 0.0f;
+    static int previous_time = 0;
+    static float no_message_time = 0.0f;
 
     const char* get_error_string(Error e);
 
@@ -52,8 +56,18 @@ namespace suspension {
         if (previous_time == new_time) { return 0; }
 
         //Get change in time
-        float delta_time = (float(new_time) - previous_time) / 1000.0f;
-        previous_time = float(new_time);
+        float delta_time = (float(new_time - previous_time)) / 1000.0f;
+        previous_time = new_time;
+        no_message_time += delta_time;
+
+        //Zero the speed if no messages sent for too long
+        if (no_message_time > max_no_message_time) {
+            target_left_speed = 0;
+            target_right_speed = 0;
+        }
+
+        //Cap the delta time
+        if (delta_time > delta_time_cap) { delta_time = delta_time_cap; }
 
         //Nothing to update if target speed already reached
         if (target_speed_achieved()) { return 0; }
@@ -125,6 +139,9 @@ namespace suspension {
         //Set target speeds
         target_left_speed = (float(in_left_speed) / 255.0f) * max_speed;
         target_right_speed = (float(in_right_speed) / 255.0f) * max_speed;
+
+        //Update the time since the last message has been sent
+        no_message_time = 0;
 
         //Return error value from CAN (currently 0 - success or 1 - failed write somewhere)
         return update(new_time);
