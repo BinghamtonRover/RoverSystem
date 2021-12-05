@@ -1,8 +1,10 @@
 #include "session.hpp"
 #include "../logger/logger.hpp"
 
+#include <algorithm>
+
 //Create Session instance and initialize variables
-Session::Session(){
+Session::Session() {
     this->last_subsystem_tick = 0;
     this->last_video_tick = 0;
 
@@ -164,7 +166,20 @@ void Session::dont_send_invalid() {
     return;
 }
 
+
+
 void Session::drive_sub_init(){
+
+    keyboard_direction = KeyboardDriveDirection::STOPPED;
+    keyboard_steering = KeyboardDriveSteering::STRAIGHT;
+    throttle = 0;
+
+    controller_forward_speed = 0.0F;
+    controller_reverse_speed = 0.0F;
+    controller_steering = 0.0F;
+    controller_steering_state = ControlDriveState::STANDARD;
+
+
     std::pair<std::string, double> speed_stat;
     speed_stat.first = "Speed (km/s)";
     speed_stat.second = 0.0;
@@ -194,6 +209,22 @@ void Session::drive_sub_init(){
     motor_stat.first = "Motor Current (Amps)";
     motor_stat.second = 0.0;
     this->drive_sub_info.insert(motor_stat);
+
+    std::pair<std::string, double> throttle_stat;
+    throttle_stat.first = "Throttle Speed (max 255)";
+    throttle_stat.second = 0.0;
+    this->drive_sub_info.insert(throttle_stat);
+
+    std::pair<std::string, double> target_right_speed;
+    target_right_speed.first = "Target Right Speed";
+    target_right_speed.second = 0.0;
+    this->drive_sub_info.insert(target_right_speed);
+
+    std::pair<std::string, double> target_left_speed;
+    target_left_speed.first = "Target Right Speed";
+    target_left_speed.second = 0.0;
+    this->drive_sub_info.insert(target_left_speed);
+
 }
 
 void Session::arm_sub_init(){
@@ -327,4 +358,115 @@ void Session::export_data() {
         }
     }
     log_file << std::endl;
+}
+
+void Session::adjust_throttle(int delta) {
+    if (delta > 0) {
+        if (MAX_THROTTLE - throttle > delta) {
+            throttle += delta;
+        } else {
+            throttle = MAX_THROTTLE;
+        }
+    } else {
+        if (throttle > -delta) {
+            throttle += delta;
+        } else {
+            throttle = 0;
+        }
+    }
+    drive_sub_info["Throttle Speed (max 255)"] = static_cast<double>(throttle); //we know throttle speed is already initialized in the drive_sub_info   
+};
+
+void Session::calc_drive_speed() {
+    last_movement_message.left = 0;
+    last_movement_message.right = 0;
+
+    int keyboard_left = 0;
+    int keyboard_right = 0;
+    
+    if (throttle > 0) {
+        bool invert = false;
+        if (keyboard_direction == KeyboardDriveDirection::FORWARD) {
+            keyboard_left = throttle;
+            keyboard_right = throttle;
+        } else if (keyboard_direction == KeyboardDriveDirection::BACKWARD) {
+            // Move backward slower than forward
+            keyboard_left = std::max(throttle / 2, 1);
+            keyboard_right = std::max(throttle / 2, 1);
+            invert = true;
+        }
+
+        // For steering, the side we turn to gets slowed down (halved)
+        // In the event of a "stationary" turn (no forward/back speed), we must boost the opposite side as well
+        if (keyboard_steering == KeyboardDriveSteering::LEFT) {
+            keyboard_left /= 2;
+            keyboard_right = std::max({static_cast<int>(keyboard_right), throttle / 2, 1});
+            
+        } else if (keyboard_steering == KeyboardDriveSteering::RIGHT) {
+            keyboard_right /= 2;
+            keyboard_left = std::max({static_cast<int>(keyboard_left), throttle / 2, 1});
+        }
+
+        if (invert) {
+            keyboard_right = -keyboard_right;
+            keyboard_left = -keyboard_left;
+        }
+    }
+
+    int controller_left = 0;
+    int controller_right = 0;
+
+    if (controller_forward_speed > 0.0F) {
+        controller_left = MAX_THROTTLE * (controller_forward_speed / 2.0F);
+        controller_right = controller_left;
+        controller_steering_state = ControlDriveState::STANDARD;
+    }
+    if (controller_reverse_speed < 0.0F) {
+        controller_left = MAX_THROTTLE * (controller_reverse_speed / 2.0F);
+        controller_right = MAX_THROTTLE * (controller_reverse_speed / 2.0F);
+        controller_steering_state = ControlDriveState::STANDARD;
+    }
+
+    if (controller_steering != 0.0F) {
+
+        if (controller_steering_state == ControlDriveState::IN_PLACE) {
+            controller_left = (MAX_THROTTLE / 4) * controller_steering;
+            controller_right = -controller_left;
+        } else {
+            if (controller_steering < 0.0F) {
+                controller_left *= controller_steering + 1;
+            } else {
+                controller_right *= -controller_steering + 1;
+            }
+        }
+
+    } else if (controller_forward_speed == 0.0F && controller_reverse_speed == 0.0F) {
+        controller_steering_state = ControlDriveState::IN_PLACE;
+    }
+
+    // Prioritize controller over keyboard
+    if (controller_left != 0 || controller_right != 0) {
+        last_movement_message.right = controller_right;
+        last_movement_message.left = controller_left;
+    } else {
+        last_movement_message.right = keyboard_right;
+        last_movement_message.left = keyboard_left;
+    }
+
+    // Reset the controller speeds: if they are not updated, then the controller has been disconnected
+    controller_forward_speed = 0.0F;
+    controller_reverse_speed = 0.0F;
+
+}
+
+void Session::axis_forward_speed(float x, float scale_factor) {
+    controller_forward_speed = scale_factor * x + 1.0F;
+}
+
+void Session::axis_reverse_speed(float x, float scale_factor) {
+    controller_reverse_speed = -(scale_factor * x + 1.0F);
+}
+
+void Session::axis_turning(float x) {
+    controller_steering = x;
 }

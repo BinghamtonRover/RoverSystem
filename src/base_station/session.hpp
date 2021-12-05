@@ -6,12 +6,14 @@
 #include "shared_feeds.hpp" 
 #include "camera_feed.hpp"
 #include "stb_truetype.h"
+#include "controller_manager.hpp"
 
 #include <string>
 #include <vector>
 #include <cstring>
 #include <unordered_map>
 #include <fstream>
+#include <functional>
 
 // Default angular resolution (vertices / radian) to use when drawing circles.
 constexpr float ANGULAR_RES = 10.0f;
@@ -27,7 +29,7 @@ const float CONTROL_ALPHA = 30;
 const int16_t JOINT_DRIVE_SPEED = 100;
 
 // Send movement updates x times per second.
-const int MOVEMENT_SEND_INTERVAL = 1000 / 15;
+const int MOVEMENT_SEND_INTERVAL = 1000 / 20;
 
 // Update network statistics once per second.
 const int NETWORK_STATS_INTERVAL = 1000;
@@ -35,6 +37,8 @@ const int NETWORK_STATS_INTERVAL = 1000;
 const int ARM_SEND_INTERVAL = 1000 / 9;
 
 const int MAX_FEEDS = 9;
+
+const int MAX_THROTTLE = 255;
 
 struct autonomy_info_struct {
     network::AutonomyStatusMessage::Status status;
@@ -84,6 +88,23 @@ enum class ArmControlRegion{
     ELBOW,
     WRIST,
     GRIPPER
+};
+
+enum class KeyboardDriveDirection {
+    STOPPED,
+    FORWARD,
+    BACKWARD
+};
+
+enum class KeyboardDriveSteering {
+    STRAIGHT,
+    LEFT,
+    RIGHT
+};
+
+enum class ControlDriveState {
+    STANDARD,
+    IN_PLACE
 };
 
 struct StopwatchStruct {
@@ -166,10 +187,12 @@ public:
     bool controller_loaded;
     ControllerMode controller_mode;
     ArmControlRegion arm_control_region;
+    ControllerManager controller_mgr;
 
     std::vector<uint16_t> lidar_points;
 
     Config config;
+
     
     //Subsystems information
     std::unordered_map<std::string, double> drive_sub_info; 
@@ -181,6 +204,20 @@ public:
     //Science data logging variables
     std::ofstream log_file;
     util::Timer log_interval_timer;
+
+    //throttle variable to limit the max speed
+    int throttle;
+    KeyboardDriveDirection keyboard_direction;
+    KeyboardDriveSteering keyboard_steering;
+    float controller_forward_speed;
+    float controller_reverse_speed;
+    float controller_steering;
+    ControlDriveState controller_steering_state;
+
+
+    std::function<void(float)> steering_action = std::bind(&Session::axis_turning, this, std::placeholders::_1);
+    std::function<void(float)> forward_action = std::bind(&Session::axis_forward_speed, this, 1.0F, std::placeholders::_1);
+    std::function<void(float)> reverse_action = std::bind(&Session::axis_reverse_speed, this, 1.0F, std::placeholders::_1);
 
     //Constructor & Destructor
     Session();
@@ -203,6 +240,15 @@ public:
     void start_log(const char* filename);
     void stop_log();
     void export_data();
+
+    void adjust_throttle(int delta);
+    void calc_drive_speed();
+
+    // Controller mapping functions
+    void axis_forward_speed(float x, float scale_factor=1.0F);
+    void axis_reverse_speed(float x, float scale_factor=1.0F);
+    void axis_turning(float x);
+
 };
 
 #endif
