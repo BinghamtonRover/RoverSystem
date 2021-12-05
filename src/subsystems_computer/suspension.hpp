@@ -39,8 +39,10 @@ namespace suspension {
     const char* get_error_string(Error e);
 
     static int init() {
-        if (can_init() == 0) { return 0; }
-        else { return 1; }
+        //commented for now because the initialization still does not work through can, and causes answers
+        return 0;
+        //if (can_init() == 0) { return 0; }
+        //else { return 1; }
     };
 
     static bool target_speed_achieved() {
