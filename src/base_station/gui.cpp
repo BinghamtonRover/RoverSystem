@@ -1,6 +1,5 @@
 #include "../network/network.hpp"
 #include "waypoint.hpp"
-#include "controller.hpp"
 #include "camera_feed.hpp"
 #include "waypoint_map.hpp"
 #include "debug_console.hpp"
@@ -1776,7 +1775,16 @@ void poll_keys_callback(Session& bs_session, GLFWwindow* window, bool& help_menu
             logger::log(logger::INFO, pic_msg);
             std::free(pic_msg);
         }
+    } 
+    //Throttle info
+    else if (glfwGetKey(window,GLFW_KEY_T) == GLFW_PRESS){
+        if(bs_session.bs_focus_mode == FocusMode::DRIVE)
+            bs_session.adjust_throttle(1); // updates the throttle variable and the drive sub info
     }
+    else if(glfwGetKey(window,GLFW_KEY_R) == GLFW_PRESS){
+        if(bs_session.bs_focus_mode == FocusMode::DRIVE)
+            bs_session.adjust_throttle(-1);
+    } 
 }
 
 void glfw_character_callback(GLFWwindow* window, unsigned int codepoint) {
@@ -2023,6 +2031,54 @@ void arm_key_commands(Session *bs_session, GLFWwindow* window, int key, int acti
 
 }
 void drive_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
+        
+        if (action == GLFW_PRESS) {
+
+            switch (key) {
+                case GLFW_KEY_UP:
+                    // Only apply forward direction if the rover is stopped
+                    if (bs_session->keyboard_direction == KeyboardDriveDirection::STOPPED) {
+                        bs_session->keyboard_direction = KeyboardDriveDirection::FORWARD;
+                    }
+                    break; 
+                case GLFW_KEY_DOWN:
+                    // Reverse direction will take precedence over forward (as if braking)
+                    bs_session->keyboard_direction = KeyboardDriveDirection::BACKWARD;
+                    break;
+                case GLFW_KEY_LEFT:
+                    bs_session->keyboard_steering = KeyboardDriveSteering::LEFT;
+                    break;
+                case GLFW_KEY_RIGHT:
+                    bs_session->keyboard_steering = KeyboardDriveSteering::RIGHT;
+                    break;
+            }
+
+        } else if (action == GLFW_RELEASE) {
+
+            switch (key) {
+                case GLFW_KEY_UP:
+                    if (bs_session->keyboard_direction == KeyboardDriveDirection::FORWARD) {
+                        bs_session->keyboard_direction = KeyboardDriveDirection::STOPPED;
+                    }
+                    break; 
+                case GLFW_KEY_DOWN:
+                    if (bs_session->keyboard_direction == KeyboardDriveDirection::BACKWARD) {
+                        bs_session->keyboard_direction = KeyboardDriveDirection::STOPPED;
+                    }
+                    break;
+                case GLFW_KEY_LEFT:
+                    if (bs_session->keyboard_steering == KeyboardDriveSteering::LEFT) {
+                        bs_session->keyboard_steering = KeyboardDriveSteering::STRAIGHT;
+                    }
+                    break;
+                case GLFW_KEY_RIGHT:
+                    if (bs_session->keyboard_steering == KeyboardDriveSteering::RIGHT) {
+                        bs_session->keyboard_steering = KeyboardDriveSteering::STRAIGHT;
+                    }
+                    break;
+            }
+
+        }
 
 }
 void science_key_commands(Session *bs_session, GLFWwindow* window, int key, int action, int mods) {
