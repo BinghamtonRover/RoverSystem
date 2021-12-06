@@ -22,10 +22,7 @@ int main() {
             logger::log(logger::WARNING, "[!] Failed to init suspension and CAN!");
             //logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
         } 
-        else {
-            subsys_session.suspension_inited = true;
-            break;
-        }
+        else { break; }
     }
     if (!subsys_session.suspension_inited) {
         logger::log(logger::ERROR, "[!] Failed to start suspension!");
@@ -209,6 +206,10 @@ int main() {
         }
         else if (subsys_session.suspension_inited) {
             suspension::update(subsys_session.global_clock.get_millis());
+        }
+        else if (subsys_session.global_clock.get_millis() > 10000) {
+            suspension::init_setup_control();
+            subsys_session.suspension_inited = true;
         }
 
         if(subsys_session.power_read_data.ready() && subsys_session.power_inited){
