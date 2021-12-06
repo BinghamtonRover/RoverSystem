@@ -15,15 +15,6 @@ ifdef ONBOARD
 endif
 
 ROCS_ONBOARD = true
-#SOURCES += suspension.hpp
-
-#ifdef SUSPENSION_ONBOARD
-#	# ROCS is a dependency
-#	ROCS_ONBOARD = true
-#	SOURCES += suspension.hpp
-#else
-#	SOURCES += suspension_dummy.cpp
-#endif
 
 ifdef ROCS_ONBOARD
 	LIBRARIES += ../../bin/librocs.a

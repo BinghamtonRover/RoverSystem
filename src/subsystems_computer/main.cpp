@@ -7,27 +7,11 @@ int main() {
     subsys_session.load_config("res/r.sconfig");
     logger::log(logger::INFO, "Initializing Subsystem Computer...");
 
-    // i2c
-    // goodbye I2C <3 - JM
-    /*
-    if (rocs::init("/dev/i2c-1") != rocs::Error::OK) {
-        logger::log(logger::ERROR, "[!] Failed to init ROCS!");
-        return 1;
-    }
-    */
-
     // Suspension subsystem and CAN bus init
-    for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
-        if (suspension::init_calibrate() != 0) {
-            logger::log(logger::WARNING, "[!] Failed to init suspension and CAN!");
-            //logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
-        } 
-        else { break; }
-    }
-    if (!subsys_session.suspension_inited) {
-        logger::log(logger::ERROR, "[!] Failed to start suspension!");
-        //return 1;
-    }
+    if (suspension::init_calibrate() != 0) {
+        logger::log(logger::WARNING, "[!] Failed to init suspension and CAN!");
+        return 1;
+    } 
 
     // Arm subsystem init
     for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
@@ -208,8 +192,12 @@ int main() {
             suspension::update(subsys_session.global_clock.get_millis());
         }
         else if (subsys_session.global_clock.get_millis() > 10000) {
-            suspension::init_setup_control();
-            subsys_session.suspension_inited = true;
+            if (suspension::init_setup_control() == 0) {
+                subsys_session.suspension_inited = true;
+            }
+            else {
+                return 1;
+            }
         }
 
         if(subsys_session.power_read_data.ready() && subsys_session.power_inited){
