@@ -6,12 +6,12 @@
 //send 6 values through can (for each wheel)
 int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5) {
 	int ret = 0;
-	ret += can_send(0, s0);
-	ret += can_send(1, s1);
-	ret += can_send(2, s2);
-	ret += can_send(3, s3);
-	ret += can_send(4, s4);
-	ret += can_send(5, s5);
+	ret += can_send_velocity(0, s0);
+	ret += can_send_velocity(1, s1);
+	ret += can_send_velocity(2, s2);
+	ret += can_send_velocity(3, s3);
+	ret += can_send_velocity(4, s4);
+	ret += can_send_velocity(5, s5);
 	if (ret == 6) { return 0; }
 	else { return 1; }
 }
@@ -20,54 +20,71 @@ int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5) {
 int can_init() {
 	int ret = 0;
 
-	//AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-	ret += can_send_custom_message((char*)"007#03");
-	//AXIS_STATE_CLOSED_LOOP_CONTROL
-	ret += can_send_custom_message((char*)"007#08");
-	//CONTROL_MODE_VELOCITY_CONTROL
-	ret += can_send_custom_message((char*)"00b#02");
+	char drive_0_axis_0_calibration[] = "007#03000000";
+	ret += can_send_custom_message(drive_0_axis_0_calibration);
+	char drive_0_axis_0_loop_control[] = "007#08000000";
+	ret += can_send_custom_message(drive_0_axis_0_loop_control);
+	char drive_0_axis_0_velocity_control[] = "40b#02000000";
+	ret += can_send_custom_message(drive_0_axis_0_velocity_control);
 
-	ret += can_send_custom_message((char*)"027#03");
-	ret += can_send_custom_message((char*)"027#08");
-	ret += can_send_custom_message((char*)"02b#02");
+	char drive_0_axis_1_calibration[] = "027#03000000";
+	ret += can_send_custom_message(drive_0_axis_1_calibration);
+	char drive_0_axis_1_loop_control[] = "027#08000000";
+	ret += can_send_custom_message(drive_0_axis_1_loop_control);
+	char drive_0_axis_1_velocity_control[] = "42b#02000000";
+	ret += can_send_custom_message(drive_0_axis_1_velocity_control);
 
-	ret += can_send_custom_message((char*)"047#03");
-	ret += can_send_custom_message((char*)"047#08");
-	ret += can_send_custom_message((char*)"04b#02");
+	char drive_1_axis_0_calibration[] = "047#03000000";
+	ret += can_send_custom_message(drive_1_axis_0_calibration);
+	char drive_1_axis_0_loop_control[] = "047#08000000";
+	ret += can_send_custom_message(drive_1_axis_0_loop_control);
+	char drive_1_axis_0_velocity_control[] = "44b#02000000";
+	ret += can_send_custom_message(drive_1_axis_0_velocity_control);
 
-	ret += can_send_custom_message((char*)"067#03");
-	ret += can_send_custom_message((char*)"067#08");
-	ret += can_send_custom_message((char*)"06b#02");
+	char drive_1_axis_1_calibration[] = "067#03000000";
+	ret += can_send_custom_message(drive_1_axis_1_calibration);
+	char drive_1_axis_1_loop_control[] = "067#08000000";
+	ret += can_send_custom_message(drive_1_axis_1_loop_control);
+	char drive_1_axis_1_velocity_control[] = "46b#02000000";
+	ret += can_send_custom_message(drive_1_axis_1_velocity_control);
 
-	ret += can_send_custom_message((char*)"087#03");
-	ret += can_send_custom_message((char*)"087#08");
-	ret += can_send_custom_message((char*)"08b#02");
+	char drive_2_axis_0_calibration[] = "087#03000000";
+	ret += can_send_custom_message(drive_2_axis_0_calibration);
+	char drive_2_axis_0_loop_control[] = "087#08000000";
+	ret += can_send_custom_message(drive_2_axis_0_loop_control);
+	char drive_2_axis_0_velocity_control[] = "48b#02000000";
+	ret += can_send_custom_message(drive_2_axis_0_velocity_control);
 
-	ret += can_send_custom_message((char*)"0a7#03");
-	ret += can_send_custom_message((char*)"0a7#08");
-	ret += can_send_custom_message((char*)"0ab#02");
+	char drive_2_axis_1_calibration[] = "0a7#03000000";
+	ret += can_send_custom_message(drive_2_axis_1_calibration);
+	char drive_2_axis_1_loop_control[] = "0a7#08000000";
+	ret += can_send_custom_message(drive_2_axis_1_loop_control);
+	char drive_2_axis_1_velocity_control[] = "4ab#02000000";
+	ret += can_send_custom_message(drive_2_axis_1_velocity_control);
 
 	if (ret == 18) { return 0; }
 	return 1;
 }
 
 //can_send a uint32_t
-int can_send(int device_num, uint32_t message) {
+int can_send_velocity(int device_num, uint32_t message) {
 	char* can_frame = get_can_message(device_num, message);
-	int ret = can_send((char*)"can0", can_frame);
+	char can0[] = "can0";
+	int ret = can_send(can0, can_frame);
 	delete can_frame;
 	return ret;
 }
 
 //can_send a float
-int can_send(int device_num, float message) {
+int can_send_velocity(int device_num, float message) {
 	union { float f; uint32_t u; } f2u = { .f = message };
-	return can_send(device_num, f2u.u);
+	return can_send_velocity(device_num, f2u.u);
 }
 
 //send a non-power can_frame (does not have "d" before "#")
 int can_send_custom_message(char* custom_message) {
-	int ret = can_send((char*)"can0", custom_message);
+	char can0[] = "can0";
+	int ret = can_send(can0, custom_message);
 	return ret;
 }
 
@@ -78,6 +95,7 @@ char* get_can_message(int device_num, uint32_t message) {
 	sprintf(vals, "%010x00000000", get_big_endian(message));
 	if (device_num < 8) { sprintf(full_message, "0%xd#%s", device_num << 1, (vals + 2)); }
 	else { sprintf(full_message, "%xd#%s", device_num << 1, (vals + 2)); }
+	delete vals;
 	return full_message;
 }
 

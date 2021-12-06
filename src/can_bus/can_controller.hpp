@@ -20,9 +20,9 @@
 int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5);
 
 int can_init();
-int can_send(int device_num, char* message);
-int can_send(int device_num, uint32_t message);
-int can_send(int device_num, float message);
+int can_send_velocity(int device_num, char* message);
+int can_send_velocity(int device_num, uint32_t message);
+int can_send_velocity(int device_num, float message);
 int can_send_custom_message(char* custom_message);
 
 char* get_can_message(int device_num, uint32_t message);
