@@ -38,19 +38,82 @@ namespace suspension {
 
     const char* get_error_string(Error e);
 
-    static int init() {
-        //commented for now because the initialization still does not work through can, and causes answers
-        return 0;
-        //if (can_init() == 0) { return 0; }
-        //else { return 1; }
+    //The first part of initializing Odrives, where they calibrate themselves
+    //This takes a few seconds (not consistent timing as well), and blocks other CAN messages
+    static int init_calibrate() {
+        int ret = 0;
+
+        char drive_0_axis_0_calibration[] = "007#03000000";
+	    ret += can_send_custom_message(drive_0_axis_0_calibration);
+        char drive_0_axis_1_calibration[] = "027#03000000";
+	    ret += can_send_custom_message(drive_0_axis_1_calibration);
+        char drive_1_axis_0_calibration[] = "047#03000000";
+	    ret += can_send_custom_message(drive_1_axis_0_calibration);
+        char drive_1_axis_1_calibration[] = "067#03000000";
+        ret += can_send_custom_message(drive_1_axis_1_calibration);
+        char drive_2_axis_0_calibration[] = "087#03000000";
+        ret += can_send_custom_message(drive_2_axis_0_calibration);
+        char drive_2_axis_1_calibration[] = "0a7#03000000";
+	    ret += can_send_custom_message(drive_2_axis_1_calibration);
+        
+        //If all the can sends return 0, there are no write errors
+        if (ret == 0) { return 0; }
+        return 1;
     };
+
+    //The second part of initializing Odrives, send the proper settings
+    static int init_setup_control() {
+        int ret = 0;
+
+        char drive_0_axis_0_loop_control[] = "007#08000000";
+        ret += can_send_custom_message(drive_0_axis_0_loop_control);
+        char drive_0_axis_1_loop_control[] = "027#08000000";
+        ret += can_send_custom_message(drive_0_axis_1_loop_control);
+        char drive_1_axis_0_loop_control[] = "047#08000000";
+        ret += can_send_custom_message(drive_1_axis_0_loop_control);
+        char drive_1_axis_1_loop_control[] = "067#08000000";
+        ret += can_send_custom_message(drive_1_axis_1_loop_control);
+        char drive_2_axis_0_loop_control[] = "087#08000000";
+        ret += can_send_custom_message(drive_2_axis_0_loop_control);
+        char drive_2_axis_1_loop_control[] = "0a7#08000000";
+        ret += can_send_custom_message(drive_2_axis_1_loop_control);
+
+        char drive_0_axis_0_velocity_control[] = "40b#02000000";
+        ret += can_send_custom_message(drive_0_axis_0_velocity_control);
+        char drive_0_axis_1_velocity_control[] = "42b#02000000";
+        ret += can_send_custom_message(drive_0_axis_1_velocity_control);
+        char drive_1_axis_0_velocity_control[] = "44b#02000000";
+        ret += can_send_custom_message(drive_1_axis_0_velocity_control);
+        char drive_1_axis_1_velocity_control[] = "46b#02000000";
+        ret += can_send_custom_message(drive_1_axis_1_velocity_control);
+        char drive_2_axis_0_velocity_control[] = "48b#02000000";
+        ret += can_send_custom_message(drive_2_axis_0_velocity_control);
+        char drive_2_axis_1_velocity_control[] = "4ab#02000000";
+        ret += can_send_custom_message(drive_2_axis_1_velocity_control);
+
+        //If all the can sends return 0, there are no write errors
+        if (ret == 0) { return 0; }
+        return 1;
+    }
 
     static bool target_speed_achieved() {
         return (target_left_speed == previous_left_speed && target_right_speed == previous_right_speed);
     };
 
     static int update_drive(float left_speed, float right_speed) {
-        return can_send_drive(left_speed, right_speed, left_speed, right_speed, left_speed, right_speed);
+        int ret = 0;
+
+        //Send velocity to each motor
+	    ret += can_send_velocity(0, left_speed);
+	    ret += can_send_velocity(1, right_speed);
+	    ret += can_send_velocity(2, left_speed);
+	    ret += can_send_velocity(3, right_speed);
+	    ret += can_send_velocity(4, left_speed);
+	    ret += can_send_velocity(5, right_speed);
+
+        //If all the can sends return 0, there are no write errors
+	    if (ret == 0) { return 0; }
+	    else { return 1; }
     };
 
     static int update(int new_time) {

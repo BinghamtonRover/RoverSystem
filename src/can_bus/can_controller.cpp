@@ -1,74 +1,8 @@
 #include "can_controller.hpp"
 
-/*
- * This is untested and cannot be tested until the initialization commands can be sent from can
- */
-//send 6 values through can (for each wheel)
-int can_send_drive(float s0, float s1, float s2, float s3, float s4, float s5) {
-	int ret = 0;
-	ret += can_send_velocity(0, s0);
-	ret += can_send_velocity(1, s1);
-	ret += can_send_velocity(2, s2);
-	ret += can_send_velocity(3, s3);
-	ret += can_send_velocity(4, s4);
-	ret += can_send_velocity(5, s5);
-	if (ret == 6) { return 0; }
-	else { return 1; }
-}
-
-//initialize can devices (fixed at 6 devices, for now)
-int can_init() {
-	int ret = 0;
-
-	char drive_0_axis_0_calibration[] = "007#03000000";
-	ret += can_send_custom_message(drive_0_axis_0_calibration);
-	char drive_0_axis_0_loop_control[] = "007#08000000";
-	ret += can_send_custom_message(drive_0_axis_0_loop_control);
-	char drive_0_axis_0_velocity_control[] = "40b#02000000";
-	ret += can_send_custom_message(drive_0_axis_0_velocity_control);
-
-	char drive_0_axis_1_calibration[] = "027#03000000";
-	ret += can_send_custom_message(drive_0_axis_1_calibration);
-	char drive_0_axis_1_loop_control[] = "027#08000000";
-	ret += can_send_custom_message(drive_0_axis_1_loop_control);
-	char drive_0_axis_1_velocity_control[] = "42b#02000000";
-	ret += can_send_custom_message(drive_0_axis_1_velocity_control);
-
-	char drive_1_axis_0_calibration[] = "047#03000000";
-	ret += can_send_custom_message(drive_1_axis_0_calibration);
-	char drive_1_axis_0_loop_control[] = "047#08000000";
-	ret += can_send_custom_message(drive_1_axis_0_loop_control);
-	char drive_1_axis_0_velocity_control[] = "44b#02000000";
-	ret += can_send_custom_message(drive_1_axis_0_velocity_control);
-
-	char drive_1_axis_1_calibration[] = "067#03000000";
-	ret += can_send_custom_message(drive_1_axis_1_calibration);
-	char drive_1_axis_1_loop_control[] = "067#08000000";
-	ret += can_send_custom_message(drive_1_axis_1_loop_control);
-	char drive_1_axis_1_velocity_control[] = "46b#02000000";
-	ret += can_send_custom_message(drive_1_axis_1_velocity_control);
-
-	char drive_2_axis_0_calibration[] = "087#03000000";
-	ret += can_send_custom_message(drive_2_axis_0_calibration);
-	char drive_2_axis_0_loop_control[] = "087#08000000";
-	ret += can_send_custom_message(drive_2_axis_0_loop_control);
-	char drive_2_axis_0_velocity_control[] = "48b#02000000";
-	ret += can_send_custom_message(drive_2_axis_0_velocity_control);
-
-	char drive_2_axis_1_calibration[] = "0a7#03000000";
-	ret += can_send_custom_message(drive_2_axis_1_calibration);
-	char drive_2_axis_1_loop_control[] = "0a7#08000000";
-	ret += can_send_custom_message(drive_2_axis_1_loop_control);
-	char drive_2_axis_1_velocity_control[] = "4ab#02000000";
-	ret += can_send_custom_message(drive_2_axis_1_velocity_control);
-
-	if (ret == 18) { return 0; }
-	return 1;
-}
-
 //can_send a uint32_t
 int can_send_velocity(int device_num, uint32_t message) {
-	char* can_frame = get_can_message(device_num, message);
+	char* can_frame = get_can_velocity_message(device_num, message);
 	char can0[] = "can0";
 	int ret = can_send(can0, can_frame);
 	delete can_frame;
@@ -89,7 +23,7 @@ int can_send_custom_message(char* custom_message) {
 }
 
 //convert uint32_t and device_num to a can_frame (only can frames for sending power, which start with 00d# and 02d#)
-char* get_can_message(int device_num, uint32_t message) {
+char* get_can_velocity_message(int device_num, uint32_t message) {
 	char* full_message = new char[12];
 	char* vals = new char[8];
 	sprintf(vals, "%010x00000000", get_big_endian(message));

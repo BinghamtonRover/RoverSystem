@@ -18,7 +18,7 @@ int main() {
 
     // Suspension subsystem and CAN bus init
     for (int i = 0; i < SUSPENSION_CONNECT_TRIES; i++) {
-        if (suspension::init() != 0) {
+        if (suspension::init_calibrate() != 0) {
             logger::log(logger::WARNING, "[!] Failed to init suspension and CAN!");
             //logger::log(logger::WARNING, "[!] Failed to init suspension (try %d).", i);
         } 
