@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include "../logger/logger.hpp"
+
 #include "camera.hpp"
 
 namespace camera {
@@ -41,6 +43,7 @@ Error open(CaptureSession* session, const char* device_filepath, size_t width, s
 
     // Query for capability.
     if (ioctl(session->fd, VIDIOC_QUERYCAP, &cap) != 0) {
+        logger::log(logger::INFO, "Not a camera");
         return Error::QUERY_CAPABILITIES;
     }
 
@@ -186,10 +189,11 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
     tv.tv_usec = 0;
 
     // Wait for the next frame. See man select(2) for more information.
-    if (select(session->fd + 1, &fds, NULL, NULL, &tv) <= 0) {
+    if (select(session->fd + 1, &fds, NULL, NULL, &tv) == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return Error::AGAIN;
-
+        const char* error_str = strerror(errno);
+        logger::log(logger::ERROR, "grab_frame::select: %s (code %i)", error_str, errno);
         return Error::SELECT;
     }
 
@@ -202,6 +206,8 @@ Error grab_frame(CaptureSession* session, uint8_t** out_frame, size_t* out_frame
 
     // Read the frame.
     if (ioctl(session->fd, VIDIOC_DQBUF, &vbuf) != 0) {
+        const char* error_str = strerror(errno);
+        logger::log(logger::ERROR, "grab_frame::select: %s", error_str);
         return Error::READ_FRAME;
     }
 

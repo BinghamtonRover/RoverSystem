@@ -7,6 +7,9 @@ bin:
 
 network: bin
 	make -C src/network
+	
+cpnetwork: bin
+	make -C src/cpnetwork
 
 simple_config: bin
 	make -C src/simple_config
@@ -20,7 +23,7 @@ rocs: bin
 autonomy: bin
 	make -C src/autonomy
 
-base_station: bin network simple_config logger
+base_station: bin cpnetwork network simple_config logger
 	make -C src/base_station
 
 #rover: bin network simple_config logger rocs
@@ -29,7 +32,7 @@ base_station: bin network simple_config logger
 subsystem_computer: bin network simple_config logger rocs
 	make -C src/subsystems_computer
 
-video_computer: bin network simple_config logger
+video_computer: bin cpnetwork network simple_config logger
 	make -C src/video_computer
 
 clean:

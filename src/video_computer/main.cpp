@@ -1,11 +1,18 @@
 #include "session.hpp"
 
+#include "../cpnetwork/stream.hpp"
+
 int main(){
     Session video_session;
     logger::register_handler(logger::stderr_handler);
     util::Clock::init(&video_session.global_clock);
     video_session.load_config("res/v.sconfig");
     video_session.updateCameraStatus();
+
+    boost::asio::io_context ctx;
+    net::StreamSender video_sender(ctx);
+    video_sender.set_destination_endpoint(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string("127.0.0.1"), 1500));
+    video_sender.create_streams(MAX_STREAMS);
 
     //Three feeds: base station, subsystem computer, and video computer.
     {
@@ -127,23 +134,7 @@ int main(){
             //
             // Send the frame.
             // Calculate how many buffers we will need to send the entire frame
-            uint8_t num_buffers = (frame_size / CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE) + 1;
-            for (uint8_t j = 0; j < num_buffers; j++) {
-                // This accounts for the last buffer that is not completely divisible
-                // by the defined buffer size, by using up the remaining space calculated
-                // with modulus    -yu
-                uint16_t buffer_size = (j != num_buffers - 1) ? CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE :
-                                                                frame_size % CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE;
-                network::CameraMessage message = {
-                    static_cast<uint8_t>(i), // stream_index
-                    static_cast<uint16_t>(video_session.frame_counter), // frame_index
-                    static_cast<uint8_t>(j), // section_index
-                    num_buffers, // section_count
-                    buffer_size, // size
-                    frame_buffer + (CAMERA_MESSAGE_FRAME_DATA_MAX_SIZE * j) // data
-                };
-                network::publish(&video_session.v_feed, &message);
-            }
+            video_sender.send_frame(i, frame_buffer, long_frame_size);
             camera::return_buffer(cs);
         }
 
@@ -153,49 +144,11 @@ int main(){
 
         // Increment global (across all streams) frame counter. Should be ok. Should...
         video_session.frame_counter++;
-
+        
         // Receive incoming messages
-        network::IncomingMessage message;
+        //network::IncomingMessage message;
+        //network::receive(&video_session.bs_feed, &message);
 
-        while (true) {
-            auto neterr = network::receive(&video_session.bs_feed, &message);
-            if (neterr != network::Error::OK) {
-                if (neterr == network::Error::NOMORE) {
-                    break;
-                }
-                logger::log(logger::DEBUG, "Network error on receive!");
-                break;
-            }
-            switch (message.type) {
-                case network::MessageType::CAMERA_CONTROL: {
-                    network::CameraControlMessage quality;
-                    network::deserialize(&message.buffer, &quality);
-                    network::CameraControlMessage::Setting setting = quality.setting;
-                    switch(setting) {
-                        case network::CameraControlMessage::Setting::JPEG_QUALITY:
-                            video_session.jpeg_quality = quality.jpegQuality;
-                            break;
-                        case network::CameraControlMessage::Setting::GREYSCALE:
-                            video_session.greyscale = quality.greyscale;
-                            break;
-                        case network::CameraControlMessage::Setting::DISPLAY_STATE:
-                            video_session.streamTypes[quality.resolution.stream_index] = quality.resolution.sending;
-                            break;
-                    }
-                    break;
-                }
-                case network::MessageType::FOCUS_MODE: {
-                    network::FocusModeMessage focus_mode_message;
-                    network::deserialize(&message.buffer, &focus_mode_message);
-                    video_session.video_focus_mode = focus_mode_message.focus_mode;
-                    // Echo back to BS to verify mode change.
-                    network::publish(&video_session.v_feed, &focus_mode_message);
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
         if (video_session.network_update_timer.ready()) {
             // Update feed statuses.
             network::update_status(&video_session.r_feed);

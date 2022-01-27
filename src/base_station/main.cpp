@@ -27,7 +27,8 @@
 
 int main() {
     //Declaring base station session object
-    Session bs_session;
+    boost::asio::io_context ctx;
+    Session bs_session(ctx);
 
     util::Clock::init(&bs_session.global_clock);
 
@@ -129,6 +130,12 @@ int main() {
     }
 
     // Initialize network functionality.
+    boost::asio::ip::udp::endpoint video_mcast_feed(
+        boost::asio::ip::address_v4::from_string("239.255.123.123"), 
+        22202
+    );
+    
+    bs_session.video_feeds.subscribe(video_mcast_feed);
     {
         auto err = network::init(
             &bs_session.bs_feed,
@@ -300,6 +307,7 @@ int main() {
                 gui::state.input_state = gui::InputState::KEY_COMMAND;
             }
         }
+        ctx.poll();
 
         // Handle incoming network messages from the rover feed.
         {

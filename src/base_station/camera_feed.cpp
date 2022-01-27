@@ -15,6 +15,42 @@ tjhandle jpeg_decompressor;
 const int JPEG_SIZE = 1920 * 1080 * 3;
 unsigned char decompress_buffer[JPEG_SIZE];
 
+Error decode_frame(Feed& feed, uint8_t* data, const char** error) {
+    if (error) *error = "OK";
+    if (-1 == tjDecompress2(
+            jpeg_decompressor,
+            data,
+            JPEG_SIZE,
+            decompress_buffer,
+            feed.width,
+            feed.width * 3,
+            feed.height,
+            TJPF_RGB,
+            TJFLAG_FASTDCT
+        )) {
+        
+
+        
+        if (error) *error = tjGetErrorStr();
+        return Error::DECOMPRESS;
+    } else {
+        glBindTexture(GL_TEXTURE_2D, feed.gl_texture_id);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGB,
+            feed.width,
+            feed.height,
+            0,
+            GL_RGB,
+            GL_UNSIGNED_BYTE,
+            decompress_buffer
+        );
+    }
+
+    return Error::OK;
+}
+
 static Error decompress(Feed* feed, unsigned char* jpeg_data) {
     /*
        The parameters are the decompressor, the compressed image, the size of the

@@ -45,6 +45,8 @@ Error init_feed(Feed* feed, const char* name, int width, int height);
 Error handle_section(
     Feed* feed, unsigned char* data, int data_size, int section_index, int section_count, int frame_index);
 
+Error decode_frame(Feed& feed, uint8_t* data, const char** error_str);
+
 void destroy_feed(Feed* feed);
 
 } // namespace camera_feed

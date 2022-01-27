@@ -2,6 +2,7 @@
 #define SESSION
 
 #include "../network/network.hpp"
+#include "../cpnetwork/stream.hpp"
 #include "../simple_config/simpleconfig.h"
 #include "shared_feeds.hpp" 
 #include "camera_feed.hpp"
@@ -142,6 +143,8 @@ public:
     network::Feed bs_feed;
     network::Feed v_feed;
 
+    net::StreamReceiver video_feeds;
+
     //Network stats
     float r_tp;
     float bs_tp; 
@@ -220,7 +223,7 @@ public:
     std::function<void(float)> reverse_action = std::bind(&Session::axis_reverse_speed, this, 1.0F, std::placeholders::_1);
 
     //Constructor & Destructor
-    Session();
+    Session(boost::asio::io_context& ctx);
     ~Session();
 
     void load_config(const char* filename);

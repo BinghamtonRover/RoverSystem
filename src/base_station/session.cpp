@@ -4,7 +4,9 @@
 #include <algorithm>
 
 //Create Session instance and initialize variables
-Session::Session() {
+Session::Session(boost::asio::io_context& ctx) :
+    video_feeds(ctx) {
+
     this->last_subsystem_tick = 0;
     this->last_video_tick = 0;
 
@@ -44,6 +46,16 @@ Session::Session() {
     this->science_sub_init();
     this->autonomy_sub_init();
     this->power_sub_init();
+
+    for (int i = 0; i < MAX_FEEDS; i++) {
+        video_feeds.open_stream(i);
+    }
+    video_feeds.on_frame_received([this](int stream, net::Frame& frame) {
+        const char* error;
+        if (camera_feed::decode_frame(camera_feeds[stream], frame.data(), &error) != camera_feed::Error::OK) {
+            logger::log(logger::ERROR, "Failed to decode video frame on stream %i: %s", stream, error);
+        }
+    });
 }
 
 Session::~Session() {};
